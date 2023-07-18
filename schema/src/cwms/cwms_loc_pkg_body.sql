@@ -341,6 +341,51 @@ AS
          RAISE;
    END get_state_code;
 
+   --------------------------------------------------------------------------------
+   -- function get_county_codes_for_nation
+   --------------------------------------------------------------------------------
+   function get_county_codes_for_nation(
+      p_nation_code in varchar2)
+      return number_tab_t
+   is
+      l_county_codes number_tab_t;
+   begin
+      if p_nation_code is null then
+         l_county_codes := number_tab_t(0);
+      else
+         select county_code
+           bulk collect
+           into l_county_codes
+           from cwms_county
+          where state_code in
+                (select state_code
+                   from cwms_state
+                  where nation_code in ('00', upper(p_nation_code))
+                );
+      end if;
+      return l_county_codes;
+   end get_county_codes_for_nation;
+   --------------------------------------------------------------------------------
+   -- function valid_county_code_for_nation
+   --------------------------------------------------------------------------------
+   function valid_county_code_for_nation(
+      p_county_code in integer,
+      p_nation_code   in varchar2)
+      return varchar2 deterministic
+   is
+      l_county_codes number_tab_t;
+      l_count        pls_integer;
+   begin
+      if nvl(p_county_code, 0) = 0 then
+         return 'T';
+      end if;
+      select count(*)
+        into l_count
+        from table(get_county_codes_for_nation(p_nation_code))
+       where column_value = p_county_code;
+
+      return case l_count > 0 when true then 'T' else 'F' end;
+   end valid_county_code_for_nation;
    --********************************************************************** -
    --********************************************************************** -
    --
@@ -541,7 +586,6 @@ AS
       l_ret                    NUMBER;
       l_base_loc_exists        BOOLEAN := TRUE;
       l_sub_loc_exists          BOOLEAN := TRUE;
-      l_nation_id              VARCHAR2 (48) := NVL (p_nation_id, 'UNITED STATES');
       l_bounding_office_id     VARCHAR2 (16);
       l_location_kind_code     NUMBER := 1; -- SITE
       l_bounding_office_code    NUMBER := NULL;
@@ -569,20 +613,21 @@ AS
       ------------------------------------------------
       -- allow nation to be passed in as code or id --
       ------------------------------------------------
-      if length(l_nation_id) = 2 then
-         l_nation_code := l_nation_id;
+      if p_nation_id is null then
+         l_nation_code := null;
+      elsif length(p_nation_id) = 2 then
+         l_nation_code := upper(p_nation_id);
       else
          begin
             select nation_code
               into l_nation_code
               from cwms_nation
-             where nation_id = upper(l_nation_id);
+             where nation_id = upper(p_nation_id);
          exception
             when no_data_found then
-               cwms_err.raise ('INVALID_ITEM', l_nation_id, 'nation id');
+               cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
          end;
       end if;
-
       BEGIN
          -- Check if base_location exists -
          SELECT   base_location_code
@@ -9359,6 +9404,45 @@ end unassign_loc_groups;
          return 'F';
       end if;
    end point_in_polygon;
+
+   function get_nation_id(
+      p_lat in number,
+      p_lon in number)
+      return varchar2
+   is
+      l_codes str_tab_t;
+   begin
+      select fips_cntry
+        bulk collect
+        into l_codes
+        from cwms_nation_sp cn
+       where sdo_contains(
+         cn.shape,
+         sdo_geometry(
+            2001,
+            8265 ,
+            null,
+            mdsys.sdo_elem_info_array(1,1,1),
+            mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
+      return case
+             when l_codes.count = 1 then l_codes(1)
+             else null
+             end;
+   end get_nation_id;
+
+   function get_nation_id_for_loc(
+      p_location_code in integer)
+      return varchar2
+   is
+      l_sub_rec  at_physical_location%rowtype;
+      l_base_rec at_physical_location%rowtype;
+   begin
+      select * into l_sub_rec  from at_physical_location where location_code = p_location_code;
+      select * into l_base_rec from at_physical_location where location_code = l_sub_rec.base_location_code;
+      return get_nation_id(
+                coalesce(l_sub_rec.latitude,  l_base_rec.latitude),
+                coalesce(l_sub_rec.longitude, l_base_rec.longitude));
+   end get_nation_id_for_loc;
 
    function get_bounding_ofc_code(
       p_lat in number,

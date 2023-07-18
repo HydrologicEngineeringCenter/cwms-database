@@ -29,6 +29,8 @@ procedure test_set_vertical_datum_info_exp;
 procedure test_cwdb_222_sublocation_vdi_inheritance;
 --%test(CWDB-143 Storing Elev data with unknown datum offset)
 procedure test_cwdb_143_storing_elev_with_unknown_datum_offset;
+--%test(CWDB-159 Store location in Ontario, CA
+procedure test_cwdb_159_store_location_in_ontario_canada;
 
 procedure setup;
 procedure teardown;
@@ -1909,5 +1911,54 @@ AS
          end if;
       end loop;
    end test_cwdb_143_storing_elev_with_unknown_datum_offset;
+   --------------------------------------------------------------------------------
+   -- procedure test_cwdb_159_store_location_in_ontario_canada
+   --------------------------------------------------------------------------------
+   procedure test_cwdb_159_store_location_in_ontario_canada
+   is
+      l_rec cwms_v_loc%rowtype;
+   begin
+      teardown;
+      cwms_loc.store_location2(
+         p_location_id         => 'TestLoc1',
+         p_elevation           => 216.684,
+         p_elev_unit_id        => 'm',
+         p_vertical_datum      => 'CGVD2013',
+         p_latitude            => 46.514517,
+         p_longitude           => -84.347184,
+         p_horizontal_datum    => 'NAD83',
+         p_public_name         => 'TestLoc1',
+         p_long_name           => 'TestLoc1_CWDB_159',
+         p_location_type       => null,
+         p_description         => 'Location for testing CWDB-159 issue',
+         p_time_zone_id        => 'US/Eastern',
+         p_county_name         => null,
+         p_state_initial       => 'ON',
+         p_active              => 'T',
+         p_location_kind_id    => 'Site',
+         p_published_latitude  => null,
+         p_published_longitude => null,
+         p_bounding_office_id  => null,
+         p_nation_id           => null,
+         p_nearest_city        => null,
+         p_ignorenulls         => 'T',
+         p_db_office_id        => '&&office_id');
+      commit;
+
+      begin
+         select *
+           into l_rec
+           from cwms_v_loc
+          where location_id = 'TestLoc1'
+            and unit_system = 'SI';
+      exception
+         when others then cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
+      end;
+
+      ut.expect(l_rec.state_initial).to_equal('ON');
+      ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A');
+      ut.expect(l_rec.nation_id).to_equal('CANADA');
+      ut.expect(l_rec.nearest_city).to_equal('Sault Ste. Marie');
+   end test_cwdb_159_store_location_in_ontario_canada;
 END test_cwms_loc;
 /
