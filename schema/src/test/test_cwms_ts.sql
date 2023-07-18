@@ -77,6 +77,8 @@ procedure test_inclusion_options__JIRA_CWDB_180;
 
 --%test(Test STORE_TS can create a versioned time series: CWDB-190)
 procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
+--%test(Test UNDELETE_TS, CWMS_V_DELETED_TS, and CWMS_LOC.DELETE_LOCATION on location with deleted ts)
+procedure test_undelete_ts;
 
 --%test (Test RETRIEVE_TS for regular time series that has undefined interval offset)
 procedure test_retrieve_ts_with_undefined_interval_offset;
@@ -1669,6 +1671,7 @@ AS
        pragma exception_init(ts_id_not_found,     -20001);
        pragma exception_init(item_already_exists, -20003);
     begin
+      teardown;
        begin
           cwms_loc.store_location(
              p_location_id  => test_base_location_id,
@@ -1899,6 +1902,218 @@ AS
             end if;
       end;
    end cwdb_134_test_store_multi_does_not_hide_error_messages;
+    --------------------------------------------------------------------------------
+    -- procedure test_undelete_ts
+    --------------------------------------------------------------------------------
+    procedure test_undelete_ts
+    is
+      x_cannot_delete_loc_1 exception;
+      pragma exception_init(x_cannot_delete_loc_1, -20031);
+      l_base_ts_id_1 cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Code.Inst.1Hour.0.Test';
+      l_base_ts_id_2 cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Flow.Inst.1Hour.0.Test';
+      l_sub_ts_id_1 cwms_v_ts_id.cwms_ts_id%type := test_withsub_location_id||'.Code.Inst.1Hour.0.Test';
+      l_sub_ts_id_2 cwms_v_ts_id.cwms_ts_id%type := test_withsub_location_id||'.Flow.Inst.1Hour.0.Test';
+      l_unit_1  cwms_v_ts_id.unit_id%type := 'n/a';
+      l_unit_2  cwms_v_ts_id.unit_id%type := 'cfs';
+      l_unit_3  cwms_v_ts_id.unit_id%type := 'n/a';
+      l_unit_4  cwms_v_ts_id.unit_id%type := 'cfs';
+      l_ts_data cwms_t_ztsv_array := cwms_t_ztsv_array(
+                                        cwms_t_ztsv(timestamp '2023-02-03 01:00:00', 1, 0),
+                                        cwms_t_ztsv(timestamp '2023-02-03 02:00:00', 2, 0),
+                                        cwms_t_ztsv(timestamp '2023-02-03 03:00:00', 3, 0),
+                                        cwms_t_ztsv(timestamp '2023-02-03 04:00:00', 4, 0),
+                                        cwms_t_ztsv(timestamp '2023-02-03 05:00:00', 5, 0));
+      function count_in(p_view_name in varchar2, p_ts_id in varchar2) return pls_integer is
+         l_count pls_integer;
+      begin
+         execute immediate replace('select count(*) from $v where cwms_ts_id = :1', '$v', p_view_name)
+            into l_count
+           using p_ts_id;
+         return l_count;
+      end count_in;
+    begin
+      teardown;
+      ---------------------
+      -- store locations --
+      ---------------------
+      cwms_loc.store_location(
+         p_location_id  => test_base_location_id,
+         p_active       => 'T',
+         p_db_office_id => '&&office_id');
+      cwms_loc.store_location(
+         p_location_id  => test_withsub_location_id,
+         p_active       => 'T',
+         p_db_office_id => '&&office_id');
+      --------------------------------------------------------------
+      -- store time series and verify inclusion in expected views --
+      --------------------------------------------------------------
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_base_ts_id_1,
+         p_units           => l_unit_1,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id');
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_base_ts_id_2,
+         p_units           => l_unit_2,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id');
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_sub_ts_id_1,
+         p_units           => l_unit_3,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id');
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_sub_ts_id_2,
+         p_units           => l_unit_4,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id');
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_1)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_2)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_1)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_2)).to_equal(1);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_2)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_2)).to_equal(0);
+      -------------------------------------------------------------------
+      -- delete one time series and verify inclusion in expected views --
+      -------------------------------------------------------------------
+      cwms_ts.delete_ts(l_sub_ts_id_1, cwms_util.delete_key, '&&office_id');
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_1)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_2)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_2)).to_equal(1);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_2)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_1)).to_equal(1);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_2)).to_equal(0);
+      -----------------------------------------------------------------------------------
+      -- verify we cant't delete the location key while non-deleted time series remain --
+      -----------------------------------------------------------------------------------
+      begin
+         cwms_loc.delete_location(test_withsub_location_id, cwms_util.delete_key, '&&office_id');
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when x_cannot_delete_loc_1 then null;
+      end;
+      -----------------------------------------------------------------------
+      -- delete another time series and verify inclusion in expected views --
+      -----------------------------------------------------------------------
+      cwms_ts.delete_ts(l_sub_ts_id_2, cwms_util.delete_key, '&&office_id');
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_1)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_2)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_2)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_2)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_1)).to_equal(1);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_2)).to_equal(1);
+      ----------------------------------------------------------------------
+      -- undelete both time series and verify inclusion in expected views --
+      ----------------------------------------------------------------------
+      cwms_ts.undelete_ts(l_sub_ts_id_1, '&&office_id');
+      cwms_ts.undelete_ts(l_sub_ts_id_2, '&&office_id');
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_1)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_2)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_1)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_2)).to_equal(1);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_2)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_2)).to_equal(0);
+      --------------------------------------------------------------------------------
+      -- verify that deleting location key removes deleted time series for location --
+      --------------------------------------------------------------------------------
+      cwms_ts.delete_ts(l_sub_ts_id_1, cwms_util.delete_key, '&&office_id');
+      cwms_ts.delete_ts(l_sub_ts_id_2, cwms_util.delete_key, '&&office_id');
+      cwms_loc.delete_location(test_withsub_location_id, cwms_util.delete_key, '&&office_id');
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_1)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_2)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_2)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_2)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_2)).to_equal(0);
+      ----------------
+      -- start over --
+      ----------------
+      teardown;
+      ---------------------
+      -- store locations --
+      ---------------------
+      cwms_loc.store_location(
+         p_location_id  => test_base_location_id,
+         p_active       => 'T',
+         p_db_office_id => '&&office_id');
+      cwms_loc.store_location(
+         p_location_id  => test_withsub_location_id,
+         p_active       => 'T',
+         p_db_office_id => '&&office_id');
+      --------------------------------------------------------------
+      -- store time series and verify inclusion in expected views --
+      --------------------------------------------------------------
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_base_ts_id_1,
+         p_units           => l_unit_1,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id');
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_base_ts_id_2,
+         p_units           => l_unit_2,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id');
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_sub_ts_id_1,
+         p_units           => l_unit_3,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id');
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_sub_ts_id_2,
+         p_units           => l_unit_4,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id');
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_1)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_2)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_1)).to_equal(1);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_2)).to_equal(1);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_2)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_2)).to_equal(0);
+      ----------------------------------------------------------------------------------------------
+      -- verify deleting base location key removes deleted time series for base and sub-locations --
+      ----------------------------------------------------------------------------------------------
+      cwms_ts.delete_ts(l_base_ts_id_1, cwms_util.delete_key, '&&office_id');
+      cwms_ts.delete_ts(l_base_ts_id_2, cwms_util.delete_key, '&&office_id');
+      cwms_ts.delete_ts(l_sub_ts_id_1, cwms_util.delete_key, '&&office_id');
+      cwms_ts.delete_ts(l_sub_ts_id_2, cwms_util.delete_key, '&&office_id');
+      cwms_loc.delete_location(test_base_location_id, cwms_util.delete_key, '&&office_id');
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_ts_id', l_base_ts_id_2)).to_equal(0);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_ts_id', l_sub_ts_id_2)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_base_ts_id_2)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_1)).to_equal(0);
+      ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_2)).to_equal(0);
+    end test_undelete_ts;
 END test_cwms_ts;
 /
 SHOW ERRORS

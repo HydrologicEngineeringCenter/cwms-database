@@ -763,6 +763,31 @@ AS
                             p_ts_item_mask        IN INTEGER DEFAULT cwms_util.ts_all);
 
    /**
+    * Permanently removes deleted time series
+    *
+    * @param p_ts_code The unique numeric code identifying the deleted time series to be removed. Can be found in av_deleted_ts_id.
+    */
+   procedure remove_deleted_ts(
+      p_ts_code in number);
+   /**
+    * Undeletes a time series that has been deleted with p_delete_action of cwms_util.delete_key or cwms_util.delete_ts_id.
+    * Time series values that have been otherwise deleted via delete_ts, purge_ts, or cwms_loc.delete_location cannot be recovered.
+    *
+    * @param p_ts_code The unique numeric code identifying the time series to be undeleted. Can be found in av_deleted_ts_id.
+    */
+   procedure undelete_ts(
+      p_ts_code in number);
+   /**
+    * Undeletes a time series that has been deleted with p_delete_action of cwms_util.delete_key or cwms_util.delete_ts_id.
+    * Time series values that have been otherwise deleted via delete_ts, purge_ts, or cwms_loc.delete_location cannot be recovered.
+    *
+    * @param p_cwms_ts_id The identifier of the time series to be undeleted.
+    * @param p_office_id  The office that owns the time series to be undeleted.
+    */
+   procedure undelete_ts(
+      p_cwms_ts_id in varchar2,
+      p_office_id  in varchar2 default null);
+   /**
     * Changes the version date for a time series, version date, and time window
     *
     * @see constant cwms_util.non_versioned

@@ -3401,6 +3401,7 @@ l_crsr           sys_refcursor;
 l_date_times     cwms_t_date_table;
 l_values         cwms_t_double_tab;
 l_quality_codes  cwms_t_number_tab;
+l_count          pls_integer;
 l_initial_zts    cwms_t_ztsv_array := cwms_t_ztsv_array(
    cwms_t_ztsv(l_start_time + 0 / 24,   31,  33554435),
    cwms_t_ztsv(l_start_time + 1 / 24,   32,  65545),
@@ -3438,6 +3439,10 @@ l_expected_zts   cwms_t_ztsv_array := cwms_t_ztsv_array(
    cwms_t_ztsv(l_start_time + 9 / 24,   28,  -2147483645),
    cwms_t_ztsv(l_start_time +10 / 24, null,  0));
 begin
+   teardown;
+   commit;
+   select count(*) into l_count from cwms_v_loc where location_id = cwms_util.split_text(l_cwms_ts_id, 1, '.') and unit_system = 'EN';
+   ut.expect(l_count).to_equal(0);
    cwms_loc.store_location(
       p_location_id	=> cwms_util.split_text(l_cwms_ts_id, 1, '.'),
       p_time_zone_id => l_time_zone,
