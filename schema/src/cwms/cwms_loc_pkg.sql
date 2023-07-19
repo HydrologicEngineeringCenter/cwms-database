@@ -171,6 +171,27 @@ AS
 									  p_state_initial   IN VARCHAR2 DEFAULT NULL
 									 )
 		RETURN NUMBER;
+   /**
+    * Retrieves all valid county codes for the specified nation
+    *
+    * @param p_nation_code The nation to retrieve valid county codes for
+    * @return The list of valid county codes for the speciried nation
+    */
+   FUNCTION get_county_codes_for_nation(p_nation_code IN VARCHAR2)
+      RETURN NUMBER_TAB_T;
+   /**
+    * Retrieves whether the specified county code is valid for the specified nation id
+    *
+    * @param p_county_code The county code to test
+    * @param p_nation_code   The nation test validity for
+    * @return 'T' or 'F'
+    *
+    */
+   FUNCTION valid_county_code_for_nation(p_county_code in integer,
+                                         p_nation_code   in varchar2
+                                        )
+      RETURN VARCHAR2 DETERMINISTIC;
+
    -- not documented, use cwms_util.convert_units
 	FUNCTION convert_from_to (p_orig_value 			 IN NUMBER,
 									  p_from_unit_name		 IN VARCHAR2,
@@ -2599,6 +2620,26 @@ AS
       p_x        in number,
       p_y        in number)
       return varchar;
+   /**
+    * Returns the nation id of the nation whose area the specified lat/lon is located
+    *
+    * @param p_lat the latitude of the location to test
+    * @param p_lon the longitude of the location to test
+    * @return the nation id that encompasses the lat/lon, or NULL if none
+    */
+   function get_nation_id(
+      p_lat in number,
+      p_lon in number)
+      return varchar2;
+   /**
+    * Returns the nation id of the nation in which the specified location is located
+    *
+    * @param p_location_code the location code of the location to test
+    * @return the nation id that the location is located in
+    */
+   function get_nation_id_for_loc(
+      p_location_code in integer)
+      return varchar2;
    /**
     * Returns the office code of the office whose area the specified lat/lon is located
     *

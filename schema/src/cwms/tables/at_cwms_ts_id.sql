@@ -410,6 +410,18 @@ begin
             end if;
          end if;
       end if;
+      if :new.nation_code is null or (l_lat_lon_changed and l_update_non_null) then
+         ----------------------------------------------
+         -- get the nation office from the lat/lon --
+         ----------------------------------------------
+         :new.nation_code := cwms_loc.get_nation_id(:new.latitude, :new.longitude);
+      end if;
+      ----------------------------------------
+      -- validate nation/county combination --
+      ----------------------------------------
+      if cwms_loc.valid_county_code_for_nation(:new.county_code, :new.nation_code) != 'T' then
+         cwms_err.raise('ERROR', 'Cannot use county code of '||:new.county_code||' with nation code of '||:new.nation_code);
+      end if;
       if :new.office_code is null or (l_lat_lon_changed and l_update_non_null) then
          ----------------------------------------------
          -- get the bounding office from the lat/lon --
