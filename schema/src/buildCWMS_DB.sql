@@ -216,6 +216,8 @@ alter session set ddl_lock_timeout = 100;
 ---
 set define on
 @@py_ErocUsers
+-- this will create triggers on the table when called from here
+@@cwms/tables/at_tsv_count
 
 @@cwms/views/mv_location_level_curval
 @@cwms/tables/at_clob_index.sql
@@ -353,10 +355,8 @@ begin
    cwms_ts.start_truncate_ts_msg_arch_job;
 end;
 /
-set define on
 @@cwms/create_sec_triggers
 @@cwms/create_user_policies
-@@cwms/at_tsv_count_trig
 @@cwms/at_dd_flag_trig
 prompt Recompiling all invalid objects...
 begin
