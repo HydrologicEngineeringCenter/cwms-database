@@ -137,5 +137,4 @@ BEGIN
    END LOOP;
 END;
 /
--- this will only create the table when called from here
 @@cwms/tables/at_tsv_count

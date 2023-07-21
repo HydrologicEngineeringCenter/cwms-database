@@ -216,7 +216,7 @@ alter session set ddl_lock_timeout = 100;
 ---
 set define on
 @@py_ErocUsers
--- this will create triggers on the table when called from here
+-- call this again to create logoff triggers for newly-added users
 @@cwms/tables/at_tsv_count
 
 @@cwms/views/mv_location_level_curval
