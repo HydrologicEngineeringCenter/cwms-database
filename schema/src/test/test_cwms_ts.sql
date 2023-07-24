@@ -92,6 +92,9 @@ procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset;
 --%test (CWDB-134 STORE_TS_MULTI doen't hide individual error messages)
 procedure cwdb_134_test_store_multi_does_not_hide_error_messages;
 
+--%test (CWDB-211 Update TSV DML counters to include streamed DML)
+procedure cwdb_211_update_tsv_dml_counters_to_include_streamed_dml;
+
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
@@ -2114,6 +2117,133 @@ AS
       ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_1)).to_equal(0);
       ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_2)).to_equal(0);
     end test_undelete_ts;
+
+   --------------------------------------------------------------------------------
+   -- procedure cwdb_211_update_tsv_dml_counters_to_include_streamed_dml
+   --------------------------------------------------------------------------------
+   procedure cwdb_211_update_tsv_dml_counters_to_include_streamed_dml
+   is
+      l_ts_id     cwms_v_ts_id.cwms_ts_id%type;
+      l_ts_code   cwms_v_ts_id.ts_code%type;
+      l_unit      cwms_v_ts_id.unit_id%type := 'n/a';
+      l_seconds   number;
+      l_time      timestamp;
+      l_inserts   pls_integer := 0;
+      l_updates   pls_integer := 0;
+      l_deletes   pls_integer := 0;
+      l_s_inserts pls_integer := 0;
+      l_s_updates pls_integer := 0;
+      l_s_deletes pls_integer := 0;
+      l_rec       at_tsv_count%rowtype;
+      l_ts_data   cwms_t_ztsv_array := cwms_t_ztsv_array(
+                     cwms_t_ztsv(timestamp '2023-02-03 01:00:00',  1, 0),
+                     cwms_t_ztsv(timestamp '2023-02-03 02:00:00',  2, 0),
+                     cwms_t_ztsv(timestamp '2023-02-03 03:00:00',  3, 0),
+                     cwms_t_ztsv(timestamp '2023-02-03 04:00:00',  4, 0),
+                     cwms_t_ztsv(timestamp '2023-02-03 05:00:00',  5, 0),
+                     cwms_t_ztsv(timestamp '2023-02-03 06:00:00',  6, 0),
+                     cwms_t_ztsv(timestamp '2023-02-03 07:00:00',  7, 0),
+                     cwms_t_ztsv(timestamp '2023-02-03 08:00:00',  8, 0),
+                     cwms_t_ztsv(timestamp '2023-02-03 09:00:00',  9, 0),
+                     cwms_t_ztsv(timestamp '2023-02-03 00:00:00',  0, 0),
+                     cwms_t_ztsv(timestamp '2023-02-03 11:00:00', 11, 0),
+                     cwms_t_ztsv(timestamp '2023-02-03 12:00:00', 12, 0));
+   begin
+      -----------
+      -- setup --
+      -----------
+      teardown;
+      cwms_loc.store_location(
+         p_location_id  => test_base_location_id,
+         p_active       => 'T',
+         p_db_office_id => '&&office_id');
+      cwms_loc.store_location(
+         p_location_id  => test_withsub_location_id,
+         p_active       => 'T',
+         p_db_office_id => '&&office_id');
+      cwms_tsv.is_stream_session := true;
+      -----------------------------------
+      -- wait until top of next minute --
+      -----------------------------------
+      dbms_session.sleep(60 - extract(second from systimestamp));
+      l_time := trunc(systimestamp, 'MI') + interval '000 00:01:00' day to second;
+      for test_streaming in 0..1 loop
+         cwms_tsv.is_stream_session := test_streaming = 1; -- normally set from username at init of cwms_tsv package
+         -----------------------
+         -- store some values --
+         -----------------------
+         if cwms_tsv.is_stream_session then
+            l_ts_id := test_withsub_location_id||'.Code.Inst.1Hour.0.Test';
+         else
+            l_ts_id := test_base_location_id||'.Code.Inst.1Hour.0.Test';
+         end if;
+         cwms_ts.zstore_ts(
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => l_unit,
+            p_timeseries_data => l_ts_data,
+            p_store_rule      => cwms_util.replace_all,
+            p_version_date    => cwms_util.non_versioned,
+            p_office_id       => '&&office_id');
+         if cwms_tsv.is_stream_session then
+            l_s_inserts := l_ts_data.count;
+         else
+            l_inserts := l_ts_data.count;
+         end if;
+         l_ts_code := cwms_ts.get_ts_code(l_ts_id, '&&office_id');
+         ------------------------
+         -- update some values --
+         ------------------------
+         for i in 1..l_ts_data.count loop
+            continue when mod(i, 2) != 0;
+            update at_tsv_2023
+               set value = value * 10
+             where ts_code = l_ts_code
+               and date_time = l_ts_data(i).date_time
+               and version_date = cwms_util.non_versioned;
+
+            if cwms_tsv.is_stream_session then
+               l_s_updates := l_s_updates + 1;
+            else
+               l_updates := l_updates + 1;
+            end if;
+         end loop;
+         ------------------------
+         -- delete some values --
+         ------------------------
+         for i in 1..l_ts_data.count loop
+            continue when mod(i, 3) != 0;
+            delete
+              from at_tsv_2023
+             where ts_code = l_ts_code
+               and date_time = l_ts_data(i).date_time
+               and version_date = cwms_util.non_versioned;
+
+            if cwms_tsv.is_stream_session then
+               l_s_deletes := l_s_deletes + 1;
+            else
+               l_deletes := l_deletes + 1;
+            end if;
+         end loop;
+         -----------------------
+         -- verify the counts --
+         -----------------------
+         commit;
+         cwms_tsv.flush;
+
+         select *
+           into l_rec
+           from at_tsv_count
+          where data_entry_date = l_time;
+
+         ut.expect(l_rec.inserts).to_equal(l_inserts);
+         ut.expect(l_rec.updates).to_equal(l_updates);
+         ut.expect(l_rec.deletes).to_equal(l_deletes);
+         ut.expect(l_rec.s_inserts).to_equal(l_s_inserts);
+         ut.expect(l_rec.s_updates).to_equal(l_s_updates);
+         ut.expect(l_rec.s_deletes).to_equal(l_s_deletes);
+      end loop;
+   end cwdb_211_update_tsv_dml_counters_to_include_streamed_dml;
+
 END test_cwms_ts;
 /
 SHOW ERRORS
