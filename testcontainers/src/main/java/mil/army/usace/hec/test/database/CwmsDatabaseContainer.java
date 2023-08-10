@@ -51,7 +51,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
     //Oracle Portion
 
-    private String sysPassword = System.getProperty("BYPASS_SYS_PASSWORD","SmallPass0wrd");
+    private String sysPassword = System.getProperty(BYPASS_SYS_PASSWORD,"SmallPass0wrd");
     private String volumeName = "cwms_test_db_volume";
     private String pdbName = "CWMS";
 
@@ -221,6 +221,14 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 	public String getPassword() {
         return password;
 	}
+
+    /**
+     * Use sparingly. Prefer connection(c->{...},"sys") over opening you're own connection directly.
+     * @return The database sys password
+     */
+    public String getSysPassword() {
+        return this.sysPassword;
+    }
 
 	@Override
 	protected String getTestQueryString() {
