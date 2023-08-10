@@ -24,7 +24,7 @@ public class CwmsDatabaseContainerTest {
     public static final Logger log = LoggerFactory.getLogger(CwmsDatabaseContainerTest.class);
 
     public final static String branch = System.getProperty("teamcity.build.branch");
-    public final static String imageVersion = System.getProperty("cwms.image") != null ? System.getProperty("cwms.image") : "18-SNAPSHOT";
+    public final static String imageVersion = System.getProperty("cwms.image","registry.hecdev.net/cwms/schema_installer:23.03.16");
     public final static String volumeName = branch != null ? teamcityVolumeName(branch) : "cwms_container_test_db";
     private static final String DatabaseImage = System.getProperty("database.image", CwmsDatabaseContainer.ORACLE_19C);
 
@@ -35,7 +35,7 @@ public class CwmsDatabaseContainerTest {
     }
 
     @Container
-    private static MyCwmsDatabaseContainer database = new MyCwmsDatabaseContainer()
+    private static CwmsDatabaseContainer database = new CwmsDatabaseContainer(DatabaseImage)
                                                         .withSchemaVersion(imageVersion)
                                                         .withVolumeName(volumeName)
                                                         .withLogConsumer((line) -> {
@@ -119,14 +119,6 @@ public class CwmsDatabaseContainerTest {
             return callStmt.getString(1);
         } catch(SQLException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private static class MyCwmsDatabaseContainer extends CwmsDatabaseContainer<MyCwmsDatabaseContainer>
-    {
-        private MyCwmsDatabaseContainer()
-        {
-            super(DatabaseImage);
         }
     }
 }
