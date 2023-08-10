@@ -8,7 +8,7 @@ plugins {
 
 
 group = "mil.army.usace.hec"
-version = "1.0.8-SNAPSHOT"
+version = "2.0.0-SNAPSHOT"
 
 compileJava {
     sourceCompatibility = '1.8'
