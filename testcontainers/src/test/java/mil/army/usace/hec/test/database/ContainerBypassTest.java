@@ -3,8 +3,6 @@ package mil.army.usace.hec.test.database;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.testcontainers.junit.jupiter.Container;
 
 public class ContainerBypassTest {
     final static String url = "url.bypassed";
@@ -29,6 +27,7 @@ public class ContainerBypassTest {
         System.clearProperty(CwmsDatabaseContainer.BYPASS_URL);
         System.clearProperty(CwmsDatabaseContainer.BYPASS_CWMS_PASSWORD);
         System.clearProperty(CwmsDatabaseContainer.BYPASS_CWMS_OFFICE_EROC);
+        System.clearProperty(CwmsDatabaseContainer.BYPASS_SYS_PASSWORD);
     }
 
     @Test
