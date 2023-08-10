@@ -27,7 +27,7 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 /**
  * An container manager to manage creation of CWMSDatabases for automated tests
  */
-public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> extends JdbcDatabaseContainer<SELF> {
+public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatabaseContainer> {
     public static final Logger log = LoggerFactory.getLogger(CwmsDatabaseContainer.class);
     public static final String ORACLE_19C= "registry.hecdev.net/oracle/database:19.3.0-ee";
     public static final String ORACLE_18XE = "registry.hecdev.net/oracle/database:18.4.0-xe";
@@ -241,7 +241,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @param officeId
      * @return This Container
      */
-    public SELF withOfficeId(String officeId){
+    public CwmsDatabaseContainer withOfficeId(String officeId){
         this.officeId = System.getProperty(BYPASS_CWMS_OFFICE_ID,officeId);
         return self();
     }
@@ -251,7 +251,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @param officeEroc
      * @return This Container
      */
-    public SELF withOfficeEroc(String officeEroc){
+    public CwmsDatabaseContainer withOfficeEroc(String officeEroc){
         this.officeEroc = System.getProperty(BYPASS_CWMS_OFFICE_EROC,officeEroc);
         return self();
     }
@@ -261,7 +261,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @param sysPassword
      * @return This Container
      */
-    public SELF withSysPassword(String sysPassword){
+    public CwmsDatabaseContainer withSysPassword(String sysPassword){
         this.sysPassword = System.getProperty(BYPASS_SYS_PASSWORD, sysPassword);
         return self();
     }
@@ -273,7 +273,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @param volumeName
      * @return This Container
      */
-    public SELF withVolumeName(String volumeName){
+    public CwmsDatabaseContainer withVolumeName(String volumeName){
         this.volumeName = volumeName;
         return self();
     }
@@ -286,7 +286,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @return This Container
      */
     @Override
-    public SELF withNetwork(Network network){
+    public CwmsDatabaseContainer withNetwork(Network network){
         setNetwork(network);
         return self();
     }
@@ -297,12 +297,12 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @param schemaVersion
      * @return This Container
      */
-    public SELF withSchemaVersion(String schemaVersion){
+    public CwmsDatabaseContainer withSchemaVersion(String schemaVersion){
         this.schemaVersion = schemaVersion;
         return self();
     }
 
-    public SELF withSchemaImage(String schemaImage){
+    public CwmsDatabaseContainer withSchemaImage(String schemaImage){
         this.cwmsImageName = schemaImage;
         this.schemaVersion = "";
         return self();
@@ -423,7 +423,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     }
 
     @Override
-    public SELF withLogConsumer( Consumer<OutputFrame> logConsumer ){
+    public CwmsDatabaseContainer withLogConsumer( Consumer<OutputFrame> logConsumer ){
         super.withLogConsumer(logConsumer);
         this.logConsumer = logConsumer;
         return self();
