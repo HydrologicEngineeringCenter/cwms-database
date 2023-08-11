@@ -27,7 +27,7 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 /**
  * An container manager to manage creation of CWMSDatabases for automated tests
  */
-public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> extends JdbcDatabaseContainer<SELF> {
+public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatabaseContainer> {
     public static final Logger log = LoggerFactory.getLogger(CwmsDatabaseContainer.class);
     public static final String ORACLE_19C= "registry.hecdev.net/oracle/database:19.3.0-ee";
     public static final String ORACLE_18XE = "registry.hecdev.net/oracle/database:18.4.0-xe";
@@ -51,10 +51,9 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
     //Oracle Portion
 
-    private String sysPassword = System.getProperty("cwms.database.syspw","SmallPass0wrd");
+    private String sysPassword = System.getProperty(BYPASS_SYS_PASSWORD,"SmallPass0wrd");
     private String volumeName = "cwms_test_db_volume";
     private String pdbName = "CWMS";
-
 
     private boolean bypass = System.getProperty(BYPASS_URL) != null;
 
@@ -70,7 +69,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     public CwmsDatabaseContainer(DockerImageName oracleImageName) {
 		super(oracleImageName);
 
-        if( oracleImageName.asCanonicalNameString().endsWith("-xe")){
+        if (oracleImageName.asCanonicalNameString().endsWith("-xe")) {
             log.debug("Set pluggable database name to XEPDB1");
             pdbName="XEPDB1";
             volumeName = volumeName + "_xe";
@@ -93,11 +92,11 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     }
 
     @Override
-    protected void configure(){
+    protected void configure() {
         log.debug("Configuring Database and Schema container");
 
         addExposedPorts(1521);
-        if( getNetwork() == null ){
+        if (getNetwork() == null) {
             setNetwork(Network.newNetwork());
         }
         
@@ -127,18 +126,11 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         );
         cwmsInstaller.dependsOn(this);
         cwmsInstaller.withReuse(true);
-        //setNetwork(oracle.getNetwork());
-        if( logConsumer != null ){
+        if ( logConsumer != null) {
             cwmsInstaller.withLogConsumer(this.logConsumer);
         }
         log.debug("Configuration Finished");
     }
-
-    /*
-	@Override
-	public void close() throws Exception {
-
-	}*/
 
     @Override
     protected void waitUntilContainerStarted() {
@@ -147,11 +139,11 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
     @Override
     protected void containerIsStarted(InspectContainerResponse containerInfo) {
-        if( bypass ) return;
+        if (bypass) return;
 
         super.containerIsStarted(containerInfo);
 
-        try{
+        try {
             executeSQL("alter system set JAVA_JIT_ENABLED=FALSE", "sys");
             log.debug("JAVA_JIT disabled");
         } catch( SQLException err ){
@@ -169,8 +161,8 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 	}
 
     @Override
-    public void start(){
-        if( bypass ) {
+    public void start() {
+        if (bypass) {
             log.debug("BYPASS_URL set to {}, skipping container start",System.getProperty(CwmsDatabaseContainer.BYPASS_URL));
             return;
         }
@@ -186,7 +178,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      */
 	@Override
 	public String getJdbcUrl() {
-        if( !bypass) {
+        if (!bypass) {
             return String.format("jdbc:oracle:thin:@%s:%d/%s?oracle.net.disableOob=true", getHost(),getMappedPort(1521),pdbName);
         } else {
             return System.getProperty(BYPASS_URL);
@@ -195,7 +187,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 	}
 
     public String getJdbcUrlInternal() {
-        if( !bypass) {
+        if (!bypass) {
             return String.format("jdbc:oracle:thin:@%s:%d/%s?oracle.net.disableOob=true", getNetworkAliases().get(0),1521,pdbName);
         } else {
             return System.getProperty(BYPASS_URL);
@@ -222,6 +214,14 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         return password;
 	}
 
+    /**
+     * Use sparingly. Prefer connection(c->{...},"sys") over opening you're own connection directly.
+     * @return The database sys password
+     */
+    public String getSysPassword() {
+        return this.sysPassword;
+    }
+
 	@Override
 	protected String getTestQueryString() {
 		return "select 1 from dual";
@@ -233,7 +233,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @param officeId
      * @return This Container
      */
-    public SELF withOfficeId(String officeId){
+    public CwmsDatabaseContainer withOfficeId(String officeId) {
         this.officeId = System.getProperty(BYPASS_CWMS_OFFICE_ID,officeId);
         return self();
     }
@@ -243,7 +243,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @param officeEroc
      * @return This Container
      */
-    public SELF withOfficeEroc(String officeEroc){
+    public CwmsDatabaseContainer withOfficeEroc(String officeEroc) {
         this.officeEroc = System.getProperty(BYPASS_CWMS_OFFICE_EROC,officeEroc);
         return self();
     }
@@ -253,7 +253,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @param sysPassword
      * @return This Container
      */
-    public SELF withSysPassword(String sysPassword){
+    public CwmsDatabaseContainer withSysPassword(String sysPassword) {
         this.sysPassword = System.getProperty(BYPASS_SYS_PASSWORD, sysPassword);
         return self();
     }
@@ -265,7 +265,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @param volumeName
      * @return This Container
      */
-    public SELF withVolumeName(String volumeName){
+    public CwmsDatabaseContainer withVolumeName(String volumeName) {
         this.volumeName = volumeName;
         return self();
     }
@@ -278,7 +278,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @return This Container
      */
     @Override
-    public SELF withNetwork(Network network){
+    public CwmsDatabaseContainer withNetwork(Network network) {
         setNetwork(network);
         return self();
     }
@@ -289,12 +289,12 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @param schemaVersion
      * @return This Container
      */
-    public SELF withSchemaVersion(String schemaVersion){
+    public CwmsDatabaseContainer withSchemaVersion(String schemaVersion) {
         this.schemaVersion = schemaVersion;
         return self();
     }
 
-    public SELF withSchemaImage(String schemaImage){
+    public CwmsDatabaseContainer withSchemaImage(String schemaImage) {
         this.cwmsImageName = schemaImage;
         this.schemaVersion = "";
         return self();
@@ -315,7 +315,6 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     public String getPdUser() {
         return officeEroc+"hectest_pu";
     }
-
 
     /**
      *
@@ -343,14 +342,11 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      */
     public void executeSQL( String theSQL, String user) throws SQLException {
         connection( (c) -> {
-
             try( Statement stmt = c.createStatement(); ){
                 stmt.execute(theSQL);
             } catch ( SQLException e ){
                 throw new RuntimeException(e);
             }
-
-
         }, user );
     }
 
@@ -362,15 +358,14 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @throws NoDriverFoundException
      */
     private Connection getConnection(String user) throws SQLException, NoDriverFoundException {
-        if( driverInstance == null ){
-            try{
+        if (driverInstance == null) {
+            try {
                 driverInstance = (Driver)Class.forName(this.getDriverClassName()).newInstance();
                 log.debug("Oracle Driver Loaded");
-            } catch( InstantiationException | IllegalAccessException | ClassNotFoundException e){
+            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
                 throw new NoDriverFoundException("Could not get driver", e);
             }
         }
-
 
         Properties info = new Properties();
         info.put("user", user.equals("sys") ? user +" as sysdba": user);
@@ -399,7 +394,6 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         try( Connection conn = getConnection(user);){
             function.accept(conn);
         }
-
     }
 
     /**
@@ -415,11 +409,9 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     }
 
     @Override
-    public SELF withLogConsumer( Consumer<OutputFrame> logConsumer ){
+    public CwmsDatabaseContainer withLogConsumer( Consumer<OutputFrame> logConsumer ){
         super.withLogConsumer(logConsumer);
         this.logConsumer = logConsumer;
         return self();
     }
-
-
 }
