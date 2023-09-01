@@ -139,7 +139,7 @@ from
          time_zone_name, 
          county_name, 
          state_initial,
-         nation_id,
+         n.long_name as nation_id,
          unit_system,
          unit_id,
          si_elevation*factor elevation,
@@ -151,7 +151,7 @@ from
          cwms_20.cwms_time_zone   t on ( t.time_zone_code   = p.time_zone_code ) left join
          cwms_20.cwms_county      c on ( c.county_code      = p.county_code )    left join 
          cwms_20.cwms_state       s on ( s.state_code       = c.state_code )     left join 
-         cwms_20.cwms_nation      n on ( n.nation_code      = p.nation_code )    cross join
+         cwms_20.cwms_nation_sp   n on ( n.fips_cntry       = p.nation_code )    cross join
          unit_system              u     
   where  location_code != 0
 );

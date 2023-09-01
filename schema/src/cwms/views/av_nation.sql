@@ -15,6 +15,6 @@ create or replace force view av_nation
    nation_name
 )
 as
-select nation_code as nation_id,
-       nation_id as nation_name
-  from cwms_nation;
+select fips_cntry as nation_id,
+       long_name as nation_name
+  from cwms_nation_sp;

@@ -398,17 +398,11 @@ begin
                'location.update_non_null_items_on_latlon_change',
                'false'))) = 1;
       end if;
-      if :new.county_code is null or mod(:new.county_code, 1000) = 0 or (l_lat_lon_changed and l_update_non_null) then
+      if :new.county_code is null or :new.county_code = 0 or (l_lat_lon_changed and l_update_non_null) then
          -------------------------------------
          -- get the county from the lat/lon --
          -------------------------------------
-         l_county_code := cwms_loc.get_county_code(:new.latitude, :new.longitude);
-         if l_county_code is not null then
-            :new.county_code := l_county_code;
-            if :new.nation_code is null then
-               :new.nation_code := 'US';
-            end if;
-         end if;
+         :new.county_code := cwms_loc.get_county_code(:new.latitude, :new.longitude);
       end if;
       if :new.nation_code is null or (l_lat_lon_changed and l_update_non_null) then
          ----------------------------------------------
@@ -420,7 +414,7 @@ begin
       -- validate nation/county combination --
       ----------------------------------------
       if cwms_loc.valid_county_code_for_nation(:new.county_code, :new.nation_code) != 'T' then
-         cwms_err.raise('ERROR', 'Cannot use county code of '||:new.county_code||' with nation code of '||:new.nation_code);
+         cwms_err.raise('ERROR', 'Cannot use county code of '||:new.county_code||' with nation code of '||nvl(:new.nation_code, '<NULL>'));
       end if;
       if :new.office_code is null or (l_lat_lon_changed and l_update_non_null) then
          ----------------------------------------------

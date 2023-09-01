@@ -2621,15 +2621,23 @@ AS
       p_y        in number)
       return varchar;
    /**
-    * Returns the nation id of the nation whose area the specified lat/lon is located
+    * Returns the nation id of the nation whose area the specified lat/lon is located, optionally with a buffer for offshore locations (default = 12 nautical miles)
     *
     * @param p_lat the latitude of the location to test
     * @param p_lon the longitude of the location to test
-    * @return the nation id that encompasses the lat/lon, or NULL if none
+    * @param p_buff the quantity of the buffer outside of a nation's border to use to consider it belonging to that nation
+    * @param p_unit the unit of the buffer outside of a nation's border to use to consider it belonging to that nation
+    * @param p_mult a flag (T/F) specifying whether to allow multiple nations' shapes to contain the point.
+    *               If F (default), such an occurrence will raise an exception.
+    *               If T the nation whose shape the point is most interior to (farthest from the nearest border) will be returned.
+    * @return the id of the nation that encompasses the lat/lon, or NULL if none
     */
    function get_nation_id(
-      p_lat in number,
-      p_lon in number)
+      p_lat  in number,
+      p_lon  in number,
+      p_buff in number   default 12,
+      p_unit in varchar2 default 'NAUT_MILE',
+      p_mult in varchar2 default 'F')
       return varchar2;
    /**
     * Returns the nation id of the nation in which the specified location is located
@@ -2641,15 +2649,23 @@ AS
       p_location_code in integer)
       return varchar2;
    /**
-    * Returns the office code of the office whose area the specified lat/lon is located
+    * Returns the office code of the office whose area the specified lat/lon is located, optionally with a buffer for offshore locations (default = 12 nautical miles)
     *
     * @param p_lat the latitude of the location to test
     * @param p_lon the longitude of the location to test
-    * @return the office code that encompasses the lat/lon, or NULL if none
+    * @param p_buff the quantity of the buffer outside of a district's border to use to consider it belonging to that district
+    * @param p_unit the unit of the buffer outside of a district's border to use to consider it belonging to that district
+    * @param p_mult a flag (T/F) specifying whether to allow multiple districts' shapes to contain the point.
+    *               If F (default), such an occurrence will raise an exception.
+    *               If T the district whose shape the point is most interior to (farthest from the nearest border) will be returned.
+    * @return the office code that encompasses the lat/lon
     */
    function get_bounding_ofc_code(
       p_lat in number,
-      p_lon in number)
+      p_lon in number,
+      p_buff in number   default 12,
+      p_unit in varchar2 default 'NAUT_MILE',
+      p_mult in varchar2 default 'F')
       return integer;
    /**
     * Returns the office id of the office whose area the specified lat/lon is located
@@ -2703,15 +2719,42 @@ AS
       p_office_id   in varchar2 default null)
       return varchar2;
    /**
-    * Returns the county code of the county whose area the specified lat/lon is located
+    * Returns the state code of the state whose area the specified lat/lon is located, optionally with a buffer for offshore locations (default = 12 nautical miles)
     *
     * @param p_lat the latitude of the location to test
     * @param p_lon the longitude of the location to test
-    * @return the county code that encompasses the lat/lon, or NULL if none
+    * @param p_buff the quantity of the buffer outside of a nation's border to use to consider it belonging to that state
+    * @param p_unit the unit of the buffer outside of a nation's border to use to consider it belonging to that state
+    * @param p_mult a flag (T/F) specifying whether to allow multiple states' shapes to contain the point.
+    *               If F (default), such an occurrence will raise an exception.
+    *               If T the state whose shape the point is most interior to (farthest from the nearest border) will be returned.
+    * @return the code of the state that encompasses the lat/lon. If no state is found then returns the "Unknown state" code
+    */
+   function get_state_code(
+      p_lat  in number,
+      p_lon  in number,
+      p_buff in number   default 12,
+      p_unit in varchar2 default 'NAUT_MILE',
+      p_mult in varchar2 default 'F')
+      return integer;
+   /**
+    * Returns the county code of the county whose area the specified lat/lon is located, optionally with a buffer for offshore locations (default = 12 nautical miles)
+    *
+    * @param p_lat the latitude of the location to test
+    * @param p_lon the longitude of the location to test
+    * @param p_buff the quantity of the buffer outside of a county's border to use to consider it belonging to that county
+    * @param p_unit the unit of the buffer outside of a county's border to use to consider it belonging to that county
+    * @param p_mult a flag (T/F) specifying whether to allow multiple countys' shapes to contain the point.
+    *               If F (default), such an occurrence will raise an exception.
+    *               If T the county whose shape the point is most interior to (farthest from the nearest border) will be returned.
+    * @return the code of the county that encompasses the lat/lon. If no county is found then returns the "Uknown County" code for the state that encompasses the location
     */
    function get_county_code(
-      p_lat in number,
-      p_lon in number)
+      p_lat  in number,
+      p_lon  in number,
+      p_buff in number   default 12,
+      p_unit in varchar2 default 'NAUT_MILE',
+      p_mult in varchar2 default 'F')
       return integer;
    /**
     * Returns the county and state ids of the county whose area the specified lat/lon is located
@@ -2765,15 +2808,19 @@ AS
       p_office_id   in varchar2 default null)
       return str_tab_t;
    /**
-    * Returns the city nearest to the specified lat/lon
+    * Returns the city nearest to the specified lat/lon, within a specified range (default 500 miles)
     *
     * @param p_lat the latitude of the location to test
     * @param p_lon the longitude of the location to test
+    * @param p_buff the quantity of range to search for the nearest city
+    * @param p_unit the unit of quantity of range to search for the nearest city
     * @return the city and state nearest to the location in a str_tab_t object
     */
    function get_nearest_city(
       p_lat in number,
-      p_lon in number)
+      p_lon in number,
+      p_buff in number   default 500,
+      p_unit in varchar2 default 'MILE')
       return str_tab_t;
    /**
     * Returns the city nearest to the specified location

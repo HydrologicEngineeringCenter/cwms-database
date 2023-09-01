@@ -225,7 +225,7 @@ begin
              lk.location_kind_id,
              o.office_id,
              o.public_name,
-             n.nation_id
+             n.long_name
         into l_lock_loc.state_initial,
              l_lock_loc.county_name,
              l_lock_loc.time_zone_name,
@@ -242,7 +242,7 @@ begin
              cwms_location_kind lk,
              at_base_location bl,
              cwms_office o,
-             cwms_nation n
+             cwms_nation_sp n
        where c.county_code = nvl(l_lock_loc_rec.county_code, 0)
          and s.state_code = c.state_code
          and tz.time_zone_code = nvl(l_lock_loc_rec.time_zone_code, 0)
@@ -252,7 +252,7 @@ begin
          and lk.location_kind_code = nvl(l_lock_loc_rec.location_kind, 1)
          and o.office_code = nvl(l_lock_loc_rec.office_code, 0)
          -- and o.office_code = l_lock_loc_rec.office_code
-         and n.nation_code = nvl(l_lock_loc_rec.nation_code, 'US');
+         and n.fips_cntry = nvl(l_lock_loc_rec.nation_code, 'US');
    exception
       when no_data_found then
          cwms_err.raise(
@@ -267,7 +267,7 @@ begin
             ||chr(10)||chr(9)||'at_location_kind.office_code          = at_base_location.db_office_code'
             ||chr(10)||chr(9)||'at_location_kind.location_kind_code   = '||nvl(l_lock_loc_rec.location_kind, -1)
             ||chr(10)||chr(9)||'cwms_office.office_code               = '||nvl(l_lock_loc_rec.office_code, -1)
-            ||chr(10)||chr(9)||'cwms_nation.nation_code               = '||nvl(l_lock_loc_rec.nation_code, 'XX'));
+            ||chr(10)||chr(9)||'cwms_nation_sp.fips_cntry             = '||nvl(l_lock_loc_rec.nation_code, 'XX'));
    end;    
    ----------------------------    
    -- create the lock object --

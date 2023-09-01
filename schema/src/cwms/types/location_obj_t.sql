@@ -31,7 +31,7 @@ as object
 (
    location_ref         location_ref_t,
    state_initial        VARCHAR2 (2),
-   county_name          VARCHAR2 (40),
+   county_name          VARCHAR2 (60),
    time_zone_name       VARCHAR2 (28),
    location_type        VARCHAR2 (32),
    latitude             NUMBER,
