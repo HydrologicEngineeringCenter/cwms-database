@@ -169,7 +169,7 @@ begin
                 l.published_longitude,
                 o.office_id as bounding_office_id,
                 o.public_name as bounding_office_name,
-                n.nation_id,
+                n.long_name as nation_id,
                 l.nearest_city
            from ( select pl.location_code,
                          bl.base_location_id,
@@ -212,7 +212,7 @@ begin
                 left outer join cwms_time_zone     tz on tz.time_zone_code = l.time_zone_code
                 left outer join cwms_location_kind lk on lk.location_kind_code = l.location_kind
                 left outer join cwms_office        o  on o.office_code = l.office_code
-                left outer join cwms_nation        n  on n.nation_code = l.nation_code
+                left outer join cwms_nation_sp     n  on n.fips_cntry = l.nation_code
       )
    loop
       l_temp_location_ref := new location_ref_t (

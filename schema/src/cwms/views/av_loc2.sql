@@ -334,10 +334,10 @@ as
                    -- nation --
                    ------------
                    select pl.location_code,
-                          nt.nation_id
+                          nt.long_name as nation_id
                      from at_physical_location pl,
-                          cwms_nation nt
-                    where nt.nation_code = pl.nation_code
+                          cwms_nation_sp nt
+                    where nt.fips_cntry = pl.nation_code
                   ) q45 on q45.location_code = q41.location_code
           ) q4 on q4.location_code = q1.location_code
           left outer join
@@ -416,10 +416,10 @@ as
                    -- nation --
                    ------------
                    select pl.location_code,
-                          nt.nation_id
+                          nt.long_name as nation_id
                      from at_physical_location pl,
-                          cwms_nation nt
-                    where nt.nation_code = pl.nation_code
+                          cwms_nation_sp nt
+                    where nt.fips_cntry = pl.nation_code
                   ) q55 on q55.location_code = q51.location_code
           ) q5 on q5.location_code = q1.base_location_code
 /

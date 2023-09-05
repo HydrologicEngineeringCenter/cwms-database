@@ -1,5 +1,6 @@
 set serveroutput on
 declare
+   do_execute boolean := false;
    cmd varchar2(128);
 begin
    for c in (select owner,
@@ -11,8 +12,11 @@ begin
                and object_type in ('PACKAGE', 'TYPE'))
    loop
       cmd := 'alter '||c.object_type||' '||c.owner||'.'||c.object_name||' compile debug specification';
-      dbms_output.put_line (cmd);
-      execute immediate cmd;
+      if do_execute then
+         execute immediate cmd;
+      else
+         dbms_output.put_line (cmd||';');
+      end if;
    end loop;
    for c in (select owner,
                     object_name,
@@ -22,8 +26,11 @@ begin
                 and object_type in ('PACKAGE BODY', 'TYPE BODY'))
    loop
       cmd := 'alter '||c.object_type||' '||c.owner||'.'||c.object_name||' compile debug body';
-      dbms_output.put_line (cmd);
-      execute immediate cmd;
+      if do_execute then
+         execute immediate cmd;
+      else
+         dbms_output.put_line (cmd||';');
+      end if;
    end loop;
    for c in (select owner,
                     object_name,
@@ -33,8 +40,11 @@ begin
                 and object_type in ('TRIGGER','PROCEDURE','FUNCTION'))
    loop
       cmd := 'alter '||c.object_type||' '||c.owner||'.'||c.object_name||' compile debug';
-      dbms_output.put_line (cmd);
-      execute immediate cmd;
+      if do_execute then
+         execute immediate cmd;
+      else
+         dbms_output.put_line (cmd||';');
+      end if;
    end loop;
 end;
 /

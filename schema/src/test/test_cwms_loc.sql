@@ -31,6 +31,8 @@ procedure test_cwdb_222_sublocation_vdi_inheritance;
 procedure test_cwdb_143_storing_elev_with_unknown_datum_offset;
 --%test(CWDB-159 Store location in Ontario, CA
 procedure test_cwdb_159_store_location_in_ontario_canada;
+--%test(CWDB-232 Improve creation of new locations with lat/lon)
+procedure test_cwdb_239_improve_creation_of_new_locations_with_lat_lon;
 
 procedure setup;
 procedure teardown;
@@ -649,7 +651,7 @@ AS
         ut.expect (l_bounding_office_id).to_equal ('NWP');
         ut.expect (l_nearest_city).to_equal ('Springfield');
         ut.expect (l_county).to_equal ('Lane');
-        ut.expect (l_country).to_equal ('UNITED STATES');
+        ut.expect (l_country).to_equal ('United States');
         ut.expect (l_location_kind_id).to_equal ('SITE');
 
         cwms_loc.store_location (p_location_id    => l_location_id,
@@ -1956,9 +1958,110 @@ AS
       end;
 
       ut.expect(l_rec.state_initial).to_equal('ON');
-      ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A');
-      ut.expect(l_rec.nation_id).to_equal('CANADA');
+      ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A for Ontario');
+      ut.expect(l_rec.nation_id).to_equal('Canada');
       ut.expect(l_rec.nearest_city).to_equal('Sault Ste. Marie');
    end test_cwdb_159_store_location_in_ontario_canada;
+   --------------------------------------------------------------------------------
+   -- procedure test_cwdb_239_improve_creation_of_new_locations_with_lat_lon
+   --------------------------------------------------------------------------------
+   procedure test_cwdb_239_improve_creation_of_new_locations_with_lat_lon
+   is
+      l_rec cwms_v_loc%rowtype;
+
+      function store_location(
+         p_latitude           in number,
+         p_longitude          in number,
+         p_county_name        in varchar2,
+         p_state_initial      in varchar2,
+         p_nation_id          in varchar2,
+         p_bounding_office_id in varchar2,
+         p_nearest_city       in varchar2,
+         p_delete             in boolean default true)
+      return cwms_v_loc%rowtype
+      is
+         ll_rec cwms_v_loc%rowtype;
+      begin
+         cwms_loc.store_location2(
+            p_location_id         => 'HUB',
+            p_location_type       => 'Climate Station',
+            p_elevation           => 0.0,
+            p_elev_unit_id        => 'm',
+            p_vertical_datum      => 'NGVD29',
+            p_latitude            => p_latitude,
+            p_longitude           => p_longitude,
+            p_horizontal_datum    => 'WGS84',
+            p_public_name         => 'Hubbard Glacier',
+            p_long_name           => 'Hubbard Glacier @ Gilbert Point',
+            p_description         => 'Hubbard Glacier @ Gilbert Point',
+            p_time_zone_id        => 'America/Anchorage' ,
+            p_county_name         => p_county_name,
+            p_state_initial       => p_state_initial,
+            p_bounding_office_id  => p_bounding_office_id,
+            p_nation_id           => p_nation_id,
+            p_nearest_city        => p_nearest_city,
+            p_db_office_id        => '&&office_id');
+
+         select * into ll_rec from cwms_v_loc where location_id = 'HUB' and unit_system = 'SI';
+
+         if p_delete then
+            cwms_loc.delete_location('HUB', cwms_util.delete_all, '&&office_id');
+         end if;
+
+         return ll_rec;
+      end;
+   begin
+      teardown;
+      -- create with valid lat/lon with null info
+      l_rec := store_location(59.994444444444, -139.486388888889, null, null, null, null, null);
+      ut.expect(l_rec.county_name).to_equal('Yakutat');
+      ut.expect(l_rec.state_initial).to_equal('AK');
+      ut.expect(l_rec.nation_id).to_equal('United States');
+      ut.expect(l_rec.bounding_office_id).to_equal('POA');
+      ut.expect(l_rec.nearest_city).to_equal('Juneau');
+      -- create with null lat/lon with null info
+      l_rec := store_location(null, null, null, null, null, null, null);
+      ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A for Unknown State or State N/A');
+      ut.expect(l_rec.state_initial).to_equal('00');
+      ut.expect(l_rec.nation_id).to_be_null;
+      ut.expect(l_rec.bounding_office_id).to_be_null;
+      ut.expect(l_rec.nearest_city).to_be_null;
+      -- create with bad lat/lon with null info
+      l_rec := store_location(0, 0, null, null, null, null, null);
+      ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A for Unknown State or State N/A');
+      ut.expect(l_rec.state_initial).to_equal('00');
+      ut.expect(l_rec.nation_id).to_be_null;
+      ut.expect(l_rec.bounding_office_id).to_equal('UNK');
+      ut.expect(l_rec.nearest_city).to_be_null;
+      -- create with null lat/lon with non-null info
+      l_rec := store_location(null, null, 'Yakutat', 'AK', 'US', 'POA', 'Juneau');
+      ut.expect(l_rec.county_name).to_equal('Yakutat');
+      ut.expect(l_rec.state_initial).to_equal('AK');
+      ut.expect(l_rec.nation_id).to_equal('United States');
+      ut.expect(l_rec.bounding_office_id).to_equal('POA');
+      ut.expect(l_rec.nearest_city).to_equal('Juneau');
+      -- create with bad lat/lon with non-null info
+      l_rec := store_location(0, 0, 'Yakutat', 'AK', 'US', 'POA', 'Juneau');
+      ut.expect(l_rec.county_name).to_equal('Yakutat');
+      ut.expect(l_rec.state_initial).to_equal('AK');
+      ut.expect(l_rec.nation_id).to_equal('United States');
+      ut.expect(l_rec.bounding_office_id).to_equal('POA');
+      ut.expect(l_rec.nearest_city).to_equal('Juneau');
+      -- create with valid lat/lon with non-null info (shoud be overriden by values retrieved by lat/lon)
+      l_rec := store_location(59.994444444444, -139.486388888889, 'King', 'WA', 'US', 'NWS', 'Seattle', p_delete => false);
+      ut.expect(l_rec.county_name).to_equal('Yakutat');
+      ut.expect(l_rec.state_initial).to_equal('AK');
+      ut.expect(l_rec.nation_id).to_equal('United States');
+      ut.expect(l_rec.bounding_office_id).to_equal('POA');
+      ut.expect(l_rec.nearest_city).to_equal('Juneau');
+      -- update with valid lat/lon with non-null info (should overwrite existing values)
+      l_rec := store_location(59.994444444444, -139.486388888889, 'King', 'WA', 'US', 'NWS', 'Seattle');
+      ut.expect(l_rec.county_name).to_equal('King');
+      ut.expect(l_rec.state_initial).to_equal('WA');
+      ut.expect(l_rec.nation_id).to_equal('United States');
+      ut.expect(l_rec.bounding_office_id).to_equal('NWS');
+      ut.expect(l_rec.nearest_city).to_equal('Seattle');
+
+   end test_cwdb_239_improve_creation_of_new_locations_with_lat_lon;
 END test_cwms_loc;
 /

@@ -392,56 +392,31 @@ AS
    -- get_county_code returns county_code
    --
    ------------------------------------------------------------------------------*/
-   FUNCTION get_county_code (p_county_name     IN VARCHAR2 DEFAULT NULL,
-                             p_state_initial   IN VARCHAR2 DEFAULT NULL
-                            )
-      RETURN NUMBER
-   IS
-      l_county_code      NUMBER;
-      l_county_name      VARCHAR2 (40);
-      l_state_initial   VARCHAR2 (2);
-   BEGIN
-      -- initialize l_county_name...
-      IF p_county_name IS NULL
-      THEN
-         l_county_name := 'Unknown County or County N/A';
-      ELSE
-         l_county_name := p_county_name;
-      END IF;
-
-      --
-      -- initialize l_state_initial...
-      IF p_state_initial IS NULL OR p_state_initial = '0'
-      THEN
-         l_state_initial := '00';
-      ELSE
-         l_state_initial := p_state_initial;
-      END IF;
-
-      --dbms_output.put_line('function: get_county_code_code');
-      SELECT   county_code
-        INTO   l_county_code
-        FROM   cwms_county
-       WHERE   UPPER (county_name) = UPPER (l_county_name)
-               AND state_code = get_state_code (l_state_initial);
-
-      RETURN l_county_code;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         raise_application_error (
-            -20214,
-               'Could not find '
-            || p_county_name
-            || ' county/parish '
-            || ' in '
-            || p_state_initial,
-            TRUE
-         );
-      WHEN OTHERS
-      THEN
-         RAISE;
-   END get_county_code;
+   function get_county_code (
+      p_county_name   in varchar2 default null,
+      p_state_initial in varchar2 default null)
+      return number
+   is
+      l_county_code number;
+      l_state_code  integer;
+   begin
+      l_state_code := get_state_code(upper(p_state_initial));
+      if p_county_name IS NULL then
+         l_county_code := 1000 * l_state_code;
+      else
+         begin
+            select county_code
+              into l_county_code
+              from cwms_county
+             where upper(county_name) = upper(p_county_name)
+               and state_code = l_state_code;
+         exception
+            when no_data_found then
+               cwms_err.raise('INVALID_ITEM', p_county_name, 'county for '||p_state_initial);
+         end;
+      end if;
+      return l_county_code;
+   end get_county_code;
 
 
    --********************************************************************** -
@@ -586,47 +561,83 @@ AS
       l_ret                    NUMBER;
       l_base_loc_exists        BOOLEAN := TRUE;
       l_sub_loc_exists          BOOLEAN := TRUE;
-      l_bounding_office_id     VARCHAR2 (16);
       l_location_kind_code     NUMBER := 1; -- SITE
       l_bounding_office_code    NUMBER := NULL;
       l_nation_code             VARCHAR2 (2);
-      l_cwms_office_code       NUMBER (14)
-                                  := cwms_util.get_office_code ('CWMS');
+      l_cwms_office_code       NUMBER (14) := cwms_util.get_office_code ('CWMS');
+      l_lat_lon_specified      boolean := p_latitude is not null and p_longitude is not null;
+      l_county_code            integer;
+      l_nearest_city           cwms_cities_sp.city_name%type;
    BEGIN
-      IF p_bounding_office_id IS NOT NULL
-      THEN
-         BEGIN
-            SELECT   office_code
-              INTO   l_bounding_office_code
-              FROM   cwms_office
-             WHERE   office_id = UPPER (p_bounding_office_id);
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               cwms_err.raise ('INVALID_ITEM',
-                               p_bounding_office_id,
-                               'office id'
-                              );
-         END;
-      END IF;
-
-      ------------------------------------------------
-      -- allow nation to be passed in as code or id --
-      ------------------------------------------------
-      if p_nation_id is null then
-         l_nation_code := null;
-      elsif length(p_nation_id) = 2 then
-         l_nation_code := upper(p_nation_id);
+      if l_lat_lon_specified then
+         l_county_code := get_county_code(p_latitude, p_longitude);
+         if mod(l_county_code, 1000) = 0 then
+            l_county_code := nvl(p_county_code, l_county_code);
+         end if;
+         l_nation_code := get_nation_id(p_latitude, p_longitude);
+         if l_nation_code is null and p_nation_id is not null then
+            ------------------------------------------------
+            -- allow nation to be passed in as code or id --
+            ------------------------------------------------
+            if length(p_nation_id) = 2 then
+               l_nation_code := upper(p_nation_id);
+            else
+               begin
+                  select fips_cntry
+                    into l_nation_code
+                    from cwms_nation_sp
+                   where upper(long_name) = upper(p_nation_id);
+               exception
+                  when no_data_found then
+                     cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
+               end;
+            end if;
+         end if;
+         l_bounding_office_code := get_bounding_ofc_code(p_latitude, p_longitude);
+         if l_bounding_office_code = 0 and p_bounding_office_id is not null then
+            begin
+               select office_code
+                 into l_bounding_office_code
+                 from cwms_office
+                where office_id = upper (p_bounding_office_id);
+            exception
+                  when no_data_found then
+                     cwms_err.raise ('INVALID_ITEM', p_bounding_office_id, 'office id');
+            end;
+         end if;
+         l_nearest_city := nvl(get_nearest_city(p_latitude, p_longitude)(1), p_nearest_city);
       else
-         begin
-            select nation_code
-              into l_nation_code
-              from cwms_nation
-             where nation_id = upper(p_nation_id);
-         exception
-            when no_data_found then
-               cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
-         end;
+         l_county_code := nvl(p_county_code, 0); -- 0 = unknown county, unknown state
+         ------------------------------------------------
+         -- allow nation to be passed in as code or id --
+         ------------------------------------------------
+         if p_nation_id is null then
+            l_nation_code := null;
+         elsif length(p_nation_id) = 2 then
+            l_nation_code := upper(p_nation_id);
+         else
+            begin
+               select fips_cntry
+                 into l_nation_code
+                 from cwms_nation_sp
+                where upper(long_name) = upper(p_nation_id);
+            exception
+               when no_data_found then
+                  cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
+            end;
+         end if;
+         if p_bounding_office_id is not null then
+            BEGIN
+               SELECT   office_code
+                 INTO   l_bounding_office_code
+                 FROM   cwms_office
+                WHERE   office_id = UPPER (p_bounding_office_id);
+            EXCEPTION
+                  when no_data_found then
+                     cwms_err.raise ('INVALID_ITEM', p_bounding_office_id, 'office id');
+               END;
+         end if;
+         l_nearest_city := p_nearest_city;
       end if;
       BEGIN
          -- Check if base_location exists -
@@ -743,7 +754,7 @@ AS
                            p_base_location_code,
                            p_base_location_code,
                            p_time_zone_code,
-                           p_county_code,
+                           l_county_code,
                            p_location_type,
                            p_elevation,
                            p_vertical_datum,
@@ -760,7 +771,7 @@ AS
                            p_published_longitude,
                            l_bounding_office_code,
                            l_nation_code,
-                           p_nearest_city
+                           l_nearest_city
                         );
 
                update_local_datum_name(p_base_location_code, p_vertical_datum);
@@ -802,7 +813,7 @@ AS
                               p_base_location_code,
                               p_sub_location_id,
                               p_time_zone_code,
-                              p_county_code,
+                              l_county_code,
                               p_location_type,
                               p_elevation,
                               p_vertical_datum,
@@ -819,7 +830,7 @@ AS
                               p_published_longitude,
                               l_bounding_office_code,
                               l_nation_code,
-                              p_nearest_city
+                              l_nearest_city
                            )
                RETURNING   location_code
                     INTO   p_location_code;
@@ -1260,7 +1271,7 @@ AS
          l_county_code := get_county_code (p_county_name, p_state_initial);
       ELSIF NOT l_ignorenulls
       THEN
-         l_county_code := NULL;
+         l_county_code := 0;
       END IF;
 
       ---------.
@@ -1345,16 +1356,20 @@ AS
       -----------------
       IF p_nation_id IS NOT NULL
       THEN
-         BEGIN
-            SELECT   nation_code
-              INTO   l_nation_code
-              FROM   cwms_nation
-             WHERE   nation_id = UPPER (p_nation_id);
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
-         END;
+         if length(p_nation_id) = 2 then
+            l_nation_code := p_nation_id;
+         else
+            BEGIN
+               SELECT   fips_cntry
+                 INTO   l_nation_code
+                 FROM   cwms_nation_sp
+                WHERE   upper(long_name) = UPPER (p_nation_id);
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+               THEN
+                  cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
+            END;
+         end if;
       ELSIF NOT l_ignorenulls
       THEN
          l_nation_code := NULL;
@@ -1697,7 +1712,7 @@ AS
          l_county_code := get_county_code (p_county_name, p_state_initial);
       ELSIF NOT l_ignorenulls
       THEN
-         l_county_code := NULL;
+         l_county_code := 0;
       END IF;
 
       ---------.
@@ -2024,18 +2039,48 @@ AS
          l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
       END IF;
 
-      ---------.
-      ---------.
-      -- Check and Update he State/County pair...
-      --
-      IF p_state_initial IS NULL AND p_county_name IS NOT NULL
-      THEN         -- Throw exception - if a county name is passed in one must.
-         -- also pass-in the county's state initials.
-         cwms_err.raise ('STATE_CANNOT_BE_NULL', 'CWMS_LOC');
-      ELSIF p_state_initial IS NOT NULL
-      THEN                               -- Find the corresponding county_code.
-         l_county_code := get_county_code (p_county_name, p_state_initial);
-      END IF;
+      if l_latitude is null or l_longitude is null then
+         ---------.
+         ---------.
+         -- Check and Update he State/County pair...
+         --
+         IF p_state_initial IS NULL AND p_county_name IS NOT NULL
+         THEN         -- Throw exception - if a county name is passed in one must.
+            -- also pass-in the county's state initials.
+            cwms_err.raise ('STATE_CANNOT_BE_NULL', 'CWMS_LOC');
+         ELSIF p_state_initial IS NOT NULL
+         THEN                               -- Find the corresponding county_code.
+            l_county_code := get_county_code (p_county_name, p_state_initial);
+         END IF;
+      else
+         l_county_code := get_county_code(l_latitude, l_longitude);
+         if l_county_code = 0 and p_state_initial is not null then
+            if p_county_name is null then
+               begin
+                  select state_code * 1000
+                    into l_county_code
+                    from cwms_state
+                   where state_initial = p_state_initial;
+               exception
+                  when no_data_found then
+                     cwms_err.raise('INVALID_ITEM', p_state_initial, 'state abbreviation');
+               end;
+            else
+               l_county_code := get_county_code (p_county_name, p_state_initial);
+            end if;
+            if l_county_code = 0 then
+               begin
+                  select state_code * 1000
+                    into l_county_code
+                    from cwms_state
+                   where state_initial = p_state_initial;
+               exception
+                  when no_data_found then
+                     cwms_err.raise('INVALID_ITEM', p_state_initial, 'state abbreviation');
+               end;
+            end if;
+         end if;
+      end if;
 
       ---------.
       ---------.
@@ -3717,10 +3762,10 @@ AS
       THEN
          p_nation_id := NULL;
       ELSE
-         SELECT   nation_id
+         SELECT   long_name
            INTO   p_nation_id
-           FROM   cwms_nation
-          WHERE   nation_code = l_nation_code;
+           FROM   cwms_nation_sp
+          WHERE   fips_cntry = l_nation_code;
       END IF;
 
       --
@@ -3824,7 +3869,7 @@ AS
       l_published_latitude    at_physical_location.published_latitude%TYPE;
       l_published_longitude   at_physical_location.published_longitude%TYPE;
       l_bounding_office_id    cwms_office.office_id%TYPE;
-      l_nation_id             cwms_nation.nation_id%TYPE;
+      l_nation_id             cwms_nation_sp.long_name%TYPE;
       l_nearest_city          at_physical_location.nearest_city%TYPE;
    BEGIN
       retrieve_location2 (p_location_id,
@@ -5644,7 +5689,7 @@ end unassign_loc_groups;
                            pl.published_longitude published_longitude,
                            o2.office_id bounding_office_id,
                            o2.public_name bounding_office_name,
-                           n.nation_id nation_id,
+                           n.long_name nation_id,
                            pl.nearest_city nearest_city
                     FROM   at_physical_location pl
                            LEFT OUTER JOIN at_base_location bl
@@ -5658,8 +5703,8 @@ end unassign_loc_groups;
                               ON (pl.county_code = c.county_code)
                            LEFT OUTER JOIN cwms_state s
                               ON (c.state_code = s.state_code)
-                           LEFT OUTER JOIN cwms_nation n
-                              ON (pl.nation_code = n.nation_code)
+                           LEFT OUTER JOIN cwms_nation_sp n
+                              ON (pl.nation_code = n.fips_cntry)
                            LEFT OUTER JOIN cwms_office o
                               ON (bl.db_office_code = o.office_code)
                            LEFT OUTER JOIN cwms_office o2
@@ -5693,7 +5738,7 @@ end unassign_loc_groups;
                                 rec.published_longitude,
                                 rec.bounding_office_id,
                                 rec.bounding_office_name,
-                                rec.nation_id,
+                                rec.long_name,
                                 rec.nearest_city
                                );
       END LOOP;
@@ -5773,7 +5818,7 @@ end unassign_loc_groups;
                                 p_location.published_latitude,
                                 p_location.published_longitude,
                                 p_location.bounding_office_id,
-                                p_location.nation_id,
+                                p_location.long_name,
                                 p_location.nearest_city,
                                 'T',
                                 p_location.location_ref.get_office_id
@@ -9431,8 +9476,11 @@ end unassign_loc_groups;
    end point_in_polygon;
 
    function get_nation_id(
-      p_lat in number,
-      p_lon in number)
+      p_lat  in number,
+      p_lon  in number,
+      p_buff in number   default 12,
+      p_unit in varchar2 default 'NAUT_MILE',
+      p_mult in varchar2 default 'F')
       return varchar2
    is
       l_codes str_tab_t;
@@ -9440,19 +9488,70 @@ end unassign_loc_groups;
       select fips_cntry
         bulk collect
         into l_codes
-        from cwms_nation_sp cn
+        from cwms_nation_sp
        where sdo_contains(
-         cn.shape,
-         sdo_geometry(
-            2001,
-            8265 ,
-            null,
-            mdsys.sdo_elem_info_array(1,1,1),
-            mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
-      return case
-             when l_codes.count = 1 then l_codes(1)
-             else null
-             end;
+               shape,
+               sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1), mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
+      case l_codes.count
+      when 0 then
+         --------------------------------------------------------
+         -- not in any nation's shape - select the closest one --
+         --------------------------------------------------------
+         if p_buff > 0 then
+            select fips_cntry
+              bulk collect
+              into l_codes
+              from cwms_nation_sp
+             where sdo_nn(shape,
+                          sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
+                          'distance='||p_buff||' unit='||p_unit||' sdo_num_res=1',
+                          1) = 'TRUE';
+         end if;
+         if l_codes.count is null or l_codes.count = 0 then
+            -- not within the specified or default buffer of any nation's shape
+            return null;
+         end if;
+         return l_codes(1);
+      when 1 then
+         ---------------------------------------------
+         -- normal case: only in one nation's shape --
+         ---------------------------------------------
+         return l_codes(1);
+      else
+         ---------------------------------
+         -- in multiple nations' shapes --
+         ---------------------------------
+         if upper(p_mult) in ('T', 'TRUE', 'Y', 'YES', '1') then
+            -- allow inclusion in multiple shapes
+            -- in select the one it's farthest from the closest border (most interior)
+            -- the distance from an interior point to a polygon is always 0, so we have to use individual vertices for distances
+            for rec in (select fips_cntry,
+                               min(sdo_geom.sdo_distance(
+                                      sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
+                                      sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(v.x, v.y)),
+                                      1.0)
+                                  ) as dist
+                        from cwms_nation_sp cn,
+                             table (sdo_util.getvertices((select shape from cwms_nation_sp where fips_cntry = cn.fips_cntry), 0)) v
+                         where fips_cntry in (select * from table(l_codes))
+                        group by fips_cntry
+                        order by dist desc
+                       )
+            loop
+               return rec.fips_cntry;
+            end loop;
+         else
+            -- do not allow inclusion in multiple shapes
+            cwms_err.raise(
+               'CWMS_ERROR',
+               'lat, lon of ('
+               ||p_lat
+               ||', '
+               ||p_lon
+               ||') evaluates to being in multiple nations: '
+               ||cwms_util.join_text(l_codes, ','));
+         end if;
+      end case;
    end get_nation_id;
 
    function get_nation_id_for_loc(
@@ -9470,28 +9569,82 @@ end unassign_loc_groups;
    end get_nation_id_for_loc;
 
    function get_bounding_ofc_code(
-      p_lat in number,
-      p_lon in number)
+      p_lat  in number,
+      p_lon  in number,
+      p_buff in number   default 12,
+      p_unit in varchar2 default 'NAUT_MILE',
+      p_mult in varchar2 default 'F')
       return integer
    is
-      l_codes number_tab_t;
+      l_codes str_tab_t;
    begin
       select office_code
         bulk collect
-        into l_codes
-        from cwms_agg_district ad
+        into l_codes -- auto cast number to varchar
+        from cwms_agg_district
        where sdo_contains(
-         ad.shape,
-         sdo_geometry(
-            2001,
-            8265 ,
-            null,
-            mdsys.sdo_elem_info_array(1,1,1),
-            mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
-      return case
-             when l_codes.count = 1 then l_codes(1)
-             else null
-             end;
+                shape,
+                sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1), mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
+      case l_codes.count
+      when 0 then
+         ----------------------------------------------------------
+         -- not in any district's shape - select the closest one --
+         ----------------------------------------------------------
+         if p_buff > 0 then
+            select office_code
+              bulk collect
+              into l_codes -- auto cast number to varchar
+              from cwms_agg_district
+             where sdo_nn(shape,
+                          sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
+                          'distance='||p_buff||' unit='||p_unit||' sdo_num_res=1',
+                          1) = 'TRUE';
+         end if;
+         if l_codes.count is null or l_codes.count = 0 then
+            -- not within the specified or default buffer of any district's shape
+            return 0; -- unknown office code
+         end if;
+         return l_codes(1); -- auto cast varchar to number
+      when 1 then
+         ---------------------------------------------
+         -- normal case: only in one district's shape --
+         ---------------------------------------------
+         return l_codes(1); -- auto cast varchar to number
+      else
+         -----------------------------------
+         -- in multiple districts' shapes --
+         -----------------------------------
+         if upper(p_mult) in ('T', 'TRUE', 'Y', 'YES', '1') then
+            -- allow inclusion in multiple shapes
+            -- in select the one it's farthest from the closest border (most interior)
+            -- the distance from an interior point to a polygon is always 0, so we have to use individual vertices for distances
+            for rec in (select office_code,
+                               min(sdo_geom.sdo_distance(
+                                      sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
+                                      sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(v.x, v.y)),
+                                      1.0)
+                                  ) as dist
+                        from cwms_agg_district cd,
+                             table (sdo_util.getvertices((select shape from cwms_agg_district where office_code = cd.office_code), 0)) v
+                         where office_code in (select * from table(l_codes))
+                        group by office_code
+                        order by dist desc
+                       )
+            loop
+               return rec.office_code;
+            end loop;
+         else
+            -- do not allow inclusion in multiple shapes
+            cwms_err.raise(
+               'CWMS_ERROR',
+               'lat, lon of ('
+               ||p_lat
+               ||', '
+               ||p_lon
+               ||') evaluates to being in multiple countys: '
+               ||cwms_util.join_text(l_codes, ','));
+         end if;
+      end case;
    end get_bounding_ofc_code;
 
    function get_bounding_ofc_id(
@@ -9555,33 +9708,168 @@ end unassign_loc_groups;
       return get_bounding_ofc_id_for_loc(get_location_code(p_office_id, p_location_id));
    end get_bounding_ofc_id_for_loc;
 
-   function get_county_code(
-      p_lat in number,
-      p_lon in number)
+   function get_state_code(
+      p_lat  in number,
+      p_lon  in number,
+      p_buff in number   default 12,
+      p_unit in varchar2 default 'NAUT_MILE',
+      p_mult in varchar2 default 'F')
       return integer
    is
-      l_codes      number_tab_t;
+      l_codes str_tab_t;
    begin
-   -- Make sure county code exists in cwms_county. Need to merger cwms_county and cwms_county_sp into one?
-   select county_code
-   bulk collect
-   into l_codes
-   from cwms_county where
-   county_code in (
-   select c.county_code
-     from cwms_county_sp c
-    where sdo_contains(
-      c.shape,
-      sdo_geometry(
-         2001,
-         8265 ,
-         null,
-         mdsys.sdo_elem_info_array(1,1,1),
-         mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE');
-      return case
-             when l_codes.count = 1 then l_codes(1)
-             else null
-             end;
+      select state_code
+        bulk collect
+        into l_codes -- auto cast number to varchar
+        from cwms_state_sp
+       where sdo_contains(
+                shape,
+                sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1), mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
+      case l_codes.count
+      when 0 then
+         -------------------------------------------------------
+         -- not in any state's shape - select the closest one --
+         -------------------------------------------------------
+         if p_buff > 0 then
+            select state_code
+              bulk collect
+              into l_codes -- auto cast number to varchar
+              from cwms_state_sp
+             where sdo_nn(shape,
+                          sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
+                          'distance='||p_buff||' unit='||p_unit||' sdo_num_res=1',
+                          1) = 'TRUE';
+         end if;
+         if l_codes.count is null or l_codes.count = 0 then
+            -- not within the specified or default buffer of any state's shape
+            return 0;
+         end if;
+         return l_codes(1); -- auto cast varchar to number
+      when 1 then
+         --------------------------------------------
+         -- normal case: only in one state's shape --
+         --------------------------------------------
+         return l_codes(1); -- auto cast varchar to number
+      else
+         --------------------------------
+         -- in multiple states' shapes --
+         --------------------------------
+         if upper(p_mult) in ('T', 'TRUE', 'Y', 'YES', '1') then
+            -- allow inclusion in multiple shapes
+            -- in select the one it's farthest from the closest border (most interior)
+            -- the distance from an interior point to a polygon is always 0, so we have to use individual vertices for distances
+            for rec in (select state_code,
+                               min(sdo_geom.sdo_distance(
+                                      sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
+                                      sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(v.x, v.y)),
+                                      1.0)
+                                  ) as dist
+                        from cwms_state_sp cs,
+                             table (sdo_util.getvertices((select shape from cwms_state_sp where state_code = cs.state_code), 0)) v
+                         where state_code in (select * from table(l_codes))
+                        group by state_code
+                        order by dist desc
+                       )
+            loop
+               return rec.state_code;
+            end loop;
+         else
+            -- do not allow inclusion in multiple shapes
+            cwms_err.raise(
+               'CWMS_ERROR',
+               'lat, lon of ('
+               ||p_lat
+               ||', '
+               ||p_lon
+               ||') evaluates to being in multiple states: '
+               ||cwms_util.join_text(l_codes, ','));
+         end if;
+      end case;
+   end get_state_code;
+
+   function get_county_code(
+      p_lat  in number,
+      p_lon  in number,
+      p_buff in number   default 12,
+      p_unit in varchar2 default 'NAUT_MILE',
+      p_mult in varchar2 default 'F')
+      return integer
+   is
+      l_codes str_tab_t;
+   begin
+      select county_code
+        bulk collect
+        into l_codes -- auto cast number to varchar
+        from cwms_county_sp
+       where sdo_contains(
+                shape,
+                sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1), mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
+      case l_codes.count
+      when 0 then
+         -------------------------------
+         -- not in any county's shape --
+         -------------------------------
+         -- first see if we're inside another nation without county information (e.g., Canada)
+         l_codes.extend;
+         l_codes(1) := get_nation_id(p_lat, p_lon, 0);
+         if l_codes(1) is not null then
+            return 0;
+         end if;
+         if p_buff > 0 then
+            select county_code
+              bulk collect
+              into l_codes -- auto cast number to varchar
+              from cwms_county_sp
+             where sdo_nn(shape,
+                          sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
+                          'distance='||p_buff||' unit='||p_unit||' sdo_num_res=1',
+                          1) = 'TRUE';
+         end if;
+         if l_codes.count is null or l_codes.count = 0 then
+            -- not within the specified or default buffer of any county's shape
+            return nvl(get_state_code(p_lat, p_lon, p_buff, p_unit, p_mult), 0) * 1000; -- return the "Unknown County" code for the appropriate state
+         end if;
+         return l_codes(1); -- auto cast varchar to number
+      when 1 then
+         ---------------------------------------------
+         -- normal case: only in one county's shape --
+         ---------------------------------------------
+         return l_codes(1); -- auto cast varchar to number
+      else
+         ----------------------------------
+         -- in multiple counties' shapes --
+         ----------------------------------
+         if upper(p_mult) in ('T', 'TRUE', 'Y', 'YES', '1') then
+            -- allow inclusion in multiple shapes
+            -- in select the one it's farthest from the closest border (most interior)
+            -- the distance from an interior point to a polygon is always 0, so we have to use individual vertices for distances
+            for rec in (select county_code,
+                               min(sdo_geom.sdo_distance(
+                                      sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
+                                      sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(v.x, v.y)),
+                                      1.0)
+                                  ) as dist
+                        from cwms_county_sp cc,
+                             table (sdo_util.getvertices((select shape from cwms_county_sp where county_code = cc.county_code), 0)) v
+                         where county_code in (select * from table(l_codes))
+                        group by county_code
+                        order by dist desc
+                       )
+            loop
+               return rec.county_code;
+            end loop;
+         else
+            -- do not allow inclusion in multiple shapes
+            cwms_err.raise(
+               'CWMS_ERROR',
+               'lat, lon of ('
+               ||p_lat
+               ||', '
+               ||p_lon
+               ||') evaluates to being in multiple countys: '
+               ||cwms_util.join_text(l_codes, ','));
+         end if;
+      end case;
    end get_county_code;
 
    function get_county_id(
@@ -9594,12 +9882,14 @@ end unassign_loc_groups;
    begin
       l_county_code := get_county_code(p_lat, p_lon);
       if l_county_code is not null then
-         select county,
-                state
+         select county_name,
+                state_initial
            into l_results(1),
                 l_results(2)
-           from cwms_county_sp
-          where county_code = l_county_code;
+           from cwms_county cc,
+                cwms_state cs
+          where cc.county_code = l_county_code
+            and cs.state_code = cc.state_code;
       end if;
       return l_results;
    end get_county_id;
@@ -9658,19 +9948,25 @@ end unassign_loc_groups;
 
    function get_nearest_city(
       p_lat in number,
-      p_lon in number)
+      p_lon in number,
+      p_buff in number   default 500,
+      p_unit in varchar2 default 'MILE')
       return str_tab_t
    is
-      l_results str_tab_t;
+      l_results str_tab_t := str_tab_t(null, null);
    begin
-      select str_tab_t(city_name, state_name)
-        into l_results
-        from cwms_cities_sp
-       where sdo_nn(shape,
-                    sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
-                    'sdo_num_res=1',
-                    1) = 'TRUE';
-       return l_results;
+      begin
+         select str_tab_t(city_name, state_name)
+           into l_results
+           from cwms_cities_sp
+          where sdo_nn(shape,
+                       sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
+                       'distance='||p_buff||' unit='||p_unit||' sdo_num_res=1',
+                       1) = 'TRUE';
+      exception
+         when others then null;
+      end;
+      return l_results;
    end get_nearest_city;
 
    function get_nearest_city_for_loc(
@@ -9725,7 +10021,7 @@ end unassign_loc_groups;
          time_zone_name      cwms_time_zone.time_zone_name%type,
          county              cwms_county.county_name%type,
          state_initial       cwms_state.state_initial%type,
-         nation_id           cwms_nation.nation_id%type,
+         nation_id           cwms_nation_sp.long_name%type,
          nearest_city        at_physical_location.nearest_city%type,
          bounding_office     cwms_office.office_id%type,
          location_kind       cwms_location_kind.location_kind_id%type,
@@ -10111,9 +10407,9 @@ end unassign_loc_groups;
              when pl1.nation_code is null then
                 case
                 when pl2.nation_code is null then null
-                else n2.nation_id
+                else n2.long_name
                 end
-             else n1.nation_id
+             else n1.long_name
              end,
              case
              when pl1.nearest_city is null then
@@ -10145,8 +10441,8 @@ end unassign_loc_groups;
              cwms_county c2,
              cwms_state s1,
              cwms_state s2,
-             cwms_nation n1,
-             cwms_nation n2,
+             cwms_nation_sp n1,
+             cwms_nation_sp n2,
              cwms_office o1,
              cwms_office o2,
              cwms_location_kind lk
@@ -10159,14 +10455,14 @@ end unassign_loc_groups;
          and tz1.time_zone_code = nvl(pl1.time_zone_code, 0)
          and c1.county_code = nvl(pl1.county_code, 0)
          and s1.state_code = c1.state_code
-         and n1.nation_code = nvl(pl1.nation_code, 'US')
+         and n1.fips_cntry = nvl(pl1.nation_code, 'US')
          and o1.office_code = nvl(pl1.office_code, 0)
          and lk.location_kind_code = pl1.location_kind
          and pl2.location_code = pl1.base_location_code
          and tz2.time_zone_code = nvl(pl2.time_zone_code, 0)
          and c2.county_code = nvl(pl2.county_code, 0)
          and s2.state_code = c2.state_code
-         and n2.nation_code = nvl(pl2.nation_code, 'US')
+         and n2.fips_cntry = nvl(pl2.nation_code, 'US')
          and o2.office_code = nvl(pl2.office_code, 0);
 
       l_count := l_count + l_locations(i).count;
@@ -10259,7 +10555,7 @@ end unassign_loc_groups;
             ||'</county><state>'
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).state_initial
             ||'</state><nation>'
-            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nation_id
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).long_name
             ||'</nation><nearest-city>'
             ||dbms_xmlgen.convert(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nearest_city, dbms_xmlgen.entity_encode)
             ||'</nearest-city><bounding-office>'
@@ -10336,7 +10632,7 @@ end unassign_loc_groups;
                    ||'}'
               end
             ||'},"political":{"nation":"'
-            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nation_id
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).long_name
             ||'","state":"'
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).state_initial
             ||'","county":"'
@@ -10413,7 +10709,7 @@ end unassign_loc_groups;
               end
             ||chr(9)
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).time_zone_name||chr(9)
-            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nation_id||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).long_name||chr(9)
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).state_initial||chr(9)
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).county||chr(9)
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nearest_city||chr(9)

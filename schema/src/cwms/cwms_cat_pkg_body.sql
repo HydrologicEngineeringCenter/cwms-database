@@ -2080,10 +2080,10 @@ END cat_ts_id;
                           from cwms_office
                       ) ofc on ofc.office_code = loc.bounding_office_code
                       left outer join
-                      ( select nation_code,
-                               nation_id
-                          from cwms_nation
-                      ) nat on nat.nation_code = loc.nation_code
+                      ( select fips_cntry,
+                               long_name as nation_id
+                          from cwms_nation_sp
+                      ) nat on nat.fips_cntry = loc.nation_code
              order by location_id asc;
          ELSE
             open p_cwms_cat for
@@ -2167,10 +2167,10 @@ END cat_ts_id;
                           from cwms_office
                       ) ofc on ofc.office_code = loc.bounding_office_code
                       left outer join
-                      ( select nation_code,
-                               nation_id
-                          from cwms_nation
-                      ) nat on nat.nation_code = loc.nation_code
+                      ( select fips_cntry,
+                               long_name as nation_id
+                          from cwms_nation_sp
+                      ) nat on nat.fips_cntry = loc.nation_code
              order by location_id asc;
          END IF;
       ELSE
@@ -2255,10 +2255,10 @@ END cat_ts_id;
                           from cwms_office
                       ) ofc on ofc.office_code = loc.bounding_office_code
                       left outer join
-                      ( select nation_code,
-                               nation_id
-                          from cwms_nation
-                      ) nat on nat.nation_code = loc.nation_code
+                      ( select fips_cntry,
+                               long_name as nation_id
+                          from cwms_nation_sp
+                      ) nat on nat.fips_cntry = loc.nation_code
              order by location_id asc;
          ELSE
             open p_cwms_cat for
@@ -2339,10 +2339,10 @@ END cat_ts_id;
                           from cwms_office
                       ) ofc on ofc.office_code = loc.bounding_office_code
                       left outer join
-                      ( select nation_code,
-                               nation_id
-                          from cwms_nation
-                      ) nat on nat.nation_code = loc.nation_code
+                      ( select fips_cntry,
+                               long_name as nation_id
+                          from cwms_nation_sp
+                      ) nat on nat.fips_cntry = loc.nation_code
              order by location_id asc;
          END IF;
       END IF;
