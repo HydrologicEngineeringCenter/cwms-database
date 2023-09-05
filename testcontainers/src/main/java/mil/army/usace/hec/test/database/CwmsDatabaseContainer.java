@@ -215,7 +215,7 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
 	}
 
     /**
-     * Use sparingly. Prefer connection(c->{...},"sys") over opening you're own connection directly.
+     * Use sparingly. Prefer connection(c-&gt;{...},"sys") over opening you're own connection directly.
      * @return The database sys password
      */
     public String getSysPassword() {
@@ -230,7 +230,7 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
 
     /**
      * The 3-4 letter office code you want this database to be for.
-     * @param officeId
+     * @param officeId CWMS Office ID
      * @return This Container
      */
     public CwmsDatabaseContainer withOfficeId(String officeId) {
@@ -240,7 +240,7 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
 
     /**
      * The two character (letter,digit) office identifier corresponding to the office ID you've choosen.
-     * @param officeEroc
+     * @param officeEroc CWMS Office EROC Code
      * @return This Container
      */
     public CwmsDatabaseContainer withOfficeEroc(String officeEroc) {
@@ -250,7 +250,7 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
 
     /**
      * What Oracle SYS password to use. NOTE: not required, a default is created for this instance
-     * @param sysPassword
+     * @param sysPassword Oracle sys password
      * @return This Container
      */
     public CwmsDatabaseContainer withSysPassword(String sysPassword) {
@@ -262,7 +262,7 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
     /**
      * Name of the docker volume to user for this run, it can be whatever you want locally but should be based
      * on branch name on the build server
-     * @param volumeName
+     * @param volumeName docker volume that will be used for this Oracle instance.
      * @return This Container
      */
     public CwmsDatabaseContainer withVolumeName(String volumeName) {
@@ -274,7 +274,7 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
      * Allows downstream users to
      * 1) set the network directly
      * 2) have a cleaner structure by avoiding unnecessary type conversions
-     * @param network
+     * @param network docker network.
      * @return This Container
      */
     @Override
@@ -286,7 +286,7 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
     /**
      * What version of the cwms database you desire for this test. It should only be the version number
      * e.g. 18-SNAPSHOT, or 18.1.9, etc
-     * @param schemaVersion
+     * @param schemaVersion cwms database schema docker image version tag
      * @return This Container
      */
     public CwmsDatabaseContainer withSchemaVersion(String schemaVersion) {
@@ -294,6 +294,11 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
         return self();
     }
 
+    /**
+     * Full schema installer image
+     * @param schemaImage fully qualified to a schema installer.
+     * @return
+     */
     public CwmsDatabaseContainer withSchemaImage(String schemaImage) {
         this.cwmsImageName = schemaImage;
         this.schemaVersion = "";
@@ -327,7 +332,7 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
     /**
      * Execute a block of sql, it can be any valid sql but assumes there is no returned contents to the user
      * Default to executing with the user from getUsername();
-     * @param theSQL
+     * @param theSQL SQL that will be executed in a plain "createStatement" statement.
      * @throws SQLException
      */
     public void executeSQL( String theSQL ) throws SQLException {
@@ -336,8 +341,8 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
 
     /**
      * As executeSQL without a user, but instead use the specified username.
-     * @param theSQL
-     * @param user
+     * @param theSQL SQL that will be executed in a plain statement
+     * @param user Oracle user to run theSQL as.
      * @throws SQLException
      */
     public void executeSQL( String theSQL, String user) throws SQLException {
@@ -376,8 +381,11 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
     }
 
     /**
-     * Get an open connection from the system and perform arbitrary JDBC commands."
-     * @param function
+     * Get an open connection from the system and perform arbitrary JDBC commands.
+     * NOTE: the connection WILL be closed after the function returns. Do NOT hold a reference
+     * to it.
+     *
+     * @param function Consumer that will use the connection in any way it wants. 
      * @throws SQLException
      */
     public void connection ( Consumer<java.sql.Connection> function ) throws SQLException {
@@ -386,8 +394,8 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
 
     /**
      * As connection without a user, but uses the specified username instead of the default
-     * @param function
-     * @param user
+     * @param function Consumer that will use the connection in any way it wants. 
+     * @param user Oracle user to open the connection as.
      * @throws SQLException
      */
     public void connection( Consumer<java.sql.Connection> function, String user ) throws SQLException{
@@ -398,8 +406,8 @@ public final class CwmsDatabaseContainer extends JdbcDatabaseContainer<CwmsDatab
 
     /**
      * As connection without a user, but uses the specified username instead of the default
-     * @param function
-     * @param user
+     * @param function Function that will return a value after performing operations on the connection.
+     * @param user Oracle user to open the connection as
      * @throws SQLException
      */
     public <T> T  connection( Function<java.sql.Connection, T> function, String user ) throws SQLException{

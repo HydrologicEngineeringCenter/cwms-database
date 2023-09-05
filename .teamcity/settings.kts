@@ -249,6 +249,13 @@ object TestContainer : BuildType({
             jdkHome ="%env.JDK_1_8_x64%"
         }
         gradle {
+            name = "JavaDoc"
+            workingDir="testcontainers"
+            tasks = "javadoc"
+            gradleParams="--info -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER% -Dtestcontainer.cwms.bypass.sys.pass=antsyspassword -PmavenUser=%env.NEXUS_USER% -PmavenPassword=%env.NEXUS_PASSWORD%"
+            jdkHome ="%env.JDK_1_8_x64%"
+        }
+        gradle {
             name = "SonarQube Analysis"
             workingDir = "testcontainers"
 
