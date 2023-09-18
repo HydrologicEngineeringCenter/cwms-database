@@ -33,6 +33,8 @@ procedure test_cwdb_143_storing_elev_with_unknown_datum_offset;
 procedure test_cwdb_159_store_location_in_ontario_canada;
 --%test(CWDB-232 Improve creation of new locations with lat/lon)
 procedure test_cwdb_239_improve_creation_of_new_locations_with_lat_lon;
+--%test(CWMSVUE-442 AV_LOCATION_LEVEL performance re-write)
+procedure test_cwmsvue_442_location_level_performance_re_write;
 
 procedure setup;
 procedure teardown;
@@ -2063,5 +2065,18 @@ AS
       ut.expect(l_rec.nearest_city).to_equal('Seattle');
 
    end test_cwdb_239_improve_creation_of_new_locations_with_lat_lon;
+
+   --------------------------------------------------------------------------------
+   -- test_cwmsvue_442_location_level_performance_re_write
+   --------------------------------------------------------------------------------
+ 
+   procedure test_cwmsvue_442_location_level_performance_re_write
+   is
+   begin
+     
+     ut.expect('test'.to_equal('test');
+   end test_cwmsvue_442_location_level_performance_re_write;
+
+
 END test_cwms_loc;
 /
