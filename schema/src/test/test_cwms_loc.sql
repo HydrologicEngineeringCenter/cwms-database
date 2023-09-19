@@ -33,6 +33,8 @@ procedure test_cwdb_143_storing_elev_with_unknown_datum_offset;
 procedure test_cwdb_159_store_location_in_ontario_canada;
 --%test(CWDB-232 Improve creation of new locations with lat/lon)
 procedure test_cwdb_239_improve_creation_of_new_locations_with_lat_lon;
+--%test(CWMS_LOC.GET_LOCAL_TIMEZONE() returns NULL instead of 'UTC' when time zone is null)
+procedure test_get_local_timezone_returns_null;
 
 procedure setup;
 procedure teardown;
@@ -2063,5 +2065,19 @@ AS
       ut.expect(l_rec.nearest_city).to_equal('Seattle');
 
    end test_cwdb_239_improve_creation_of_new_locations_with_lat_lon;
+   --------------------------------------------------------------------------------
+   -- procedure test_get_local_timezone_returns_null
+   --------------------------------------------------------------------------------
+   procedure test_get_local_timezone_returns_null
+   is
+   begin
+      teardown;
+      cwms_loc.store_location2(
+         p_location_id         => 'TestLoc1',
+         p_db_office_id        => '&&office_id');
+      commit;
+      ut.expect(cwms_loc.get_local_timezone('TestLoc1', '&&office_id')).to_be_null;
+   end test_get_local_timezone_returns_null;
+
 END test_cwms_loc;
 /

@@ -1022,7 +1022,8 @@ AS
     --------------------------------------------------------------------------------
     PROCEDURE quality_on_generated_rts_values__JIRA_CWMSVIEW_212
     IS
-        l_ts_id          VARCHAR2 (191) := test_base_location_id || '.Code.Inst.1Day.0.QualityTest';
+        l_location_id    VARCHAR2 (57) := test_base_location_id||'_1'; -- prevent deadlock with other tests
+        l_ts_id          VARCHAR2 (191) := l_location_id || '.Code.Inst.1Day.0.QualityTest';
         l_office_id      VARCHAR2 (16) := '&&office_id';
         l_start_time     DATE := DATE '2022-03-01';
         l_value_count    PLS_INTEGER := 11;
@@ -1054,10 +1055,15 @@ AS
         ------------------------
         -- store the location --
         ------------------------
-        cwms_loc.store_location (p_location_id    => test_base_location_id,
+        begin
+           cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
+        exception
+           when others then null;
+        end;
+        cwms_loc.store_location (p_location_id    => l_location_id,
                                  p_time_zone_id   => l_time_zone,
                                  p_active         => 'T',
-                                 p_db_office_id   => '&&office_id');
+                                 p_db_office_id   => l_office_id);
         ----------------------------------
         -- store the time series as RTS --
         ----------------------------------
