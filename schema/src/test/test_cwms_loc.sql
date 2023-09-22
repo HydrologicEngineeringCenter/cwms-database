@@ -2074,7 +2074,7 @@ AS
    is
    begin
      
-     ut.expect('test'.to_equal('test');
+     ut.expect('test').to_equal('test');
    end test_cwmsvue_442_location_level_performance_re_write;
 
 
