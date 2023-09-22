@@ -2080,3 +2080,6 @@ AS
 
 END test_cwms_loc;
 /
+
+show errors;
+
