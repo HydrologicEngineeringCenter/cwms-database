@@ -3551,40 +3551,35 @@ AS
                            p_db_office_id
                           );
       EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            RAISE;
-         WHEN OTHERS
-         THEN
-            CASE
-            WHEN instr(lower(sqlerrm), 'time zone') > 0 THEN
+         WHEN OTHERS THEN
+            IF instr(sqlerrm, 'LOCATION_ID_NOT_FOUND') = 0 THEN
                RAISE;
             ELSE
-            create_location2 (p_location_id,
-                              p_location_type,
-                              p_elevation,
-                              p_elev_unit_id,
-                              p_vertical_datum,
-                              p_latitude,
-                              p_longitude,
-                              p_horizontal_datum,
-                              p_public_name,
-                              p_long_name,
-                              p_description,
-                              p_time_zone_id,
-                              p_county_name,
-                              p_state_initial,
-                              p_active,
-                              p_location_kind_id,
-                              p_map_label,
-                              p_published_latitude,
-                              p_published_longitude,
-                              p_bounding_office_id,
-                              p_nation_id,
-                              p_nearest_city,
-                              p_db_office_id
-                             );
-            END CASE;
+               create_location2 (p_location_id,
+                                 p_location_type,
+                                 p_elevation,
+                                 p_elev_unit_id,
+                                 p_vertical_datum,
+                                 p_latitude,
+                                 p_longitude,
+                                 p_horizontal_datum,
+                                 p_public_name,
+                                 p_long_name,
+                                 p_description,
+                                 p_time_zone_id,
+                                 p_county_name,
+                                 p_state_initial,
+                                 p_active,
+                                 p_location_kind_id,
+                                 p_map_label,
+                                 p_published_latitude,
+                                 p_published_longitude,
+                                 p_bounding_office_id,
+                                 p_nation_id,
+                                 p_nearest_city,
+                                 p_db_office_id
+                                );
+            END IF;
       END;
    --
 
@@ -3924,14 +3919,14 @@ AS
       return varchar2
    is
       l_local_tz varchar2 (28);
+      l_tz_code  cwms_time_zone.time_zone_code%type;
    begin
+      l_tz_code := get_local_timezone_code(p_location_code);
+      if l_tz_code is not null then
       select time_zone_name
         into l_local_tz
         from cwms_time_zone
-       where time_zone_code = nvl(get_local_timezone_code(p_location_code), 0);
-
-      if l_local_tz = 'Unknown or Not Applicable' then
-         l_local_tz := 'UTC';
+          where time_zone_code = l_tz_code;
       end if;
 
       return l_local_tz;
