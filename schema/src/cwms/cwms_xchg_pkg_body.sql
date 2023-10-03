@@ -391,6 +391,8 @@ CREATE OR REPLACE package body cwms_xchg as
       l_mapping_codes        number_tab_t := new number_tab_t();
       l_pos                  integer;
       l_office_ids           vc16_by_pi;
+      l_office_code          pls_integer;
+      l_office_id            varchar2(16);
       l_datastore_id         varchar2(32);
       l_interpolate_units    varchar2(16);
       l_db_name              varchar2(61);
@@ -494,7 +496,7 @@ CREATE OR REPLACE package body cwms_xchg as
       writeln_xml('<cwms-dataexchange-configuration');
       indent;
       writeln_xml('xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"');
-      writeln_xml('xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/dataexchangeconfiguration.xsd">');
+      writeln_xml('xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/dataexchangeconfiguration_v2.xsd">');
       ------------------------
       -- output the offices --
       ------------------------
@@ -537,9 +539,13 @@ CREATE OR REPLACE package body cwms_xchg as
       ---------------------------
       l_db_name := cwms_util.get_db_name;
       l_oracle_id := db_datastore_id;
+      l_office_code := l_office_ids.first;
+      loop
+         exit when l_office_code is null;
+         l_office_id := l_office_ids(l_office_code);
       writeln_xml('<datastore>');
       indent;
-      writeln_xml('<oracle id="'||xml_encode(l_oracle_id)||'">');
+         writeln_xml('<oracle id="'||xml_encode(l_oracle_id)||'"'||' office-id="'||l_office_id||'">');
       indent;
       writeln_xml('<host>'||xml_encode(cwms_util.get_db_host)||'</host>');
       writeln_xml('<sid>'||xml_encode(l_db_name)||'</sid>');
@@ -547,6 +553,8 @@ CREATE OR REPLACE package body cwms_xchg as
       writeln_xml('</oracle>');
       dedent;
       writeln_xml('</datastore>');
+         l_office_code := l_office_ids.next(l_office_code);
+      end loop;
       for rec in (
          select office_code,
                 datastore_id,
@@ -610,8 +618,8 @@ CREATE OR REPLACE package body cwms_xchg as
          if rec.description is not null then
             writeln_xml('<description>'||xml_encode(rec.description)||'</description>');
          end if;
-         writeln_xml('<datastore-ref id="'||xml_encode(l_oracle_id)||'"/>');
-         writeln_xml('<datastore-ref id="'||xml_encode(l_datastore_id)||'"/>');
+         writeln_xml('<datastore-ref id="'||xml_encode(l_oracle_id)||'" office-id="'||l_office_ids(rec.office_code)||'"/>');
+         writeln_xml('<datastore-ref id="'||xml_encode(l_datastore_id)||'" office-id="'||l_office_ids(rec.office_code)||'"/>');
          if rec.start_time is not null then
             writeln_xml('<timewindow>');
             indent;
@@ -665,18 +673,15 @@ CREATE OR REPLACE package body cwms_xchg as
             indent;
             writeln_xml('<cwms-timeseries datastore-id="'
                         ||xml_encode(l_oracle_id)
-                        || case
-                             when rec2.db_office_id != l_office_ids(rec.office_code) then
-                                '" office-id="'
+                        || '" office-id="'
                                 || xml_encode(rec2.db_office_id)
-                             else
-                                null
-                           end
                         ||'">'
                         ||xml_encode(rec2.cwms_ts_id)
                         ||'</cwms-timeseries>');
             writeln_xml('<dss-timeseries datastore-id="'
                         || xml_encode(l_datastore_id)
+                        || '" office-id="'
+                        || xml_encode(rec2.db_office_id)
                         || '" type="'
                         || xml_encode(rec2.dss_parameter_type_id)
                         || '" units="'
