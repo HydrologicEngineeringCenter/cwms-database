@@ -1,6 +1,8 @@
 $(zipfile) : index.html \
 	dataexchangeconfiguration.xsd \
 	dataexchangeconfiguration.svg \
+	dataexchangeconfiguration_v2.xsd \
+	dataexchangeconfiguration_v2.svg \
 	hec-datatypes.xsd \
 	hec-datatypes.svg \
 	location-levels.xsd \
@@ -13,5 +15,5 @@ $(zipfile) : index.html \
 	python2 make_diagram.py $<
 
 clean :
-	rm $(zipfile) *.svg hec-datatypes.xsd *.log *.out
+	rm -fv $(zipfile) *.svg hec-datatypes.xsd *.log *.out
 

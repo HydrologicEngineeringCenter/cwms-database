@@ -133,8 +133,8 @@
 	To modify this file, edit the file named "hec-datatypes-template.xsd" used in building the database.
 -->
 <xs:schema xmlns:xs = "http://www.w3.org/2001/XMLSchema"
-           targetNamespace = "http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
-           xmlns = "http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
+           targetNamespace = "https://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
+           xmlns = "https://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
            elementFormDefault = "unqualified">
 
     <!--
@@ -1051,6 +1051,7 @@
       <xs:element maxOccurs="1" minOccurs="0" name="description" type="xs:string"/>
     </xs:sequence>
     <xs:attribute name="id" type="text80-type" use="optional"/>
+    <xs:attribute name="office-id" type="id16-type" use="optional"/>
   </xs:complexType>
   <!-- xs:element name="oracle" type="oracle-type" -->
   <!--
