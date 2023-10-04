@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           targetNamespace="http://www.hec.usace.army.mil/xmlSchema/cwms/dataexchangeconfiguration_v2"
-	       xmlns:dt="http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
+	       xmlns:dt="https://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
 		   xmlns:dx="http://www.hec.usace.army.mil/xmlSchema/cwms/dataexchangeconfiguration_v2"
 	       elementFormDefault="unqualified">
 	<!--
 		Import the data type schema
 	-->
-	<xs:import namespace="http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes" 
+	<xs:import namespace="https://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
 		  schemaLocation="hec-datatypes.xsd"/>
 	<!--
 		Data store

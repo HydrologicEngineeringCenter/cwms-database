@@ -3,7 +3,11 @@ import glob, os, re, subprocess, sys
 def make_diagram(filename) :
 	with open(filename, "r") as f : content = f.read()
 	m = re.search(r'targetNamespace\s*=\s*"(.+?)"', content)
-	schema_name = m.group(1).split("/")[-1].strip()
+        if m and m.group(1) :
+            schema_name = m.group(1).split("/")[-1].strip()
+        else :
+            schema_name = os.path.splitext(os.path.split(filename)[1])[0]
+        print("Schema name is %s" % schema_name)
 	cmd = "java -jar xsdvi.jar %s >%s.out 2>&1" % (filename, filename)
 	print(cmd)
 	rc = subprocess.call(cmd, shell=True)
