@@ -5238,7 +5238,8 @@ usgsFlowAdjustments = [
 	("BYPS", "Adjusted for other flows",   "The discharge at the gaging site was adjusted to account for bypass lateral tributary or diverted flows."),
 	("MAIN", "Main channel flow only",     "The discharge was from a measurement in the main channel only it does not include other channels in this stream."),
 	("TIDE", "Adjusted for tidal effect",  "The discharge was adjusted for tidal effect."),
-	("OTHR", "Adjusted for other factors", "The discharge was adjusted by a method not listed.(see measurement remarks).")
+	("OTHR", "Adjusted for other factors", "The discharge was adjusted by a method not listed.(see measurement remarks)."),
+        ("NONE", "Unknown",                    "Transfer from null code")
 ]
 
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing usgs rating control conditions \n")
