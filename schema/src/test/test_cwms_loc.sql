@@ -33,6 +33,8 @@ procedure test_cwdb_143_storing_elev_with_unknown_datum_offset;
 procedure test_cwdb_159_store_location_in_ontario_canada;
 --%test(CWDB-232 Improve creation of new locations with lat/lon)
 procedure test_cwdb_239_improve_creation_of_new_locations_with_lat_lon;
+--%test(CWMSVUE-442 AV_LOCATION_LEVEL performance re-write)
+procedure test_cwmsvue_442_location_level_performance_re_write;
 --%test(CWMS_LOC.GET_LOCAL_TIMEZONE() returns NULL instead of 'UTC' when time zone is null)
 procedure test_get_local_timezone_returns_null;
 
@@ -2065,6 +2067,106 @@ AS
       ut.expect(l_rec.nearest_city).to_equal('Seattle');
 
    end test_cwdb_239_improve_creation_of_new_locations_with_lat_lon;
+
+   --------------------------------------------------------------------------------
+   -- test_cwmsvue_442_location_level_performance_re_write
+   --------------------------------------------------------------------------------
+ 
+   procedure test_cwmsvue_442_location_level_performance_re_write
+   is
+      l_office_id    cwms_office.office_id%TYPE;
+      l_location_id  av_loc.location_id%TYPE;
+      l_loc_lvl_id   av_location_level.location_level_id%TYPE;
+      l_us           cwms_unit.unit_system%TYPE;
+      l_code         at_location_level.location_level_code%TYPE;
+      l_level        av_location_level.seasonal_level%TYPE;
+      l_test_level   av_location_level.seasonal_level%TYPE;
+      l_count        number;
+      
+   begin
+        --------------------------------
+        -- cleanup any previous tests --
+        --------------------------------
+        setup;
+
+        ----------------------------------------------------
+        -- create the location and four location levels
+        ----------------------------------------------------   
+        
+      -- create a location 
+
+      l_office_id := '&&office_id';
+      l_location_id := 'TestLoc1';
+      l_loc_lvl_id       := l_location_id || '.Flow-05Percentile.Const.1Day.CENWP-10year-thru2022-STATS';
+      l_us        := 'EN';      
+
+      cwms_loc.store_location ( p_location_id  => l_location_id, p_db_office_id => l_office_id);
+   
+      -- add four seasonal location_levels
+   
+     cwms_level.store_location_level4(
+         p_location_level_id => l_loc_lvl_id,
+         p_level_value       => null,
+         p_level_units       => 'cfs',
+         p_effective_date    => to_date('1900-01-01 08:00:00', 'yyyy-mm-dd hh24:mi:ss') ,
+         p_timezone_id       => 'UTC',
+         p_interval_origin   => to_date('2023-01-01 08:00:00', 'yyyy-mm-dd hh24:mi:ss'),
+         p_interval_months   => 12,
+         P_Expiration_Date   => null,                              
+         p_interpolate       => 'F',
+         p_fail_if_exists    => 'F',
+         p_office_id         => l_office_id,
+         p_seasonal_values   => cwms_t_seasonal_value_tab(
+      cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('00 00:00:00'), 5360.000000000001  ), 
+      cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('01 00:00:00'), 4880.000000000001  ), 
+      cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('02 00:00:00'), 3847.7754632288793 ), 
+      cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('03 00:00:00'), 7196.964366433549  )
+      ));
+   
+     
+      select count(*) 
+      into   l_count 
+      from   av_location_level 
+      where  office_id=l_office_id and unit_system=l_us and location_level_id=l_loc_lvl_id;   
+   
+      -- TEST FOR L_CODE=4
+      ut.expect (l_count).to_equal (4);
+   
+      -- TEST A SEASIONAL LOCATION LEVEL IN EN UNITS SYSTEM
+   
+      l_us     := 'EN';
+      l_test_level := 5360.000000000002d;
+      dbms_output.put_line ('l_test_level  = '||l_test_level);
+   
+      select seasonal_level
+      into   l_level 
+      from   av_location_level 
+      where  office_id         = l_office_id and 
+             unit_system       = l_us and 
+             location_level_id = l_loc_lvl_id and    
+             time_offset       = to_dsinterval('00 00:00:00');
+   
+      ut.expect (l_test_level).to_equal (l_level);   
+   
+      -- TEST A SEASIONAL LOCATION LEVEL IN SI UNITS SYSTEM
+   
+      l_us         := 'SI';
+      l_test_level := 151.77829773312004d;
+   
+      select seasonal_level
+      into   l_level 
+      from   av_location_level 
+      where  office_id         = l_office_id and 
+             unit_system       = l_us and 
+             location_level_id = l_loc_lvl_id and    
+             time_offset       = to_dsinterval('00 00:00:00');   
+   
+      ut.expect (l_test_level).to_equal (l_level);   
+
+   end test_cwmsvue_442_location_level_performance_re_write;
+
+
+
    --------------------------------------------------------------------------------
    -- procedure test_get_local_timezone_returns_null
    --------------------------------------------------------------------------------
@@ -2081,3 +2183,6 @@ AS
 
 END test_cwms_loc;
 /
+
+show errors;
+
