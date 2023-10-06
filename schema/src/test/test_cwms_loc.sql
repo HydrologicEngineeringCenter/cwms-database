@@ -2072,40 +2072,40 @@ AS
    -- test_cwmsvue_442_location_level_performance_re_write
    --------------------------------------------------------------------------------
  
-procedure test_cwmsvue_442_location_level_performance_re_write
+   procedure test_cwmsvue_442_location_level_performance_re_write
    is
-      l_office      cwms_office.office_id%TYPE;
-      l_id          av_location_level.location_level_id%TYPE;
-      l_us          cwms_unit.unit_system%TYPE;
-      l_code        at_location_level.location_level_code%TYPE;
-      l_level       av_location_level.seasonal_level%TYPE;
-      l_test_level  av_location_level.seasonal_level%TYPE;
-      l_count       number;
+      l_office_id    cwms_office.office_id%TYPE;
+      l_location_id  av_loc.location_id%TYPE;
+      l_loc_lvl_id   av_location_level.location_level_id%TYPE;
+      l_us           cwms_unit.unit_system%TYPE;
+      l_code         at_location_level.location_level_code%TYPE;
+      l_level        av_location_level.seasonal_level%TYPE;
+      l_test_level   av_location_level.seasonal_level%TYPE;
+      l_count        number;
+      
    begin
-      l_office := 'NWDP';
-      l_id     := 'GOSO.Flow-05Percentile.Const.1Day.CENWP-10year-thru2022-STATS';
-      l_us     := 'EN';
-   
-      -- drop the location level if it exists
-      -- assumes av_location_level will return correct results
-   
-      begin
-         select location_level_code 
-         into   l_code 
-         from   av_location_level 
-         where  office_id=l_office and unit_system=l_us and location_level_id=l_id and rownum=1;
-   
-         cwms_level.delete_location_level2 ( p_location_level_code => l_code,  p_cascade => 'T' , p_delete_indicators  => 'T' );
-  
-      exception when others then null;
-      end;
-   
-      commit;
+        --------------------------------
+        -- cleanup any previous tests --
+        --------------------------------
+        setup;
+
+        ----------------------------------------------------
+        -- create the location and four location levels
+        ----------------------------------------------------   
+        
+      -- create a location 
+
+      l_office_id := '&&office_id';
+      l_location_id := 'TestLoc1';
+      l_loc_lvl_id       := l_location_id || '.Flow-05Percentile.Const.1Day.CENWP-10year-thru2022-STATS';
+      l_us        := 'EN';      
+
+      cwms_loc.store_location ( p_location_id  => l_location_id, p_db_office_id => l_office_id);
    
       -- add four seasonal location_levels
    
-      cwms_level.store_location_level4(
-         p_location_level_id => l_id,
+     cwms_level.store_location_level4(
+         p_location_level_id => l_loc_lvl_id,
          p_level_value       => null,
          p_level_units       => 'cfs',
          p_effective_date    => to_date('1900-01-01 08:00:00', 'yyyy-mm-dd hh24:mi:ss') ,
@@ -2115,7 +2115,7 @@ procedure test_cwmsvue_442_location_level_performance_re_write
          P_Expiration_Date   => null,                              
          p_interpolate       => 'F',
          p_fail_if_exists    => 'F',
-         p_office_id         => l_office,
+         p_office_id         => l_office_id,
          p_seasonal_values   => cwms_t_seasonal_value_tab(
       cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('00 00:00:00'), 5360.000000000001  ), 
       cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('01 00:00:00'), 4880.000000000001  ), 
@@ -2123,14 +2123,11 @@ procedure test_cwmsvue_442_location_level_performance_re_write
       cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('03 00:00:00'), 7196.964366433549  )
       ));
    
-      commit;
-   
-      -- check, there should be 4 location level in the view
-      
+     
       select count(*) 
       into   l_count 
       from   av_location_level 
-      where  office_id=l_office and unit_system=l_us and location_level_id=l_id;   
+      where  office_id=l_office_id and unit_system=l_us and location_level_id=l_loc_lvl_id;   
    
       -- TEST FOR L_CODE=4
       ut.expect (l_count).to_equal (4);
@@ -2144,11 +2141,11 @@ procedure test_cwmsvue_442_location_level_performance_re_write
       select seasonal_level
       into   l_level 
       from   av_location_level 
-      where  office_id         = l_office and 
+      where  office_id         = l_office_id and 
              unit_system       = l_us and 
-             location_level_id = l_id and    
+             location_level_id = l_loc_lvl_id and    
              time_offset       = to_dsinterval('00 00:00:00');
-
+   
       ut.expect (l_test_level).to_equal (l_level);   
    
       -- TEST A SEASIONAL LOCATION LEVEL IN SI UNITS SYSTEM
@@ -2159,13 +2156,13 @@ procedure test_cwmsvue_442_location_level_performance_re_write
       select seasonal_level
       into   l_level 
       from   av_location_level 
-      where  office_id         = l_office and 
+      where  office_id         = l_office_id and 
              unit_system       = l_us and 
-             location_level_id = l_id and    
+             location_level_id = l_loc_lvl_id and    
              time_offset       = to_dsinterval('00 00:00:00');   
-
+   
       ut.expect (l_test_level).to_equal (l_level);   
-    
+
    end test_cwmsvue_442_location_level_performance_re_write;
 
 
