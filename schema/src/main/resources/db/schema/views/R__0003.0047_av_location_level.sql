@@ -1,3 +1,6 @@
+--delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL';
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL', null,
+'
 /**
  * Displays information about concrete location levels
  *
@@ -42,6 +45,7 @@
  * @field default_label               The label assoicated with the location level and the ''GENERAL/OTHER'' configuration, if any
  * @field source                      The source entity for the location level values
  */
+');
 
 --------------------------------------------------------------------------------
 -- AV_LOCATION_LEVEL_XXXX5h3
