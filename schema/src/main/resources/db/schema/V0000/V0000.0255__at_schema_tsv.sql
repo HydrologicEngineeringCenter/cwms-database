@@ -137,31 +137,16 @@ BEGIN
 END;
 /
 
-CREATE TABLE AT_TSV_COUNT
-(
-  DATA_ENTRY_DATE  TIMESTAMP(6) CONSTRAINT AT_TSVC_DATA_ENTRY_DATE_NN NOT NULL,
-  INSERTS          NUMBER(6) CONSTRAINT AT_TSVC_INSERTS_NN NOT NULL,
-  UPDATES          NUMBER(6) CONSTRAINT AT_TSVC_UPDATES_NN NOT NULL,
-  DELETES          NUMBER(6) CONSTRAINT AT_TSVC_DELETES_NN NOT NULL,
-  SELECTS          NUMBER(6),
-  CONSTRAINT AT_TSV_COUNT_PK
-  PRIMARY KEY
-  (DATA_ENTRY_DATE)
-  ENABLE VALIDATE
+create table at_tsv_count(
+  data_entry_date timestamp   constraint at_tsvc_data_entry_date_nn NOT NULL,
+  inserts         number(7,0) constraint at_tsvc_inserts_nn NOT NULL,
+  updates         number(7,0) constraint at_tsvc_updates_nn NOT NULL,
+  deletes         number(7,0) constraint at_tsvc_deletes_nn NOT NULL,
+  s_inserts       number(7,0) DEFAULT 0,
+  s_updates       number(7,0) DEFAULT 0,
+  s_deletes       number(7,0) DEFAULT 0,
+  constraint at_tsv_count_pk primary key (data_entry_date)
 )
-ORGANIZATION INDEX
-PCTTHRESHOLD 50
-TABLESPACE CWMS_20DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            NEXT             1M
-            MAXSIZE          UNLIMITED
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOLOGGING ;
+organization index
+nocompress
+tablespace CWMS_20DATA;

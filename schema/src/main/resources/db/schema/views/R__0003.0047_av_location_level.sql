@@ -1,6 +1,3 @@
---delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL', null,
-'
 /**
  * Displays information about concrete location levels
  *
@@ -44,21 +41,22 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL',
  * @field attribute_duration_id       The duration of the attribute, if any
  * @field default_label               The label assoicated with the location level and the ''GENERAL/OTHER'' configuration, if any
  * @field source                      The source entity for the location level values
- */
-');
+ *
+ * AV_LOCATION_LEVEL_XXXX5h3
+ * 
+ * XXXX5h3      MATERIALIZE the UNITS sub-select
+ *              calls CWMS_20 RETRIEVE_USER_UNIT_F with 4 parameters (no defaults)
+ *              This requires NULL parameter filtering for the attribute parameter
+ *              Tried using filtering WITH function (later permissions issue found)
+ *              Appears to be an Oracle bug: WITH function references resolved at run time
+ *              CASE expression filtering works
+*/
 
---------------------------------------------------------------------------------
--- AV_LOCATION_LEVEL_XXXX5h3
--- 
--- XXXX5h3      MATERIALIZE the UNITS sub-select
---              calls CWMS_20 RETRIEVE_USER_UNIT_F with 4 parameters (no defaults)
---              This requires NULL parameter filtering for the attribute parameter
---              Tried using filtering WITH function (later permissions issue found)
---              Appears to be an Oracle bug: WITH function references resolved at run time
---              CASE expression filtering works
---------------------------------------------------------------------------------
+create or replace function dash (p1 varchar2, p2 varchar2) return varchar2 as
+   begin
+      return p1 || case when p2 is not null then '-' end || p2;
+   end;
 
---create or replace force view av_location_level
 create or replace force view av_location_level
 ( OFFICE_ID, 
   LOCATION_LEVEL_ID, 
@@ -101,11 +99,7 @@ create or replace force view av_location_level
 )
 as
 with 
-function dash (p1 varchar2, p2 varchar2) return varchar2 as
-   begin
-      return p1||case when p2 is not null then '-' end||p2;
-      --return p1||NVL2(p2,'-'||p2,'');
-   end;
+
 parameters as
 (  select 
           c_bp1.base_parameter_code, 

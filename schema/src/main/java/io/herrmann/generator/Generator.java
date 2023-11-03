@@ -86,13 +86,12 @@ public abstract class Generator<T> implements Iterable<T> {
 
 	protected abstract void run() throws InterruptedException;
 
-	protected void yield(T element) throws InterruptedException {
+	protected void yield_element(T element) throws InterruptedException {
 		nextItem = element;
 		nextItemAvailable = true;
 		itemAvailableOrHasFinished.set();
 		itemRequested.await();
 	}
-
 	private void startProducer() {
 		assert producer == null;
 		if (THREAD_GROUP == null)
@@ -121,6 +120,5 @@ public abstract class Generator<T> implements Iterable<T> {
 	protected void finalize() throws Throwable {
 		producer.interrupt();
 		producer.join();
-		super.finalize();
 	}
 }

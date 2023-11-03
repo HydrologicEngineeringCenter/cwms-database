@@ -39,13 +39,17 @@ public class R__0001_quality extends BaseJavaMigration implements CwmsMigration 
     private Quality testFailedData;
     private Quality protectionData;
 
-    public void init() throws Exception {
+    public void init() {
 
         log.info("Loading Quality Data");
         CRC32 crc = new CRC32();
 
-        checksum = 12L;//crc.getValue();
-        query = readQuery("db/custom/quality/cwms_data_quality.sql");
+        checksum = crc.getValue();
+        try {
+            query = readQuery("db/custom/quality/cwms_data_quality.sql");
+        } catch (Exception ex) {
+            throw new RuntimeException("Unable to load quality data sql",ex);
+        }
 
     }
 
@@ -284,13 +288,13 @@ public class R__0001_quality extends BaseJavaMigration implements CwmsMigration 
         @Override
         protected void run() throws InterruptedException {
             if( this.n == 0 ) {
-                yield(List.of());
+                yield_element(List.of());
             } else {
                 for( int i = 0; i < this.items.size(); i++ ) {
                     for( List<QualityBitDescription> combos: new UniqueComboGenerator(this.items.subList(i+1, this.items.size()), this.n-1) ) {
                         ArrayList<QualityBitDescription> tmp = new ArrayList<>(Arrays.asList(this.items.get(i)));
                         tmp.addAll(combos);
-                        yield(tmp);
+                        yield_element(tmp);
                     }
                 }
             }
