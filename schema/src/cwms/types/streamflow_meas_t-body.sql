@@ -59,8 +59,8 @@ as
          self.flow_unit      := 'cfs';
          self.time_zone      := 'UTC';
 
-         if upper(self.ctrl_cond_id) = 'UNSPECIFED'    then self.ctrl_cond_id := 'Unspecified'; end if;
-         if upper(self.flow_adj_id) in ('NONE','UNKN') then self.flow_adj_id  := 'UNSP';        end if;
+         if upper(self.ctrl_cond_id) = 'UNSPECIFED' then self.ctrl_cond_id := 'Unspecified'; end if;
+         if upper(self.flow_adj_id)  = 'UNKN'       then self.flow_adj_id  := 'UNSP';        end if;
          
          select count(*) into l_field_count from cwms_usgs_meas_qual where qual_id = self.quality;
          if l_field_count = 0 then self.quality := null; end if;
@@ -297,6 +297,7 @@ as
             'CWMS streamflow measurement',
             self.location.office_id||'/'||self.location.get_location_id||' measurement number '||l_rec.meas_number);
       end if;
+      l_rec.date_time      := cwms_util.change_timezone(self.date_time, nvl(self.time_zone, 'UTC'), 'UTC');
       l_rec.used           := self.used;
       l_rec.party          := self.party;
       l_rec.agency_code    := get_entity_code(self.agency_id);
