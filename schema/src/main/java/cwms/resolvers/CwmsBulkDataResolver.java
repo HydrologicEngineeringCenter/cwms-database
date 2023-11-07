@@ -7,9 +7,7 @@ import java.util.List;
 
 import java.util.logging.Logger;
 
-import org.flywaydb.core.api.ResourceProvider;
-import org.flywaydb.core.api.configuration.Configuration;
-
+import org.flywaydb.core.api.CoreMigrationType;
 import org.flywaydb.core.api.resolver.MigrationResolver;
 import org.flywaydb.core.api.resolver.ResolvedMigration;
 import org.flywaydb.core.api.resource.LoadableResource;
@@ -18,11 +16,11 @@ import org.flywaydb.core.internal.resolver.ChecksumCalculator;
 public class CwmsBulkDataResolver implements MigrationResolver {
     public static final Logger log = Logger.getLogger(CwmsBulkDataResolver.class.getName());
 
-    public CwmsBulkDataResolver(){
+    public CwmsBulkDataResolver() {
     }
 
     @Override
-    public Collection<ResolvedMigration> resolveMigrations(Context context) {
+    public Collection<ResolvedMigration> resolveMigrations(MigrationResolver.Context context) {
         log.info("*************hello, scanning for CWMS Custom Migrations.*****");
 
         List<ResolvedMigration> migrations = new ArrayList<>();
@@ -35,21 +33,25 @@ public class CwmsBulkDataResolver implements MigrationResolver {
         return migrations;
     }
 
-    private void addMigrations(List<ResolvedMigration> migrations, String prefix, String suffix, Context context){
+    private void addMigrations(List<ResolvedMigration> migrations, String prefix, String suffix, MigrationResolver.Context context) {
+        final String fullPrefix = prefix+"__";
         log.info("finding CWMS Custom migrations");
         for (LoadableResource lr:  context.resourceProvider.getResources(prefix, new String[]{suffix})) {        
-            String filename = lr.getFilename();
+            String filename = lr.getAbsolutePath();
             log.fine(()->"*********" + filename +"**************");
-            
+            if (!filename.startsWith(fullPrefix)) {
+                log.fine("\tSkipped");
+                continue;
+            }
             Integer checkSum = ChecksumCalculator.calculate(lr);
             Integer equiv = ChecksumCalculator.calculate(lr);
-            DataResource dr = new DataResource(new File(lr.getAbsolutePath()));
+            DataResource dr = new DataResource(new File(lr.getAbsolutePathOnDisk()));
             migrations.add(new CwmsResolvedMigration(null,
                                                      lr.getFilename(),
                                                      lr.getRelativePath(),
                                                      checkSum, //checksum
                                                      equiv, //equivalentChecksum,
-                                                     BulkDataMigration.BULK_DATA,
+                                                     CoreMigrationType.CUSTOM,
                                                      lr.getAbsolutePath(),
                                                      new CwmsDataLoadExecutor(dr)));
         }

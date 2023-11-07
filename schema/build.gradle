@@ -1,13 +1,14 @@
 buildscript {
     dependencies {
-        classpath "com.oracle.database.jdbc:ojdbc8:$ORACLE_JDBC_VERSION"
+        classpath "com.oracle.database.jdbc:ojdbc11:$ORACLE_JDBC_VERSION"
+        classpath "org.flywaydb:flyway-database-oracle:10.0.0"
     }
 
 }
 
 plugins {
     id 'java'
-    id 'org.flywaydb.flyway' version '8.4.4'
+    id 'org.flywaydb.flyway' version '10.0.0'
 }
 
 //defaults
@@ -28,15 +29,15 @@ configurations {
 }
 
 dependencies {
-    implementation "org.flywaydb:flyway-core:10.0.1-SNAPSHOT"
-    implementation "org.flywaydb:flyway-database-oracle:10.0.1-SNAPSHOT"
+    implementation "org.flywaydb:flyway-core:10.0.0"
     implementation "net.objecthunter:exp4j:0.4.8"
-    implementation "com.fasterxml.jackson.core:jackson-databind:2.13.3"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.15.2"
     implementation 'commons-io:commons-io:2.11.0'
     //implementation 'java-algebra-system:JMCAS:3.0'
     implementation 'org.opendcs:java-algebra-system:0.0.1-SNAPSHOT'
-    compile "org.flywaydb:flyway-core:10.0.1-SNAPSHOT"
-    flywayMigration "com.oracle.database.jdbc:ojdbc8:$ORACLE_JDBC_VERSION"
+    compile "org.flywaydb:flyway-core:10.0.0"
+    flywayMigration "com.oracle.database.jdbc:ojdbc11:$ORACLE_JDBC_VERSION"
+    flywayMigration "org.flywaydb:flyway-database-oracle:10.0.0"
     flywayMigration sourceSets.main.runtimeClasspath
     utplsql 'org.utplsql:utplsql:3.1.10@zip'
 }

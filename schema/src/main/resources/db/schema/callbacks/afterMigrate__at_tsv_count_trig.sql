@@ -68,7 +68,7 @@ begin
          --           YES = only GoldenGate Apply DML will fire the trigger
          --           NO  = FIRE_ONCE controls trigger firing
          dbms_ddl.set_trigger_firing_property(
-            trig_owner => '&cwms_schema',
+            trig_owner => '${CWMS_SCHEMA}',
             trig_name  => l_trigger_name,
             property   => dbms_ddl.fire_once,
             setting    => false);

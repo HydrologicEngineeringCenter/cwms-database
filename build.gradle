@@ -1,7 +1,7 @@
 plugins {
     id 'eclipse'
 }
-ext.ORACLE_JDBC_VERSION='19.3.0.0'
+ext.ORACLE_JDBC_VERSION='23.3.0.23.09'
 
 // default property values to save some hassle.
 if ( !project.findProperty('mavenUser')) {

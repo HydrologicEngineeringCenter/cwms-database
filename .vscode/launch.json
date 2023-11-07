@@ -7,9 +7,6 @@
             "hostName": "localhost",
             "projectName": "schema",
             "port": "5005",
-            "sourcePaths": [
-                "/home/mike/projects/java-cas-3.0-src/src/cas.zip"
-            ],
         }        
     ]
 }
