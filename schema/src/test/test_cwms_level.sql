@@ -1058,7 +1058,8 @@ end test_guide_curve;
 procedure test_sources_labels_indicators_conditions_and_xml
 is
    l_effective_date    date := date '2021-01-01';
-   l_start_time        date := trunc(sysdate-1, 'dd') + 1/24;
+   l_start_times       cwms_t_date_table := cwms_t_date_table(timestamp '2023-03-11 16:00:00', timestamp '2023-11-04 16:00:00');
+   l_start_time        date;
    l_elev_bottom       number := 1010;
    l_elev_top          number := 1050;
    l_stor_bottom       number;
@@ -1397,320 +1398,324 @@ begin
          p_office_id                  => c_office_id);
    end loop;
    commit;
-   --------------------------------
-   -- store the elev time series --
-   --------------------------------
-   select cwms_t_tsv(
-             date_time    => from_tz(cast(l_start_time + (level-1)/24 as timestamp), c_timezone_id),
-             value        => 1000 + level,
-             quality_code => 0)
-     bulk collect
-     into l_elev_ts_data
-     from dual
-  connect by level <= l_value_count;
-
-   cwms_ts.store_ts(
-      l_elev_tsid,
-      c_elev_unit,
-      l_elev_ts_data,
-      cwms_util.replace_all,
-      'F',
-      cwms_util.non_versioned,
-      c_office_id,
-      'T');
-   commit;
-   --------------------------------
-   -- store the stor time series --
-   --------------------------------
-   select cwms_t_tsv(
-             date_time,
-             cwms_rating.rate_f(
-                p_rating_spec => l_rating_spec,
-                p_value       => value,
-                p_units       => cwms_t_str_tab(c_elev_unit, c_stor_unit),
-                p_office_id   => c_office_id),
-             quality_code)
-     bulk collect
-     into l_stor_ts_data
-     from table(l_elev_ts_data);
-
-   cwms_ts.store_ts(
-      l_stor_tsid,
-      c_stor_unit,
-      l_stor_ts_data,
-      cwms_util.replace_all,
-      'F',
-      cwms_util.non_versioned,
-      c_office_id,
-      'T');
-   commit;
-   ------------------------------------------------------------------------------------------
-   -- evaluate the percent flood pool used indicator expression for each time series value --
-   ------------------------------------------------------------------------------------------
-   l_pct_full_ind_ts := cwms_level.eval_level_indicator_expr(
-      p_tsid                   => l_stor_tsid,
-      p_start_time             => l_start_time,
-      p_end_time               => l_start_time + (l_value_count)/24,
-      p_unit                   => c_stor_unit,
-      p_specified_level_id     => cwms_util.split_text(l_stor_top_id, 5, '.'),
-      p_indicator_id           => cwms_util.split_text(l_pct_full_ind_id, 6, '.'),
-      p_ref_specified_level_id => cwms_util.split_text(l_stor_bottom_id, 5, '.'),
-      p_time_zone              => c_timezone_id,
-      p_office_id              => c_office_id);
-   for i in 1..l_pct_full_ind_ts.count loop
-      ut.expect(l_pct_full_ind_ts(i).date_time).to_equal(cast(l_stor_ts_data(i).date_time as date));
-      ut.expect(round(l_pct_full_ind_ts(i).value, 9)).to_equal(round((l_stor_ts_data(i).value - l_stor_bottom) / (l_stor_top - l_stor_bottom) * 100, 9));
+   for start_time_index in 1..l_start_times.count loop
+      l_start_time := l_start_times(start_time_index);
+      dbms_output.put_line('Start time = '||l_start_time);
+      --------------------------------
+      -- store the elev time series --
+      --------------------------------
+      select cwms_t_tsv(
+                date_time    => from_tz(cast(cwms_util.change_timezone(l_start_time, c_timezone_id, 'UTC') + (level-1)/24 as timestamp), 'UTC'),
+                value        => 1000 + level,
+                quality_code => 0)
+        bulk collect
+        into l_elev_ts_data
+        from dual
+     connect by level <= l_value_count;
+   
+      cwms_ts.store_ts(
+         l_elev_tsid,
+         c_elev_unit,
+         l_elev_ts_data,
+         cwms_util.replace_all,
+         'F',
+         cwms_util.non_versioned,
+         c_office_id,
+         'T');
+      commit;
+      --------------------------------
+      -- store the stor time series --
+      --------------------------------
+      select cwms_t_tsv(
+                date_time,
+                cwms_rating.rate_f(
+                   p_rating_spec => l_rating_spec,
+                   p_value       => value,
+                   p_units       => cwms_t_str_tab(c_elev_unit, c_stor_unit),
+                   p_office_id   => c_office_id),
+                quality_code)
+        bulk collect
+        into l_stor_ts_data
+        from table(l_elev_ts_data);
+   
+      cwms_ts.store_ts(
+         l_stor_tsid,
+         c_stor_unit,
+         l_stor_ts_data,
+         cwms_util.replace_all,
+         'F',
+         cwms_util.non_versioned,
+         c_office_id,
+         'T');
+      commit;
+      ------------------------------------------------------------------------------------------
+      -- evaluate the percent flood pool used indicator expression for each time series value --
+      ------------------------------------------------------------------------------------------
+      l_pct_full_ind_ts := cwms_level.eval_level_indicator_expr(
+         p_tsid                   => l_stor_tsid,
+         p_start_time             => cwms_util.change_timezone(l_start_time, c_timezone_id, 'UTC'),
+         p_end_time               => cwms_util.change_timezone(l_start_time, c_timezone_id, 'UTC') + (l_value_count)/24,
+         p_unit                   => c_stor_unit,
+         p_specified_level_id     => cwms_util.split_text(l_stor_top_id, 5, '.'),
+         p_indicator_id           => cwms_util.split_text(l_pct_full_ind_id, 6, '.'),
+         p_ref_specified_level_id => cwms_util.split_text(l_stor_bottom_id, 5, '.'),
+         p_time_zone              => 'UTC',
+         p_office_id              => c_office_id);
+      for i in 1..l_pct_full_ind_ts.count loop
+         ut.expect(l_pct_full_ind_ts(i).date_time).to_equal(cast(l_stor_ts_data(i).date_time as date));
+         ut.expect(round(l_pct_full_ind_ts(i).value, 9)).to_equal(round((l_stor_ts_data(i).value - l_stor_bottom) / (l_stor_top - l_stor_bottom) * 100, 9));
+      end loop;
+      -------------------------------------------------------------------------------------------------------
+      -- get the max condition values for the percent flood pool used indicator for each time series value --
+      -------------------------------------------------------------------------------------------------------
+      cwms_level.get_level_indicator_max_values(
+         p_cursor               => l_crsr,
+         p_tsid                 => l_stor_tsid,
+         p_start_time           => cwms_util.change_timezone(l_start_time, c_timezone_id, 'UTC'),
+         p_end_time             => cwms_util.change_timezone(l_start_time, c_timezone_id, 'UTC') + (l_value_count)/24,
+         p_time_zone            => 'UTC',
+         p_specified_level_mask => cwms_util.split_text(l_stor_top_id, 5, '.'),
+         p_indicator_id_mask    => cwms_util.split_text(l_pct_full_ind_id, 6, '.'),
+         p_unit_system          => 'EN',
+         p_office_id            => c_office_id);
+      fetch l_crsr into l_indicator_id, l_attribute_id, l_attribute_value, l_attribute_unit, l_indicator_values;
+      close l_crsr;
+      for i in 1..l_indicator_values.count loop
+         if i <= l_stor_ts_data.count then
+            ut.expect(l_indicator_values(i).date_time).to_equal(cast(l_stor_ts_data(i).date_time as date));
+         end if;
+         ------------------------------------------------------
+         -- see note above about breakpoints in percent full --
+         ------------------------------------------------------
+         case
+         when i < 15 then ut.expect(l_indicator_values(i).value).to_equal(0);
+         when i < 21 then ut.expect(l_indicator_values(i).value).to_equal(1);
+         when i < 31 then ut.expect(l_indicator_values(i).value).to_equal(2);
+         when i < 41 then ut.expect(l_indicator_values(i).value).to_equal(3);
+         when i < 47 then ut.expect(l_indicator_values(i).value).to_equal(4);
+         else             ut.expect(l_indicator_values(i).value).to_equal(5);
+         end case;
+      end loop;
+      -----------------------------------------------------------------------------------------
+      -- evaluate the flood pool inflow rate indicator expression for each time series value --
+      -----------------------------------------------------------------------------------------
+      l_inflow_ind_ts := cwms_level.eval_level_indicator_expr(
+         p_tsid                   => l_stor_tsid,
+         p_start_time             => cwms_util.change_timezone(l_start_time, c_timezone_id, 'UTC'),
+         p_end_time               => cwms_util.change_timezone(l_start_time, c_timezone_id, 'UTC') + (l_value_count)/24,
+         p_unit                   => c_stor_unit,
+         p_specified_level_id     => cwms_util.split_text(l_stor_top_id, 5, '.'),
+         p_indicator_id           => cwms_util.split_text(l_inflow_ind_id, 6, '.'),
+         p_ref_specified_level_id => cwms_util.split_text(l_stor_bottom_id, 5, '.'),
+         p_time_zone              => 'UTC',
+         p_office_id              => c_office_id);
+      for i in 1..l_inflow_ind_ts.count loop
+         ut.expect(l_inflow_ind_ts(i).date_time).to_equal(cast(l_stor_ts_data(i).date_time as date));
+         if i = 1 then
+            ----------------------------------------------------------------------------------------------------
+            -- two consecutive stor values are requred to compute the inflow, so the first value will be null --
+            ----------------------------------------------------------------------------------------------------
+            ut.expect(l_inflow_ind_ts(i).value).to_be_null;
+         else
+            ut.expect(round(l_inflow_ind_ts(i).value, 9)).to_equal(round(10 * 43560 / 3600, 9));
+         end if;
+      end loop;
+      -------------------------------------------------------------------------------------------
+      -- get the max condition values for the inflow rate indicator for each time series value --
+      -------------------------------------------------------------------------------------------
+      cwms_level.get_level_indicator_max_values(
+         p_cursor               => l_crsr,
+         p_tsid                 => l_stor_tsid,
+         p_start_time           => cwms_util.change_timezone(l_start_time, c_timezone_id, 'UTC'),
+         p_end_time             => cwms_util.change_timezone(l_start_time, c_timezone_id, 'UTC') + (l_value_count)/24,
+         p_time_zone            => 'UTC',
+         p_specified_level_mask => cwms_util.split_text(l_stor_top_id, 5, '.'),
+         p_indicator_id_mask    => cwms_util.split_text(l_inflow_ind_id, 6, '.'),
+         p_unit_system          => 'EN',
+         p_office_id            => c_office_id);
+      fetch l_crsr into l_indicator_id, l_attribute_id, l_attribute_value, l_attribute_unit, l_indicator_values;
+      close l_crsr;
+      for i in 1..l_indicator_values.count loop
+         if i <= l_stor_ts_data.count then
+            ut.expect(l_indicator_values(i).date_time).to_equal(cast(l_stor_ts_data(i).date_time as date));
+         end if;
+         ---------------------------------------------------------------------------------------------
+         -- The inflow should always be 121 cfs (10 ac-ft per/hour * 43560 ft2/ac * 1 hour/3600 s). --
+         -- The condition values are (1=>50, 2=>100, 3=>150, 4=>200, 5=>250) so the max condtion    --
+         -- for the rate will always be 2. However, the percent full condtion must also be > 10 for --
+         -- a minimum of 1 hour, so the value should be 0 below the first percent full breakpoint   --
+         -- and 2 on and above it (see note above about percent full breakpoints).                  --
+         ---------------------------------------------------------------------------------------------
+         ut.expect(l_indicator_values(i).value).to_equal(case when i < 15 then 0 else 2 end);
+      end loop;
+   
+      select count(*)
+        into l_count
+        from cwms_v_location_level
+       where office_id = c_office_id
+         and location_level_id = l_elev_bottom_id
+         and unit_system = 'EN';
+   
+      ut.expect(l_count).to_equal(1);
+   
+      select count(*)
+        into l_count
+        from cwms_v_location_level
+       where office_id = c_office_id
+         and location_level_id = l_elev_top_id
+         and unit_system = 'EN';
+   
+      ut.expect(l_count).to_equal(1);
+   
+      select count(*)
+        into l_count
+        from cwms_v_virtual_location_level
+       where office_id = c_office_id
+         and location_level_id = l_stor_bottom_id;
+   
+      ut.expect(l_count).to_equal(1);
+   
+      select count(*)
+        into l_count
+        from cwms_v_virtual_location_level
+       where office_id = c_office_id
+         and location_level_id = l_stor_top_id;
+   
+      ut.expect(l_count).to_equal(1);
+   
+      select count(*)
+        into l_count
+        from cwms_v_loc_lvl_indicator
+       where office_id = c_office_id
+         and level_indicator_id = l_pct_full_ind_id;
+   
+      ut.expect(l_count).to_equal(5);
+   
+      select count(*)
+        into l_count
+        from cwms_v_loc_lvl_indicator
+       where office_id = c_office_id
+         and level_indicator_id = l_inflow_ind_id;
+   
+      ut.expect(l_count).to_equal(5);
+   
+      -------------------------------------------------------------------------------
+      -- retrieve the current location levels xml for later storage and comparison --
+      -------------------------------------------------------------------------------
+      l_levels_xml1 := cwms_level.retrieve_location_levels_xml_f(
+         p_location_level_id_mask     => '*',
+         p_attribute_id_mask          => '*',
+         p_start_time                 => null,
+         p_end_time                   => null,
+         p_timezone_id                => 'UTC',
+         p_unit_system                => 'EN',
+         p_attribute_value            => null,
+         p_attribute_unit             => null,
+         p_level_type                 => 'VN',
+         p_include_levels             => 'T',
+         p_include_constituent_levels => 'F',
+         p_include_level_sources      => 'T',
+         p_include_level_labels       => 'T',
+         p_include_level_indicators   => 'T',
+         p_office_id                  => c_office_id);
+      ------------------------------------------------------------------------
+      -- delete the location levels + indicators and verify their deletions --
+      ------------------------------------------------------------------------
+      for rec in (select l_elev_bottom_id as level_id from dual
+                  union all
+                  select l_elev_top_id as level_id from dual
+                  union all
+                  select l_stor_bottom_id as level_id from dual
+                  union all
+                  select l_stor_top_id as level_id from dual
+                 )
+      loop
+         cwms_level.delete_location_level3(
+            p_location_level_id          => rec.level_id,
+            p_delete_indicators          => 'T',
+            p_office_id                  => c_office_id,
+            p_most_recent_effective_date => 'T');
+      end loop;
+   
+      select count(*)
+        into l_count
+        from cwms_v_location_level
+       where office_id = c_office_id
+         and location_level_id = l_elev_bottom_id
+         and unit_system = 'EN';
+   
+      ut.expect(l_count).to_equal(0);
+   
+      select count(*)
+        into l_count
+        from cwms_v_location_level
+       where office_id = c_office_id
+         and location_level_id = l_elev_top_id
+         and unit_system = 'EN';
+   
+      ut.expect(l_count).to_equal(0);
+   
+      select count(*)
+        into l_count
+        from cwms_v_virtual_location_level
+       where office_id = c_office_id
+         and location_level_id = l_stor_bottom_id;
+   
+      ut.expect(l_count).to_equal(0);
+   
+      select count(*)
+        into l_count
+        from cwms_v_virtual_location_level
+       where office_id = c_office_id
+         and location_level_id = l_stor_top_id;
+   
+      ut.expect(l_count).to_equal(0);
+   
+      select count(*)
+        into l_count
+        from cwms_v_loc_lvl_indicator
+       where office_id = c_office_id
+         and level_indicator_id = l_pct_full_ind_id;
+   
+      ut.expect(l_count).to_equal(0);
+   
+      select count(*)
+        into l_count
+        from cwms_v_loc_lvl_indicator
+       where office_id = c_office_id
+         and level_indicator_id = l_inflow_ind_id;
+   
+      ut.expect(l_count).to_equal(0);
+      -----------------------------------------------------
+      -- re-store the location levels via xml and verify --
+      -----------------------------------------------------
+      cwms_level.store_location_levels_xml(
+         p_errors         => l_errors,
+         p_xml            => l_levels_xml1,
+         p_fail_if_exists => 'F',
+         p_fail_on_error  => 'T');
+   
+      ut.expect(l_errors).to_be_null;
+   
+      l_levels_xml2 := cwms_level.retrieve_location_levels_xml_f(
+         p_location_level_id_mask     => '*',
+         p_attribute_id_mask          => '*',
+         p_start_time                 => null,
+         p_end_time                   => null,
+         p_timezone_id                => 'UTC',
+         p_unit_system                => 'EN',
+         p_attribute_value            => null,
+         p_attribute_unit             => null,
+         p_level_type                 => 'VN',
+         p_include_levels             => 'T',
+         p_include_constituent_levels => 'F',
+         p_include_level_sources      => 'T',
+         p_include_level_labels       => 'T',
+         p_include_level_indicators   => 'T',
+         p_office_id                  => c_office_id);
+   
+      ut.expect(l_levels_xml2).to_equal(l_levels_xml1);
    end loop;
-   -------------------------------------------------------------------------------------------------------
-   -- get the max condition values for the percent flood pool used indicator for each time series value --
-   -------------------------------------------------------------------------------------------------------
-   cwms_level.get_level_indicator_max_values(
-      p_cursor               => l_crsr,
-      p_tsid                 => l_stor_tsid,
-      p_start_time           => l_start_time,
-      p_end_time             => l_start_time + (l_value_count)/24,
-      p_time_zone            => c_timezone_id,
-      p_specified_level_mask => cwms_util.split_text(l_stor_top_id, 5, '.'),
-      p_indicator_id_mask    => cwms_util.split_text(l_pct_full_ind_id, 6, '.'),
-      p_unit_system          => 'EN',
-      p_office_id            => c_office_id);
-   fetch l_crsr into l_indicator_id, l_attribute_id, l_attribute_value, l_attribute_unit, l_indicator_values;
-   close l_crsr;
-   for i in 1..l_indicator_values.count loop
-      if i <= l_stor_ts_data.count then
-         ut.expect(l_indicator_values(i).date_time).to_equal(cast(l_stor_ts_data(i).date_time as date));
-      end if;
-      ------------------------------------------------------
-      -- see note above about breakpoints in percent full --
-      ------------------------------------------------------
-      case
-      when i < 15 then ut.expect(l_indicator_values(i).value).to_equal(0);
-      when i < 21 then ut.expect(l_indicator_values(i).value).to_equal(1);
-      when i < 31 then ut.expect(l_indicator_values(i).value).to_equal(2);
-      when i < 41 then ut.expect(l_indicator_values(i).value).to_equal(3);
-      when i < 47 then ut.expect(l_indicator_values(i).value).to_equal(4);
-      else             ut.expect(l_indicator_values(i).value).to_equal(5);
-      end case;
-   end loop;
-   -----------------------------------------------------------------------------------------
-   -- evaluate the flood pool inflow rate indicator expression for each time series value --
-   -----------------------------------------------------------------------------------------
-   l_inflow_ind_ts := cwms_level.eval_level_indicator_expr(
-      p_tsid                   => l_stor_tsid,
-      p_start_time             => l_start_time,
-      p_end_time               => l_start_time + (l_value_count)/24,
-      p_unit                   => c_stor_unit,
-      p_specified_level_id     => cwms_util.split_text(l_stor_top_id, 5, '.'),
-      p_indicator_id           => cwms_util.split_text(l_inflow_ind_id, 6, '.'),
-      p_ref_specified_level_id => cwms_util.split_text(l_stor_bottom_id, 5, '.'),
-      p_time_zone              => c_timezone_id,
-      p_office_id              => c_office_id);
-   for i in 1..l_inflow_ind_ts.count loop
-      ut.expect(l_inflow_ind_ts(i).date_time).to_equal(cast(l_stor_ts_data(i).date_time as date));
-      if i = 1 then
-         ----------------------------------------------------------------------------------------------------
-         -- two consecutive stor values are requred to compute the inflow, so the first value will be null --
-         ----------------------------------------------------------------------------------------------------
-         ut.expect(l_inflow_ind_ts(i).value).to_be_null;
-      else
-         ut.expect(round(l_inflow_ind_ts(i).value, 9)).to_equal(round(10 * 43560 / 3600, 9));
-      end if;
-   end loop;
-   -------------------------------------------------------------------------------------------
-   -- get the max condition values for the inflow rate indicator for each time series value --
-   -------------------------------------------------------------------------------------------
-   cwms_level.get_level_indicator_max_values(
-      p_cursor               => l_crsr,
-      p_tsid                 => l_stor_tsid,
-      p_start_time           => l_start_time,
-      p_end_time             => l_start_time + (l_value_count)/24,
-      p_time_zone            => c_timezone_id,
-      p_specified_level_mask => cwms_util.split_text(l_stor_top_id, 5, '.'),
-      p_indicator_id_mask    => cwms_util.split_text(l_inflow_ind_id, 6, '.'),
-      p_unit_system          => 'EN',
-      p_office_id            => c_office_id);
-   fetch l_crsr into l_indicator_id, l_attribute_id, l_attribute_value, l_attribute_unit, l_indicator_values;
-   close l_crsr;
-   for i in 1..l_indicator_values.count loop
-      if i <= l_stor_ts_data.count then
-         ut.expect(l_indicator_values(i).date_time).to_equal(cast(l_stor_ts_data(i).date_time as date));
-      end if;
-      ---------------------------------------------------------------------------------------------
-      -- The inflow should always be 121 cfs (10 ac-ft per/hour * 43560 ft2/ac * 1 hour/3600 s). --
-      -- The condition values are (1=>50, 2=>100, 3=>150, 4=>200, 5=>250) so the max condtion    --
-      -- for the rate will always be 2. However, the percent full condtion must also be > 10 for --
-      -- a minimum of 1 hour, so the value should be 0 below the first percent full breakpoint   --
-      -- and 2 on and above it (see note above about percent full breakpoints).                  --
-      ---------------------------------------------------------------------------------------------
-      ut.expect(l_indicator_values(i).value).to_equal(case when i < 15 then 0 else 2 end);
-   end loop;
-
-   select count(*)
-     into l_count
-     from cwms_v_location_level
-    where office_id = c_office_id
-      and location_level_id = l_elev_bottom_id
-      and unit_system = 'EN';
-
-   ut.expect(l_count).to_equal(1);
-
-   select count(*)
-     into l_count
-     from cwms_v_location_level
-    where office_id = c_office_id
-      and location_level_id = l_elev_top_id
-      and unit_system = 'EN';
-
-   ut.expect(l_count).to_equal(1);
-
-   select count(*)
-     into l_count
-     from cwms_v_virtual_location_level
-    where office_id = c_office_id
-      and location_level_id = l_stor_bottom_id;
-
-   ut.expect(l_count).to_equal(1);
-
-   select count(*)
-     into l_count
-     from cwms_v_virtual_location_level
-    where office_id = c_office_id
-      and location_level_id = l_stor_top_id;
-
-   ut.expect(l_count).to_equal(1);
-
-   select count(*)
-     into l_count
-     from cwms_v_loc_lvl_indicator
-    where office_id = c_office_id
-      and level_indicator_id = l_pct_full_ind_id;
-
-   ut.expect(l_count).to_equal(5);
-
-   select count(*)
-     into l_count
-     from cwms_v_loc_lvl_indicator
-    where office_id = c_office_id
-      and level_indicator_id = l_inflow_ind_id;
-
-   ut.expect(l_count).to_equal(5);
-
-   -------------------------------------------------------------------------------
-   -- retrieve the current location levels xml for later storage and comparison --
-   -------------------------------------------------------------------------------
-   l_levels_xml1 := cwms_level.retrieve_location_levels_xml_f(
-      p_location_level_id_mask     => '*',
-      p_attribute_id_mask          => '*',
-      p_start_time                 => null,
-      p_end_time                   => null,
-      p_timezone_id                => 'UTC',
-      p_unit_system                => 'EN',
-      p_attribute_value            => null,
-      p_attribute_unit             => null,
-      p_level_type                 => 'VN',
-      p_include_levels             => 'T',
-      p_include_constituent_levels => 'F',
-      p_include_level_sources      => 'T',
-      p_include_level_labels       => 'T',
-      p_include_level_indicators   => 'T',
-      p_office_id                  => c_office_id);
-   ------------------------------------------------------------------------
-   -- delete the location levels + indicators and verify their deletions --
-   ------------------------------------------------------------------------
-   for rec in (select l_elev_bottom_id as level_id from dual
-               union all
-               select l_elev_top_id as level_id from dual
-               union all
-               select l_stor_bottom_id as level_id from dual
-               union all
-               select l_stor_top_id as level_id from dual
-              )
-   loop
-      cwms_level.delete_location_level3(
-         p_location_level_id          => rec.level_id,
-         p_delete_indicators          => 'T',
-         p_office_id                  => c_office_id,
-         p_most_recent_effective_date => 'T');
-   end loop;
-
-   select count(*)
-     into l_count
-     from cwms_v_location_level
-    where office_id = c_office_id
-      and location_level_id = l_elev_bottom_id
-      and unit_system = 'EN';
-
-   ut.expect(l_count).to_equal(0);
-
-   select count(*)
-     into l_count
-     from cwms_v_location_level
-    where office_id = c_office_id
-      and location_level_id = l_elev_top_id
-      and unit_system = 'EN';
-
-   ut.expect(l_count).to_equal(0);
-
-   select count(*)
-     into l_count
-     from cwms_v_virtual_location_level
-    where office_id = c_office_id
-      and location_level_id = l_stor_bottom_id;
-
-   ut.expect(l_count).to_equal(0);
-
-   select count(*)
-     into l_count
-     from cwms_v_virtual_location_level
-    where office_id = c_office_id
-      and location_level_id = l_stor_top_id;
-
-   ut.expect(l_count).to_equal(0);
-
-   select count(*)
-     into l_count
-     from cwms_v_loc_lvl_indicator
-    where office_id = c_office_id
-      and level_indicator_id = l_pct_full_ind_id;
-
-   ut.expect(l_count).to_equal(0);
-
-   select count(*)
-     into l_count
-     from cwms_v_loc_lvl_indicator
-    where office_id = c_office_id
-      and level_indicator_id = l_inflow_ind_id;
-
-   ut.expect(l_count).to_equal(0);
-   -----------------------------------------------------
-   -- re-store the location levels via xml and verify --
-   -----------------------------------------------------
-   cwms_level.store_location_levels_xml(
-      p_errors         => l_errors,
-      p_xml            => l_levels_xml1,
-      p_fail_if_exists => 'F',
-      p_fail_on_error  => 'T');
-
-   ut.expect(l_errors).to_be_null;
-
-   l_levels_xml2 := cwms_level.retrieve_location_levels_xml_f(
-      p_location_level_id_mask     => '*',
-      p_attribute_id_mask          => '*',
-      p_start_time                 => null,
-      p_end_time                   => null,
-      p_timezone_id                => 'UTC',
-      p_unit_system                => 'EN',
-      p_attribute_value            => null,
-      p_attribute_unit             => null,
-      p_level_type                 => 'VN',
-      p_include_levels             => 'T',
-      p_include_constituent_levels => 'F',
-      p_include_level_sources      => 'T',
-      p_include_level_labels       => 'T',
-      p_include_level_indicators   => 'T',
-      p_office_id                  => c_office_id);
-
-   ut.expect(l_levels_xml2).to_equal(l_levels_xml1);
 
 end test_sources_labels_indicators_conditions_and_xml;
 --------------------------------------------------------------------------------
