@@ -185,9 +185,9 @@ procedure update_dss_xchg_set_time(
  *
  * @param p_dss_xchg_set_id Data exchange set identifier pattern to match. Only data exchage sets whose identifier match this pattern (case insensitive) are returned. If not specified, or NULL, no matching is performed on the data exchange set identifier.
  *
- * @param p_office_id  The office pattern to match.  If not specified, or NULL, the session user's default office is used.
+ * @param p_office_id       The office pattern to match.  If not specified, or NULL, the session user's default office is used.
  *
- * @param p_del_unused_info   A flag ('T'/'F') specifying whether to delete unused portions of the retrieved configuration.
+ * @param p_del_unused_info A flag ('T'/'F') specifying whether to delete unused portions of the configuration before retrieval.
  *
  * @return The matching data exchange sets in XML format
  */

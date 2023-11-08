@@ -527,23 +527,32 @@ CREATE OR REPLACE package body cwms_xchg as
          writeln_xml('</office>');
       end loop;
       if l_office_ids.count = 0 then
-        declare
-          rec cwms_office%rowtype;
-        begin
-          select *
-            into rec
-            from cwms_office
-           where office_code = case
-                               when p_office_id is null then cwms_util.user_office_code
-                               else (select office_code from cwms_office where office_id = upper(p_office_id))
-                               end;
-          l_office_ids(rec.office_code) := rec.office_id;
-          writeln_xml('<office id="'||xml_encode(rec.office_id)||'">');
-          indent;
-          writeln_xml('<name>'||xml_encode(rec.long_name)||'</name>');
-          dedent;
-          writeln_xml('</office>');
-        end;
+         ----------------------------------------------------------------------
+         -- no exchange sets, just output offices from p_office_id parameter --
+         ----------------------------------------------------------------------
+         if p_office_id is null then
+             writeln_xml('<office id="'||xml_encode(cwms_util.user_office_code)||'">');
+             indent;
+             writeln_xml('<name>'||xml_encode(cwms_util.user_office_id)||'</name>');
+             dedent;
+             writeln_xml('</office>');
+         else
+            for rec in (
+               select office_code,
+                      office_id,
+                      long_name
+                 from cwms_office
+                where office_id like l_office_id_mask escape '\'
+             order by office_id)
+            loop
+               l_office_ids(rec.office_code) := rec.office_id;
+               writeln_xml('<office id="'||xml_encode(rec.office_id)||'">');
+               indent;
+               writeln_xml('<name>'||xml_encode(rec.long_name)||'</name>');
+               dedent;
+               writeln_xml('</office>');
+            end loop;
+         end if;
       end if;
       ---------------------------
       -- output the datastores --
@@ -730,9 +739,6 @@ CREATE OR REPLACE package body cwms_xchg as
 
       dbms_lob.close(l_xml);
       log_configuration_xml(l_xml, 'out');
-      if l_del_unused_info then
-         rollback;
-      end if;
       return l_xml;
 
    end get_dss_xchg_sets;
@@ -1644,6 +1650,7 @@ CREATE OR REPLACE package body cwms_xchg as
    procedure del_unused_dss_xchg_info(
       p_office_id in varchar2 default null)
    is
+      pragma autonomous_transaction;
       l_codes       number_tab_t;
       l_office_code number(14);
    begin
@@ -1669,6 +1676,7 @@ CREATE OR REPLACE package body cwms_xchg as
 
       if l_codes is not null and l_codes.count > 0 then
          delete from at_xchg_dss_ts_mappings where cwms_ts_code in (select * from table(l_codes));
+         commit;
       end if;
 
       select distinct xchg_set_code bulk collect into l_codes from at_xchg_dss_ts_mappings;
@@ -1678,6 +1686,7 @@ CREATE OR REPLACE package body cwms_xchg as
       else
          delete from at_xchg_set;
       end if;
+      commit;
 
       select distinct datastore_code bulk collect into l_codes from at_xchg_set;
 
@@ -1686,7 +1695,7 @@ CREATE OR REPLACE package body cwms_xchg as
       else
          delete from at_xchg_datastore_dss;
       end if;
-
+      commit;
    end del_unused_dss_xchg_info;
 
 -------------------------------------------------------------------------------
