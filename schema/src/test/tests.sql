@@ -42,6 +42,7 @@ show errors;
 @test_cwms_display.sql;
 @test_cwms_data_dissem.sql;
 @test_cwms_forecast.sql;
+@test_cwms_xchg.sql;
 @test_aq_user.sql;
 @test_webuser_abilities.sql;
 show errors;
