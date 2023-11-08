@@ -373,7 +373,8 @@ CREATE OR REPLACE package body cwms_xchg as
       p_dss_filemgr_url in varchar2 default null, -- not used
       p_dss_file_name   in varchar2 default null, -- not used
       p_dss_xchg_set_id in varchar2 default null, -- '%' if null
-      p_office_id       in varchar2 default null) -- user's office if null
+      p_office_id       in varchar2 default null, -- user's office if null
+      p_del_unused_info in  varchar2 default 'F')
       return clob
    is
       type vc16_by_pi is table of varchar2(16) index by pls_integer;
@@ -399,6 +400,8 @@ CREATE OR REPLACE package body cwms_xchg as
       l_db_name              varchar2(61);
       l_oracle_id            varchar2(256);
       l_line_break           boolean := true;
+      l_del_unused_info      boolean := cwms_util.return_true_or_false(p_del_unused_info);
+      l_matching_count       pls_integer;
 
       procedure write_xml(p_data varchar2) is begin
          if l_line_break then
@@ -447,7 +450,9 @@ CREATE OR REPLACE package body cwms_xchg as
       ----------------------------------------------
       -- retrieve all the matching xchg set codes --
       ----------------------------------------------
-      del_unused_dss_xchg_info;
+      if l_del_unused_info then
+         del_unused_dss_xchg_info;
+      end if;
       for rec in (
          select xchg_set_code
            from at_xchg_set
@@ -476,18 +481,20 @@ CREATE OR REPLACE package body cwms_xchg as
          l_mapping_codes.extend();
          l_mapping_codes(l_mapping_codes.last) := rec.mapping_code;
       end loop;
-      --------------------------------------------------------------------
-      -- refine the xchg set codes to only those with matching mappings --
-      --------------------------------------------------------------------
-      l_xchg_set_codes.delete;
-      for rec in (
-         select xchg_set_code
-           from at_xchg_dss_ts_mappings
-          where mapping_code in (select * from table(l_mapping_codes)))
-      loop
-         l_xchg_set_codes.extend;
-         l_xchg_set_codes(l_xchg_set_codes.last) := rec.xchg_set_code;
-      end loop;
+      if l_del_unused_info then
+         --------------------------------------------------------------------
+         -- refine the xchg set codes to only those with matching mappings --
+         --------------------------------------------------------------------
+         l_xchg_set_codes.delete;
+         for rec in (
+            select xchg_set_code
+              from at_xchg_dss_ts_mappings
+             where mapping_code in (select * from table(l_mapping_codes)))
+         loop
+            l_xchg_set_codes.extend;
+            l_xchg_set_codes(l_xchg_set_codes.last) := rec.xchg_set_code;
+         end loop;
+      end if;
       -----------------------------
       -- output the root element --
       -----------------------------
@@ -645,69 +652,76 @@ CREATE OR REPLACE package body cwms_xchg as
          ---------------------------------------------------
          -- output the mappings for this dataexchange set --
          ---------------------------------------------------
-         writeln_xml('<ts-mapping-set>');
-         indent;
-         for rec2 in (
-            select v.db_office_id,
-                   v.cwms_ts_id,
-                   m.cwms_ts_code,
-                   m.a_pathname_part,
-                   m.b_pathname_part,
-                   m.c_pathname_part,
-                   m.e_pathname_part,
-                   m.f_pathname_part,
-                   p.dss_parameter_type_id,
-                   m.unit_id,
-                   z.time_zone_name,
-                   u.tz_usage_id
-              from at_xchg_dss_ts_mappings m,
-                   at_cwms_ts_id v,
-                   cwms_dss_parameter_type p,
-                   cwms_time_zone z,
-                   cwms_tz_usage u
-             where m.mapping_code in (select * from table(l_mapping_codes))
-               and m.xchg_set_code = rec.xchg_set_code
-               and v.ts_code = m.cwms_ts_code
-               and p.dss_parameter_type_code = m.dss_parameter_type_code
-               and z.time_zone_code = m.time_zone_code
-               and u.tz_usage_code = m.tz_usage_code
-            order by v.cwms_ts_id)
-         loop
-            writeln_xml('<ts-mapping>');
+         select count(*)
+           into l_matching_count
+           from at_xchg_dss_ts_mappings
+          where mapping_code in (select * from table(l_mapping_codes))
+            and xchg_set_code = rec.xchg_set_code;
+         if l_matching_count > 0 then
+            writeln_xml('<ts-mapping-set>');
             indent;
-            writeln_xml('<cwms-timeseries datastore-id="'
-                        ||xml_encode(l_oracle_id)
-                        || '" office-id="'
-                                || xml_encode(rec2.db_office_id)
-                        ||'">'
-                        ||xml_encode(rec2.cwms_ts_id)
-                        ||'</cwms-timeseries>');
-            writeln_xml('<dss-timeseries datastore-id="'
-                        || xml_encode(l_datastore_id)
-                        || '" office-id="'
-                        || xml_encode(rec2.db_office_id)
-                        || '" type="'
-                        || xml_encode(rec2.dss_parameter_type_id)
-                        || '" units="'
-                        || xml_encode(rec2.unit_id)
-                        || '" timezone="'
-                        || xml_encode(rec2.time_zone_name)
-                        || '" tz-usage="'
-                        || xml_encode(rec2.tz_usage_id)
-                        || '">'
-                        || xml_encode(make_dss_pathname(
-                              rec2.a_pathname_part,
-                              rec2.b_pathname_part,
-                              rec2.c_pathname_part,
-                              null,
-                              rec2.e_pathname_part,
-                              rec2.f_pathname_part))
-                        || '</dss-timeseries>');
+            for rec2 in (
+               select v.db_office_id,
+                      v.cwms_ts_id,
+                      m.cwms_ts_code,
+                      m.a_pathname_part,
+                      m.b_pathname_part,
+                      m.c_pathname_part,
+                      m.e_pathname_part,
+                      m.f_pathname_part,
+                      p.dss_parameter_type_id,
+                      m.unit_id,
+                      z.time_zone_name,
+                      u.tz_usage_id
+                 from at_xchg_dss_ts_mappings m,
+                      at_cwms_ts_id v,
+                      cwms_dss_parameter_type p,
+                      cwms_time_zone z,
+                      cwms_tz_usage u
+                where m.mapping_code in (select * from table(l_mapping_codes))
+                  and m.xchg_set_code = rec.xchg_set_code
+                  and v.ts_code = m.cwms_ts_code
+                  and p.dss_parameter_type_code = m.dss_parameter_type_code
+                  and z.time_zone_code = m.time_zone_code
+                  and u.tz_usage_code = m.tz_usage_code
+               order by v.cwms_ts_id)
+            loop
+               writeln_xml('<ts-mapping>');
+               indent;
+               writeln_xml('<cwms-timeseries datastore-id="'
+                           ||xml_encode(l_oracle_id)
+                           || '" office-id="'
+                                   || xml_encode(rec2.db_office_id)
+                           ||'">'
+                           ||xml_encode(rec2.cwms_ts_id)
+                           ||'</cwms-timeseries>');
+               writeln_xml('<dss-timeseries datastore-id="'
+                           || xml_encode(l_datastore_id)
+                           || '" office-id="'
+                           || xml_encode(rec2.db_office_id)
+                           || '" type="'
+                           || xml_encode(rec2.dss_parameter_type_id)
+                           || '" units="'
+                           || xml_encode(rec2.unit_id)
+                           || '" timezone="'
+                           || xml_encode(rec2.time_zone_name)
+                           || '" tz-usage="'
+                           || xml_encode(rec2.tz_usage_id)
+                           || '">'
+                           || xml_encode(make_dss_pathname(
+                                 rec2.a_pathname_part,
+                                 rec2.b_pathname_part,
+                                 rec2.c_pathname_part,
+                                 null,
+                                 rec2.e_pathname_part,
+                                 rec2.f_pathname_part))
+                           || '</dss-timeseries>');
+               dedent;
+               writeln_xml('</ts-mapping>');
+            end loop;
             dedent;
-            writeln_xml('</ts-mapping>');
-         end loop;
-         dedent;
-         writeln_xml('</ts-mapping-set>');
+            writeln_xml('</ts-mapping-set>');
+         end if;
          dedent;
          writeln_xml('</dataexchange-set>');
       end loop;
@@ -716,6 +730,9 @@ CREATE OR REPLACE package body cwms_xchg as
 
       dbms_lob.close(l_xml);
       log_configuration_xml(l_xml, 'out');
+      if l_del_unused_info then
+         rollback;
+      end if;
       return l_xml;
 
    end get_dss_xchg_sets;
@@ -967,7 +984,8 @@ CREATE OR REPLACE package body cwms_xchg as
       p_mappings_updated  out number,
       p_mappings_deleted  out number,
       p_dx_config         in  clob,
-      p_store_rule        in  varchar2 default 'MERGE')
+      p_store_rule        in  varchar2 default 'MERGE',
+      p_del_unused_info   in  varchar2 default 'F')
    is
       type bool_by_str is table of boolean index by varchar2(256);
       type str_by_str is table of varchar2(512) index by varchar2(512);
@@ -1051,6 +1069,7 @@ CREATE OR REPLACE package body cwms_xchg as
       l_can_update         boolean := false;
       l_can_delete         boolean := false;
       l_log_msg            varchar2(4000);
+      l_del_unused_info    boolean := cwms_util.return_true_or_false(p_del_unused_info);
 
       -------------------
       -- local modules --
@@ -1115,7 +1134,7 @@ CREATE OR REPLACE package body cwms_xchg as
       -- validate the store rule --
       -----------------------------
       case
-         when substr('MERGE',      1, length(p_store_rule)) = p_store_rule then
+         when substr('MERGE',   1, length(p_store_rule)) = p_store_rule then
             l_can_insert := true;
             l_can_update := true;
             l_can_delete := false;
@@ -1576,8 +1595,10 @@ CREATE OR REPLACE package body cwms_xchg as
       -- delete any orphaned info --
       ------------------------------
       commit;
-      del_unused_dss_xchg_info;
-      commit;
+      if l_del_unused_info then
+         del_unused_dss_xchg_info;
+         commit;
+      end if;
       -------------------------------------------------------------
       -- notify listeners that the configuation has been updated --
       -------------------------------------------------------------
@@ -1623,7 +1644,6 @@ CREATE OR REPLACE package body cwms_xchg as
    procedure del_unused_dss_xchg_info(
       p_office_id in varchar2 default null)
    is
-      pragma autonomous_transaction;
       l_codes       number_tab_t;
       l_office_code number(14);
    begin
@@ -1649,7 +1669,6 @@ CREATE OR REPLACE package body cwms_xchg as
 
       if l_codes is not null and l_codes.count > 0 then
          delete from at_xchg_dss_ts_mappings where cwms_ts_code in (select * from table(l_codes));
-         commit;
       end if;
 
       select distinct xchg_set_code bulk collect into l_codes from at_xchg_dss_ts_mappings;
@@ -1659,7 +1678,6 @@ CREATE OR REPLACE package body cwms_xchg as
       else
          delete from at_xchg_set;
       end if;
-      commit;
 
       select distinct datastore_code bulk collect into l_codes from at_xchg_set;
 
@@ -1668,7 +1686,6 @@ CREATE OR REPLACE package body cwms_xchg as
       else
          delete from at_xchg_datastore_dss;
       end if;
-      commit;
 
    end del_unused_dss_xchg_info;
 
