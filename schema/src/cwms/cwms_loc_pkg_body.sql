@@ -8193,12 +8193,26 @@ end unassign_loc_groups;
       p_unit            in  varchar2,
       p_office_id       in  varchar2 default null)
    is
+   begin
+      get_vertical_datum_info2(
+         p_vert_datum_info => p_vert_datum_info,
+         p_location_id     => p_location_id,
+         p_unit            => p_unit,
+         p_office_id       => p_office_id);
+   end get_vertical_datum_info;
+
+   procedure get_vertical_datum_info2(
+      p_vert_datum_info out clob,
+      p_location_id     in  clob,
+      p_unit            in  varchar2,
+      p_office_id       in  clob default null)
+   is
       l_location_records str_tab_tab_t;
       l_office_records   str_tab_tab_t;
       l_record_count     pls_integer := 0;
       l_field_count      pls_integer := 0;
       l_total            pls_integer := 0;
-      l_vert_datum_info  varchar2(4000);
+      l_vert_datum_info  clob;
       l_office_id        varchar2(16);
       function indent(p_str in varchar2) return varchar2
       is
@@ -8211,17 +8225,18 @@ end unassign_loc_groups;
                ||'  '||replace(l_lines(i), chr(13), null)||chr(10);
          end loop;
          return substr(l_str, 1, length(l_str)-1);
-      end;
+      end indent;
    begin
-      l_location_records := cwms_util.parse_string_recordset(p_location_id);
+      l_location_records := cwms_util.parse_clob_recordset(p_location_id);
       l_record_count := l_location_records.count;
       if p_office_id is not null then
-         l_office_records := cwms_util.parse_string_recordset(p_office_id);
+         l_office_records := cwms_util.parse_clob_recordset(p_office_id);
       end if;
       for i in 1..l_record_count loop
          l_total := l_total + l_location_records(i).count;
          exit when l_total > 1;
       end loop;
+      dbms_lob.createtemporary(l_vert_datum_info, true);
       if l_total > 1 then
          l_vert_datum_info := '<vertical-datum-info-set>'||chr(10);
          for i in 1..l_record_count loop
@@ -8276,13 +8291,12 @@ end unassign_loc_groups;
          end loop;
          l_vert_datum_info := l_vert_datum_info||'</vertical-datum-info-set>';
       else
-         get_vertical_datum_info(
-            l_vert_datum_info,
+         l_vert_datum_info := get_vertical_datum_info_f(
             get_location_code(p_office_id, p_location_id),
             p_unit);
       end if;
       p_vert_datum_info := l_vert_datum_info;
-   end get_vertical_datum_info;
+   end get_vertical_datum_info2;
 
    function get_vertical_datum_info_f(
       p_location_code in number,
