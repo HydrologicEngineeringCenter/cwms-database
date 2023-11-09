@@ -37,6 +37,8 @@ procedure test_cwdb_239_improve_creation_of_new_locations_with_lat_lon;
 procedure test_cwmsvue_442_location_level_performance_re_write;
 --%test(CWMS_LOC.GET_LOCAL_TIMEZONE() returns NULL instead of 'UTC' when time zone is null)
 procedure test_get_local_timezone_returns_null;
+--%test(CWDB-246 Vertical datum info output limited size to 4000 bytes)
+procedure cwdb_246_vertical_datum_info_output_limited_size_to_4000_bytes;
 
 procedure setup;
 procedure teardown;
@@ -2071,7 +2073,7 @@ AS
    --------------------------------------------------------------------------------
    -- test_cwmsvue_442_location_level_performance_re_write
    --------------------------------------------------------------------------------
- 
+
    procedure test_cwmsvue_442_location_level_performance_re_write
    is
       l_office_id    cwms_office.office_id%TYPE;
@@ -2082,7 +2084,7 @@ AS
       l_level        av_location_level.seasonal_level%TYPE;
       l_test_level   av_location_level.seasonal_level%TYPE;
       l_count        number;
-      
+
    begin
         --------------------------------
         -- cleanup any previous tests --
@@ -2091,19 +2093,19 @@ AS
 
         ----------------------------------------------------
         -- create the location and four location levels
-        ----------------------------------------------------   
-        
-      -- create a location 
+        ----------------------------------------------------
+
+      -- create a location
 
       l_office_id := '&&office_id';
       l_location_id := 'TestLoc1';
       l_loc_lvl_id       := l_location_id || '.Flow-05Percentile.Const.1Day.CENWP-10year-thru2022-STATS';
-      l_us        := 'EN';      
+      l_us        := 'EN';
 
       cwms_loc.store_location ( p_location_id  => l_location_id, p_db_office_id => l_office_id);
-   
+
       -- add four seasonal location_levels
-   
+
      cwms_level.store_location_level4(
          p_location_level_id => l_loc_lvl_id,
          p_level_value       => null,
@@ -2112,56 +2114,56 @@ AS
          p_timezone_id       => 'UTC',
          p_interval_origin   => to_date('2023-01-01 08:00:00', 'yyyy-mm-dd hh24:mi:ss'),
          p_interval_months   => 12,
-         P_Expiration_Date   => null,                              
+         P_Expiration_Date   => null,
          p_interpolate       => 'F',
          p_fail_if_exists    => 'F',
          p_office_id         => l_office_id,
          p_seasonal_values   => cwms_t_seasonal_value_tab(
-      cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('00 00:00:00'), 5360.000000000001  ), 
-      cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('01 00:00:00'), 4880.000000000001  ), 
-      cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('02 00:00:00'), 3847.7754632288793 ), 
+      cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('00 00:00:00'), 5360.000000000001  ),
+      cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('01 00:00:00'), 4880.000000000001  ),
+      cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('02 00:00:00'), 3847.7754632288793 ),
       cwms_t_seasonal_value( to_yminterval('00-00'), to_dsinterval('03 00:00:00'), 7196.964366433549  )
       ));
-   
-     
-      select count(*) 
-      into   l_count 
-      from   av_location_level 
-      where  office_id=l_office_id and unit_system=l_us and location_level_id=l_loc_lvl_id;   
-   
+
+
+      select count(*)
+      into   l_count
+      from   av_location_level
+      where  office_id=l_office_id and unit_system=l_us and location_level_id=l_loc_lvl_id;
+
       -- TEST FOR L_CODE=4
       ut.expect (l_count).to_equal (4);
-   
+
       -- TEST A SEASIONAL LOCATION LEVEL IN EN UNITS SYSTEM
-   
+
       l_us     := 'EN';
       l_test_level := 5360.000000000002d;
       dbms_output.put_line ('l_test_level  = '||l_test_level);
-   
+
       select seasonal_level
-      into   l_level 
-      from   av_location_level 
-      where  office_id         = l_office_id and 
-             unit_system       = l_us and 
-             location_level_id = l_loc_lvl_id and    
+      into   l_level
+      from   av_location_level
+      where  office_id         = l_office_id and
+             unit_system       = l_us and
+             location_level_id = l_loc_lvl_id and
              time_offset       = to_dsinterval('00 00:00:00');
-   
-      ut.expect (l_test_level).to_equal (l_level);   
-   
+
+      ut.expect (l_test_level).to_equal (l_level);
+
       -- TEST A SEASIONAL LOCATION LEVEL IN SI UNITS SYSTEM
-   
+
       l_us         := 'SI';
       l_test_level := 151.77829773312004d;
-   
+
       select seasonal_level
-      into   l_level 
-      from   av_location_level 
-      where  office_id         = l_office_id and 
-             unit_system       = l_us and 
-             location_level_id = l_loc_lvl_id and    
-             time_offset       = to_dsinterval('00 00:00:00');   
-   
-      ut.expect (l_test_level).to_equal (l_level);   
+      into   l_level
+      from   av_location_level
+      where  office_id         = l_office_id and
+             unit_system       = l_us and
+             location_level_id = l_loc_lvl_id and
+             time_offset       = to_dsinterval('00 00:00:00');
+
+      ut.expect (l_test_level).to_equal (l_level);
 
    end test_cwmsvue_442_location_level_performance_re_write;
 
@@ -2181,8 +2183,92 @@ AS
       ut.expect(cwms_loc.get_local_timezone('TestLoc1', '&&office_id')).to_be_null;
    end test_get_local_timezone_returns_null;
 
+   --------------------------------------------------------------------------------
+   -- procedure cwdb_246_vertical_datum_info_output_limited_size_to_4000_bytes
+   --------------------------------------------------------------------------------
+   procedure cwdb_246_vertical_datum_info_output_limited_size_to_4000_bytes
+   is
+      l_location_ids clob;
+      l_xml_str      varchar2(32767);
+      l_xml_clob     clob  := '
+<vertical-datum-info office="&&office_id" unit="ft">
+  <location>TestLoc1</location>
+  <native-datum>NGVD-29</native-datum>
+  <elevation>615.25</elevation>
+  <offset estimate="false">
+    <to-datum>NAVD-88</to-datum>
+    <value>-.3822</value>
+  </offset>
+</vertical-datum-info>';
+   begin
+      -----------------------------
+      -- store the base location --
+      -----------------------------
+      cwms_loc.store_location(
+         p_location_id  => 'TestLoc1',
+         p_db_office_id => '&&office_id');
+      ------------------------------------------------
+      -- store the base location vertical datum xml --
+      ------------------------------------------------
+      cwms_loc.set_vertical_datum_info(l_xml_clob, 'F');
+      dbms_lob.freetemporary(l_xml_clob);
+      ----------------------------
+      -- store 20 sub-locations --
+      ----------------------------
+      dbms_lob.createtemporary(l_location_ids, true);
+      l_location_ids := l_location_ids||'TestLoc1';
+      for i in 1..20 loop
+         cwms_loc.store_location(
+            p_location_id  => 'TestLoc1-'||trim(to_char(i, '09')),
+            p_db_office_id => '&&office_id');
+         l_location_ids := l_location_ids||chr(30)||'TestLoc1-'||trim(to_char(i, '09'));
+      end loop;
+      commit;
+      -----------------------------------------------------------
+      -- retrieve the for vertical datum xml for all locations --
+      -----------------------------------------------------------
+      cwms_loc.get_vertical_datum_info2(
+         p_vert_datum_info => l_xml_clob,
+         p_location_id     => l_location_ids,
+         p_unit            => 'ft',
+         p_office_id       => '&&office_id');
+      ut.expect(length(l_xml_clob)).to_be_greater_than(4000);
+      dbms_lob.freetemporary(l_xml_clob);
+
+      execute immediate '
+         create or replace function test_get_vertical_datum_info(
+            p_location_id in varchar2,
+            p_unit        in varchar2,
+            p_office_id   in varchar2)
+            return varchar2
+         is
+            l_xml varchar2(32767);
+         begin
+            cwms_loc.get_vertical_datum_info(
+               p_vert_datum_info => l_xml,
+               p_location_id     => p_location_id,
+               p_unit            => p_unit,
+               p_office_id       => p_office_id);
+            return l_xml;
+         end;';
+
+   begin
+      execute immediate 'select test_get_vertical_datum_info(:1, :2, :3) from dual'
+         into l_xml_str
+         using l_location_ids, 'ft', '&&office_id';
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'character string buffer too small', 'mn')).to_be_true;
+   end;
+
+   execute immediate 'drop function test_get_vertical_datum_info';
+
+   end cwdb_246_vertical_datum_info_output_limited_size_to_4000_bytes;
+
+
+
 END test_cwms_loc;
 /
 
 show errors;
-
