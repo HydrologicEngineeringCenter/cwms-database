@@ -80,7 +80,9 @@ procedure count (p_dml IN number) is
 
          end store;
 
-         commit;
+         -- Batch asynchronous commit to minimize contention
+         
+         commit WRITE NOWAIT BATCH;
 
          -- truncate l_date after minutes
 

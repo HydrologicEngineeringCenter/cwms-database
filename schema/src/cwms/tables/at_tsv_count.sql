@@ -110,7 +110,7 @@ begin
                          null as rolename
                     from all_users
                    where username like '__DCS___'
-                      or username like '__CWPA___'
+                      or username like '__CWPA__'
                       or username = 'CWMS_STR_ADM'
                   union
                   select grantee as username,
