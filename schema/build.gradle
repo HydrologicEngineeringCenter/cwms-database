@@ -237,9 +237,10 @@ task loadTestData() {
     doLast {
         println("Loading Test Clobs")
         exec {
+            def dbUrlWithoutParams = dbUrl.split("\\?")[0];
             workingDir "${projectDir}/src/test/data/ratings"
             executable "sqlldr"
-            args "${cwms_user}/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
+            args "${cwms_user}/\"${project.findProperty("flyway.password")}\"@${dbUrlWithoutParams}"
             args "control=xsl_test_clobs.ctl"
         }
     }

@@ -35,12 +35,12 @@ public class CwmsBulkDataResolver implements MigrationResolver {
 
     private void addMigrations(List<ResolvedMigration> migrations, String prefix, String suffix, MigrationResolver.Context context) {
         final String fullPrefix = prefix+"__";
-        log.info("finding CWMS Custom migrations");
+        log.info("Finding CWMS Custom migrations with prefix " + prefix);
         for (LoadableResource lr:  context.resourceProvider.getResources(prefix, new String[]{suffix})) {        
-            String filename = lr.getAbsolutePath();
-            log.fine(()->"*********" + filename +"**************");
+            String filename = lr.getFilename();
+            log.info(filename + ":" + lr.getAbsolutePathOnDisk());
             if (!filename.startsWith(fullPrefix)) {
-                log.fine("\tSkipped");
+                log.info("\tSkipped");
                 continue;
             }
             Integer checkSum = ChecksumCalculator.calculate(lr);
@@ -52,7 +52,7 @@ public class CwmsBulkDataResolver implements MigrationResolver {
                                                      checkSum, //checksum
                                                      equiv, //equivalentChecksum,
                                                      CoreMigrationType.CUSTOM,
-                                                     lr.getAbsolutePath(),
+                                                     lr.getAbsolutePathOnDisk(),
                                                      new CwmsDataLoadExecutor(dr)));
         }
 

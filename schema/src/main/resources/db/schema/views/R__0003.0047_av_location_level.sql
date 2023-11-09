@@ -50,13 +50,8 @@
  *              Tried using filtering WITH function (later permissions issue found)
  *              Appears to be an Oracle bug: WITH function references resolved at run time
  *              CASE expression filtering works
+ * Dash was moved to be an independent function.
 */
-
-create or replace function dash (p1 varchar2, p2 varchar2) return varchar2 as
-   begin
-      return p1 || case when p2 is not null then '-' end || p2;
-   end;
-
 create or replace force view av_location_level
 ( OFFICE_ID, 
   LOCATION_LEVEL_ID, 

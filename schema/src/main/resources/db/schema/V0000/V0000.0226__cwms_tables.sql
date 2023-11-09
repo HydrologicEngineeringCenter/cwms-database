@@ -16,7 +16,8 @@ CREATE SEQUENCE CWMS_SEQ
        (
            STATE_CODE    NUMBER(14)  NOT NULL,
            STATE_INITIAL VARCHAR2(2) NOT NULL,
-           NAME          VARCHAR2(40)
+           NAME          VARCHAR2(40),
+           NATION_CODE   VARCHAR2(2)
        )
            PCTFREE 10
            PCTUSED 40
