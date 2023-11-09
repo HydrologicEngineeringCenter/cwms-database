@@ -3,6 +3,7 @@ declare
     p_code  cwms_state.state_code%type := ?;
     p_id    cwms_state.state_initial%type := ?;
     p_name    cwms_state.name%type := ?;
+    p_nation_code cwms_state.nation_code%type := ?;
 begin
     MERGE into cwms_20.cwms_state cs
         USING dual
@@ -10,12 +11,14 @@ begin
         WHEN MATCHED then
             update set
                 cs.state_initial = p_id,
-                cs.name = p_name
+                cs.name = p_name,
+                cs.nation_code = p_nation_code
         WHEN NOT MATCHED then
-            insert( state_code, state_initial, name)
+            insert( state_code, state_initial, name, nation_code)
             values( p_code,
                     p_id,
-                    p_name
+                    p_name,
+                    p_nation_code
                 )
 ;
 end;
@@ -23,77 +26,78 @@ end;
 !description
 :code \s*(?<current>[0-9]*),(?<remains>.*) int
 :id \s*('?)(?<current>.*?)\1,(?<remains>.*) string
-:name \s*('?)(?<current>.*?)\1|(?<remains>.*) string
+:name \s*('?)(?<current>.*?)\1,(?<remains>.*) string
+:nation \s*('?)(?<current>NULL|.*?)\1|(?<remains>.*) string
 !enddescription
 !data
-00, '00', 'Unknown State or State N/A'
-01, 'AL', 'Alabama'
-02, 'AK', 'Alaska'
-04, 'AZ', 'Arizona'
-05, 'AR', 'Arkansas'
-06, 'CA', 'California'
-08, 'CO', 'Colorado'
-09, 'CT', 'Connecticut'
-10, 'DE', 'Delaware'
-11, 'DC', 'District of Columbia'
-12, 'FL', 'Florida'
-13, 'GA', 'Georgia'
-15, 'HI', 'Hawaii'
-16, 'ID', 'Idaho'
-17, 'IL', 'Illinois'
-18, 'IN', 'Indiana'
-19, 'IA', 'Iowa'
-20, 'KS', 'Kansas'
-21, 'KY', 'Kentucky'
-22, 'LA', 'Louisiana'
-23, 'ME', 'Maine'
-24, 'MD', 'Maryland'
-25, 'MA', 'Massachusetts'
-26, 'MI', 'Michigan'
-27, 'MN', 'Minnesota'
-28, 'MS', 'Mississippi'
-29, 'MO', 'Missouri'
-30, 'MT', 'Montana'
-31, 'NE', 'Nebraska'
-32, 'NV', 'Nevada'
-33, 'NH', 'New Hampshire'
-34, 'NJ', 'New Jersey'
-35, 'NM', 'New Mexico'
-36, 'NY', 'New York'
-37, 'NC', 'North Carolina'
-38, 'ND', 'North Dakota'
-39, 'OH', 'Ohio'
-40, 'OK', 'Oklahoma'
-41, 'OR', 'Oregon'
-42, 'PA', 'Pennsylvania'
-44, 'RI', 'Rhode Island'
-45, 'SC', 'South Carolina'
-46, 'SD', 'South Dakota'
-47, 'TN', 'Tennessee'
-48, 'TX', 'Texas'
-49, 'UT', 'Utah'
-50, 'VT', 'Vermont'
-51, 'VA', 'Virginia'
-53, 'WA', 'Washington'
-54, 'WV', 'West Virginia'
-55, 'WI', 'Wisconsin'
-56, 'WY', 'Wyoming'
-60, 'AS', 'American Samoa'
-66, 'GU', 'Guam'
-68, 'MH', 'Marshall Islands'
-69, 'MP', 'Northern Mariana Islands'
-72, 'PR', 'Puerto Rico'
-78, 'VI', 'Virgin Islands of the U.S.'
-80, 'AB', 'Alberta'
-81, 'BC', 'British Columbia'
-82, 'MB', 'Manitoba'
-83, 'NB', 'New Brunswick'
-84, 'NF', 'Newfoundland'
-85, 'NS', 'Nova Scotia'
-86, 'NT', 'Northwest Territories'
-87, 'NU', 'Nunavut'
-88, 'ON', 'Ontario'
-89, 'PE', 'Prince Edward Island'
-90, 'QC', 'Quebec'
-91, 'SK', 'Saskatchewan'
-92, 'YT', 'Yukon'
+00, '00', 'Unknown State or State N/A', NULL
+01, 'AL', 'Alabama', 'US'
+02, 'AK', 'Alaska', 'US'
+04, 'AZ', 'Arizona', 'US'
+05, 'AR', 'Arkansas', 'US'
+06, 'CA', 'California', 'US'
+08, 'CO', 'Colorado', 'US'
+09, 'CT', 'Connecticut', 'US'
+10, 'DE', 'Delaware', 'US'
+11, 'DC', 'District of Columbia', 'US'
+12, 'FL', 'Florida', 'US'
+13, 'GA', 'Georgia', 'US'
+15, 'HI', 'Hawaii', 'US'
+16, 'ID', 'Idaho', 'US'
+17, 'IL', 'Illinois', 'US'
+18, 'IN', 'Indiana', 'US'
+19, 'IA', 'Iowa', 'US'
+20, 'KS', 'Kansas', 'US'
+21, 'KY', 'Kentucky', 'US'
+22, 'LA', 'Louisiana', 'US'
+23, 'ME', 'Maine', 'US'
+24, 'MD', 'Maryland', 'US'
+25, 'MA', 'Massachusetts', 'US'
+26, 'MI', 'Michigan', 'US'
+27, 'MN', 'Minnesota', 'US'
+28, 'MS', 'Mississippi', 'US'
+29, 'MO', 'Missouri', 'US'
+30, 'MT', 'Montana', 'US'
+31, 'NE', 'Nebraska', 'US'
+32, 'NV', 'Nevada', 'US'
+33, 'NH', 'New Hampshire, 'US'
+34, 'NJ', 'New Jersey', 'US'
+35, 'NM', 'New Mexico', 'US'
+36, 'NY', 'New York', 'US'
+37, 'NC', 'North Carolina', 'US'
+38, 'ND', 'North Dakota', 'US'
+39, 'OH', 'Ohio', 'US'
+40, 'OK', 'Oklahoma', 'US'
+41, 'OR', 'Oregon', 'US'
+42, 'PA', 'Pennsylvania', 'US'
+44, 'RI', 'Rhode Island', 'US'
+45, 'SC', 'South Carolina', 'US'
+46, 'SD', 'South Dakota', 'US'
+47, 'TN', 'Tennessee', 'US'
+48, 'TX', 'Texas', 'US'
+49, 'UT', 'Utah', 'US'
+50, 'VT', 'Vermont', 'US'
+51, 'VA', 'Virginia', 'US'
+53, 'WA', 'Washington', 'US'
+54, 'WV', 'West Virginia', 'US'
+55, 'WI', 'Wisconsin', 'US'
+56, 'WY', 'Wyoming', 'US'
+60, 'AS', 'American Samoa', 'US'
+66, 'GU', 'Guam', 'US'
+68, 'MH', 'Marshall Islands', 'US'
+69, 'MP', 'Northern Mariana Islands', 'US'
+72, 'PR', 'Puerto Rico', 'US'
+78, 'VI', 'Virgin Islands of the U.S.', 'US'
+80, 'AB', 'Alberta', 'CA'
+81, 'BC', 'British Columbia', 'CA'
+82, 'MB', 'Manitoba', 'CA'
+83, 'NB', 'New Brunswick', 'CA'
+84, 'NF', 'Newfoundland', 'CA'
+85, 'NS', 'Nova Scotia', 'CA'
+86, 'NT', 'Northwest Territories', 'CA'
+87, 'NU', 'Nunavut', 'CA'
+88, 'ON', 'Ontario', 'CA'
+89, 'PE', 'Prince Edward Island', 'CA'
+90, 'QC', 'Quebec', 'CA'
+91, 'SK', 'Saskatchewan', 'CA'
+92, 'YT', 'Yukon', 'CA'
