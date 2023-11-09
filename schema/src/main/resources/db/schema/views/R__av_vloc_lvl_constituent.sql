@@ -1,5 +1,3 @@
---delete from at_clob where id = '/VIEWDOCS/AV_VLOC_LVL_CONSTITUENT';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_VLOC_LVL_CONSTITUENT', null, '
 /**
  * Displays information about and virtual location level constituents
  *
@@ -38,7 +36,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_VLOC_LVL_CONSTIT
  * @field constitusit_attr_value_si The attribute value in SI units if the constituent is a location level with an attribute
  * @field constitusit_attr_unit_si  The SI unit of the attribute value if the constituent is a location level with an attribute
  */
-');
 create or replace force view av_vloc_lvl_constituent (
    location_level_code,
    constituent_abbr,
@@ -94,4 +91,3 @@ select location_level_code,
 
 create or replace public synonym cwms_v_vloc_lvl_constituent for av_vloc_lvl_constituent;
 grant select on av_vloc_lvl_constituent to cwms_user;
-

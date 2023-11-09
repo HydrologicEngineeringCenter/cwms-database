@@ -1,6 +1,3 @@
--- delete from at_clob where id = '/VIEWDOCS/AV_DELETED_TS_ID';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DELETED_TS_ID', null,
-'
 /**
  * Displays CWMS Time Series Identifiers That Are Available for Undelete
  *
@@ -34,8 +31,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DELETED_TS_ID', 
  * @field time_zone_id        The time zone of the location for this time series
  * @field delete_date         The date that this ts_id was marked for deletion
 */
-');
-
 CREATE OR REPLACE FORCE VIEW av_deleted_ts_id
 (
     db_office_id,

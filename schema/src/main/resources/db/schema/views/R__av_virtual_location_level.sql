@@ -1,8 +1,5 @@
---delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL2';
-declare
-   l_clob clob := '
 /**
- * Displays information about concrete and virtual location levels.
+ * Displays information about virtual location levels.
  * Selecting records from this view is much quicker if the critera include location_code instead of location_id.
  *
  * @since CWMS Database Schema 18.2.0
@@ -16,7 +13,7 @@ declare
  * @field attr_unit_en             The English unit of the attribute value, if any
  * @field attr_value_si            The attribute, if any, in SI units
  * @field attr_unit_si             The SI unit of the attribute value, if any
- * @field level_type               The type of location level (CONSTANT, REGULARLY-VARYING, IRREGULARLY-VARYING, or VIRTUAL)
+ * @field connections              The connections string for the constituents used for this location level
  * @field location_id              The text identifier of the full location for of the location level
  * @field base_location_id         The text identifier of the base location for the location level
  * @field sub_location_id          The text identifier of the sub-location for the location level
@@ -46,12 +43,7 @@ declare
  * @field loc_alias_category       The text identifier of the location group category if the  location_id is a location alias
  * @field loc_alias_group,         The text identifier of the location group if the  location_id is a location alias
  */
-';
-begin
-   insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL2', null, l_clob);
-end;
-/
-create or replace force view av_location_level2 (
+create or replace force view av_virtual_location_level (
    office_id,
    location_level_id,
    effective_date_utc,
@@ -61,13 +53,12 @@ create or replace force view av_location_level2 (
    attr_unit_en,
    attr_value_si,
    attr_unit_si,
-   level_type,
+   connections,
    location_id,
    base_location_id,
    sub_location_id,
    parameter_id,
    base_parameter_id,
-   sub_parameter_id,
    duration_id,
    specified_level_id,
    attr_parameter_id,
@@ -100,14 +91,13 @@ select office_id,
        attr_unit_en,
        attr_value_si,
        attr_unit_si,
-       level_type,
+       connections,
        location_id,
        base_location_id,
        sub_location_id,
        parameter_id,
        base_parameter_id,
        sub_parameter_id
-       parameter_id,
        duration_id,
        specified_level_id,
        attr_parameter_id,
@@ -142,7 +132,7 @@ select office_id,
                lvl.attr_unit_en,
                round(cwms_util.convert_units(lvl.attr_value, lvl.attr_unit, lvl.attr_unit_si), 9) as attr_value_si,
                lvl.attr_unit_si,
-               lvl.level_type,
+               lvl.connections,
                loc.location_id,
                loc.base_location_id,
                loc.sub_location_id,
@@ -251,7 +241,7 @@ select office_id,
                join
                (select q1.effective_date_utc,
                        q1.expiration_date_utc,
-                       q1.level_type,
+                       q1.connections,
                        q1.parameter_id,
                        q1.base_parameter_id,
                        q1.sub_parameter_id,
@@ -281,19 +271,15 @@ select office_id,
                        else cwms_util.get_unit_id2(cwms_util.get_db_unit_code(q2.attr_parameter_code))
                        end as attr_unit
                   from (select distinct
+                               ll.constituent_connections as connections,
                                bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id))||p.sub_parameter_id as parameter_id,
                                bp.base_parameter_id,
                                p.sub_parameter_id,
                                pt.parameter_type_id,
                                d.duration_id,
                                sl.specified_level_id,
-                               ll.location_level_date as effective_date_utc,
+                               ll.effective_date as effective_date_utc,
                                ll.expiration_date as expiration_date_utc,
-                               case
-                               when ll.location_level_value is not null then 'CONSTANT'
-                               when ll.interval_origin is not null then 'REGULARLY-VARYING'
-                               when ll.ts_code is not null then 'IRREGULARLY-VARYING'
-                               end as level_type,
                                ll.location_level_code,
                                ll.location_code,
                                p.parameter_code,
@@ -305,7 +291,7 @@ select office_id,
                                ll.attribute_parameter_type_code,
                                ll.attribute_duration_code,
                                ll.attribute_value as attr_value
-                          from at_location_level ll,
+                          from at_virtual_location_level ll,
                                at_parameter p,
                                cwms_base_parameter bp,
                                cwms_parameter_type pt,
@@ -341,97 +327,8 @@ select office_id,
                        ) q2 on q2.attr_parameter_code = q1.attribute_parameter_code
                           and q2.attr_parameter_type_code = q1.attribute_parameter_type_code
                           and q2.attr_duration_code = q1.attribute_duration_code
-                union all
-                select q3.effective_date_utc,
-                       q3.expiration_date_utc,
-                       q3.level_type,
-                       q3.parameter_id,
-                       q3.base_parameter_id,
-                       q3.sub_parameter_id,
-                       q3.parameter_type_id,
-                       q3.duration_id,
-                       q3.specified_level_id,
-                       q4.attr_parameter_id,
-                       q4.attr_base_parameter_id,
-                       q4.attr_sub_parameter_id,
-                       q4.attr_parameter_type_id,
-                       q4.attr_duration_id,
-                       q4.attr_unit_en,
-                       q4.attr_unit_si,
-                       q3.location_level_code,
-                       q3.location_code,
-                       q3.parameter_code,
-                       q3.base_parameter_code,
-                       q3.duration_code,
-                       q3.specified_level_code,
-                       q4.attr_parameter_code,
-                       q4.attr_base_parameter_code,
-                       q4.attr_parameter_type_code,
-                       q4.attr_duration_code,
-                       q3.attr_value,
-                       case
-                       when q4.attr_parameter_code is null then null
-                       else cwms_util.get_unit_id2(cwms_util.get_db_unit_code(q4.attr_parameter_code))
-                       end as attr_unit
-                  from (select distinct
-                               bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id))||p.sub_parameter_id as parameter_id,
-                               bp.base_parameter_id,
-                               p.sub_parameter_id,
-                               pt.parameter_type_id,
-                               d.duration_id,
-                               sl.specified_level_id,
-                               ll.effective_date as effective_date_utc,
-                               ll.expiration_date as expiration_date_utc,
-                              'VIRTUAL' as level_type,
-                               ll.location_code,
-                               p.parameter_code,
-                               bp.base_parameter_code,
-                               pt.parameter_type_code,
-                               d.duration_code,
-                               sl.specified_level_code,
-                               ll.location_level_code,
-                               ll.attribute_parameter_code,
-                               ll.attribute_parameter_type_code,
-                               ll.attribute_duration_code,
-                               ll.attribute_value as attr_value
-                          from at_virtual_location_level ll,
-                               at_parameter p,
-                               cwms_base_parameter bp,
-                               cwms_parameter_type pt,
-                               cwms_duration d,
-                               at_specified_level sl
-                         where p.parameter_code = ll.parameter_code
-                           and bp.base_parameter_code = p.base_parameter_code
-                           and pt.parameter_type_code = ll.parameter_type_code
-                           and d.duration_code = ll.duration_code
-                           and sl.specified_level_code = ll.specified_level_code
-                       ) q3
-                       left outer join
-                       (select bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id))||p.sub_parameter_id as attr_parameter_id,
-                               bp.base_parameter_id as attr_base_parameter_id,
-                               p.sub_parameter_id as attr_sub_parameter_id,
-                               pt.parameter_type_id as attr_parameter_type_id,
-                               d.duration_id as attr_duration_id,
-                               cwms_display.retrieve_user_unit_f(
-                                 p_parameter_id => bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id))||p.sub_parameter_id,
-                                 p_unit_system  => 'EN') as attr_unit_en,
-                               cwms_display.retrieve_user_unit_f(
-                                 p_parameter_id => bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id))||p.sub_parameter_id,
-                                 p_unit_system  => 'SI') as attr_unit_si,
-                               p.parameter_code as attr_parameter_code,
-                               bp.base_parameter_code as attr_base_parameter_code,
-                               pt.parameter_type_code as attr_parameter_type_code,
-                               d.duration_code as attr_duration_code
-                          from cwms_base_parameter bp,
-                               at_parameter p,
-                               cwms_parameter_type pt,
-                               cwms_duration d
-                         where bp.base_parameter_code = p.base_parameter_code
-                       ) q4 on q4.attr_parameter_code = q3.attribute_parameter_code
-                          and q4.attr_parameter_type_code = q3.attribute_parameter_type_code
-                          and q4.attr_duration_code = q3.attribute_duration_code
                ) lvl on lvl.location_code = loc.location_code
        );
 
-create or replace public synonym cwms_v_location_level2 for av_location_level2;
-grant select on av_location_level2 to cwms_user;
+create or replace public synonym cwms_v_virtual_location_level for av_virtual_location_level;
+grant select on av_virtual_location_level to cwms_user;
