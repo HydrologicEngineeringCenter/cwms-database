@@ -1817,9 +1817,10 @@ procedure store_seasonal_location_level(
     p_interval_origin_tz      in date,
     p_timezone_id             in varchar2,
     p_interval_origin         in  date,
-    p_level_factor            in  binary_double,
-    p_level_offset            in  binary_double,
-    p_location_level_code     in number
+    p_from_units              in  varchar2,
+    p_to_units                in  varchar2,
+    p_location_level_code     in number,
+    p_vertical_datum_offset   in number
     )
 
 is
@@ -1849,7 +1850,7 @@ begin
         values(p_location_level_code,
                cwms_util.months_to_yminterval(l_offset_months),
                cwms_util.minutes_to_dsinterval(l_offset_minutes),
-               p_seasonal_values(i).value * p_level_factor + p_level_offset);
+               cwms_util.convert_units(p_seasonal_values(i).value + p_vertical_datum_offset, p_from_units, p_to_units));
      end loop;
 end;
 --------------------------------------------------------------------------------
@@ -1916,9 +1917,10 @@ is
    l_attr_param_is_elev        boolean;
    l_level_vert_datum_offset   binary_double;
    l_attr_vert_datum_offset    binary_double;
+   l_seasonal_date_utc         date;
    l_offset_months             integer;
    l_offset_minutes            integer;
-   l_level_store_units_code    cwms_unit.unit_code%type;
+   l_level_store_units         cwms_unit.unit_id%type;
    l_attr_store_units_code      cwms_unit.unit_code%type;
 begin
    l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
@@ -2043,7 +2045,7 @@ begin
    
    
    -- get storage units --
-   l_level_store_units_code := cwms_util.get_db_unit_code(p_parameter_id);
+   l_level_store_units := cwms_util.get_default_units(p_parameter_id,'SI'); -- storage units are always SI
 
    if p_attribute_value is null then
       l_attribute_value := null;
@@ -2067,7 +2069,7 @@ begin
    l_level_value := cwms_util.convert_units(
          l_level_value,
          p_level_units,
-         l_level_store_units_code
+         l_level_store_units
    );
 
    if l_attribute_value is not null then
@@ -2180,7 +2182,7 @@ begin
                    l_ts_code,
                    l_expiration_date);
          end if;
-         store_seasonal_location_level(p_seasonal_values,l_interval_origin_tz, l_timezone_id, l_interval_origin, l_level_factor, l_level_offset, l_location_level_code);
+         store_seasonal_location_level(p_seasonal_values,l_interval_origin_tz, l_timezone_id, l_interval_origin, p_level_units, l_level_store_units, l_location_level_code, l_level_vert_datum_offset);
       end if;
    else
       -----------------------------
@@ -2271,7 +2273,7 @@ begin
                    cwms_util.convert_units(
                               p_seasonal_values(i).value+l_level_vert_datum_offset,
                               p_level_units,
-                              l_level_store_units_code
+                              l_level_store_units
                    )
             );
          end loop;

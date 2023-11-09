@@ -192,7 +192,11 @@ AS
                                         )
       RETURN VARCHAR2 DETERMINISTIC;
 
-   -- not documented, use cwms_util.convert_units
+   
+   /**
+     * -- not documented, use cwms_util.convert_units
+     * @deprecated use cwms_util.convert_units instead.
+     */
 	FUNCTION convert_from_to (p_orig_value 			 IN NUMBER,
 									  p_from_unit_name		 IN VARCHAR2,
 									  p_to_unit_name			 IN VARCHAR2,

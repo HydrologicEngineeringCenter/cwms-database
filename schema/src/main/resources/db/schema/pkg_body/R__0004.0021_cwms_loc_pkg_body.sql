@@ -434,33 +434,7 @@ AS
    IS
       l_return_value   NUMBER;
    BEGIN
-      --
-      -- retrieve correct unit conversion factor/offset...
-      BEGIN
-         SELECT   p_orig_value * factor + offset
-           INTO   l_return_value
-           FROM   cwms_unit_conversion
-          WHERE   from_unit_id = cwms_util.get_unit_id(p_from_unit_name)
-                  AND to_unit_id = cwms_util.get_unit_id(p_to_unit_name);
-
-         RETURN l_return_value;
-      --
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            raise_application_error (
-               -20216,
-                  'Unable to find conversion factor from '
-               || p_from_unit_name
-               || ' to '
-               || p_to_unit_name
-               || ' in CWMS DB',
-               TRUE
-            );
-         WHEN OTHERS
-         THEN
-            RAISE;
-      END;
+      return cwms_util.convert_units(p_orig_value,p_from_unit_name,p_to_unit_name);
    END convert_from_to;
 
    --********************************************************************** -
@@ -1074,12 +1048,7 @@ AS
       --.
       IF p_elevation IS NOT NULL
       THEN
-         l_elevation :=
-            convert_from_to (p_elevation,
-                             p_elev_unit_id,
-                             l_elev_db_unit,
-                             l_abstract_elev_param
-                            );
+         l_elevation :=   cwms_util.convert_units(p_elevation, p_elev_unit_id, l_elev_db_unit);
       ELSIF NOT l_ignorenulls
       THEN
          l_elevation := NULL;
@@ -1526,12 +1495,7 @@ AS
       --.
       IF p_elevation IS NOT NULL
       THEN
-         l_elevation :=
-            convert_from_to (p_elevation,
-                             p_elev_unit_id,
-                             l_elev_db_unit,
-                             l_abstract_elev_param
-                            );
+         l_elevation := cwms_util.convert_units(p_elevation, p_elev_unit_id, l_elev_db_unit);
       ELSIF NOT l_ignorenulls
       THEN
          l_elevation := NULL;
@@ -1955,12 +1919,7 @@ AS
       --.
       IF p_elevation IS NOT NULL
       THEN
-         l_elevation :=
-            convert_from_to (p_elevation,
-                             p_elev_unit_id,
-                             l_elev_db_unit,
-                             l_abstract_elev_param
-                            );
+         l_elevation := cwms_util.convert_units(p_elevation, p_elev_unit_id, l_elev_db_unit);
       END IF;
 
       ---------.
@@ -3713,7 +3672,7 @@ AS
       --
       BEGIN
          SELECT   apl.location_type,
-                  convert_from_to (apl.elevation, 'm', p_elev_unit_id, 'Length') elev,
+                  cwms_util.convert_units(apl.elevation, 'm', p_elev_unit_id) elev,
                   apl.vertical_datum,
                   apl.latitude, apl.longitude, apl.horizontal_datum,
                   apl.public_name, apl.long_name, apl.description,
