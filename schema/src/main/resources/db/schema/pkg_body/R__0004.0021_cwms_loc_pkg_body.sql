@@ -1048,7 +1048,7 @@ AS
       --.
       IF p_elevation IS NOT NULL
       THEN
-         l_elevation :=   cwms_util.convert_units(p_elevation, p_elev_unit_id, l_elev_db_unit);
+         l_elevation :=   cwms_util.convert_units(p_elevation, cwms_util.parse_unit(p_elev_unit_id), l_elev_db_unit);
       ELSIF NOT l_ignorenulls
       THEN
          l_elevation := NULL;
@@ -1495,7 +1495,7 @@ AS
       --.
       IF p_elevation IS NOT NULL
       THEN
-         l_elevation := cwms_util.convert_units(p_elevation, p_elev_unit_id, l_elev_db_unit);
+         l_elevation := cwms_util.convert_units(p_elevation, cwms_util.parse_unit(p_elev_unit_id), l_elev_db_unit);
       ELSIF NOT l_ignorenulls
       THEN
          l_elevation := NULL;
@@ -1919,7 +1919,7 @@ AS
       --.
       IF p_elevation IS NOT NULL
       THEN
-         l_elevation := cwms_util.convert_units(p_elevation, p_elev_unit_id, l_elev_db_unit);
+         l_elevation := cwms_util.convert_units(p_elevation, cwms_util.parse_unit(p_elev_unit_id), l_elev_db_unit);
       END IF;
 
       ---------.
@@ -3672,7 +3672,7 @@ AS
       --
       BEGIN
          SELECT   apl.location_type,
-                  cwms_util.convert_units(apl.elevation, 'm', p_elev_unit_id) elev,
+                  cwms_util.convert_units(apl.elevation, 'm', cwms_util.parse_unit(p_elev_unit_id)) elev,
                   apl.vertical_datum,
                   apl.latitude, apl.longitude, apl.horizontal_datum,
                   apl.public_name, apl.long_name, apl.description,
@@ -3760,7 +3760,7 @@ AS
          l_estimate := null;
       else
          if l_elev_unit != 'm' then
-            p_location.elevation := cwms_util.convert_units(p_location.elevation, 'm', l_elev_unit);
+            p_location.elevation := cwms_util.convert_units(p_location.elevation, 'm', cwms_util.parse_unit(l_elev_unit));
          end if;
          if l_vert_datum is not null then
             l_vert_datum_xml := xmltype(get_vertical_datum_info_f(p_location_code, l_elev_unit));
@@ -6951,7 +6951,7 @@ end unassign_loc_groups;
       end if;
       if l_update then
             update at_vert_datum_offset
-               set offset = cwms_util.convert_units(p_offset, p_unit, 'm'),
+               set offset = cwms_util.convert_units(p_offset, cwms_util.parse_unit(p_unit), 'm'),
                    description = p_description
              where rowid = l_rowid;
       elsif l_insert then
@@ -6971,7 +6971,7 @@ end unassign_loc_groups;
                     l_effective_date,
                     l_time_zone,
                     'UTC'),
-                 cwms_util.convert_units(p_offset, p_unit, 'm'),
+                 cwms_util.convert_units(p_offset, cwms_util.parse_unit(p_unit), 'm'),
                  p_description
                 );
          end if;
@@ -7080,7 +7080,7 @@ end unassign_loc_groups;
       end loop;
       select case
                 when p_unit_in is null then offset
-                else cwms_util.convert_units(offset, 'm', p_unit_in)
+                else cwms_util.convert_units(offset, 'm', cwms_util.parse_unit(p_unit_in))
              end,
              nvl(p_unit_in, 'm'),
              description
@@ -7658,7 +7658,7 @@ end unassign_loc_groups;
             ||' and '
             ||nvl(p_vertical_datum_id_2, 'NULL'));
       end if;
-      l_offset := cwms_util.convert_units(l_offset, 'm', p_unit);
+      l_offset := cwms_util.convert_units(l_offset, 'm', cwms_util.parse_unit(p_unit));
       return l_offset;
    end get_vertical_datum_offset;
 
@@ -7734,7 +7734,7 @@ end unassign_loc_groups;
       if p_unit is null then
          p_offset := l_offset;
       else
-         p_offset := cwms_util.convert_units(l_offset, 'm', p_unit);
+         p_offset := cwms_util.convert_units(l_offset, 'm', cwms_util.parse_unit(p_unit));
       end if;
       p_effective_date := cwms_util.change_timezone(l_effective_date, 'UTC', l_timezone);
       p_estimate := l_estimate;
@@ -7804,7 +7804,7 @@ end unassign_loc_groups;
          for i in 1..l_offsets.count loop
             l_offsets(i).date_time := cwms_util.change_timezone(l_offsets(i).date_time, 'UTC', l_timezone);
             if p_unit is not null then
-               l_offsets(i).value := cwms_util.convert_units(l_offsets(i).value, 'm', p_unit);
+               l_offsets(i).value := cwms_util.convert_units(l_offsets(i).value, 'm', cwms_util.parse_unit(p_unit));
             end if;
          end loop;
       end if;

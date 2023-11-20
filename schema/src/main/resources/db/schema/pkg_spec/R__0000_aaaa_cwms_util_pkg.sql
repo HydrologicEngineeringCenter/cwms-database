@@ -1812,7 +1812,7 @@ AS
       p_RPN_tokens in str_tab_t,
       p_args           in double_tab_t,
       p_args_offset    in integer default 0)
-      return number;
+      return binary_double;
    /**
     * Returns a stack of values from tokens in postfix (reverse Polish) notation (RPN) and
     * specified values for variables.  The first value is the top of the stack.
@@ -1860,7 +1860,7 @@ AS
       p_algebraic_expr in varchar2,
       p_args           in double_tab_t,
       p_args_offset    in integer default 0)
-      return number;
+      return binary_double;
    /**
     * Evaluates an arithmetic expression in infix (algebraic) notation and return
     * a stack of vlues based on specified variables.  The first value is the top of the stack.
@@ -1914,7 +1914,7 @@ AS
       p_RPN_expr    in varchar2,
       p_args        in double_tab_t,
       p_args_offset in integer default 0)
-      return number;
+      return binary_double;
    /**
     * Evaluates an arithmetic expression in postfix (reverse Polish) notation (RPN)
     * and return  a stack of values based on specified variables. The first value is the top of the stack.
@@ -1970,7 +1970,7 @@ AS
       p_expr        in varchar2,
       p_args        in double_tab_t,
       p_args_offset in integer default 0)
-      return number;
+      return binary_double;
    /**
     * Evaluates an arithmetic expression in infix (algebraic) notation or in postfix
     * (reverse Polish) notation (RPN) and returns a stack of values based on specified variables.

@@ -4250,7 +4250,7 @@ as
       p_rpn_tokens    in str_tab_t,
       p_args          in double_tab_t,
       p_args_offset   in integer default 0)
-      return number
+      return binary_double
    is
       l_stack double_tab_t;
    begin
@@ -4465,7 +4465,7 @@ as
       p_algebraic_expr in varchar2,
       p_args           in double_tab_t,
       p_args_offset    in integer default 0)
-      return number
+      return binary_double
    is
    begin
       return eval_tokenized_expression(
@@ -4503,7 +4503,7 @@ as
       p_rpn_expr      in varchar2,
       p_args          in double_tab_t,
       p_args_offset   in integer default 0)
-      return number
+      return binary_double
    is
    begin
       return eval_tokenized_expression(
@@ -4541,13 +4541,13 @@ as
       p_expr          in varchar2,
       p_args          in double_tab_t,
       p_args_offset   in integer default 0)
-      return number
+      return binary_double
    is
    begin
       return eval_tokenized_expression(tokenize_expression(p_expr), p_args, p_args_offset);
    exception
       when others then
-         cwms_err.raise('ERROR', 'Invalid expression: ' || p_expr);
+         cwms_err.raise('ERROR', 'Invalid expression: ' || p_expr || ' Error ' || sqlerrm);
    end eval_expression;
 
    -----------------------------------------------------------------------------

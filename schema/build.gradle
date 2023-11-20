@@ -193,6 +193,7 @@ task installTests(type: Exec ){
     args cwms_office
     args cwms_schema_name
     args cwms_eroc + "hectest_up"
+    args cwms_eroc
     doLast {
         project.mkdir(coverageDir)
         exec {
