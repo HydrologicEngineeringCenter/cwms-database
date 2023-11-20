@@ -144,11 +144,11 @@ to push the baseline data
 
 `./gradlew :schema:dataMigrate -Pflyway.url=jdbc:oracle:thin:@localhost:1521/FEATURES -Pcwms.user=CWMS_EXTRA -Pflyway.password=extrauser`
 
-to clean the database
-`./gradlew :schema:flywayClean -Pflyway.url=jdbc:oracle:thin:@localhost:1521/FEATURES -Pcwms.user=CWMS_EXTRA -Pflyway.password=extrauser`
+to clean the database:
+NOTE: the flyway.cleanDisabled flag at the end is required.
+`./gradlew :schema:flywayClean -Pflyway.url=jdbc:oracle:thin:@localhost:1521/FEATURES -Pcwms.user=CWMS_EXTRA -Pflyway.password=extrauser -Dflyway.cleanDisabled=false`
 
-If flyway created teh CWMS_20 user it will be dropped at the end of this task. If the flyway user already existed it will not.
-
+If flyway created the CWMS_20 user it will be dropped at the end of this task. If the flyway user already existed it will not.
 
 ### test
 
@@ -157,7 +157,16 @@ If you get the error that the oci version doesn't match while trying to run the 
 
 to run the tests
 
-   ant -Dbuilduser.overrides=build/local_overrides.xml test
+```
+./gradlew test -Pflyway.url=jdbc:oracle:thin:@localhost:1521/FEATURES \
+               -Pcwms.user=CWMS_EXTRA \
+               -Pcwms.pd_password=test
+               -Pdb.sys_password=vmwaresys
+               -Pflyway.password=extrauser \
+               -Pflyway.placeholders.CWMS_TEST_USERS=create
+```
+
+Replace passwords as appropriate for how you setup you're database.
 
 The test framework will be installed, and the tests will be run. The following files will be created:
 
