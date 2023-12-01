@@ -14243,7 +14243,7 @@ begin
                dbms_session.set_context(
                   namespace => 'CWMS_LEVEL',
                   attribute => l_loc_level_hash,
-                  value     => 'PROCESSING');
+                  value     => 'PROCESSING_CONSTITUENTS');
             else
                l_level_precedence := 'N';
             end if;
@@ -16416,7 +16416,7 @@ begin
    dbms_session.set_context(
       namespace => 'CWMS_LEVEL',
       attribute => l_loc_lvl_hash,
-      value     => 'PROCESSING');
+      value     => 'RETRIEVING_VALUES');
    if p_end_time_utc = p_start_time_utc then
       l_end_time_utc := p_end_time_utc;
    else
@@ -16452,6 +16452,9 @@ begin
       ------------------------------
       -- short circuit if no data --
       ------------------------------
+      dbms_session.clear_context(
+         namespace => 'CWMS_LEVEL',
+         attribute => l_loc_lvl_hash);
       p_level_values := ztsv_array();
       return;
    end if;
