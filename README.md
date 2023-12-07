@@ -203,3 +203,7 @@ patch - bug fixes to existing code
 Mike Neilson
 Mike Perryman
 Prasad Vemulapati
+
+## Confluence Documentation
+There is a confluence page that contains more information about the database API. 
+It is located at [CWMS Database Documentation](https://www.hec.usace.army.mil/confluence/display/CWMS/CWMS+Database+Documentation)
