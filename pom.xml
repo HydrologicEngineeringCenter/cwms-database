@@ -25,10 +25,6 @@
 	</properties>
 	<modules>
 		<module>schema</module>
-		<module>codegen/cwms-db-properties-reader</module>
-		<module>codegen/cwms-db-version-generator</module>
-		<module>codegen/cwms-db-jooq-generator</module>
-		<module>codegen/cwms-db-jooq-codegen</module>
 	</modules>
 	<distributionManagement>
 		<snapshotRepository>

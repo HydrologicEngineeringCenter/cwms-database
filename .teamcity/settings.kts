@@ -66,7 +66,6 @@ object Build : BuildType({
         schema/build/resources => resources.zip
         schema/build/resources.jar =>
         schema/build/docs.zip =>
-        codegen/cwms-db-jooq-codegen/*.jar =>
     """.trimIndent()
 
 
@@ -117,14 +116,6 @@ object Build : BuildType({
             targets = "test"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
             jdkHome ="%env.JDK_1_8_x64%"
-        }
-        maven {
-            name = "jOOQ Codegen"
-            pomLocation = "schema/pom.xml"
-            userSettingsSelection = "cwms-maven-settings"
-            goals = "package"
-            jdkHome = "%env.JDK_11_x64%"
-            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"            
         }
         ant {
             workingDir = "./schema"

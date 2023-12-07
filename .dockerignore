@@ -1,7 +1,6 @@
 .idea
 .teamcity
 .git
-codegen
 cwmsdata
 testcontainers
 util
