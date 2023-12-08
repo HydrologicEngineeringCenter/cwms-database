@@ -39,6 +39,64 @@ If you do not have write access you may be able to fork it in bitbucket and subm
 
 ## build and testing
 
+### Standing up an Oracle database
+
+#### OS Install
+
+Beyond the scope of this document.
+
+#### Docker
+
+The following assumes you have installed docker. Link to docker installation instructions: https://docs.docker.com/engine/install/
+If you have DevNet credentials you can get a pregenerated Oracle Database image in the following way:
+
+```
+docker login https://registry.hecdev.net
+# enter user name and password as prompted
+docker pull registry.hecdev.net/oracle/database:19.3.0-ee
+# also available are:
+docker pull registry.hecdev.net/oracle/database:19.17.0-ee
+docker pull registry.hecdev.net/oracle/database:18.4.0-xe
+```
+
+The readme will provide some simple instructions, for additional container configuration options see: https://github.com/oracle/docker-images/tree/main/OracleDatabase/SingleInstance
+
+For continuous development the following setup is recommended. It uses the pluggable database mechanism. This allows the creation of additional databases within this one instance. This is 
+useful for having say, a fairly stable version of the schema for application development and a separate database for database feature development.
+
+```
+docker volume create cwmsdb_volume
+docker network create cwmsdb_net
+docker run -d --name cwmsdb -e ORACLE_PDB=CWMSDEV -e ORACLE_PWD=<this can be simple> -p 1521:1521 -e5500:5500 -p 2484:2484 \
+-e ENABLE_TCPS=true --ulimit nofile=1024:65536 --ulimit nproc=2047:16384 \
+--ulimit stack=10485760:33554432 --ulimit memlock=3221225472 \
+-v cwms_db_volume:/opt/oracle/oradata \
+registry.hecdev.net/oracle/database:19.17.0-ee
+
+docker logs -f cwmsdb
+# Now wait roughly 35-40 minutes for "Database ready to appear"
+# Use `Ctrl-C` to disable the log display
+# If you're machine is restarted do the following to bring it back up
+docker start cwmsdb # this will be fairly quick
+# to restart
+docker restart cwmsdb
+```
+
+We've found that sqlplus and other tools don't play super nice with oracle in docker at times. create a `$HOME/.sqlnet.ora` file
+that includes the following:
+
+```
+DISABLE_OOB=ON
+```
+
+For JDBC connections use the following extra parameter:
+```
+jdbc:oracle:thin:.../CWMSDB?oracle.net.disableOob=true
+```
+
+You should not be able to use the schema installer image below, or create an overrides file (see build for dev below) to
+use the ant targets directly.
+
 ### Docker installer for use
 
 `docker pull registy.hecdev.net/cwms/schema_installer:<version>`
@@ -125,9 +183,9 @@ CMD [ "-st", "-c", "--huc 05130105 --parameter_code 00060 00065" ]
 ```
 
 
-### Radar
+### CWMS-Data-API
 
-The Compose file references [USACE/cwms-radar-api](https://github.com/USACE/cwms-radar-api) locally with a relative path.  Modify the `radar:build:context` path according to local setup.
+The Compose file references [USACE/cwms-data-api](https://github.com/USACE/cwms-data-api) locally with a relative path.  Modify the `radar:build:context` path according to local setup.
 
 ----
 
@@ -200,9 +258,9 @@ patch - bug fixes to existing code
 
 ## Reviewers
 
+Eric Novotny
 Mike Neilson
 Mike Perryman
-Prasad Vemulapati
 
 ## Confluence Documentation
 There is a confluence page that contains more information about the database API. 
