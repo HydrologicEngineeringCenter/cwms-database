@@ -64,6 +64,9 @@ The readme will provide some simple instructions, for additional container confi
 For continuous development the following setup is recommended. It uses the pluggable database mechanism. This allows the creation of additional databases within this one instance. This is 
 useful for having say, a fairly stable version of the schema for application development and a separate database for database feature development.
 
+NOTE: The -e ENABLE_TCPS and --ulimit lines are present in the latest github.
+None of the current HEC images were built at a time when they were present.
+
 ```
 docker volume create cwmsdb_volume
 docker network create cwmsdb_net
