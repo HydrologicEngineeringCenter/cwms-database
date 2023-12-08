@@ -64,15 +64,12 @@ The readme will provide some simple instructions, for additional container confi
 For continuous development the following setup is recommended. It uses the pluggable database mechanism. This allows the creation of additional databases within this one instance. This is 
 useful for having say, a fairly stable version of the schema for application development and a separate database for database feature development.
 
-NOTE: The -e ENABLE_TCPS and --ulimit lines are present in the latest github.
-None of the current HEC images were built at a time when they were present.
+NOTE: If building manually from the github link images you may need additional parameters.
 
 ```
 docker volume create cwmsdb_volume
 docker network create cwmsdb_net
-docker run -d --name cwmsdb -e ORACLE_PDB=CWMSDEV -e ORACLE_PWD=<this can be simple> -p 1521:1521 -e5500:5500 -p 2484:2484 \
--e ENABLE_TCPS=true --ulimit nofile=1024:65536 --ulimit nproc=2047:16384 \
---ulimit stack=10485760:33554432 --ulimit memlock=3221225472 \
+docker run -d --name cwmsdb -e ORACLE_PDB=CWMSDEV -e ORACLE_PWD="simplePassword0#" -p 1521:1521 -e5500:5500 -p 2484:2484 \
 -v cwms_db_volume:/opt/oracle/oradata \
 registry.hecdev.net/oracle/database:19.17.0-ee
 
