@@ -191,13 +191,6 @@ AS
       l_cache_id := to_char(p_db_office_code)||'/'||upper(p_location_id);
       l_location_code := cwms_cache.get(g_location_code_cache, l_cache_id);
       if l_location_code is not null then
-         declare
-            l_rec at_physical_location%rowtype;
-         begin
-            select * into l_rec from at_physical_location where location_code = l_location_code;
-         exception
-            when no_data_found then cwms_err.raise('ERROR', 'INVALID CACHE HIT: '||l_cache_id);
-         end;
          return l_location_code;
       end if;
 
