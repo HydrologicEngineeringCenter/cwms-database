@@ -1671,8 +1671,7 @@ AS
 
    -- not documented
    FUNCTION clean_quality_code (p_quality_code IN NUMBER)
-      RETURN NUMBER
-      RESULT_CACHE;
+      RETURN NUMBER;
 
    -- not documented
    FUNCTION use_first_table (p_timestamp IN TIMESTAMP DEFAULT NULL)
@@ -2850,8 +2849,7 @@ AS
     * @return The text description of the validity portion of the quality code
     */
    FUNCTION get_quality_validity (p_quality_code IN NUMBER)
-      RETURN VARCHAR2
-      RESULT_CACHE;
+      RETURN VARCHAR2;
 
    /**
     * Retrieves a text description of the validity portion of the quality code of a time series value
@@ -2881,8 +2879,7 @@ AS
     * @return Whether the quality code is marked as okay
     */
    FUNCTION quality_is_okay (p_quality_code IN NUMBER)
-      RETURN BOOLEAN
-      RESULT_CACHE;
+      RETURN BOOLEAN;
 
    /**
     * Retrieves whether the quality code of a time series value is marked as okay
@@ -2912,8 +2909,7 @@ AS
     * @return Whether the quality code is marked as okay as text ('T'/'F')
     */
    FUNCTION quality_is_okay_text (p_quality_code IN NUMBER)
-      RETURN VARCHAR2
-      RESULT_CACHE;
+      RETURN VARCHAR2;
 
    /**
     * Retrieves whether the quality code of a time series value is marked as okay
@@ -2943,8 +2939,7 @@ AS
     * @return Whether the quality code is marked as missing
     */
    FUNCTION quality_is_missing (p_quality_code IN NUMBER)
-      RETURN BOOLEAN
-      RESULT_CACHE;
+      RETURN BOOLEAN;
 
    /**
     * Retrieves whether the quality code of a time series value is marked as missing
@@ -2974,8 +2969,7 @@ AS
     * @return Whether the quality code is marked as missing as text ('T'/'F')
     */
    FUNCTION quality_is_missing_text (p_quality_code IN NUMBER)
-      RETURN VARCHAR2
-      RESULT_CACHE;
+      RETURN VARCHAR2;
 
    /**
     * Retrieves whether the quality code of a time series value is marked as missing
@@ -3005,8 +2999,7 @@ AS
     * @return Whether the quality code is marked as questionable
     */
    FUNCTION quality_is_questionable (p_quality_code IN NUMBER)
-      RETURN BOOLEAN
-      RESULT_CACHE;
+      RETURN BOOLEAN;
 
    /**
     * Retrieves whether the quality code of a time series value is marked as questionable
@@ -3036,8 +3029,7 @@ AS
     * @return Whether the quality code is marked as questionable as text ('T'/'F')
     */
    FUNCTION quality_is_questionable_text (p_quality_code IN NUMBER)
-      RETURN VARCHAR2
-      RESULT_CACHE;
+      RETURN VARCHAR2;
 
    /**
     * Retrieves whether the quality code of a time series value is marked as questionable
@@ -3067,8 +3059,7 @@ AS
     * @return Whether the quality code is marked as rejected
     */
    FUNCTION quality_is_rejected (p_quality_code IN NUMBER)
-      RETURN BOOLEAN
-      RESULT_CACHE;
+      RETURN BOOLEAN;
 
    /**
     * Retrieves whether the quality code of a time series value is marked as rejected
@@ -3098,8 +3089,7 @@ AS
     * @return Whether the quality code is marked as rejected  as text ('T'/'F')
     */
    FUNCTION quality_is_rejected_text (p_quality_code IN NUMBER)
-      RETURN VARCHAR2
-      RESULT_CACHE;
+      RETURN VARCHAR2;
 
    /**
     * Retrieves whether the quality code of a time series value is marked as rejected
@@ -3129,8 +3119,7 @@ AS
     * @return Whether the quality code is marked as protected
     */
    FUNCTION quality_is_protected (p_quality_code IN NUMBER)
-      RETURN BOOLEAN
-      RESULT_CACHE;
+      RETURN BOOLEAN;
 
    /**
     * Retrieves whether the quality code of a time series value is marked as protected
@@ -3160,8 +3149,7 @@ AS
     * @return Whether the quality code is marked as protected  as text ('T'/'F')
     */
    FUNCTION quality_is_protected_text (p_quality_code IN NUMBER)
-      RETURN VARCHAR2
-      RESULT_CACHE;
+      RETURN VARCHAR2;
 
    /**
     * Retrieves whether the quality code of a time series value is marked as protected
@@ -3191,8 +3179,7 @@ AS
     * @return A text description for the quality code
     */
    FUNCTION get_quality_description (p_quality_code IN NUMBER)
-      RETURN VARCHAR2
-      RESULT_CACHE;
+      RETURN VARCHAR2;
 
    /**
     * Retrieves the interval minutes of a time series
@@ -3202,7 +3189,7 @@ AS
     * @return the interval minutes of the time series identifier
     */
    FUNCTION get_ts_interval (p_ts_code IN NUMBER)
-      RETURN NUMBER RESULT_CACHE;
+      RETURN NUMBER;
 
    /**
     * Retrieves the interval minutes of a time series identifier
@@ -3212,7 +3199,7 @@ AS
     * @return the interval minutes of the time series identifier
     */
    FUNCTION get_ts_interval (p_cwms_ts_id IN VARCHAR2)
-      RETURN NUMBER RESULT_CACHE;
+      RETURN NUMBER;
 
    /**
     * Retrieves the interval portion string of a time series identifier
@@ -3222,7 +3209,7 @@ AS
     * @return the interval portion string of the time series identifier
     */
    FUNCTION get_ts_interval_string (p_cwms_ts_id IN VARCHAR2)
-      RETURN VARCHAR2 RESULT_CACHE;
+      RETURN VARCHAR2;
 
    /**
     * Retrieves the interval minutes of a specified interval string
@@ -3232,7 +3219,7 @@ AS
     * @return the interval minutes of the specified interval string
     */
    FUNCTION get_interval (p_interval_id IN VARCHAR2)
-      RETURN NUMBER RESULT_CACHE;
+      RETURN NUMBER;
 
    /**
     * Returns the UTC interval offset for a specified time and interval
@@ -3245,7 +3232,7 @@ AS
    FUNCTION get_utc_interval_offset (
       p_date_time_utc    IN DATE,
       p_interval_minutes IN NUMBER)
-      RETURN NUMBER RESULT_CACHE;
+      RETURN NUMBER;
    /**
     * Returns a table of valid date/times in a specified time window for a regular time series
     *
@@ -3956,8 +3943,7 @@ AS
     */
    function normalize_quality(
       p_quality in number)
-      return number
-      result_cache;
+      return number;
 
    /**
     * Sets the default storage policy for an office for time series data that contains null values with non-missing quality codes.

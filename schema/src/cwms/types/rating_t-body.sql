@@ -3924,6 +3924,7 @@ as
       l_effective_date          date;
       l_time_zone               varchar2(28);
       l_rating_code             number;
+      l_cache_id                varchar2(32767);
    begin
       l_office_id := nvl(p_office_id, cwms_util.user_office_id);
       l_office_code := cwms_util.get_office_code(l_office_id);
@@ -3939,24 +3940,11 @@ as
       l_template_version       := l_parts(3);
       l_version                := l_parts(4);
 
-      begin
-         select ls.rating_spec_code
-           into l_rating_spec_code
-           from at_rating_spec ls,
-                at_rating_template lt
-          where lt.office_code = l_office_code
-            and upper(lt.parameters_id) = upper(l_template_parameters_id)
-            and upper(lt.version) = upper(l_template_version)
-            and ls.template_code = lt.template_code
-            and ls.location_code = cwms_loc.get_location_code(l_office_code, l_location_id)
-            and upper(ls.version) = upper(l_version);
-      exception
-         when no_data_found then
-            cwms_err.raise(
-               'ITEM_DOES_NOT_EXIST',
-               'Rating specification',
-               l_office_id||'/'||p_rating_spec_id);
-      end;
+      l_rating_spec_code := rating_spec_t.get_rating_spec_code(
+         p_location_id => l_location_id,
+         p_template_id => l_template_parameters_id||cwms_rating.separator1||l_template_version,
+         p_version     => l_version,
+         p_office_id   => l_office_id);
 
       if p_effective_date is null then
          if cwms_util.is_true(p_match_date) then
@@ -3981,6 +3969,18 @@ as
             l_time_zone := p_time_zone;
          end if;
          l_effective_date := cwms_util.change_timezone(l_effective_date, l_time_zone, 'UTC');
+      end if;
+      ---------------------------------
+      -- see if the rating is cached --
+      ---------------------------------
+      l_cache_id :=
+         l_office_code
+         ||'/'||upper(p_rating_spec_id)
+         ||'/'||to_char(l_effective_date, 'yyyy-mm-dd hh24:mi')
+         ||'/'||upper(p_match_date);
+      l_rating_code := cwms_cache.get(cwms_rating.g_rating_code_cache, l_cache_id);
+      if l_rating_code is not null then
+         return l_rating_code;
       end if;
 
       if cwms_util.is_true(p_match_date) then
@@ -4087,7 +4087,10 @@ as
             end;
          end if;
       end if;
-
+      -----------------------------
+      -- add rating to the cache --
+      -----------------------------
+      cwms_cache.put(cwms_rating.g_rating_code_cache, l_cache_id, l_rating_code);
       return l_rating_code;
    end;
 end;

@@ -160,7 +160,6 @@ AS
                                p_check_aliases  IN VARCHAR2
                               )
       RETURN NUMBER
-      RESULT_CACHE
    IS
       l_db_office_code    NUMBER := cwms_util.get_office_code (p_db_office_id);
    BEGIN
@@ -171,14 +170,15 @@ AS
    END;
 
    --
+
    FUNCTION get_location_code (p_db_office_code   IN NUMBER,
                                p_location_id      IN VARCHAR2,
                                p_check_aliases    IN VARCHAR2
                               )
       RETURN NUMBER
-      RESULT_CACHE
    IS
       l_location_code   NUMBER;
+      l_cache_id        varchar2(271);
    BEGIN
       IF p_location_id IS NULL
       THEN
@@ -188,6 +188,19 @@ AS
       END IF;
 
       --
+      l_cache_id := to_char(p_db_office_code)||'/'||upper(p_location_id);
+      l_location_code := cwms_cache.get(g_location_code_cache, l_cache_id);
+      if l_location_code is not null then
+         declare
+            l_rec at_physical_location%rowtype;
+         begin
+            select * into l_rec from at_physical_location where location_code = l_location_code;
+         exception
+            when no_data_found then cwms_err.raise('ERROR', 'INVALID CACHE HIT: '||l_cache_id);
+         end;
+         return l_location_code;
+      end if;
+
       SELECT   apl.location_code
         INTO   l_location_code
         FROM   at_physical_location apl, at_base_location abl
@@ -199,6 +212,7 @@ AS
                AND abl.db_office_code = p_db_office_code;
 
       --
+      cwms_cache.put(g_location_code_cache, l_cache_id, l_location_code);
       RETURN l_location_code;
    --
    EXCEPTION
@@ -222,6 +236,7 @@ AS
                   cwms_err.raise('LOCATION_ID_NOT_FOUND', p_location_id);
                END IF;
 
+               cwms_cache.put(g_location_code_cache, l_cache_id, l_location_code);
                RETURN l_location_code;
             END;
          ELSE
@@ -236,7 +251,6 @@ AS
                                p_location_id      IN VARCHAR2
                               )
       RETURN NUMBER
-      RESULT_CACHE
    IS
    BEGIN
       return get_location_code(p_db_office_code, p_location_id, 'T');
@@ -246,7 +260,6 @@ AS
                                p_location_id    IN VARCHAR2
                               )
       RETURN NUMBER
-      RESULT_CACHE
    IS
    BEGIN
       return get_location_code(p_db_office_id, p_location_id, 'T');
@@ -3103,17 +3116,24 @@ AS
                   ----------------------
                   -- actual locations --
                   ----------------------
-                  delete
-                    from at_physical_location apl
-                   where apl.base_location_code = l_base_location_code;
+                  for rec in (select location_code
+                                from at_physical_location apl
+                               where apl.base_location_code = l_base_location_code
+                             )
+                  loop
+                     delete from at_physical_location where location_code = rec.location_code;
+                     cwms_cache.remove_by_value(g_location_code_cache, rec.location_code);
+                  end loop;
 
                   delete
                     from at_base_location abl
                    where abl.base_location_code = l_base_location_code;
+                  cwms_cache.remove_by_value(g_location_code_cache, l_base_location_code);
                else -- Deleting a single Sub Location --------------------------------
                   delete
                     from at_physical_location apl
                    where apl.location_code = l_location_code;
+                  cwms_cache.remove_by_value(g_location_code_cache, l_location_code);
                end if;
                exit;
             exception
@@ -3141,7 +3161,6 @@ AS
             end;
          end loop;
       end if;
-
       commit;
 
    end delete_location;
@@ -3904,10 +3923,10 @@ AS
    begin
       select * into l_rec from at_physical_location where location_code = p_location_code;
       if l_rec.time_zone_code is null and l_rec.base_location_code != p_location_code then
-	begin
-         select * into l_rec from at_physical_location where location_code = l_rec.base_location_code;
-	exception when others then
-	 null;
+         begin
+               select * into l_rec from at_physical_location where location_code = l_rec.base_location_code;
+         exception when others then
+          null;
         end;
       end if;
       return l_rec.time_zone_code;
@@ -10896,6 +10915,8 @@ end unassign_loc_groups;
       v_package_log_prop_text := nvl(p_text, sys_context('userenv', 'sid'));
    end set_package_log_property_text;
 
+begin
+   g_location_code_cache.name := 'cwms_loc.g_location_code_cache';
 END cwms_loc;
 /
 show errors;

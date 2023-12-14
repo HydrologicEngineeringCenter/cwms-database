@@ -95,7 +95,7 @@ function get_location_level_id(
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2)
-   return varchar2 /*result_cache*/;
+   return varchar2 ;
 /**
  * Parses a location level indicator identifier into its components
  *

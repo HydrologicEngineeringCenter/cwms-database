@@ -1296,7 +1296,7 @@ function get_attribute_id(
    p_parameter_id       in varchar2,
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2)
-   return varchar2 /*result_cache*/
+   return varchar2
 is
    l_attribute_id varchar2(83);
 begin
@@ -1342,7 +1342,7 @@ end parse_location_level_id;
 --------------------------------------------------------------------------------
 function get_location_level_id(
    p_location_level_code in number)
-   return varchar2 /*result_cache*/
+   return varchar2
 is
    l_location_level_id varchar2(398);
    l_office_id         varchar2(16);
@@ -1404,7 +1404,7 @@ function get_location_level_id(
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2)
-   return varchar2  /*result_cache*/
+   return varchar2
 is
    l_location_level_id varchar2(398);
 begin
@@ -1453,7 +1453,7 @@ function get_loc_lvl_indicator_id(
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2,
    p_level_indicator_id in varchar2)
-   return varchar2 /*result_cache*/
+   return varchar2
 is
    l_location_level_id varchar2(437);
 begin

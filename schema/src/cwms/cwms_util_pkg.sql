@@ -7,6 +7,11 @@ CREATE OR REPLACE PACKAGE cwms_util
  * @since CWMS 2.0
  */
 AS
+   g_timezone_cache cwms_cache.str_str_cache_t;
+   g_time_zone_name_cache cwms_cache.str_str_cache_t;
+   g_time_zone_code_cache cwms_cache.str_str_cache_t;
+   g_parameter_id_cache cwms_cache.str_str_cache_t;
+   g_base_parameter_code_cache cwms_cache.str_str_cache_t;
    /*
     * Not documented. Package-specific and session-specific logging properties
     */
@@ -603,7 +608,7 @@ AS
     *         case-corrected version of p_timezone.
     */
    FUNCTION get_timezone (p_timezone IN VARCHAR2)
-      RETURN VARCHAR2 result_cache;
+      RETURN VARCHAR2;
 
    /**
      * Formats a date/time for use in XML
@@ -654,7 +659,7 @@ AS
       p_in_date IN DATE,
       p_from_tz IN VARCHAR2,
       p_to_tz   IN VARCHAR2 default 'UTC')
-      RETURN DATE result_cache;
+      RETURN DATE;
    /**
     * Converts a specified<code><big>TIMESTAMP</big></code> from one time zone to another
     *
@@ -668,7 +673,7 @@ AS
       p_in_date IN TIMESTAMP,
       p_from_tz IN VARCHAR2,
       p_to_tz   IN VARCHAR2 default 'UTC')
-      RETURN TIMESTAMP result_cache;
+      RETURN TIMESTAMP;
    /**
     * Returns whether the upper case of the input is <code><big>'T'</big></code>
     * or <code><big>'TRUE'</big></code>
@@ -676,7 +681,7 @@ AS
     * @param p_true_false 'Boolean' text input
     */
    FUNCTION is_true (p_true_false IN VARCHAR2)
-      RETURN BOOLEAN result_cache;
+      RETURN BOOLEAN;
    /**
     * Returns whether the upper case of the input is <code><big>'F'</big></code>
     * or <code><big>'FALSE'</big></code>
@@ -686,7 +691,7 @@ AS
     * @return <code><big>TRUE</big></code> or <code><big>FALSE</big></code>
     */
    FUNCTION is_false (p_true_false IN VARCHAR2)
-      RETURN BOOLEAN result_cache;
+      RETURN BOOLEAN;
    /**
     * Returns a Boolean based on the input.
     * <ul>
@@ -702,7 +707,7 @@ AS
     * @return <code><big>TRUE</big></code> or <code><big>FALSE</big></code>
     */
    FUNCTION return_true_or_false (p_true_false IN VARCHAR2)
-      RETURN BOOLEAN result_cache;
+      RETURN BOOLEAN;
    /**
     * Returns <code><big>'T'</big></code> or <code><big>'F'</big></code> text based on the input.
     * <ul>
@@ -718,7 +723,7 @@ AS
     * @return <code><big>'T'</big></code> or <code><big>'F'</big></code>
     */
    FUNCTION return_t_or_f_flag (p_true_false IN VARCHAR2)
-      RETURN VARCHAR2 result_cache;
+      RETURN VARCHAR2;
    /**
     * Retrieves the base portion of a base-sub identifier
     *
@@ -727,7 +732,7 @@ AS
     * @return the base portion of the identifier
     */
    FUNCTION get_base_id (p_full_id IN VARCHAR2)
-      RETURN VARCHAR2 result_cache;
+      RETURN VARCHAR2;
    /**
     * Retrieves the (possibly null) sub portion of a base-sub identifier
     *
@@ -736,7 +741,7 @@ AS
     * @return the (possibly null) sub portion of the identifier
     */
    FUNCTION get_sub_id (p_full_id IN VARCHAR2)
-      RETURN VARCHAR2 result_cache;
+      RETURN VARCHAR2;
    /**
     * Retrieves the base parameter code of a full parameter identifier
     *
@@ -748,7 +753,7 @@ AS
    FUNCTION get_base_param_code (
       p_param_id   IN VARCHAR2,
       p_is_full_id IN VARCHAR2 DEFAULT 'F')
-      return number result_cache;
+      return number;
    /**
     * Retrieves the parameter code of a full parameter identifier
     *
@@ -784,7 +789,7 @@ AS
     * @return the interval minutes of the time series
     */
    FUNCTION get_ts_interval (p_cwms_ts_code IN NUMBER)
-      RETURN NUMBER result_cache;
+      RETURN NUMBER;
    /**
     * Creates a full identifier from base and sub identifier portions
     *
@@ -797,7 +802,7 @@ AS
     *         ('-') followed by the sub portion.
     */
    FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
-      RETURN VARCHAR2 result_cache;
+      RETURN VARCHAR2;
    /**
     * Creates a fill time series identifier from the portions. The base parameter,
     * parameter type, interval, and duration portions are verified in the process.
@@ -886,7 +891,7 @@ AS
     * @return the paramter identifier associated with the specified code
     */
    FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
-      RETURN VARCHAR2 result_cache;
+      RETURN VARCHAR2;
    /**
     * Retrieves a time zone code based on a time zone name
     *
@@ -895,7 +900,7 @@ AS
     * @return the time zone code associated with the time zone name
     */
    FUNCTION get_time_zone_code (p_time_zone_name IN VARCHAR2)
-      RETURN NUMBER result_cache;
+      RETURN NUMBER;
    /**
     * Retrieves a proper time zone name based on a time zone name or alias
     *
@@ -904,7 +909,7 @@ AS
     * @return the proper time zone name associated with the time zone name or alias
     */
    function get_time_zone_name (p_time_zone_name in varchar2)
-      RETURN VARCHAR2 result_cache;
+      RETURN VARCHAR2;
    --------------------------------------------------------------------------------
    -- function get_tz_usage_code
    --
@@ -1219,7 +1224,7 @@ AS
     */
    function get_unit_id2(
       p_unit_code in varchar2)
-      return varchar2 result_cache;
+      return varchar2;
 
    /**
     * Retrieves a cursor of all valid units in the database for an optionally
@@ -1478,7 +1483,7 @@ AS
       p_value        in binary_double,
       p_from_unit_id in varchar2,
       p_to_unit_id   in varchar2)
-   return binary_double result_cache;
+   return binary_double;
    /**
     * Converts a value from one unit to another
     *
@@ -1490,7 +1495,7 @@ AS
       p_value          in binary_double,
       p_from_unit_code in number,
       p_to_unit_code   in number)
-   return binary_double result_cache;
+   return binary_double;
    /**
     * Converts a value from one unit to another
     *
@@ -1502,7 +1507,7 @@ AS
       p_value          in binary_double,
       p_from_unit_code in number,
       p_to_unit_id     in varchar2)
-   return binary_double result_cache;
+   return binary_double;
    /**
     * Converts a value from one unit to another
     *
@@ -1514,7 +1519,7 @@ AS
       p_value        in binary_double,
       p_from_unit_id in varchar2,
       p_to_unit_code in number)
-   return binary_double result_cache;
+   return binary_double;
    /**
     * Sign-extends 32-bit integers. Enables Java clients to use int values for 32-bit
     * data quality values and retain the sign of the 32-bit value
@@ -1739,7 +1744,7 @@ AS
     */
    function tokenize_algebraic(
       p_algebraic_expr in varchar2)
-      return str_tab_t result_cache;
+      return str_tab_t;
    /**
     * Generates a table of RPN tokens from an RPN expression.
     *
@@ -1753,7 +1758,7 @@ AS
     */
    function tokenize_RPN(
       p_RPN_expr  in varchar2)
-      return str_tab_t result_cache;
+      return str_tab_t;
    /**
     * Generates a table of RPN tokens from an algebraic expression.
     *
@@ -1771,7 +1776,7 @@ AS
     */
    function tokenize_expression(
       p_expr in varchar2)
-      return str_tab_t result_cache;
+      return str_tab_t;
    /**
     * Generates a stack of RPN expressions that can each be evaluated.
     *
@@ -1792,7 +1797,7 @@ AS
    function tokenize_expression2(
       p_expr   in varchar2,
       p_is_rpn in varchar2 default 'F')
-      return str_tab_t result_cache;
+      return str_tab_t;
    /**
     * Computes a value from tokens in postfix (reverse Polish) notation (RPN) and
     * specified values for variables

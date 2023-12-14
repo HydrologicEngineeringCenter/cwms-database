@@ -1175,6 +1175,8 @@ AS
                                             cwms_t_ztsv(timestamp '2022-01-04 08:00:00', 4, 3),
                                             cwms_t_ztsv(timestamp '2022-01-05 08:00:00', 5, 3));
     begin
+      cwms_cache.set_dbms_output(cwms_loc.g_location_code_cache, true);
+      setup;
       ------------------------
       -- store the location --
       ------------------------
@@ -1586,6 +1588,8 @@ AS
       ut.expect(l_date_times.count).to_equal(5);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(1).date_time);
       ut.expect(l_date_times(5)).to_equal(l_ts_data_tim(5).date_time);
+
+      cwms_cache.set_dbms_output(cwms_loc.g_location_code_cache, false);
     end test_inclusion_options__JIRA_CWDB_180;
     --------------------------------------------------------------------------------
     -- procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190

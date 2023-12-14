@@ -62,25 +62,16 @@ as
             LOCATION_ID_ALREADY_EXISTS exception; pragma exception_init (LOCATION_ID_ALREADY_EXISTS, -20026);
          begin
             cwms_loc.create_location2(
-               p_location_id => base_location_id
-                  || substr('-', 1, length(sub_location_id))
-                  || sub_location_id,
+               p_location_id  => get_location_id,
                p_db_office_id => office_id);
          exception
             when LOCATION_ID_ALREADY_EXISTS then
                null;
          end;
       end if;
-      select pl.location_code
-        into l_location_code
-        from at_physical_location pl,
-             at_base_location bl,
-             cwms_office o
-       where o.office_id = self.get_office_id
-         and bl.db_office_code = o.office_code
-         and bl.base_location_id = self.base_location_id
-         and pl.base_location_code = bl.base_location_code
-         and nvl(pl.sub_location_id, '.') = nvl(self.sub_location_id, '.');
+      l_location_code := cwms_loc.get_location_code(
+         p_db_office_id => office_id,
+         p_location_id  => get_location_id);
       return l_location_code;
    end get_location_code;
 
