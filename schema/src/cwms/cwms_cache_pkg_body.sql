@@ -10,12 +10,13 @@ is
    l_key  varchar2(32767);
 begin
    l_time := p_cache.key_by_time.first;
-   if l_time is not null then
-      l_key := p_cache.key_by_time(l_time);
-      p_cache.payload_by_key.delete(l_key);
-      p_cache.key_by_time.delete(l_time);
-      p_cache.trim_count := p_cache.trim_count + 1;
+   if l_time is null then
+      cwms_err.raise('ERROR', 'Cache '||p_cache.name||': cannont trim oldest while empty');
    end if;
+   l_key := p_cache.key_by_time(l_time);
+   p_cache.payload_by_key.delete(l_key);
+   p_cache.key_by_time.delete(l_time);
+   p_cache.trim_count := p_cache.trim_count + 1;
 end trim_oldest;
 --------------------------------------------------------------------------------
 -- function count
@@ -45,19 +46,32 @@ procedure set_capacity(
    p_capacity in binary_integer)
 is
 begin
-   case
-   when p_capacity < 0 then
-      cwms_err.raise('ERROR', 'Invalid cache capacity: '||p_capacity);
-   when nvl(p_capacity, 0) = 0 then
-      clear(p_cache);
-      p_cache.capacity := 0;
-   else
-      while cwms_cache.count(p_cache) > p_capacity loop
-         trim_oldest(p_cache);
-      end loop;
-      p_cache.capacity := p_capacity;
-   end case;
+   if p_cache.enabled then
+      case
+      when p_capacity < 1 then
+         cwms_err.raise('ERROR', 'Invalid cache capacity: '||p_capacity);
+      when nvl(p_capacity, 0) = 0 then
+         clear(p_cache);
+         p_cache.capacity := 0;
+      else
+         while cwms_cache.count(p_cache) > p_capacity loop
+            trim_oldest(p_cache);
+         end loop;
+         p_cache.capacity := p_capacity;
+      end case;
+   end if;
 end set_capacity;
+--------------------------------------------------------------------------------
+-- function contains_key
+--------------------------------------------------------------------------------
+function contains_key(
+   p_cache in out nocopy str_str_cache_t,
+   p_key   in varchar2)
+   return boolean
+is
+begin
+   return p_cache.payload_by_key.exists(p_key);
+end contains_key;
 --------------------------------------------------------------------------------
 -- function get
 --------------------------------------------------------------------------------
@@ -68,12 +82,15 @@ function get(
 is
    l_payload str_payload_t;
 begin
+   if p_cache.enabled = false then
+      return null;
+   end if;
    p_cache.get_count := p_cache.get_count + 1;
    begin
       l_payload := p_cache.payload_by_key(p_key);
    exception
       when no_data_found then null;
-   end;   
+   end;
    if l_payload.value is not null then
       if p_cache.dbms_output then
          dbms_output.put_line('Cache '||p_cache.name||': hit ('||p_key||', '||l_payload.value||')');
@@ -96,13 +113,15 @@ procedure put(
    p_key   in varchar2,
    p_val   in varchar2)
 is
+   l_time varchar2(16);
 begin
-   p_cache.get_count := p_cache.put_count + 1;
-   if p_cache.capacity > 0 then
+   if p_cache.enabled then
+      l_time := cwms_util.current_micros;
       if p_cache.dbms_output then
          dbms_output.put_line('Cache '||p_cache.name||': putting ('||p_key||', '||p_val||')');
       end if;
-      p_cache.payload_by_key(p_key) := str_payload_t(p_val, cwms_util.current_micros);
+      p_cache.payload_by_key(p_key) := str_payload_t(p_val, l_time);
+      p_cache.key_by_time(l_time) := p_key;
       p_cache.put_count := p_cache.put_count + 1;
       while cwms_cache.count(p_cache) > p_cache.capacity loop
          trim_oldest(p_cache);
@@ -119,21 +138,23 @@ is
    l_val  varchar2(32767);
    l_time varchar2(16);
 begin
-   p_cache.remove_count := p_cache.remove_count + 1;
-   begin
-      l_time := p_cache.payload_by_key(p_key).access_time;
-   exception
-      when no_data_found then null;
-   end;
-   if l_time is not null and p_cache.key_by_time.exists(l_time) then
-      p_cache.key_by_time.delete(l_time);
-   end if;
-   if p_cache.payload_by_key.exists(p_key) then
-      if p_cache.dbms_output then
-         dbms_output.put_line('Cache '||p_cache.name||': removing ('||p_key||', '||p_cache.payload_by_key(p_key).value||')');
-      end if;
-      p_cache.payload_by_key.delete(p_key);
+   if p_cache.enabled then
       p_cache.remove_count := p_cache.remove_count + 1;
+      begin
+         l_time := p_cache.payload_by_key(p_key).access_time;
+      exception
+         when no_data_found then null;
+      end;
+      if l_time is not null and p_cache.key_by_time.exists(l_time) then
+         p_cache.key_by_time.delete(l_time);
+      end if;
+      if p_cache.payload_by_key.exists(p_key) then
+         if p_cache.dbms_output then
+            dbms_output.put_line('Cache '||p_cache.name||': removing ('||p_key||', '||p_cache.payload_by_key(p_key).value||')');
+         end if;
+         p_cache.payload_by_key.delete(p_key);
+         p_cache.remove_count := p_cache.remove_count + 1;
+      end if;
    end if;
 end remove;
 --------------------------------------------------------------------------------
@@ -146,22 +167,24 @@ is
    l_key  varchar2(32767) := p_cache.payload_by_key.first;
    l_keys str_tab_t := str_tab_t();
 begin
-   ---------------------------------
-   -- collect keys matching value --
-   ---------------------------------
-   while l_key is not null loop
-      if p_cache.payload_by_key(l_key).value = p_val then
-         l_keys.extend;
-         l_keys(l_keys.count) := l_key;
-      end if;
-      l_key := p_cache.payload_by_key.next(l_key);
-   end loop;
-   --------------------------
-   -- remove matching keys --
-   --------------------------
-   for i in 1..l_keys.count loop
-      remove(p_cache, l_keys(i));
-   end loop;
+   if p_cache.enabled then
+      ---------------------------------
+      -- collect keys matching value --
+      ---------------------------------
+      while l_key is not null loop
+         if p_cache.payload_by_key(l_key).value = p_val then
+            l_keys.extend;
+            l_keys(l_keys.count) := l_key;
+         end if;
+         l_key := p_cache.payload_by_key.next(l_key);
+      end loop;
+      --------------------------
+      -- remove matching keys --
+      --------------------------
+      for i in 1..l_keys.count loop
+         remove(p_cache, l_keys(i));
+      end loop;
+   end if;
 end remove_by_value;
 --------------------------------------------------------------------------------
 -- procedure clear
@@ -170,38 +193,52 @@ procedure clear(
    p_cache in out nocopy str_str_cache_t)
 is
 begin
-   if p_cache.dbms_output then
-      dbms_output.put_line('Cache '||p_cache.name||': clearing cache');
+   if p_cache.enabled then
+      if p_cache.dbms_output then
+         dbms_output.put_line('Cache '||p_cache.name||': clearing cache');
+      end if;
+      p_cache.payload_by_key.delete;
+      p_cache.key_by_time.delete;
+      p_cache.get_count := 0;
+      p_cache.hit_count := 0;
+      p_cache.miss_count := 0;
+      p_cache.put_count := 0;
+      p_cache.remove_count := 0;
+      p_cache.trim_count := 0;
    end if;
-   p_cache.payload_by_key.delete;
-   p_cache.key_by_time.delete;
-   p_cache.get_count := 0;
-   p_cache.hit_count := 0;
-   p_cache.miss_count := 0;
-   p_cache.put_count := 0;
-   p_cache.remove_count := 0;
-   p_cache.trim_count := 0;
 end clear;
 --------------------------------------------------------------------------------
 -- procedure disable
 --------------------------------------------------------------------------------
 procedure disable(
-   p_cache in out nocopy str_str_cache_t)
+   p_cache in out nocopy str_str_cache_t,
+   p_clear in boolean default true)
 is
 begin
-   clear(p_cache);
-   set_capacity(p_cache, 0);
+   p_cache.enabled := false;
+   if p_clear then
+      clear(p_cache);
+   end if;
 end disable;
 --------------------------------------------------------------------------------
 -- procedure enable
 --------------------------------------------------------------------------------
 procedure enable(
-   p_cache    in out nocopy str_str_cache_t,
-   p_capacity in binary_integer default g_default_capacity)
+   p_cache    in out nocopy str_str_cache_t)
 is
 begin
-   enable(p_cache, p_capacity);
+   p_cache.enabled := true;
 end enable;
+--------------------------------------------------------------------------------
+-- function enabled
+--------------------------------------------------------------------------------
+function enabled(
+   p_cache in out nocopy str_str_cache_t)
+   return boolean
+is
+begin
+   return p_cache.enabled;
+end;
 --------------------------------------------------------------------------------
 -- function gets
 --------------------------------------------------------------------------------
