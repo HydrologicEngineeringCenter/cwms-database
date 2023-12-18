@@ -9,36 +9,14 @@ is
    l_time varchar2(16);
    l_key  varchar2(32767);
 begin
-   l_time := p_cache.keys_by_time.first;
+   l_time := p_cache.key_by_time.first;
    if l_time is not null then
-      l_key := p_cache.keys_by_time(l_time);
-      p_cache.vals_by_key.delete(l_key);
-      p_cache.times_by_key.delete(l_key);
-      p_cache.keys_by_time.delete(l_time);
+      l_key := p_cache.key_by_time(l_time);
+      p_cache.payload_by_key.delete(l_key);
+      p_cache.key_by_time.delete(l_time);
       p_cache.trim_count := p_cache.trim_count + 1;
    end if;
 end trim_oldest;
---------------------------------------------------------------------------------
--- procedure update_last_used_time
---------------------------------------------------------------------------------
-procedure update_last_used_time(
-   p_cache in out nocopy str_str_cache_t,
-   p_key   in varchar2)
-is
-   l_time varchar2(16);
-begin
-   begin
-      l_time := p_cache.times_by_key(p_key);
-   exception
-      when no_data_found then null;
-   end;
-   if l_time is not null then
-      p_cache.keys_by_time.delete(l_time);
-   end if;
-   l_time := cwms_util.current_micros;
-   p_cache.times_by_key(p_key) := l_time;
-   p_cache.keys_by_time(l_time) := p_key;
-end update_last_used_time;
 --------------------------------------------------------------------------------
 -- function count
 --------------------------------------------------------------------------------
@@ -47,7 +25,7 @@ function count(
    return binary_integer
 is
 begin
-   return p_cache.vals_by_key.count;
+   return p_cache.payload_by_key.count;
 end count;
 --------------------------------------------------------------------------------
 -- function get_capacity
@@ -88,19 +66,19 @@ function get(
    p_key   in varchar2)
    return varchar2
 is
-   l_val  varchar2(32767);
+   l_payload str_payload_t;
 begin
    p_cache.get_count := p_cache.get_count + 1;
    begin
-      l_val := p_cache.vals_by_key(p_key);
+      l_payload := p_cache.payload_by_key(p_key);
    exception
       when no_data_found then null;
    end;   
-   if l_val is not null then
+   if l_payload.value is not null then
       if p_cache.dbms_output then
-         dbms_output.put_line('Cache '||p_cache.name||': hit ('||p_key||', '||l_val||')');
+         dbms_output.put_line('Cache '||p_cache.name||': hit ('||p_key||', '||l_payload.value||')');
       end if;
-      update_last_used_time(p_cache, p_key);
+      l_payload.access_time := cwms_util.current_micros;
       p_cache.hit_count := p_cache.hit_count + 1;
    else
       if p_cache.dbms_output then
@@ -108,7 +86,7 @@ begin
       end if;
       p_cache.miss_count := p_cache.miss_count + 1;
    end if;
-   return l_val;
+   return l_payload.value;
 end get;
 --------------------------------------------------------------------------------
 -- procedure put
@@ -124,8 +102,7 @@ begin
       if p_cache.dbms_output then
          dbms_output.put_line('Cache '||p_cache.name||': putting ('||p_key||', '||p_val||')');
       end if;
-      p_cache.vals_by_key(p_key) := p_val;
-      update_last_used_time(p_cache, p_key);
+      p_cache.payload_by_key(p_key) := str_payload_t(p_val, cwms_util.current_micros);
       p_cache.put_count := p_cache.put_count + 1;
       while cwms_cache.count(p_cache) > p_cache.capacity loop
          trim_oldest(p_cache);
@@ -144,19 +121,18 @@ is
 begin
    p_cache.remove_count := p_cache.remove_count + 1;
    begin
-      l_time := p_cache.times_by_key(p_key);
-      p_cache.times_by_key.delete(p_key);
+      l_time := p_cache.payload_by_key(p_key).access_time;
    exception
       when no_data_found then null;
    end;
-   if l_time is not null and p_cache.keys_by_time.exists(l_time) then
-      p_cache.keys_by_time.delete(l_time);
+   if l_time is not null and p_cache.key_by_time.exists(l_time) then
+      p_cache.key_by_time.delete(l_time);
    end if;
-   if p_cache.vals_by_key.exists(p_key) then
+   if p_cache.payload_by_key.exists(p_key) then
       if p_cache.dbms_output then
-         dbms_output.put_line('Cache '||p_cache.name||': removing ('||p_key||', '||p_cache.vals_by_key(p_key)||')');
+         dbms_output.put_line('Cache '||p_cache.name||': removing ('||p_key||', '||p_cache.payload_by_key(p_key).value||')');
       end if;
-      p_cache.vals_by_key.delete(p_key);
+      p_cache.payload_by_key.delete(p_key);
       p_cache.remove_count := p_cache.remove_count + 1;
    end if;
 end remove;
@@ -167,18 +143,18 @@ procedure remove_by_value(
    p_cache in out nocopy str_str_cache_t,
    p_val   in varchar2)
 is
-   l_key  varchar2(32767) := p_cache.vals_by_key.first;
+   l_key  varchar2(32767) := p_cache.payload_by_key.first;
    l_keys str_tab_t := str_tab_t();
 begin
    ---------------------------------
    -- collect keys matching value --
    ---------------------------------
    while l_key is not null loop
-      if p_cache.vals_by_key(l_key) = p_val then
+      if p_cache.payload_by_key(l_key).value = p_val then
          l_keys.extend;
          l_keys(l_keys.count) := l_key;
       end if;
-      l_key := p_cache.vals_by_key.next(l_key);
+      l_key := p_cache.payload_by_key.next(l_key);
    end loop;
    --------------------------
    -- remove matching keys --
@@ -197,9 +173,8 @@ begin
    if p_cache.dbms_output then
       dbms_output.put_line('Cache '||p_cache.name||': clearing cache');
    end if;
-   p_cache.vals_by_key.delete;
-   p_cache.times_by_key.delete;
-   p_cache.keys_by_time.delete;
+   p_cache.payload_by_key.delete;
+   p_cache.key_by_time.delete;
    p_cache.get_count := 0;
    p_cache.hit_count := 0;
    p_cache.miss_count := 0;

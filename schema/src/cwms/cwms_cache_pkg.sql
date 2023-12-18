@@ -8,18 +8,42 @@ as
  */
 g_default_capacity constant binary_integer := 1000;
 /**
- * Generic associative array type for keys and values that are implicitly convertable to/from varchar2.
+ * Payload type for table of string values indexed by string keys
+ *
+ * @member value       The value
+ * @member access_time The last time this value was accessed, in microseconds of the Unix epoch converted to string
  */
-type str_str_hash_t is table of varchar2(32767) index by varchar2(32767);
+type str_payload_t is record(
+   value       varchar2(32767),
+   access_time varchar2(16));
+/**
+ * Table of str_payload_t indexed by string
+ */
+type str_payload_by_str_t is table of str_payload_t index by varchar2(32767);
+/**
+ * Table of string keys indexed by access time, in microseconds of the Unix epoch converted to string
+ */
+type str_key_by_time_t is table of varchar2(32767) index by varchar2(16);
 /**
  * Generic hash type. Variables of this type implement the cache data for specific purposes.
+ *
+ * @member name             The name of this cache, defaults to the timestamp of its creation,
+ * @member dbms_output      A flag specifying whether cache operations will be output to dbms_output,
+ * @member payloads_by_key  The table of payloads indexed by keys for this cache
+ * @member keys_by_time     The table of keys indexed by access time for this cache,
+ * @member capacity         The capacity of this cache,
+ * @member get_count        The number of times get() has been called on this chache since it was created, enabled, or had its capacity changed,
+ * @member hit_count        The number of cache hits on this chache since it was created, enabled, or had its capacity changed,
+ * @member miss_count       The number of cache misses on this chache since it was created, enabled, or had its capacity changed,
+ * @member put_count        The number of times put() has been called on this chache since it was created, enabled, or had its capacity changed,
+ * @member remove_count     The number of times remove() has been called on this chache since it was created, enabled, or had its capacity changed,
+ * @member trim_count       The number of items removed from this chache to keep put() from exceeding the capacity since it was created, enabled, or had its capacity changed;
  */
 type str_str_cache_t is record(
    name             varchar2(64),
    dbms_output      boolean := false,
-   vals_by_key      str_str_hash_t,
-   keys_by_time     str_str_hash_t,
-   times_by_key     str_str_hash_t,
+   payload_by_key   str_payload_by_str_t,
+   key_by_time      str_key_by_time_t,
    capacity         binary_integer := g_default_capacity,
    get_count        binary_integer := 0,
    hit_count        binary_integer := 0,
