@@ -88,8 +88,7 @@ begin
    ut.expect(cwms_cache.trims(l_cache)).to_equal(0);
    ut.expect(cwms_cache.hit_ratio(l_cache)).to_equal(1.0);
    ---------------------------------------
-   -- reset cache and output operations ----%beforeall(setup)
-
+   -- reset cache and output operations --
    ---------------------------------------
    cwms_cache.enable(l_cache);
    cwms_cache.clear(l_cache);
