@@ -10,6 +10,8 @@ CREATE OR REPLACE PACKAGE cwms_loc
  */
 AS
 
+   g_location_code_cache cwms_cache.str_str_cache_t;
+
    c_str_site            constant varchar2 ( 4) := 'SITE';
    c_str_stream_location constant varchar2 (15) := 'STREAM_LOCATION';
    c_str_embankment      constant varchar2 (10) := 'EMBANKMENT';
@@ -105,8 +107,7 @@ AS
 	FUNCTION get_location_code (p_db_office_id	IN VARCHAR2,
 										 p_location_id 	IN VARCHAR2
 										)
-		RETURN NUMBER
-		RESULT_CACHE;
+		RETURN NUMBER;
    /**
     * Retrieves a location's unique numeric code. Retrieves the location code if p_location_id is a location identifier or location alias.
     *
@@ -118,8 +119,7 @@ AS
 	FUNCTION get_location_code (p_db_office_code   IN NUMBER,
 										 p_location_id 	  IN VARCHAR2
 										)
-		RETURN NUMBER
-		RESULT_CACHE;
+		RETURN NUMBER;
    /**
     * Retrieves a location's unique numeric code
     *
@@ -133,8 +133,7 @@ AS
                                p_location_id      IN VARCHAR2,
                                p_check_aliases    IN VARCHAR2
                               )
-      RETURN NUMBER
-      RESULT_CACHE;
+      RETURN NUMBER;
    /**
     * Retrieves a location's unique numeric code
     *
@@ -148,8 +147,7 @@ AS
                                p_location_id    IN VARCHAR2,
                                p_check_aliases  IN VARCHAR2
                               )
-      RETURN NUMBER
-      RESULT_CACHE;
+      RETURN NUMBER;
    /**
     * Retrieves a state's unique numeric code given its two letter state abbreviation
     *
@@ -2967,7 +2965,6 @@ AS
       p_datums      in  varchar2 default null,
       p_office_id   in  varchar2 default null)
       return clob;
-
 END cwms_loc;
 /
 

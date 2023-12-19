@@ -107,21 +107,26 @@ as
    --
    -- Filter out PST and CST
    function get_timezone (p_timezone in varchar2)
-   return varchar2 result_cache relies_on (cwms_time_zone_alias)
+   return varchar2
    is
       l_timezone varchar2(28);
+      l_cache_key varchar2(28) := upper(p_timezone);
    begin
       if p_timezone is not null then
-         begin
-            select time_zone_name
-              into l_timezone
-              from cwms_time_zone_alias
-             where upper(time_zone_alias) = upper(p_timezone);
-         exception
-            when no_data_found then l_timezone := p_timezone;
-         end;
+         l_timezone := cwms_cache.get(g_timezone_cache, l_cache_key);
+         if l_timezone is null then
+            begin
+               select time_zone_name
+                 into l_timezone
+                 from cwms_time_zone_alias
+                where upper(time_zone_alias) = upper(p_timezone);
+            exception
+               when no_data_found then l_timezone := p_timezone;
+            end;
+            cwms_cache.put(g_timezone_cache, l_cache_key, l_timezone);
+         end if;
+         return l_timezone;
       end if;
-      return l_timezone;
    end get_timezone;
 
    FUNCTION get_xml_time (p_local_time IN DATE, p_local_tz IN VARCHAR2)
@@ -199,7 +204,6 @@ as
                              p_from_tz   IN VARCHAR2,
                              p_to_tz     IN VARCHAR2 DEFAULT 'UTC')
       RETURN TIMESTAMP
-      RESULT_CACHE
    IS
    BEGIN
       RETURN CASE p_to_tz = p_from_tz
@@ -222,7 +226,6 @@ as
                              p_from_tz   IN VARCHAR2,
                              p_to_tz     IN VARCHAR2 DEFAULT 'UTC')
       RETURN DATE
-      RESULT_CACHE
    IS
    BEGIN
       RETURN CASE p_to_tz = p_from_tz
@@ -243,7 +246,6 @@ as
 
    FUNCTION get_base_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2
-      RESULT_CACHE
    IS
       l_num          NUMBER
                         := INSTR (p_full_id,
@@ -277,24 +279,29 @@ as
    FUNCTION get_base_param_code (p_param_id     IN VARCHAR2,
                                  p_is_full_id   IN VARCHAR2 DEFAULT 'F')
       RETURN NUMBER
-      RESULT_CACHE
    IS
       l_base_param_code   NUMBER (14);
       l_base_param_id     VARCHAR2 (16);
+      l_cache_key         varchar2(32767) := upper(p_is_full_id)||'/'||upper(p_param_id);
    BEGIN
-      CASE cwms_util.is_true (p_is_full_id)
-         WHEN TRUE
-         THEN
-            l_base_param_id := get_base_id (p_param_id);
-         WHEN FALSE
-         THEN
-            l_base_param_id := p_param_id;
-      END CASE;
+      l_base_param_code := cwms_cache.get(g_base_parameter_code_cache, l_cache_key);
+      if l_base_param_code is null then
+         CASE cwms_util.is_true (p_is_full_id)
+            WHEN TRUE
+            THEN
+               l_base_param_id := get_base_id (p_param_id);
+            WHEN FALSE
+            THEN
+               l_base_param_id := p_param_id;
+         END CASE;
 
-      SELECT base_parameter_code
-        INTO l_base_param_code
-        FROM cwms_base_parameter
-       WHERE UPPER (base_parameter_id) = UPPER (TRIM (l_base_param_id));
+         SELECT base_parameter_code
+           INTO l_base_param_code
+           FROM cwms_base_parameter
+          WHERE UPPER (base_parameter_id) = UPPER (TRIM (l_base_param_id));
+
+          cwms_cache.put(g_base_parameter_code_cache, l_cache_key, l_base_param_code);
+      end if;
 
       RETURN l_base_param_code;
    END get_base_param_code;
@@ -378,7 +385,7 @@ as
 
    FUNCTION get_sub_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2
-      RESULT_CACHE
+
    IS
       l_num          NUMBER
                         := INSTR (p_full_id,
@@ -411,7 +418,6 @@ as
 
    FUNCTION is_true (p_true_false IN VARCHAR2)
       RETURN BOOLEAN
-      RESULT_CACHE
    IS
    BEGIN
       IF UPPER (p_true_false) = 'T' OR UPPER (p_true_false) = 'TRUE'
@@ -425,7 +431,6 @@ as
    --
    FUNCTION is_false (p_true_false IN VARCHAR2)
       RETURN BOOLEAN
-      RESULT_CACHE
    IS
    BEGIN
       IF UPPER (p_true_false) = 'F' OR UPPER (p_true_false) = 'FALSE'
@@ -440,7 +445,6 @@ as
    -- Returns FALSE if p_true_false is F or False.
    FUNCTION return_true_or_false (p_true_false IN VARCHAR2)
       RETURN BOOLEAN
-      RESULT_CACHE
    IS
    BEGIN
       IF cwms_util.is_true (p_true_false)
@@ -458,7 +462,6 @@ as
    -- Returns 'F 'if p_true_false is F or False.
    FUNCTION return_t_or_f_flag (p_true_false IN VARCHAR2)
       RETURN VARCHAR2
-      RESULT_CACHE
    IS
    BEGIN
       IF cwms_util.is_true (p_true_false)
@@ -690,25 +693,28 @@ as
    --------------------------------------------------------
    FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
       RETURN VARCHAR2
-      RESULT_CACHE
    IS
       l_parameter_id   VARCHAR2 (49);
    BEGIN
-      BEGIN
-         SELECT    cbp.base_parameter_id
-                || SUBSTR ('-', 1, LENGTH (atp.sub_parameter_id))
-                || atp.sub_parameter_id
-           INTO l_parameter_id
-           FROM at_parameter atp, cwms_base_parameter cbp
-          WHERE atp.parameter_code = p_parameter_code
-                AND atp.base_parameter_code = cbp.base_parameter_code;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            cwms_err.raise (
-               'ERROR',
-               p_parameter_code || ' is not a valid parameter_code.');
-      END;
+      l_parameter_id := cwms_cache.get(g_parameter_id_cache, p_parameter_code);
+      if l_parameter_id is null then
+         BEGIN
+            SELECT    cbp.base_parameter_id
+                   || SUBSTR ('-', 1, LENGTH (atp.sub_parameter_id))
+                   || atp.sub_parameter_id
+              INTO l_parameter_id
+              FROM at_parameter atp, cwms_base_parameter cbp
+             WHERE atp.parameter_code = p_parameter_code
+                   AND atp.base_parameter_code = cbp.base_parameter_code;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise (
+                  'ERROR',
+                  p_parameter_code || ' is not a valid parameter_code.');
+         END;
+         cwms_cache.put(g_parameter_id_cache, p_parameter_code, l_parameter_id);
+      end if;
 
       RETURN l_parameter_id;
    END get_parameter_id;
@@ -1220,8 +1226,8 @@ as
    END test;
 
    FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
+
       RETURN VARCHAR2
-      RESULT_CACHE
    IS
    BEGIN
       RETURN    p_base_id
@@ -1310,15 +1316,23 @@ as
    -- function get_time_zone_code
    --
    FUNCTION get_time_zone_code (p_time_zone_name IN VARCHAR2)
-      RETURN NUMBER result_cache relies_on (cwms_time_zone)
+      RETURN NUMBER
    IS
       l_time_zone_code   NUMBER (14);
+      l_cache_key        varchar2(28) := upper(p_time_zone_name);
    BEGIN
-      SELECT time_zone_code
-        INTO l_time_zone_code
-        FROM cwms_time_zone
-       WHERE time_zone_name = get_timezone (NVL (p_time_zone_name, 'UTC'));
+      if l_cache_key is null then
+         cwms_err.raise ('INVALID_TIME_ZONE', '<NULL>');
+      end if;
+      l_time_zone_code := cwms_cache.get(g_time_zone_code_cache, l_cache_key);
+      if l_time_zone_code is null then
+         SELECT time_zone_code
+           INTO l_time_zone_code
+           FROM cwms_time_zone
+          WHERE time_zone_name = get_timezone(p_time_zone_name);
 
+         cwms_cache.put(g_time_zone_code_cache, l_cache_key, l_time_zone_code);
+      end if;
       RETURN l_time_zone_code;
    EXCEPTION
       WHEN NO_DATA_FOUND
@@ -1330,15 +1344,23 @@ as
    -- function get_time_zone_name
    --
    FUNCTION get_time_zone_name (p_time_zone_name IN VARCHAR2)
-      RETURN VARCHAR2 result_cache relies_on (cwms_time_zone)
+      RETURN VARCHAR2
    IS
       l_time_zone_name   VARCHAR2 (28);
+      l_cache_key        varchar2(28) := upper(p_time_zone_name);
    BEGIN
-      SELECT time_zone_name
-        INTO l_time_zone_name
-        FROM cwms_time_zone
-       WHERE upper(time_zone_name) = upper(get_timezone (p_time_zone_name));
+      if l_cache_key is null then
+         cwms_err.raise ('INVALID_TIME_ZONE', '<NULL>');
+      end if;
+      l_time_zone_name := cwms_cache.get(g_time_zone_name_cache, l_cache_key);
+      if l_time_zone_name is null then
+         SELECT time_zone_name
+           INTO l_time_zone_name
+           FROM cwms_time_zone
+          WHERE time_zone_name = get_timezone(p_time_zone_name);
 
+         cwms_cache.put(g_time_zone_name_cache, l_cache_key, l_time_zone_name);
+      end if;
       RETURN l_time_zone_name;
    EXCEPTION
       WHEN NO_DATA_FOUND
@@ -1419,7 +1441,7 @@ as
       end if;
       if p_text is null or length(p_text) < 1 then
          return l_results;
-      end if;   
+      end if;
       loop
          -------------------------------
          -- locate the next delimiter --
@@ -1443,7 +1465,7 @@ as
             if l_include_delimiters and (p_max_split is null or l_split_count <= p_max_split) then
                l_results.extend;
                l_results(l_results.count) := substr(p_text, l_delimiter_start_pos, l_delimiter_len);
-            end if;   
+            end if;
          elsif p_return_index = l_split_count then
             -----------------------------------
             -- return the value at the index --
@@ -2198,7 +2220,6 @@ as
 
    FUNCTION get_ts_interval (p_cwms_ts_code IN NUMBER)
       RETURN NUMBER
-      RESULT_CACHE
    IS
       l_ts_interval   NUMBER;
    BEGIN
@@ -2282,7 +2303,6 @@ as
 
    FUNCTION get_unit_id2 (p_unit_code IN VARCHAR2)
       RETURN VARCHAR2
-      RESULT_CACHE
    IS
       l_unit_id   VARCHAR2 (16);
    BEGIN
@@ -2876,7 +2896,6 @@ as
    FUNCTION get_factor_and_offset (p_from_unit_id   IN VARCHAR2,
                                    p_to_unit_id     IN VARCHAR2)
       RETURN double_tab_t
-      RESULT_CACHE
    IS
       l_factor_and_offset   double_tab_t := double_tab_t ();
    BEGIN
@@ -2896,7 +2915,6 @@ as
       p_from_unit_id   in varchar2,
       p_to_unit_id     in varchar2)
       return binary_double
-      result_cache
    is
       l_factor    cwms_unit_conversion.factor%type;
       l_offset    cwms_unit_conversion.offset%type;
@@ -2937,7 +2955,6 @@ as
       p_from_unit_code   in number,
       p_to_unit_code     in number)
       return binary_double
-      result_cache
    is
       l_factor    cwms_unit_conversion.factor%type;
       l_offset    cwms_unit_conversion.offset%type;
@@ -2978,7 +2995,6 @@ as
       p_from_unit_code   in number,
       p_to_unit_id       in varchar2)
       return binary_double
-      result_cache
    is
       l_factor    cwms_unit_conversion.factor%type;
       l_offset    cwms_unit_conversion.offset%type;
@@ -3019,7 +3035,6 @@ as
       p_from_unit_id   in varchar2,
       p_to_unit_code   in number)
       return binary_double
-      result_cache
    is
       l_factor    cwms_unit_conversion.factor%type;
       l_offset    cwms_unit_conversion.offset%type;
@@ -3816,7 +3831,6 @@ as
    function tokenize_algebraic(
       p_algebraic_expr in varchar2)
       return str_tab_t
-      result_cache
    is
       l_infix_tokens        str_tab_t;
       l_postfix_tokens      str_tab_t := new str_tab_t();
@@ -4043,7 +4057,6 @@ as
    function tokenize_rpn(
       p_rpn_expr in varchar2)
       return str_tab_t
-      result_cache
    is
       l_tokens str_tab_t;
    begin
@@ -4060,7 +4073,6 @@ as
    function tokenize_expression(
       p_expr in varchar2)
       return str_tab_t
-      result_cache
    is
       l_tokens str_tab_t;
       l_count  integer := 0;
@@ -4111,7 +4123,6 @@ as
       p_expr   in varchar2,
       p_is_rpn in varchar2 default 'F')
       return str_tab_t
-      result_cache
    is
       l_rpn_tokens str_tab_t;
       l_stack      str_tab_t := str_tab_t();
@@ -6666,6 +6677,13 @@ as
 
       return l_value = 'T';
    end output_debug_info;
+
+begin
+   g_timezone_cache.name := 'cwms_util.g_timezone_cache';
+   g_time_zone_name_cache.name := 'cwms_util.g_time_zone_name_cache';
+   g_time_zone_code_cache.name := 'cwms_util.g_time_zone_code_cache';
+   g_parameter_id_cache.name := 'cwms_util.g_parameter_id_cache';
+   g_base_parameter_code_cache.name := 'cwms_util.g_base_parameter_code_cache';
 
 END cwms_util;
 /

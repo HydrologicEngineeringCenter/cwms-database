@@ -8,6 +8,9 @@
 @@cwms_util_pkg
 @@cwms_util_pkg_body
 
+@@cwms_cache_pkg
+@@cwms_cache_pkg_body
+
 @@cwms_env_pkg
 @@cwms_env_pkg_body
 
@@ -159,9 +162,3 @@
 @@cwms/functions/str2tbl.sql
 
 @@cwms/procedures/download_file
-
------------------------------------------------
--- removed until CMS spec and body are fixed --
--- MDP  16 Oct 2015                          --
------------------------------------------------
--- @@cwms/procedures/p_chart_by_ts_code

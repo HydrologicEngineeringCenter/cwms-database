@@ -4047,7 +4047,6 @@ AS
    function clean_quality_code(
       p_quality_code in number)
       return number
-      result_cache
    is
       /*
       Data Quality Rules :
@@ -4123,96 +4122,79 @@ AS
          l_quality_code := 0;
       else
          l_quality_code := p_quality_code;
-         begin
-            --------------------------------------------
-            -- first see if the code is already clean --
-            --------------------------------------------
-            select quality_code
-              into l_quality_code
-              from cwms_data_quality
-             where quality_code = l_quality_code;
-         exception
-            when no_data_found
-            then
-               -----------------------------------------------
-               -- clear all bits if screened bit is not set --
-               -----------------------------------------------
-               if bitand(l_quality_code, c_screened) = 0 then
-                  l_quality_code := 0;
-               else
-                  ---------------------------------------------------------------------
-                  -- ensure only used bits are set(also counteracts sign-extension) --
-                  ---------------------------------------------------------------------
-                  l_quality_code := bitand(l_quality_code, c_used_bits);
+         -----------------------------------------------
+         -- clear all bits if screened bit is not set --
+         -----------------------------------------------
+         if bitand(l_quality_code, c_screened) = 0 then
+            l_quality_code := 0;
+         else
+            ---------------------------------------------------------------------
+            -- ensure only used bits are set(also counteracts sign-extension) --
+            ---------------------------------------------------------------------
+            l_quality_code := bitand(l_quality_code, c_used_bits);
+            -----------------------------------------
+            -- ensure only one validity bit is set --
+            -----------------------------------------
+            if bitand(l_quality_code, c_missing) != 0 then
+               l_quality_code := bitand(l_quality_code, c_missing_mask);
+            elsif bitand(l_quality_code, c_rejected) != 0 then
+               l_quality_code := bitand(l_quality_code, c_rejected_mask);
+            elsif bitand(l_quality_code, c_questioned) != 0 then
+               l_quality_code := bitand(l_quality_code, c_questioned_mask);
+            elsif bitand(l_quality_code, c_ok) != 0 then
+               l_quality_code := bitand(l_quality_code, c_ok_mask);
+            end if;
+            --------------------------------------------------------
+            -- ensure the replacement cause is not greater than 4 --
+            --------------------------------------------------------
+            l_repl_cause := trunc(bitand(l_quality_code, c_repl_cause_mask) / c_repl_cause_factor);
 
-                  -----------------------------------------
-                  -- ensure only one validity bit is set --
-                  -----------------------------------------
-                  if bitand(l_quality_code, c_missing) != 0 then
-                     l_quality_code := bitand(l_quality_code, c_missing_mask);
-                  elsif bitand(l_quality_code, c_rejected) != 0 then
-                     l_quality_code := bitand(l_quality_code, c_rejected_mask);
-                  elsif bitand(l_quality_code, c_questioned) != 0 then
-                     l_quality_code := bitand(l_quality_code, c_questioned_mask);
-                  elsif bitand(l_quality_code, c_ok) != 0 then
-                     l_quality_code := bitand(l_quality_code, c_ok_mask);
-                  end if;
+            if l_repl_cause > 4 then
+               l_repl_cause := 4;
+               l_quality_code := bitor(bitand(l_quality_code, c_no_repl_cause_mask), l_repl_cause * c_repl_cause_factor);
+            end if;
+            ---------------------------------------------------------
+            -- ensure the replacement method is not greater than 4 --
+            ---------------------------------------------------------
+            l_repl_method := trunc(bitand(l_quality_code, c_repl_method_mask)/ c_repl_method_factor);
 
-                  --------------------------------------------------------
-                  -- ensure the replacement cause is not greater than 4 --
-                  --------------------------------------------------------
-                  l_repl_cause := trunc(bitand(l_quality_code, c_repl_cause_mask) / c_repl_cause_factor);
+            if l_repl_method > 4 then
+               l_repl_method := 4;
+               l_quality_code := bitor(bitand(l_quality_code, c_no_repl_method_mask), l_repl_method * c_repl_method_factor);
+            end if;
+            --------------------------------------------------------------------------------------------------------------
+            -- ensure that if 2 of replacement cause, replacement method, and different are 0, the remaining one is too --
+            --------------------------------------------------------------------------------------------------------------
+            l_different := bitand(l_quality_code, c_different_mask) != 0;
 
-                  if l_repl_cause > 4 then
-                     l_repl_cause := 4;
-                     l_quality_code := bitor(bitand(l_quality_code, c_no_repl_cause_mask), l_repl_cause * c_repl_cause_factor);
-                  end if;
-
-                  ---------------------------------------------------------
-                  -- ensure the replacement method is not greater than 4 --
-                  ---------------------------------------------------------
-                  l_repl_method := trunc(bitand(l_quality_code, c_repl_method_mask)/ c_repl_method_factor);
-
-                  if l_repl_method > 4 then
-                     l_repl_method := 4;
-                     l_quality_code := bitor(bitand(l_quality_code, c_no_repl_method_mask), l_repl_method * c_repl_method_factor);
-                  end if;
-
-                  --------------------------------------------------------------------------------------------------------------
-                  -- ensure that if 2 of replacement cause, replacement method, and different are 0, the remaining one is too --
-                  --------------------------------------------------------------------------------------------------------------
-                  l_different := bitand(l_quality_code, c_different_mask) != 0;
-
-                  if l_repl_cause = 0 then
-                     if l_repl_method = 0 and l_different then
-                        l_quality_code := bitand(l_quality_code, c_not_different_mask);
-                        l_different := false;
-                     elsif(not l_different) and l_repl_method != 0 then
-                        l_repl_method := 0;
-                        l_quality_code := bitand(l_quality_code, c_no_repl_method_mask);
-                     end if;
-                  elsif l_repl_method = 0 and not l_different then
-                     l_repl_cause := 0;
-                     l_quality_code := bitand(l_quality_code, c_no_repl_cause_mask);
-                  end if;
-
-                  ------------------------------------------------------------------------------------------------------------------------------
-                  -- ensure that if 2 of replacement cause, replacement method, and different are NOT 0, the remaining one is set accordingly --
-                  ------------------------------------------------------------------------------------------------------------------------------
-                  if l_repl_cause != 0 then
-                     if l_repl_method != 0 and not l_different then
-                        l_quality_code := bitor(l_quality_code, c_different_mask);
-                        l_different := true;
-                     elsif l_different and l_repl_method = 0 then
-                        l_repl_method := 2;                           -- EXPLICIT
-                        l_quality_code := bitor(l_quality_code, l_repl_method * c_repl_method_factor);
-                     end if;
-                  elsif l_repl_method != 0 and l_different then
-                     l_repl_cause := 3;                                 -- MANUAL
-                     l_quality_code := bitor(l_quality_code, l_repl_cause * c_repl_cause_factor);
-                  end if;
+            if l_repl_cause = 0 then
+               if l_repl_method = 0 and l_different then
+                  l_quality_code := bitand(l_quality_code, c_not_different_mask);
+                  l_different := false;
+               elsif(not l_different) and l_repl_method != 0 then
+                  l_repl_method := 0;
+                  l_quality_code := bitand(l_quality_code, c_no_repl_method_mask);
                end if;
-         end;
+            elsif l_repl_method = 0 and not l_different then
+               l_repl_cause := 0;
+               l_quality_code := bitand(l_quality_code, c_no_repl_cause_mask);
+            end if;
+            ------------------------------------------------------------------------------------------------------------------------------
+            -- ensure that if 2 of replacement cause, replacement method, and different are NOT 0, the remaining one is set accordingly --
+            ------------------------------------------------------------------------------------------------------------------------------
+            if l_repl_cause != 0 then
+               if l_repl_method != 0 and not l_different then
+                  l_quality_code := bitor(l_quality_code, c_different_mask);
+                  l_different := true;
+               elsif l_different and l_repl_method = 0 then
+                  l_repl_method := 2;                           -- EXPLICIT
+                  l_quality_code := bitor(l_quality_code, l_repl_method * c_repl_method_factor);
+               end if;
+            elsif l_repl_method != 0 and l_different then
+               l_repl_cause := 3;                                 -- MANUAL
+               l_quality_code := bitor(l_quality_code, l_repl_cause * c_repl_cause_factor);
+            end if;
+         end if;
       end if;
 
       return l_quality_code;
@@ -10304,23 +10286,16 @@ end retrieve_existing_item_counts;
    ---------------------------
    FUNCTION get_quality_validity (p_quality_code IN NUMBER)
       RETURN VARCHAR2
-      result_cache
    IS
-      l_validity     VARCHAR2 (16);
       l_quality_code integer := clean_quality_code(p_quality_code);
    BEGIN
-      SELECT validity_id
-        INTO l_validity
-        FROM cwms_data_quality
-       WHERE quality_code = l_quality_code + case
-                                                when l_quality_code < 0 then 4294967296
-                                                else  0
-                                             end;
-      RETURN l_validity;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         cwms_err.raise('INVALID_ITEM', l_quality_code, 'CWMS quality value');
+      return case
+             when bitand(l_quality_code,  2) =  2 then 'OKAY'
+             when bitand(l_quality_code,  4) =  4 then 'MISSING'
+             when bitand(l_quality_code,  8) =  8 then 'QUESTIONABLE'
+             when bitand(l_quality_code, 16) = 16 then 'REJECTED'
+             else 'UNKNOWN'
+             end;
    END get_quality_validity;
 
    FUNCTION get_quality_validity (p_value IN tsv_type)
@@ -10339,7 +10314,6 @@ end retrieve_existing_item_counts;
 
    FUNCTION quality_is_okay (p_quality_code IN NUMBER)
       RETURN BOOLEAN
-      result_cache
    IS
    BEGIN
       RETURN get_quality_validity (p_quality_code) = 'OKAY';
@@ -10361,7 +10335,6 @@ end retrieve_existing_item_counts;
 
    FUNCTION quality_is_okay_text (p_quality_code IN NUMBER)
       RETURN VARCHAR2
-      result_cache
    IS
    BEGIN
       RETURN CASE get_quality_validity (p_quality_code) = 'OKAY'
@@ -10386,7 +10359,6 @@ end retrieve_existing_item_counts;
 
    FUNCTION quality_is_missing (p_quality_code IN NUMBER)
       RETURN BOOLEAN
-      result_cache
    IS
    BEGIN
       RETURN get_quality_validity (p_quality_code) = 'MISSING';
@@ -10408,7 +10380,6 @@ end retrieve_existing_item_counts;
 
    FUNCTION quality_is_missing_text (p_quality_code IN NUMBER)
       RETURN VARCHAR2
-      result_cache
    IS
    BEGIN
       RETURN CASE get_quality_validity (p_quality_code) = 'MISSING'
@@ -10434,7 +10405,6 @@ end retrieve_existing_item_counts;
 
    FUNCTION quality_is_questionable (p_quality_code IN NUMBER)
       RETURN BOOLEAN
-      result_cache
    IS
    BEGIN
       RETURN get_quality_validity (p_quality_code) = 'QUESTIONABLE';
@@ -10456,7 +10426,6 @@ end retrieve_existing_item_counts;
 
    FUNCTION quality_is_questionable_text (p_quality_code IN NUMBER)
       RETURN VARCHAR2
-      result_cache
    IS
    BEGIN
       RETURN CASE get_quality_validity (p_quality_code) = 'QUESTIONABLE'
@@ -10481,7 +10450,6 @@ end retrieve_existing_item_counts;
 
    FUNCTION quality_is_rejected (p_quality_code IN NUMBER)
       RETURN BOOLEAN
-      result_cache
    IS
    BEGIN
       RETURN get_quality_validity (p_quality_code) = 'REJECTED';
@@ -10503,7 +10471,6 @@ end retrieve_existing_item_counts;
 
    FUNCTION quality_is_rejected_text (p_quality_code IN NUMBER)
       RETURN VARCHAR2
-      result_cache
    IS
    BEGIN
       RETURN CASE get_quality_validity (p_quality_code) = 'REJECTED'
@@ -10528,17 +10495,9 @@ end retrieve_existing_item_counts;
 
    FUNCTION quality_is_protected (p_quality_code IN NUMBER)
       RETURN BOOLEAN
-      result_cache
    is
-      l_quality_code  integer := clean_quality_code(p_quality_code);
-      l_protection_id varchar2(16);
    BEGIN
-      select protection_id
-        into l_protection_id
-        from cwms_data_quality
-       where quality_code = l_quality_code;
-
-      return l_protection_id = 'PROTECTED';
+      return bitand(p_quality_code, 2147483648) = 2147483648;
    END quality_is_protected;
 
    FUNCTION quality_is_protected (p_value IN tsv_type)
@@ -10557,7 +10516,6 @@ end retrieve_existing_item_counts;
 
    FUNCTION quality_is_protected_text (p_quality_code IN NUMBER)
       RETURN VARCHAR2
-      result_cache
    IS
    begin
       RETURN CASE quality_is_protected (p_quality_code)
@@ -10582,7 +10540,6 @@ end retrieve_existing_item_counts;
 
    FUNCTION get_quality_description (p_quality_code IN NUMBER)
       RETURN VARCHAR2
-      result_cache
    IS
       l_quality_code  integer := clean_quality_code(p_quality_code);
       l_description   VARCHAR2 (4000);
@@ -10642,7 +10599,7 @@ end retrieve_existing_item_counts;
    END get_quality_description;
 
    FUNCTION get_ts_interval (p_ts_code IN NUMBER)
-      RETURN NUMBER result_cache
+      RETURN NUMBER
    IS
       l_interval NUMBER;
    BEGIN
@@ -10655,21 +10612,21 @@ end retrieve_existing_item_counts;
    END get_ts_interval;
 
    FUNCTION get_ts_interval (p_cwms_ts_id IN VARCHAR2)
-      RETURN NUMBER result_cache
+      RETURN NUMBER
    IS
    BEGIN
       RETURN get_interval(get_ts_interval_string(p_cwms_ts_id));
    END get_ts_interval;
 
    FUNCTION get_ts_interval_string (p_cwms_ts_id IN VARCHAR2)
-      RETURN VARCHAR2 result_cache
+      RETURN VARCHAR2
    IS
    BEGIN
       return regexp_substr (p_cwms_ts_id, '[^.]+', 1, 4);
    END get_ts_interval_string;
 
    FUNCTION get_interval (p_interval_id IN VARCHAR2)
-      RETURN NUMBER result_cache
+      RETURN NUMBER
    IS
       l_interval NUMBER;
    BEGIN
@@ -10684,7 +10641,7 @@ end retrieve_existing_item_counts;
    FUNCTION get_utc_interval_offset (
       p_date_time_utc    IN DATE,
       p_interval_minutes IN NUMBER)
-      RETURN NUMBER result_cache
+      RETURN NUMBER
    IS
    BEGIN
       return round((p_date_time_utc - get_time_on_before_interval(p_date_time_utc, 0, p_interval_minutes)) * 1440);
@@ -12322,7 +12279,6 @@ end retrieve_existing_item_counts;
    function normalize_quality(
       p_quality in number)
       return number
-      result_cache
    is
       l_quality number;
    begin
