@@ -12,6 +12,7 @@ AS
    g_time_zone_code_cache cwms_cache.str_str_cache_t;
    g_parameter_id_cache cwms_cache.str_str_cache_t;
    g_base_parameter_code_cache cwms_cache.str_str_cache_t;
+   g_unit_conversion_info_cache cwms_cache.str_str_cache_t;
    /*
     * Not documented. Package-specific and session-specific logging properties
     */
