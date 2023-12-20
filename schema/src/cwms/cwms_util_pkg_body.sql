@@ -6702,7 +6702,7 @@ begin
    g_time_zone_code_cache.name := 'cwms_util.g_time_zone_code_cache';
    g_parameter_id_cache.name := 'cwms_util.g_parameter_id_cache';
    g_base_parameter_code_cache.name := 'cwms_util.g_base_parameter_code_cache';
-   g_unit_conversion_info_cache.name := 'g_unit_conversion_info_cache';
+   g_unit_conversion_info_cache.name := 'cwms_util.g_unit_conversion_info_cache';
 
 END cwms_util;
 /
