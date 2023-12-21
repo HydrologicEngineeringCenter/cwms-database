@@ -184,6 +184,9 @@ end;
 @@cwms/types/ts_prof_data_tab_t
 @@cwms/types/ts_prof_data_t
 @@cwms/types/ts_profile_t
+@@cwms/types/tstz_tab_t
+@@cwms/types/date_range_t
+@@cwms/types/date_range_t-body
 
 -- HOST pwd
 @@rowcps_types

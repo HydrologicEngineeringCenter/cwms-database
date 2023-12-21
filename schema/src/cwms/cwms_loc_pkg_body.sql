@@ -1242,10 +1242,11 @@ AS
                   select count(*)
                     into l_tmp
                     from (select local_time,
-                                 cwms_ts.get_time_on_before_interval(
-                                    local_time,
-                                    rec.interval_utc_offset,
-                                    rec.interval) as interval_time
+                                 cwms_ts.top_of_interval_plus_offset_utc(
+                                    p_date_time       => local_time,
+                                    p_interval        => rec.interval,
+                                    p_interval_offset => rec.interval_utc_offset,
+                                    p_next            => 'F') as interval_time
                             from (select cwms_util.change_timezone(date_time, 'UTC', p_time_zone_id) as local_time
                                     from av_tsv where ts_code = rec.ts_code
                                  )
@@ -1683,10 +1684,11 @@ AS
                   select count(*)
                     into l_tmp
                     from (select local_time,
-                                 cwms_ts.get_time_on_before_interval(
-                                    local_time,
-                                    rec.interval_utc_offset,
-                                    rec.interval) as interval_time
+                                 cwms_ts.top_of_interval_plus_offset_utc(
+                                    p_date_time       => local_time,
+                                    p_interval        => rec.interval,
+                                    p_interval_offset => rec.interval_utc_offset,
+                                    p_next            => 'F') as interval_time
                             from (select cwms_util.change_timezone(date_time, 'UTC', p_time_zone_id) as local_time
                                     from av_tsv where ts_code = rec.ts_code
                                  )

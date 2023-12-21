@@ -10,6 +10,8 @@ CREATE OR REPLACE PACKAGE cwms_ts
  * @since CWMS 2.0
  */
 AS
+   g_interval_cache cwms_cache.str_str_cache_t;
+
    /*
     * Not documented. Package-specific and session-specific logging properties
     */
@@ -232,6 +234,26 @@ AS
       return integer;
 
    /**
+    * Returns the UTC date/time of a RTS or LRTS interval that includes a specified UTC date/time
+    *
+    * @param p_date_time_utc      The UTC date/time to get the UTC top-of-interval date/time for. If p_date_time_utc is not a top-of-interval date/time then
+    *                             the parameter p_next controls which top-of-interval date/time to retrieve.
+    * @param p_interval           The CWMS interval, in number of minutes (integer or string) or interval ID
+    * @param p_interval_time_zone The time zone of the interval ('UTC' for RTS or local time zone for LRTS). If not specified, 'UTC' is used.
+    * @param p_next               A flag ('T'/'F') specifying which top-of-interval date/time to retrieve if p_date_time_utc is not a top-of-interval date/time.
+    *                             'F' specifies retrieving the preceding top-of-interval date/time; 'T' specifies retrieving the next one. If not specified,
+    *                             'F' is used.
+    *
+    * @return the UTC date/time of a RTS or LRTS interval that includes p_date_time_utc
+    */
+   function top_of_interval_utc(
+      p_date_time_utc      in date,
+      p_interval           in varchar2,
+      p_interval_time_zone in varchar2 default 'UTC',
+      p_next               in varchar2 default 'F')
+      return date;
+
+   /**
     * Returns the time of the top of the current or next CWMS interval, incremented by a UTC offset
     *
     * @param p_date_time           The time to get the CWMS interval for
@@ -248,9 +270,9 @@ AS
     *                  <li>p_interval_offset >= p_interval</li>
     *                  </ul>
     *
-    * @see cwms_ts.top_of_interval_tz
+    * @see cwms_ts.top_of_interval_plus_offset_tz
     */
-   function top_of_interval_utc(
+   function top_of_interval_plus_offset_utc(
       p_date_time          in date,
       p_interval           in varchar2,
       p_interval_offset    in varchar2,
@@ -278,9 +300,9 @@ AS
     *                  <li>p_output_time_zone is in valid</li>
     *                  </ul>
     *
-    * @see cwms_ts.top_of_interval_utc
+    * @see cwms_ts.top_of_interval_plus_offset_utc
     */
-   function top_of_interval_tz(
+   function top_of_interval_plus_offset_tz(
       p_date_time        in date,
       p_interval         in varchar2,
       p_interval_offset  in varchar2,
@@ -308,7 +330,7 @@ AS
     *                  <li>p_interval_offset - p_interval_backward <= 0</li>
     *                  </ul>
     *
-    * @see cwms_ts.top_of_interval_utc
+    * @see cwms_ts.top_of_interval_plus_offset_utc
     * @see cwms_ts.snap_to_interval_offset_tz
     */
    function snap_to_interval_offset_utc(
@@ -342,7 +364,7 @@ AS
     *                  <li>p_interval_offset - p_interval_backward <= 0</li>
     *                  </ul>
     *
-    * @see cwms_ts.top_of_interval_tz
+    * @see cwms_ts.top_of_interval_plus_offset_tz
     * @see cwms_ts.snap_to_interval_offset_utc
     */
    function snap_to_interval_offset_tz(
@@ -354,38 +376,6 @@ AS
       p_interval_forward  in varchar2 default null,
       p_interval_backward in varchar2 default null)
       return date;
-
-   /**
-    * Retrieve the beginning time of the next interval a specified time, interval, and offset
-    *
-    * @param p_datetime    The UTC time to retrieve the start of the next interval for
-    * @param p_ts_offset   The data offset into the UTC interval, in minutes
-    * @param p_ts_interval The data interval length in minutes
-    *
-    * @return The beginning time of the next interval
-    * @deprecated Use top_of_interval_utc
-    * @see cwms_ts.top_of_interval_utc
-    */
-   FUNCTION get_time_on_after_interval (p_datetime      IN DATE,
-                                        p_ts_offset     IN NUMBER,
-                                        p_ts_interval   IN NUMBER)
-      RETURN DATE;
-
-   /**
-    * Retrieve the beginning time of the current interval a specified time, interval, and offset
-    *
-    * @param p_datetime    The UTC time to retrieve the start of the next interval for
-    * @param p_ts_offset   The data offset into the UTC interval, in minutes
-    * @param p_ts_interval The data interval length in minutes
-    *
-    * @return The beginning time of the current interval
-    * @deprecated Use top_of_interval_utc
-    * @see cwms_ts.top_of_interval_utc
-    */
-   FUNCTION get_time_on_before_interval (p_datetime      IN DATE,
-                                         p_ts_offset     IN NUMBER,
-                                         p_ts_interval   IN NUMBER)
-      RETURN DATE;
 
    /**
     * Retrieves the unique numeric code identifying a specified parameter
@@ -962,6 +952,39 @@ AS
       p_active_flag         IN     VARCHAR2 DEFAULT 'T',
       p_fail_if_exists      IN     VARCHAR2 DEFAULT 'T',
       p_office_id           IN     VARCHAR2 DEFAULT NULL);
+
+   /**
+    * Generates a table of UTC times within a specified time window for a regular (RTS or LRTS) time series
+    *
+    * @param p_reg_times_utc      The generated table of UTC times
+    * @param p_date_range         The time window information, including start/end inclusiveness and time zone
+    * @param p_interval           The interval of the RTS or LRTS. May be specified like '1Day' or integer minutes,
+    * @param p_offset             The interval offset of the RTS or LRTS, May be specified like '8Hours' or integer minutes.
+    * @param p_interval_time_zone The local time zone for LRTS. Specify 'UTC' for RTS
+    */
+   procedure get_reg_ts_times_utc(
+      p_reg_times_utc      in out nocopy date_table_type,
+      p_date_range         in            date_range_t,
+      p_interval           in            varchar2,
+      p_offset             in            varchar2,
+      p_interval_time_zone in            varchar2);
+
+   /**
+    * Returns a table of UTC times within a specified time window for a regular (RTS or LRTS) time series
+    *
+    * @param p_date_range         The time window information, including start/end inclusiveness and time zone
+    * @param p_interval           The interval of the RTS or LRTS. May be specified like '1Day' or integer minutes,
+    * @param p_offset             The interval offset of the RTS or LRTS, May be specified like '8Hours' or integer minutes.
+    * @param p_interval_time_zone The local time zone for LRTS. Specify 'UTC' for RTS
+    *
+    * @return The generated table of UTC times
+    */
+   function get_reg_ts_times_utc_f(
+      p_date_range         in date_range_t,
+      p_interval           in varchar2,
+      p_offset             in varchar2,
+      p_interval_time_zone in varchar2)
+      return date_table_type;
 
    /**
     * Returns a table of UTC times in a specified LRTS time window. This can be used

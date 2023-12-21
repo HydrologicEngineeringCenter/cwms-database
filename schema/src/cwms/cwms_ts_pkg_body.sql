@@ -376,6 +376,102 @@ AS
    -- function top_of_interval_utc
    --------------------------------------------------------------------------------
    function top_of_interval_utc(
+      p_date_time_utc      in date,
+      p_interval           in varchar2,
+      p_interval_time_zone in varchar2 default 'UTC',
+      p_next               in varchar2 default 'F')
+      return date
+   is
+      l_interval_minutes binary_integer := cwms_cache.get(g_interval_cache, upper(p_interval));
+      l_epoch            date;
+      l_minutes          binary_double;
+      l_year             binary_integer;
+      l_timezone         cwms_time_zone.time_zone_name%type;
+      l_next             boolean := substr(upper(p_next), 1, 1) = 'T';
+      l_top_of_interval  date;
+   begin
+      case
+      when p_date_time_utc is null then
+         return null;
+      when p_interval = '0' then
+         return null;
+      when l_interval_minutes is null then
+         cwms_err.raise('INVALID_INTERVAL_ID', nvl(p_interval, '<NULL>'));
+      else null;
+      end case;
+      ------------------------
+      -- valid interval > 0 --
+      ------------------------
+      case
+      when l_interval_minutes < 43200 then
+         -----------------------------
+         -- minutes, hours, or days --
+         -----------------------------
+         l_epoch   := date '1970-01-01';
+         l_minutes := (p_date_time_utc - l_epoch) * 1440;
+         l_minutes := l_minutes - mod(l_minutes, l_interval_minutes);
+         l_top_of_interval := l_epoch + l_minutes/1440;
+         if p_interval_time_zone != 'UTC' then
+            l_top_of_interval := cast(from_tz(cast(l_top_of_interval as timestamp), p_interval_time_zone) at time zone 'UTC' as date);
+         end if;
+         while l_top_of_interval > p_date_time_utc loop
+            l_top_of_interval := l_top_of_interval - l_interval_minutes / 1440;
+         end loop;
+         if l_next and l_top_of_interval < p_date_time_utc then
+            l_top_of_interval := l_top_of_interval + l_interval_minutes / 1440;
+         end if;
+      when l_interval_minutes = 43200 then
+         ------------
+         -- 1Month --
+         ------------
+         l_top_of_interval := trunc(p_date_time_utc, 'MM');
+         if p_interval_time_zone != 'UTC' then
+            l_top_of_interval := cast(from_tz(cast(l_top_of_interval as timestamp), p_interval_time_zone) at time zone 'UTC' as date);
+         end if;
+         while l_top_of_interval > p_date_time_utc loop
+            l_top_of_interval := add_months(l_top_of_interval, -1);
+         end loop;
+         if l_next and l_top_of_interval < p_date_time_utc then
+            l_top_of_interval := add_months(l_top_of_interval, 1);
+         end if;
+      when l_interval_minutes = 525600 then
+         -----------
+         -- 1Year --
+         -----------
+         l_top_of_interval := trunc(p_date_time_utc, 'YY');
+         if p_interval_time_zone != 'UTC' then
+            l_top_of_interval := cast(from_tz(cast(l_top_of_interval as timestamp), p_interval_time_zone) at time zone 'UTC' as date);
+         end if;
+         while l_top_of_interval > p_date_time_utc loop
+            l_top_of_interval := add_months(l_top_of_interval, -12);
+         end loop;
+         if l_next and l_top_of_interval < p_date_time_utc then
+            l_top_of_interval := add_months(l_top_of_interval, 12);
+         end if;
+      when l_interval_minutes = 5256000 then
+         -------------
+         -- 1Decade --
+         -------------
+         l_year := extract(year from p_date_time_utc);
+         l_year := l_year - mod(l_year, 10);
+         l_top_of_interval := to_date(l_year||'-01-01 00:00:0', 'yyyy-mm-dd hh24:mi:ss');
+         if p_interval_time_zone != 'UTC' then
+            l_top_of_interval := cast(from_tz(cast(l_top_of_interval as timestamp), p_interval_time_zone) at time zone 'UTC' as date);
+         end if;
+         while l_top_of_interval > p_date_time_utc loop
+            l_top_of_interval := add_months(l_top_of_interval, -120);
+         end loop;
+         if l_next and l_top_of_interval < p_date_time_utc then
+            l_top_of_interval := add_months(l_top_of_interval, 120);
+         end if;
+      end case;
+      return l_top_of_interval;
+   end top_of_interval_utc;
+
+   --------------------------------------------------------------------------------
+   -- function top_of_interval_plus_offset_utc
+   --------------------------------------------------------------------------------
+   function top_of_interval_plus_offset_utc(
       p_date_time          in date,
       p_interval           in varchar2,
       p_interval_offset    in varchar2,
@@ -470,12 +566,12 @@ AS
       return l_top;
    exception
       when others then cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
-   end top_of_interval_utc;
+   end top_of_interval_plus_offset_utc;
 
    --------------------------------------------------------------------------------
-   -- function top_of_interval_tz
+   -- function top_of_interval_plus_offset_tz
    --------------------------------------------------------------------------------
-   function top_of_interval_tz(
+   function top_of_interval_plus_offset_tz(
       p_date_time        in date,
       p_interval         in varchar2,
       p_interval_offset  in varchar2,
@@ -515,7 +611,7 @@ AS
       l_dates.extend(4);
       l_dates(1) := p_date_time;
       l_dates(2) := l_date_time;
-      l_top := top_of_interval_utc(
+      l_top := top_of_interval_plus_offset_utc(
          l_date_time,
          p_interval,
          p_interval_offset,
@@ -541,7 +637,7 @@ AS
       -- next adjust time zone of result --
       -------------------------------------
       return l_top;
-   end top_of_interval_tz;
+   end top_of_interval_plus_offset_tz;
 
    --------------------------------------------------------------------------------
    -- function snap_to_interval_offset_utc
@@ -594,7 +690,7 @@ AS
       ------------------------------------------------------------------------------
       -- return top of current interval if p_date_time within its snapping window --
       ------------------------------------------------------------------------------
-      l_prev_top := top_of_interval_utc(
+      l_prev_top := top_of_interval_plus_offset_utc(
          p_date_time       => p_date_time,
          p_interval        => p_interval,
          p_interval_offset => p_interval_offset,
@@ -605,7 +701,7 @@ AS
       ---------------------------------------------------------------------------
       -- return top of next interval if p_date_time within its snapping window --
       ---------------------------------------------------------------------------
-      l_next_top := top_of_interval_utc(
+      l_next_top := top_of_interval_plus_offset_utc(
          p_date_time       => p_date_time,
          p_interval        => p_interval,
          p_interval_offset => p_interval_offset,
@@ -684,7 +780,7 @@ AS
       ------------------------------------------------------------------------------
       -- return top of current interval if p_date_time within its snapping window --
       ------------------------------------------------------------------------------
-      l_prev_top := top_of_interval_tz(
+      l_prev_top := top_of_interval_plus_offset_tz(
          p_date_time        => p_date_time,
          p_interval         => l_interval,
          p_interval_offset  => l_interval_offset,
@@ -721,7 +817,7 @@ AS
       ---------------------------------------------------------------------------
       -- return top of next interval if p_date_time within its snapping window --
       ---------------------------------------------------------------------------
-      l_next_top := top_of_interval_tz(
+      l_next_top := top_of_interval_plus_offset_tz(
          p_date_time        => p_date_time,
          p_interval         => p_interval,
          p_interval_offset  => p_interval_offset,
@@ -760,56 +856,6 @@ AS
       -------------------------------------------------
       return null;
    end snap_to_interval_offset_tz;
-
-
-   --
-   --*******************************************************************   --
-   --*******************************************************************   --
-   --
-   -- GET_TIME_ON_AFTER_INTERVAL - if p_datetime is on the interval, than
-   --      p_datetime is returned, if p_datetime is off of the interval, than
-   --      the first datetime after p_datetime is returned.
-   --
-   --      Function is usable down to 1 minute.
-   --
-   --      All offsets stored in the database are in minutes. --
-   --      p_ts_offset and p_ts_interval are passed in as minutes --
-   --      p_datetime is assumed to be in UTC --
-   --
-   --      Weekly intervals - the weekly interval starts with Sunday.
-   --
-   ----------------------------------------------------------------------------
-   --
-
-   FUNCTION get_time_on_after_interval (p_datetime      IN DATE,
-                                        p_ts_offset     IN NUMBER, -- in minutes.
-                                        p_ts_interval   IN NUMBER -- in minutes.
-                                                                 )
-      RETURN DATE
-   IS
-   BEGIN
-      return top_of_interval_utc(
-         p_date_time       => p_datetime,
-         p_interval        => p_ts_interval,
-         p_interval_offset => nvl(p_ts_offset, 0),
-         p_next            => 'T');
-   END get_time_on_after_interval;
-
-   --
-   --  See get_time_on_after_interval for description/comments/etc...
-   --
-   FUNCTION get_time_on_before_interval (p_datetime      IN DATE,
-                                         p_ts_offset     IN NUMBER,
-                                         p_ts_interval   IN NUMBER)
-      RETURN DATE
-   IS
-   BEGIN
-      return top_of_interval_utc(
-         p_date_time       => p_datetime,
-         p_interval        => p_ts_interval,
-         p_interval_offset => nvl(p_ts_offset, 0),
-         p_next            => 'F');
-   END get_time_on_before_interval;
 
 
 
@@ -1304,10 +1350,11 @@ AS
                   SELECT COUNT (*)
                     INTO l_tmp
                     FROM (SELECT local_time,
-                                 cwms_ts.get_time_on_before_interval(
-                                    local_time,
-                                    abs(p_interval_utc_offset),
-                                    l_irregular_interval) as interval_time
+                                 cwms_ts.top_of_interval_plus_offset_utc(
+                                    p_date_time       => local_time,
+                                    p_interval        => l_irregular_interval,
+                                    p_interval_offset => abs(p_interval_utc_offset),
+                                    p_next            => 'F') as interval_time
                             FROM (SELECT cwms_util.change_timezone(date_time, 'UTC', l_tz) AS local_time
                                     FROM av_tsv WHERE ts_code = p_ts_code
                                  )
@@ -2489,13 +2536,13 @@ AS
                 where ts_code = p_ts_code;
 
                l_local_tz := cwms_loc.get_local_timezone(l_location_code);
-               p_reg_start_time := top_of_interval_utc(
+               p_reg_start_time := top_of_interval_plus_offset_utc(
                   p_date_time        => cwms_util.change_timezone(l_start_time, 'UTC', l_local_tz),
                   p_interval         => p_interval,
                   p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
                   p_next             => 'T');
 
-               p_reg_end_time := top_of_interval_utc(
+               p_reg_end_time := top_of_interval_plus_offset_utc(
                   p_date_time        => cwms_util.change_timezone(l_end_time, 'UTC', l_local_tz),
                   p_interval         => p_interval,
                   p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
@@ -2504,13 +2551,13 @@ AS
                p_reg_start_time := cwms_util.change_timezone(p_reg_start_time, l_local_tz, 'UTC');
                p_reg_end_time   := cwms_util.change_timezone(p_reg_end_time,   l_local_tz, 'UTC');
             else
-               p_reg_start_time := top_of_interval_utc(
+               p_reg_start_time := top_of_interval_plus_offset_utc(
                   p_date_time        => l_start_time,
                   p_interval         => p_interval,
                   p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
                   p_next             => 'T');
 
-               p_reg_end_time := top_of_interval_utc(
+               p_reg_end_time := top_of_interval_plus_offset_utc(
                   p_date_time        => l_end_time,
                   p_interval         => p_interval,
                   p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
@@ -2519,6 +2566,210 @@ AS
          end if;
       end if;
    END setup_retrieve;
+
+   --------------------------------------------------------------------------------
+   -- procedure get_reg_ts_times_utc
+   --------------------------------------------------------------------------------
+   procedure get_reg_ts_times_utc(
+      p_reg_times_utc      in out nocopy date_table_type,
+      p_date_range         in            date_range_t,
+      p_interval           in            varchar2,
+      p_offset             in            varchar2,
+      p_interval_time_zone in            varchar2)
+   is
+      l_interval_minutes      binary_integer := cwms_cache.get(g_interval_cache, upper(p_interval));
+      l_offset_minutes        binary_integer := interval_offset_minutes(p_offset);
+      l_time_window_start_utc date;
+      l_time_window_end_utc   date;
+      l_start_time_utc        date;
+      l_end_time_utc          date;
+      l_start_time_loc        timestamp with time zone;
+      l_end_time_loc          timestamp with time zone;
+      l_diff                  binary_integer;
+      l_count                 binary_integer;
+      l_last_utc              date;
+      l_ds_intvl              interval day to second;
+      l_ym_intvl              interval year to month;
+      l_da                    binary_integer;
+      l_hr                    binary_integer;
+      l_mi                    binary_integer;
+      l_last_loc              timestamp with time zone;
+      l_reg_times_loc         tstz_tab_t;
+      l_interval_tz           cwms_time_zone.time_zone_name%type := cwms_util.get_time_zone_name(p_interval_time_zone);
+      l_interval_days         binary_double := l_interval_minutes / 1440D;
+      l_offset_days           binary_double := l_offset_minutes / 1440D;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_date_range is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_Date_Range');
+      else
+         l_time_window_start_utc := p_date_range.start_time('UTC');
+         l_time_window_end_utc := p_date_range.end_time('UTC');
+         if l_time_window_end_utc >= l_time_window_start_utc then
+            null;
+         else
+            cwms_err.raise('ERROR', 'Invalid time window');
+         end if;
+      end if;
+      if l_interval_minutes is null then
+         cwms_err.raise('INVALID_INTERVAL_ID', nvl(p_interval, '<NULL>'));
+      end if;
+      if l_offset_minutes between 0 and l_interval_minutes - 1 then
+         null;
+      else
+         cwms_err.raise('INVALID_UTC_OFFSET', nvl(to_char(l_offset_minutes), '<NULL>'), l_interval_minutes);
+      end if;
+      -----------------------------
+      -- process the time window --
+      -----------------------------
+      --------------------------------------------------
+      -- get the first top of interval in time window --
+      --------------------------------------------------
+      l_start_time_utc := top_of_interval_utc(
+         p_date_time_utc      => l_time_window_start_utc,
+         p_interval           => l_interval_minutes,
+         p_interval_time_zone => 'UTC',
+         p_next               => 'T') + l_offset_days;
+      if l_start_time_utc not between l_time_window_start_utc and l_time_window_end_utc then
+         --------------------------------
+         -- no interval in time window --
+         --------------------------------
+         p_reg_times_utc := date_table_type();
+         return;
+      end if;
+      ------------------------------------------------------------------------
+      -- get the last top of interval in time window (can be same as first) --
+      ------------------------------------------------------------------------
+      l_end_time_utc := top_of_interval_utc(
+         p_date_time_utc      => l_time_window_end_utc,
+         p_interval           => l_interval_minutes,
+         p_interval_time_zone => 'UTC',
+         p_next               => 'F');
+      if l_offset_days != 0 then
+         if l_end_time_utc + l_offset_days > l_time_window_end_utc then
+            l_end_time_utc := top_of_interval_utc(
+               p_date_time_utc      => l_end_time_utc - 1/86400,
+               p_interval           => l_interval_minutes,
+               p_interval_time_zone => 'UTC',
+               p_next               => 'F');
+         end if;
+         l_end_time_utc := l_end_time_utc + l_offset_days;
+      end if;
+      l_end_time_utc := greatest(l_start_time_utc, l_end_time_utc);
+      -----------------
+      -- do the work --
+      -----------------
+      if l_interval_tz = 'UTC' then
+         ----------------------
+         -- intervals in UTC --
+         ----------------------
+         l_diff := (l_end_time_utc - l_start_time_utc) * 1440; -- minutes
+         l_count := l_diff / l_interval_minutes; -- implicit trunc() assigning to binary_integer
+         if l_interval_minutes < 43200 then
+            -------------------------
+            -- time-based interval --
+            -------------------------
+            select
+               l_start_time_utc + (level - 1) * l_interval_days
+            bulk collect into
+               p_reg_times_utc
+            from
+               dual
+            connect by
+               level <= l_count + 1;
+         else
+            -----------------------------
+            -- calendar-based interval --
+            -----------------------------
+            ---------------------------------------------------------------------------------------------------------------------
+            -- adjust count if necessary since minutes are approximate and err on the low side (making count possibly too high) -
+            ---------------------------------------------------------------------------------------------------------------------
+            l_last_utc := add_months(l_start_time_utc, l_count * case l_interval_minutes when 43200 then 1 when 525600 then 12 else 120 end);
+            while l_last_utc > l_end_time_utc loop
+               l_diff := ceil((l_last_utc - l_end_time_utc) * 1440 / l_interval_minutes);
+               l_count := l_count - l_diff;
+               l_last_utc := add_months(l_last_utc, -l_diff * case l_interval_minutes when 43200 then 1 when 525600 then 12 else 120 end);
+            end loop;
+            select
+               add_months(l_start_time_utc, (level - 1) * case l_interval_minutes when 43200 then 1 when 525600 then 12 else 120 end)
+            bulk collect into
+               p_reg_times_utc
+            from
+               dual
+            connect by
+               level <= l_count + 1;
+         end if;
+      else
+         --------------------------
+         -- intervals not in UTC --
+         --------------------------
+         l_start_time_loc := from_tz(cast(l_start_time_utc as timestamp), 'UTC') at time zone l_interval_tz;
+         l_end_time_loc := from_tz(cast(l_end_time_utc as timestamp), 'UTC') at time zone l_interval_tz;
+         if l_interval_minutes < 43200 then
+            -------------------------
+            -- time-based interval --
+            -------------------------
+            l_ds_intvl := (l_end_time_loc - l_start_time_loc);
+            l_count := trunc((extract(day from l_ds_intvl) * 1440 + extract(hour from l_ds_intvl) * 60 + extract(minute from l_ds_intvl)) / l_interval_minutes);
+            l_da := trunc(l_interval_minutes / 1440);
+            l_hr := trunc((l_interval_minutes - l_da * 1440) / 60);
+            l_mi := l_interval_minutes - 1440 * l_da - 60 * l_hr;
+            l_ds_intvl := trim(to_char(l_da, '09'))||' '||trim(to_char(l_hr, '09'))||':'||trim(to_char(l_mi, '09'))||':00';
+            select
+               l_start_time_loc + (level - 1) * l_ds_intvl
+            bulk collect into
+               l_reg_times_loc
+            from
+               dual
+            connect by
+               level <= l_count + 1;
+         else
+            -----------------------------
+            -- calendar-based interval --
+            -----------------------------
+            l_ym_intvl := case l_interval_minutes when 43200 then '00-01' when 525600 then '01-00' else '10-00' end;
+            l_count := (extract(year  from l_end_time_loc) - extract(year  from l_start_time_loc)) * 12
+                     + (extract(month from l_end_time_loc) - extract(month from l_start_time_loc));
+            select
+               l_start_time_loc + (level - 1) * l_ym_intvl
+            bulk collect into
+               l_reg_times_loc
+            from
+               dual
+            connect by
+               level <= l_count + 1;
+         end if;
+         select
+            cast(column_value at time zone 'UTC' as date)
+         bulk collect into
+            p_reg_times_utc
+         from
+            table(l_reg_times_loc);
+      end if;
+   end get_reg_ts_times_utc;
+
+   --------------------------------------------------------------------------------
+   -- function get_reg_ts_times_utc_f
+   --------------------------------------------------------------------------------
+   function get_reg_ts_times_utc_f(
+      p_date_range         in date_range_t,
+      p_interval           in varchar2,
+      p_offset             in varchar2,
+      p_interval_time_zone in varchar2)
+      return date_table_type
+   is
+      l_reg_times_utc date_table_type;
+   begin
+      get_reg_ts_times_utc(
+         p_reg_times_utc      => l_reg_times_utc,
+         p_date_range         => p_date_range,
+         p_interval           => p_interval,
+         p_offset             => p_offset,
+         p_interval_time_zone => p_interval_time_zone);
+      return l_reg_times_utc;
+   end get_reg_ts_times_utc_f;
 
    FUNCTION get_lrts_times_utc(
       p_start_time_utc  in date,
@@ -5280,10 +5531,11 @@ AS
                  from cwms_interval
                 where interval_id = substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 2);
                l_first_time := cast(p_timeseries_data(1).date_time at time zone l_loc_tz as date);
-               l_irr_offset := (l_first_time - get_time_on_before_interval(
-                  p_datetime    => l_first_time,
-                  p_ts_offset   => 0,
-                  p_ts_interval => l_irr_interval)) * 1440;
+               l_irr_offset := (l_first_time - cwms_ts.top_of_interval_plus_offset_utc(
+                                    p_date_time       => l_first_time,
+                                    p_interval        => l_irr_interval,
+                                    p_interval_offset => 0,
+                                    p_next            => 'F')) * 1440;
                l_utc_offset := l_irr_offset;
             else
                ---------------------------------------------------------
@@ -10644,7 +10896,7 @@ end retrieve_existing_item_counts;
       RETURN NUMBER
    IS
    BEGIN
-      return round((p_date_time_utc - get_time_on_before_interval(p_date_time_utc, 0, p_interval_minutes)) * 1440);
+      return round((p_date_time_utc - top_of_interval_plus_offset_utc(p_date_time_utc, p_interval_minutes, 0, 'F')) * 1440);
    END get_utc_interval_offset;
 
    FUNCTION get_times_for_time_window (
@@ -10683,14 +10935,16 @@ end retrieve_existing_item_counts;
       ----------------------------------------------------------------------
       -- get first and last times that are in time window and on interval --
       ----------------------------------------------------------------------
-      l_start_time_utc := get_time_on_after_interval(
+      l_start_time_utc := top_of_interval_plus_offset_utc(
          cwms_util.change_timezone(p_start_time, p_time_zone, 'UTC'),
+         p_interval_minutes,
          p_utc_interval_offset_minutes,
-         p_interval_minutes);
-      l_end_time_utc := get_time_on_before_interval(
+         'T');
+      l_end_time_utc := top_of_interval_plus_offset_utc(
          cwms_util.change_timezone(p_end_time, p_time_zone, 'UTC'),
+         p_interval_minutes,
          p_utc_interval_offset_minutes,
-         p_interval_minutes);
+         'F');
       if l_start_time_utc > l_end_time_utc then cwms_err.raise('ERROR', 'Time window contains no times on interval.'); end if;
       -------------------
       -- get the times --
@@ -14244,6 +14498,12 @@ end retrieve_existing_item_counts;
       v_package_log_prop_text := nvl(p_text, sys_context('userenv', 'sid'));
    end set_package_log_property_text;
 
+begin
+   g_interval_cache.name := 'cwms_ts.g_interval_cache';
+   for rec in (select interval_id, interval from cwms_interval where interval > 0) loop
+      cwms_cache.put(g_interval_cache, upper(rec.interval_id), rec.interval);
+      cwms_cache.put(g_interval_cache, rec.interval, rec.interval);
+   end loop;
 END cwms_ts;                                                --end package body
 /
 SHOW ERRORS;

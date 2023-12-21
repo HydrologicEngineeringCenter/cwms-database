@@ -70,6 +70,9 @@ function contains_key(
    return boolean
 is
 begin
+   if p_key is null then
+      return null;
+   end if;
    return p_cache.payload_by_key.exists(p_key);
 end contains_key;
 --------------------------------------------------------------------------------
@@ -86,6 +89,13 @@ begin
       return null;
    end if;
    p_cache.get_count := p_cache.get_count + 1;
+   if p_key is null then
+      if p_cache.dbms_output then
+         dbms_output.put_line('Cache '||p_cache.name||': miss (<NULL>, ???)');
+      end if;
+      p_cache.miss_count := p_cache.miss_count + 1;
+      return null;
+   end if;
    begin
       l_payload := p_cache.payload_by_key(p_key);
    exception
@@ -99,7 +109,7 @@ begin
       p_cache.hit_count := p_cache.hit_count + 1;
    else
       if p_cache.dbms_output then
-         dbms_output.put_line('Cache '||p_cache.name||': miss ('||p_key||', '||'???'||')');
+         dbms_output.put_line('Cache '||p_cache.name||': miss ('||p_key||', ???)');
       end if;
       p_cache.miss_count := p_cache.miss_count + 1;
    end if;
@@ -116,6 +126,9 @@ is
    l_time varchar2(16);
 begin
    if p_cache.enabled then
+      if p_key is null then
+         cwms_err.raise('ERROR', 'Cache '||p_cache.name||': Attempt to store a NULL key');
+      end if;
       l_time := cwms_util.current_micros;
       if p_cache.dbms_output then
          dbms_output.put_line('Cache '||p_cache.name||': putting ('||p_key||', '||p_val||')');
