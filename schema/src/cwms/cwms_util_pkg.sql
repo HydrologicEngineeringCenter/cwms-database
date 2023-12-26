@@ -7,11 +7,17 @@ CREATE OR REPLACE PACKAGE cwms_util
  * @since CWMS 2.0
  */
 AS
-   g_timezone_cache cwms_cache.str_str_cache_t;
-   g_time_zone_name_cache cwms_cache.str_str_cache_t;
-   g_time_zone_code_cache cwms_cache.str_str_cache_t;
-   g_parameter_id_cache cwms_cache.str_str_cache_t;
-   g_base_parameter_code_cache cwms_cache.str_str_cache_t;
+   /*
+    * Session level cache global variables
+    */
+   g_timezone_alias_cache        cwms_cache.str_str_cache_t;
+   g_time_zone_name_cache        cwms_cache.str_str_cache_t;
+   g_time_zone_code_cache        cwms_cache.str_str_cache_t;
+   g_time_zone_dst_offset_cache  cwms_cache.str_str_cache_t;
+   g_time_zone_dst_overlap_cache cwms_cache.str_str_cache_t;
+   g_time_zone_dst_skip_cache    cwms_cache.str_str_cache_t;
+   g_parameter_id_cache          cwms_cache.str_str_cache_t;
+   g_base_parameter_code_cache   cwms_cache.str_str_cache_t;
    /*
     * Not documented. Package-specific and session-specific logging properties
     */
@@ -910,6 +916,46 @@ AS
     */
    function get_time_zone_name (p_time_zone_name in varchar2)
       RETURN VARCHAR2;
+   /**
+    * Retrieves the Daylight Saving Time offset (difference in UTC offset beteween winter and summer time) for a time zone
+    *
+    * @param p_time_zone The time zone to retrieve the offset for
+    * @return The offset
+    */
+   function get_time_zone_dst_offset(
+      p_time_zone in varchar2)
+      return interval day to second;
+   /**
+    * Retrieves the Daylight Saving Time offset (difference in UTC offset beteween winter and summer time) for a time zone
+    *
+    * @param p_time_zone The time zone to retrieve the offset for
+    * @return The offset
+    */
+   function get_time_zone_dst_offset_minutes(
+      p_time_zone in varchar2)
+      return binary_integer;
+   /**
+    * Retrieve the range of local times that are repeated during the summer to winter time transition for a timezone and year. Returns NULL if there is no such time range
+    *
+    * @param p_time_zone The time zone to retrieve the overlap range for
+    * @param p_year      The year to retrieve the overlap range for
+    * return The range of local times that are repeated. The start of the time range is inclusive and the end of the time range is exclusive (i.e., the first time that is not repeated), or NULL if no such range.
+    */
+   function get_time_zone_dst_overlap(
+      p_time_zone in varchar2,
+      p_year      in binary_integer)
+      return timestamp_tab_t;
+   /**
+    * Retrieve the range of local times that are skipped during the summer to winter time transition for a timezone and year. Returns NULL if there is no such time range
+    *
+    * @param p_time_zone The time zone to retrieve the skip range for
+    * @param p_year      The year to retrieve the skip range for
+    * return The range of local times that are skipped. The start of the time range is inclusive and the end of the time range is exclusive (i.e., the first time that is not skipped), or NULL if no such range.
+    */
+   function get_time_zone_dst_skip(
+      p_time_zone in varchar2,
+      p_year      in binary_integer)
+      return timestamp_tab_t;
    --------------------------------------------------------------------------------
    -- function get_tz_usage_code
    --
@@ -3139,7 +3185,7 @@ AS
    function get_db_host
       return varchar2;
    /**
-    * Sets the property CWMS/CWMSDB/logging.debug.dbms_output to 'T' or 'F' depending on p_state. The property can be used directly 
+    * Sets the property CWMS/CWMSDB/logging.debug.dbms_output to 'T' or 'F' depending on p_state. The property can be used directly
     * or via the output_debug_info function to determine whether debugging information should be output via dbms_output.
     *
     * @param p_state Whether debugging information should be output via dbms_output

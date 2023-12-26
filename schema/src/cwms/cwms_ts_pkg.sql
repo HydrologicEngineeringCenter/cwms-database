@@ -987,24 +987,6 @@ AS
       return date_table_type;
 
    /**
-    * Returns a table of UTC times in a specified LRTS time window. This can be used
-    * to get the times to select out the TSV tables or views for LRTS.
-    *
-    * @param p_start_time_utc  The start of the LRTS time window IN UTC
-    * @param p_end_time_utc    The end of the LRTS time window IN UTC
-    * @param p_interval        The LRTS interval IN DAYS
-    * @param p_local_time_zone The time zone of the LRTS location
-    *
-    * @return The LRTS times in UTC
-    */
-   FUNCTION get_lrts_times_utc(
-      p_start_time_utc  in date,
-      p_end_time_utc    in date,
-      p_interval        in number,
-      p_local_time_zone in varchar2)
-      return date_table_type deterministic;
-
-   /**
     * Retrieves time series data for a specified time series and time window, including LRTS time zone
     *
     * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor

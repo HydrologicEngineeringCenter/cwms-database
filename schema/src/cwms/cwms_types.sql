@@ -41,6 +41,8 @@ end;
 @@cwms/types/char_49_array_type
 @@cwms/types/char_183_array_type
 @@cwms/types/date_table_type
+@@cwms/types/timestamp_tab_t
+@@cwms/types/dsinterval_tab_t
 @@cwms/types/timeseries_type
 @@cwms/types/timeseries_array
 @@cwms/types/timeseries_req_type
