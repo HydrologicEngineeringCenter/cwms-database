@@ -17,19 +17,19 @@ as object(
    end_inclusive   varchar2(1),
    dummy           char(1), -- dummy member to allow 5-parameter constructor function
    /**
-    * 0-parameter constructor - leaves everything undefined
+    * 0-parameter constructor: dates undefined - time zone and inclusion flags default to UTC and 'T'
     */
    constructor function date_range_t
       return self as result,
    /**
-    * 2-parameter constructor - defines dates leaving time zone and inclusion flags undefined
+    * 2-parameter constructor: dates specified - time zone and inclusion flags default to UTC and 'T'
     */
    constructor function date_range_t(
       p_start_date date,
       p_end_date   date)
       return self as result,
    /**
-    * 3-parameter constructor - defines dates and time zone leaving inclusion flags undefined
+    * 3-parameter constructor: dates and time zone specified - inclusion flags default to 'T'
     */
    constructor function date_range_t(
       p_start_date date,
@@ -37,7 +37,7 @@ as object(
       p_time_zone  varchar2)
       return self as result,
    /**
-    * 5-parameter constructor - defines everything
+    * 5-parameter constructor: everything specified
     */
    constructor function date_range_t(
       p_start_date      date,

@@ -11,6 +11,7 @@ CREATE OR REPLACE PACKAGE cwms_loc
 AS
 
    g_location_code_cache cwms_cache.str_str_cache_t;
+   g_location_id_cache   cwms_cache.str_str_cache_t;
 
    c_str_site            constant varchar2 ( 4) := 'SITE';
    c_str_stream_location constant varchar2 (15) := 'STREAM_LOCATION';

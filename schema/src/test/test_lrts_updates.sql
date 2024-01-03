@@ -114,6 +114,8 @@ is
    exc_location_id_not_found exception;
    pragma exception_init(exc_location_id_not_found, -20025);
 begin
+   cwms_cache.clear(cwms_loc.g_location_code_cache);
+   cwms_cache.clear(cwms_loc.g_location_id_cache);
    for i in 1..c_location_ids.count loop
       select ts_code
         bulk collect
@@ -138,6 +140,8 @@ begin
       end;
    end loop;
    commit;
+   cwms_cache.clear(cwms_loc.g_location_code_cache);
+   cwms_cache.clear(cwms_loc.g_location_id_cache);
 end teardown;
 --------------------------------------------------------------------------------
 -- procedure setup
@@ -3186,198 +3190,199 @@ is
    function d (p_str in varchar2) return date is begin return to_date(p_str, 'yyyy-mm-dd hh24:mi'); end;
    procedure test_returned_times(
       p_expected_times  in cwms_t_date_table,
-      p_interval        in number,
+      p_interval        in varchar,
       p_local_time_zone in varchar)
    is
-      type utc_index_type is table of number_tab_t index by varchar2(19);
-      c_date_fmt       constant varchar2(21) := 'yyyy-mm-dd hh24:mi:ss';
       l_expected_times cwms_t_date_table;
       l_returned_times cwms_t_date_table;
-      l_expected_times_orig cwms_t_date_table;
-      l_utc_indexes    utc_index_type;
-      l_date_str       varchar2(19);
-      l_utc_time       date;
-      l_local_time     date;
-      l_indexes        number_tab_t;
-      l_dst_offset     number;
-      l_fail           boolean := false;
    begin
-      ------------------------
-      -- get the dst offset --
-      ------------------------
-      select cwms_util.dsinterval_to_minutes(dst_offset) / 1440
-        into l_dst_offset
-        from cwms_time_zone
-       where time_zone_name = cwms_util.get_time_zone_name(p_local_time_zone);
-      ------------------------------------
-      -- convert the local times to utc --
-      ------------------------------------
+      ---------------------------------
+      -- call get_reg_ts_times_utc_f --
+      ---------------------------------
+      l_returned_times := cwms_ts.get_reg_ts_times_utc_f(
+         p_date_range         => cwms_t_date_range(
+                                    p_expected_times(1),
+                                    p_expected_times(p_expected_times.count),
+                                    p_local_time_zone),
+         p_interval           => p_interval,
+         p_offset             => 0,
+         p_interval_time_zone => p_local_time_zone);
+      ---------------------------------------------
+      -- convert the expected local times to utc --
+      ---------------------------------------------
       select cwms_util.change_timezone(column_value, p_local_time_zone, 'UTC')
         bulk collect
         into l_expected_times
         from table(p_expected_times);
-      l_expected_times_orig := l_expected_times;
-      ---------------------------------
-      -- adjust duplicate utc values --
-      ---------------------------------
-      for i in 1..l_expected_times.count loop
-         l_date_str := to_char(l_expected_times(i), c_date_fmt);
-         if l_utc_indexes.exists(l_date_str) then
-            l_utc_indexes(l_date_str).extend;
-            l_utc_indexes(l_date_str)(l_utc_indexes(l_date_str).count) := i;
-         else
-            l_utc_indexes(l_date_str) := number_tab_t(i);
-         end if;
-      end loop;
-      l_date_str := l_utc_indexes.first;
-      loop
-         exit when l_date_str is null;
-         l_indexes := l_utc_indexes(l_date_str);
-         if l_indexes.count = 2 then
-            l_expected_times(l_indexes(1)) := l_expected_times(l_indexes(1)) - l_dst_offset;
-         end if;
-         l_date_str := l_utc_indexes.next(l_date_str);
-      end loop;
-      -----------------------------
-      -- call get_lrts_times_utc --
-      -----------------------------
-      l_returned_times := cwms_ts.get_lrts_times_utc(
-         p_start_time_utc  => l_expected_times(1),
-         p_end_time_utc    => l_expected_times(l_expected_times.count),
-         p_interval        => p_interval,
-         p_local_time_zone => p_local_time_zone);
       ---------------------------------------------------------
       -- compare returned values against the expected values --
       ---------------------------------------------------------
       ut.expect(l_returned_times.count).to_equal(l_expected_times.count);
       if l_returned_times.count = l_expected_times.count then
-         -- allow for either UTC time when converting from local to UTC is undetermined
          for i in 1..l_returned_times.count loop
-            ut.expect(
-               cwms_util.change_timezone(l_returned_times(i), 'UTC', p_local_time_zone)
-            ).to_equal(
-               cwms_util.change_timezone(l_expected_times(i), 'UTC', p_local_time_zone)
-            );
+            ut.expect(l_returned_times(i)).to_equal(l_expected_times(i));
+         end loop;
+      else
+         dbms_output.put_line('==> Expected:');
+         for i in 1..l_expected_times.count loop
+            dbms_output.put_line(chr(9)||l_expected_times(i)||' ('||cwms_util.change_timezone(l_expected_times(i), 'UTC', p_local_time_zone)||')');
+         end loop;
+         dbms_output.put_line('==> Got:');
+         for i in 1..l_returned_times.count loop
+            dbms_output.put_line(chr(9)||l_returned_times(i));
          end loop;
       end if;
    end test_returned_times;
 begin
-   --------------------------------------------------------
-   -- test crossing spring boundary with 0100 local time --
-   --------------------------------------------------------
---   dbms_output.put_line(chr(10)||'test crossing spring boundary with 0100 local time'||chr(10));
-   test_returned_times(cwms_t_date_table(d('2020-03-07 23:00'),d('2020-03-08 01:00'),d('2020-03-08 03:00')),  2/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 22:00'),d('2020-03-08 01:00'),d('2020-03-08 04:00')),  3/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 21:00'),d('2020-03-08 01:00'),d('2020-03-08 05:00')),  4/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 19:00'),d('2020-03-08 01:00'),d('2020-03-08 07:00')),  6/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 17:00'),d('2020-03-08 01:00'),d('2020-03-08 09:00')),  8/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 13:00'),d('2020-03-08 01:00'),d('2020-03-08 13:00')), 12/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 01:00'),d('2020-03-08 01:00'),d('2020-03-09 01:00')),     1, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-06 01:00'),d('2020-03-08 01:00'),d('2020-03-10 01:00')),     2, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-05 01:00'),d('2020-03-08 01:00'),d('2020-03-11 01:00')),     3, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-04 01:00'),d('2020-03-08 01:00'),d('2020-03-12 01:00')),     4, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-03 01:00'),d('2020-03-08 01:00'),d('2020-03-13 01:00')),     5, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-02 01:00'),d('2020-03-08 01:00'),d('2020-03-14 01:00')),     6, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-01 01:00'),d('2020-03-08 01:00'),d('2020-03-15 01:00')),     7, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-02-08 01:00'),d('2020-03-08 01:00'),d('2020-04-08 01:00')),    30, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2019-03-08 01:00'),d('2020-03-08 01:00'),d('2021-03-08 01:00')),   365, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2010-03-08 01:00'),d('2020-03-08 01:00'),d('2030-03-08 01:00')),  3650, 'US/Central');
-   --------------------------------------------------------------------------------------------
-   -- test crossing spring boundary with 0200 local time (invalid time yields NULL UTC time) --
-   --------------------------------------------------------------------------------------------
---   dbms_output.put_line(chr(10)||'test crossing spring boundary with 0200 local time (invalid time yields NULL UTC time)'||chr(10));
-   test_returned_times(
-      cwms_t_date_table(
-         d('2020-03-08 00:30'),
-         d('2020-03-08 01:00'),
-         d('2020-03-08 01:30'),
-         d('2020-03-08 03:00'),
-         d('2020-03-08 03:30'),
-         d('2020-03-08 04:00')),
-      30/1440,
-      'US/Central');
-   test_returned_times(
-      cwms_t_date_table(
-         d('2020-03-08 00:00'),
-         d('2020-03-08 01:00'),
-         d('2020-03-08 03:00'),
-         d('2020-03-08 04:00')),
-      1/24,
-      'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-08 00:00'),d('2020-03-08 04:00')),  2/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 23:00'),d('2020-03-08 05:00')),  3/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 22:00'),d('2020-03-08 06:00')),  4/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 20:00'),d('2020-03-08 08:00')),  6/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 18:00'),d('2020-03-08 10:00')),  8/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 14:00'),d('2020-03-08 14:00')), 12/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 02:00'),d('2020-03-09 02:00')),     1, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-06 02:00'),d('2020-03-10 02:00')),     2, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-05 02:00'),d('2020-03-11 02:00')),     3, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-04 02:00'),d('2020-03-12 02:00')),     4, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-03 02:00'),d('2020-03-13 02:00')),     5, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-02 02:00'),d('2020-03-14 02:00')),     6, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-01 02:00'),d('2020-03-15 02:00')),     7, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-02-08 02:00'),d('2020-04-08 02:00')),    30, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2019-03-08 02:00'),d('2021-03-08 02:00')),   365, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2010-03-08 02:00'),d('2030-03-08 02:00')),  3650, 'US/Central');
-   --------------------------------------------------------
-   -- test crossing spring boundary with 0300 local time --
-   --------------------------------------------------------
---   dbms_output.put_line(chr(10)||'test crossing spring boundary with 0300 local time'||chr(10));
-   test_returned_times(cwms_t_date_table(d('2020-03-08 01:00'),d('2020-03-08 03:00'),d('2020-03-08 05:00')),  2/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-08 00:00'),d('2020-03-08 03:00'),d('2020-03-08 06:00')),  3/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 23:00'),d('2020-03-08 03:00'),d('2020-03-08 07:00')),  4/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 21:00'),d('2020-03-08 03:00'),d('2020-03-08 09:00')),  6/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 19:00'),d('2020-03-08 03:00'),d('2020-03-08 11:00')),  8/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 15:00'),d('2020-03-08 03:00'),d('2020-03-08 15:00')), 12/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-07 03:00'),d('2020-03-08 03:00'),d('2020-03-09 03:00')),     1, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-06 03:00'),d('2020-03-08 03:00'),d('2020-03-10 03:00')),     2, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-05 03:00'),d('2020-03-08 03:00'),d('2020-03-11 03:00')),     3, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-04 03:00'),d('2020-03-08 03:00'),d('2020-03-12 03:00')),     4, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-03 03:00'),d('2020-03-08 03:00'),d('2020-03-13 03:00')),     5, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-02 03:00'),d('2020-03-08 03:00'),d('2020-03-14 03:00')),     6, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-03-01 03:00'),d('2020-03-08 03:00'),d('2020-03-15 03:00')),     7, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-02-08 03:00'),d('2020-03-08 03:00'),d('2020-04-08 03:00')),    30, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2019-03-08 03:00'),d('2020-03-08 03:00'),d('2021-03-08 03:00')),   365, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2010-03-08 03:00'),d('2020-03-08 03:00'),d('2030-03-08 03:00')),  3650, 'US/Central');
-   ------------------------------------------------------
-   -- test crossing fall boundary with 0100 local time --
-   ------------------------------------------------------
---   dbms_output.put_line(chr(10)||'test crossing fall boundary with 0100 local time'||chr(10));
-   test_returned_times(
-      cwms_t_date_table(
-         d('2020-11-01 00:30'),
-         d('2020-11-01 01:00'),
-         d('2020-11-01 01:30'),
-         d('2020-11-01 01:00'),
-         d('2020-11-01 01:30'),
-         d('2020-11-01 02:00')),
-      30/1440,
-      'US/Central');
-   test_returned_times(
-      cwms_t_date_table(
-         d('2020-11-01 00:00'),
-         d('2020-11-01 01:00'),
-         d('2020-11-01 01:00'),
-         d('2020-11-01 02:00')),
-      1/24,
-      'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-31 23:00'),d('2020-11-01 01:00'),d('2020-11-01 03:00')),  2/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-31 22:00'),d('2020-11-01 01:00'),d('2020-11-01 04:00')),  3/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-31 21:00'),d('2020-11-01 01:00'),d('2020-11-01 05:00')),  4/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-31 19:00'),d('2020-11-01 01:00'),d('2020-11-01 07:00')),  6/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-31 17:00'),d('2020-11-01 01:00'),d('2020-11-01 09:00')),  8/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-31 13:00'),d('2020-11-01 01:00'),d('2020-11-01 13:00')), 12/24, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-31 01:00'),d('2020-11-01 01:00'),d('2020-11-02 01:00')),     1, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-30 01:00'),d('2020-11-01 01:00'),d('2020-11-03 01:00')),     2, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-29 01:00'),d('2020-11-01 01:00'),d('2020-11-04 01:00')),     3, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-28 01:00'),d('2020-11-01 01:00'),d('2020-11-05 01:00')),     4, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-27 01:00'),d('2020-11-01 01:00'),d('2020-11-06 01:00')),     5, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-26 01:00'),d('2020-11-01 01:00'),d('2020-11-07 01:00')),     6, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-25 01:00'),d('2020-11-01 01:00'),d('2020-11-08 01:00')),     7, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2020-10-01 01:00'),d('2020-11-01 01:00'),d('2020-12-01 01:00')),    30, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2019-11-01 01:00'),d('2020-11-01 01:00'),d('2021-11-01 01:00')),   365, 'US/Central');
-   test_returned_times(cwms_t_date_table(d('2010-11-01 01:00'),d('2020-11-01 01:00'),d('2030-11-01 01:00')),  3650, 'US/Central');
+   -----------------------------------------------------------------------------------------
+   -- the tests were generated by a python script which brute-forces the expected results --
+   -- the script is in this directory as test_get_lrts_times_utc.py                       --
+   -----------------------------------------------------------------------------------------
+   ------------------------------------------------------------
+   -- test crossing spring DST boundary with 0100 local time --
+   ------------------------------------------------------------
+   test_returned_times(cwms_t_date_table(d('2020-03-08 00:00'),d('2020-03-08 01:00')),                           '1Hour', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 22:00'),d('2020-03-08 00:00')),                          '2Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 21:00'),d('2020-03-08 00:00'),d('2020-03-08 03:00')),    '3Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 20:00'),d('2020-03-08 00:00'),d('2020-03-08 04:00')),    '4Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 18:00'),d('2020-03-08 00:00'),d('2020-03-08 06:00')),    '6Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 16:00'),d('2020-03-08 00:00'),d('2020-03-08 08:00')),    '8Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 12:00'),d('2020-03-08 00:00'),d('2020-03-08 12:00')),   '12Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 00:00'),d('2020-03-08 00:00'),d('2020-03-09 00:00')),      '1Day', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-05 00:00'),d('2020-03-07 00:00'),d('2020-03-09 00:00')),     '2Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-03 00:00'),d('2020-03-06 00:00'),d('2020-03-09 00:00')),     '3Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-03 00:00'),d('2020-03-07 00:00'),d('2020-03-11 00:00')),     '4Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-28 00:00'),d('2020-03-04 00:00'),d('2020-03-09 00:00')),     '5Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-26 00:00'),d('2020-03-03 00:00'),d('2020-03-09 00:00')),     '6Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-27 00:00'),d('2020-03-05 00:00'),d('2020-03-12 00:00')),     '1Week', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-01 00:00'),d('2020-03-01 00:00'),d('2020-04-01 00:00')),    '1Month', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2019-01-01 00:00'),d('2020-01-01 00:00'),d('2021-01-01 00:00')),     '1Year', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2010-01-01 00:00'),d('2020-01-01 00:00'),d('2030-01-01 00:00')),   '1Decade', 'US/Central');
+   -----------------------------------------------------------------------------------
+   -- test crossing spring DST boundary with 0200 local time (unconvertable to UTC) --
+   -----------------------------------------------------------------------------------
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:59'),d('2020-03-08 03:00'),d('2020-03-08 03:01')),   '1Minute', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:58'),d('2020-03-08 03:00'),d('2020-03-08 03:02')),  '2Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:57'),d('2020-03-08 03:00'),d('2020-03-08 03:03')),  '3Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:56'),d('2020-03-08 03:00'),d('2020-03-08 03:04')),  '4Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:55'),d('2020-03-08 03:00'),d('2020-03-08 03:05')),  '5Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:54'),d('2020-03-08 03:00'),d('2020-03-08 03:06')),  '6Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:52'),d('2020-03-08 03:00'),d('2020-03-08 03:08')),  '8Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:50'),d('2020-03-08 03:00'),d('2020-03-08 03:10')), '10Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:48'),d('2020-03-08 03:00'),d('2020-03-08 03:12')), '12Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:45'),d('2020-03-08 03:00'),d('2020-03-08 03:15')), '15Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:40'),d('2020-03-08 03:00'),d('2020-03-08 03:20')), '20Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:30'),d('2020-03-08 03:00'),d('2020-03-08 03:30')), '30Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 01:00'),d('2020-03-08 03:00')),                           '1Hour', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 00:00'),d('2020-03-08 04:00')),                          '2Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 21:00'),d('2020-03-08 00:00'),d('2020-03-08 03:00')),    '3Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 20:00'),d('2020-03-08 00:00'),d('2020-03-08 04:00')),    '4Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 18:00'),d('2020-03-08 00:00'),d('2020-03-08 06:00')),    '6Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 16:00'),d('2020-03-08 00:00'),d('2020-03-08 08:00')),    '8Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 12:00'),d('2020-03-08 00:00'),d('2020-03-08 12:00')),   '12Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 00:00'),d('2020-03-08 00:00'),d('2020-03-09 00:00')),      '1Day', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-05 00:00'),d('2020-03-07 00:00'),d('2020-03-09 00:00')),     '2Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-03 00:00'),d('2020-03-06 00:00'),d('2020-03-09 00:00')),     '3Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-03 00:00'),d('2020-03-07 00:00'),d('2020-03-11 00:00')),     '4Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-28 00:00'),d('2020-03-04 00:00'),d('2020-03-09 00:00')),     '5Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-26 00:00'),d('2020-03-03 00:00'),d('2020-03-09 00:00')),     '6Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-27 00:00'),d('2020-03-05 00:00'),d('2020-03-12 00:00')),     '1Week', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-01 00:00'),d('2020-03-01 00:00'),d('2020-04-01 00:00')),    '1Month', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2019-01-01 00:00'),d('2020-01-01 00:00'),d('2021-01-01 00:00')),     '1Year', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2010-01-01 00:00'),d('2020-01-01 00:00'),d('2030-01-01 00:00')),   '1Decade', 'US/Central');
+   ------------------------------------------------------------
+   -- test crossing spring DST boundary with 0300 local time --
+   ------------------------------------------------------------
+   test_returned_times(cwms_t_date_table(d('2020-03-08 03:00'),d('2020-03-08 04:00')),                           '1Hour', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 00:00'),d('2020-03-08 04:00')),                          '2Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-08 00:00'),d('2020-03-08 03:00'),d('2020-03-08 06:00')),    '3Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 20:00'),d('2020-03-08 00:00'),d('2020-03-08 04:00')),    '4Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 18:00'),d('2020-03-08 00:00'),d('2020-03-08 06:00')),    '6Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 16:00'),d('2020-03-08 00:00'),d('2020-03-08 08:00')),    '8Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 12:00'),d('2020-03-08 00:00'),d('2020-03-08 12:00')),   '12Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-07 00:00'),d('2020-03-08 00:00'),d('2020-03-09 00:00')),      '1Day', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-05 00:00'),d('2020-03-07 00:00'),d('2020-03-09 00:00')),     '2Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-03 00:00'),d('2020-03-06 00:00'),d('2020-03-09 00:00')),     '3Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-03-03 00:00'),d('2020-03-07 00:00'),d('2020-03-11 00:00')),     '4Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-28 00:00'),d('2020-03-04 00:00'),d('2020-03-09 00:00')),     '5Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-26 00:00'),d('2020-03-03 00:00'),d('2020-03-09 00:00')),     '6Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-27 00:00'),d('2020-03-05 00:00'),d('2020-03-12 00:00')),     '1Week', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-02-01 00:00'),d('2020-03-01 00:00'),d('2020-04-01 00:00')),    '1Month', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2019-01-01 00:00'),d('2020-01-01 00:00'),d('2021-01-01 00:00')),     '1Year', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2010-01-01 00:00'),d('2020-01-01 00:00'),d('2030-01-01 00:00')),   '1Decade', 'US/Central');
+   ----------------------------------------------------------
+   -- test crossing fall DST boundary with 0100 local time --
+   ----------------------------------------------------------
+   test_returned_times(cwms_t_date_table(d('2020-11-01 00:00'),d('2020-11-01 01:00'),d('2020-11-01 02:00')),     '1Hour', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 22:00'),d('2020-11-01 00:00'),d('2020-11-01 02:00')),    '2Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 21:00'),d('2020-11-01 00:00'),d('2020-11-01 03:00')),    '3Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 20:00'),d('2020-11-01 00:00'),d('2020-11-01 04:00')),    '4Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 18:00'),d('2020-11-01 00:00'),d('2020-11-01 06:00')),    '6Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 16:00'),d('2020-11-01 00:00'),d('2020-11-01 08:00')),    '8Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 12:00'),d('2020-11-01 00:00'),d('2020-11-01 12:00')),   '12Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 00:00'),d('2020-11-01 00:00'),d('2020-11-02 00:00')),      '1Day', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-29 00:00'),d('2020-10-31 00:00'),d('2020-11-02 00:00')),     '2Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-29 00:00'),d('2020-11-01 00:00'),d('2020-11-04 00:00')),     '3Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-25 00:00'),d('2020-10-29 00:00'),d('2020-11-02 00:00')),     '4Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-25 00:00'),d('2020-10-30 00:00'),d('2020-11-04 00:00')),     '5Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-23 00:00'),d('2020-10-29 00:00'),d('2020-11-04 00:00')),     '6Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-22 00:00'),d('2020-10-29 00:00'),d('2020-11-05 00:00')),     '1Week', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-01 00:00'),d('2020-11-01 00:00'),d('2020-12-01 00:00')),    '1Month', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2019-01-01 00:00'),d('2020-01-01 00:00'),d('2021-01-01 00:00')),     '1Year', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2010-01-01 00:00'),d('2020-01-01 00:00'),d('2030-01-01 00:00')),   '1Decade', 'US/Central');
+   ----------------------------------------------------------
+   -- test crossing fall DST boundary with 0200 local time --
+   ----------------------------------------------------------
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:59'),d('2020-11-01 02:00'),d('2020-11-01 02:01')),   '1Minute', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:58'),d('2020-11-01 02:00'),d('2020-11-01 02:02')),  '2Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:57'),d('2020-11-01 02:00'),d('2020-11-01 02:03')),  '3Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:56'),d('2020-11-01 02:00'),d('2020-11-01 02:04')),  '4Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:55'),d('2020-11-01 02:00'),d('2020-11-01 02:05')),  '5Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:54'),d('2020-11-01 02:00'),d('2020-11-01 02:06')),  '6Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:52'),d('2020-11-01 02:00'),d('2020-11-01 02:08')),  '8Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:50'),d('2020-11-01 02:00'),d('2020-11-01 02:10')), '10Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:48'),d('2020-11-01 02:00'),d('2020-11-01 02:12')), '12Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:45'),d('2020-11-01 02:00'),d('2020-11-01 02:15')), '15Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:40'),d('2020-11-01 02:00'),d('2020-11-01 02:20')), '20Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:30'),d('2020-11-01 02:00'),d('2020-11-01 02:30')), '30Minutes', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 01:00'),d('2020-11-01 02:00'),d('2020-11-01 03:00')),     '1Hour', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 00:00'),d('2020-11-01 02:00'),d('2020-11-01 04:00')),    '2Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 21:00'),d('2020-11-01 00:00'),d('2020-11-01 03:00')),    '3Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 20:00'),d('2020-11-01 00:00'),d('2020-11-01 04:00')),    '4Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 18:00'),d('2020-11-01 00:00'),d('2020-11-01 06:00')),    '6Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 16:00'),d('2020-11-01 00:00'),d('2020-11-01 08:00')),    '8Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 12:00'),d('2020-11-01 00:00'),d('2020-11-01 12:00')),   '12Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 00:00'),d('2020-11-01 00:00'),d('2020-11-02 00:00')),      '1Day', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-29 00:00'),d('2020-10-31 00:00'),d('2020-11-02 00:00')),     '2Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-29 00:00'),d('2020-11-01 00:00'),d('2020-11-04 00:00')),     '3Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-25 00:00'),d('2020-10-29 00:00'),d('2020-11-02 00:00')),     '4Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-25 00:00'),d('2020-10-30 00:00'),d('2020-11-04 00:00')),     '5Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-23 00:00'),d('2020-10-29 00:00'),d('2020-11-04 00:00')),     '6Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-22 00:00'),d('2020-10-29 00:00'),d('2020-11-05 00:00')),     '1Week', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-01 00:00'),d('2020-11-01 00:00'),d('2020-12-01 00:00')),    '1Month', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2019-01-01 00:00'),d('2020-01-01 00:00'),d('2021-01-01 00:00')),     '1Year', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2010-01-01 00:00'),d('2020-01-01 00:00'),d('2030-01-01 00:00')),   '1Decade', 'US/Central');
+   ----------------------------------------------------------
+   -- test crossing fall DST boundary with 0300 local time --
+   ----------------------------------------------------------
+   test_returned_times(cwms_t_date_table(d('2020-11-01 02:00'),d('2020-11-01 03:00'),d('2020-11-01 04:00')),     '1Hour', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 00:00'),d('2020-11-01 02:00'),d('2020-11-01 04:00')),    '2Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-11-01 00:00'),d('2020-11-01 03:00'),d('2020-11-01 06:00')),    '3Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 20:00'),d('2020-11-01 00:00'),d('2020-11-01 04:00')),    '4Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 18:00'),d('2020-11-01 00:00'),d('2020-11-01 06:00')),    '6Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 16:00'),d('2020-11-01 00:00'),d('2020-11-01 08:00')),    '8Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 12:00'),d('2020-11-01 00:00'),d('2020-11-01 12:00')),   '12Hours', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-31 00:00'),d('2020-11-01 00:00'),d('2020-11-02 00:00')),      '1Day', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-29 00:00'),d('2020-10-31 00:00'),d('2020-11-02 00:00')),     '2Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-29 00:00'),d('2020-11-01 00:00'),d('2020-11-04 00:00')),     '3Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-25 00:00'),d('2020-10-29 00:00'),d('2020-11-02 00:00')),     '4Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-25 00:00'),d('2020-10-30 00:00'),d('2020-11-04 00:00')),     '5Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-23 00:00'),d('2020-10-29 00:00'),d('2020-11-04 00:00')),     '6Days', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-22 00:00'),d('2020-10-29 00:00'),d('2020-11-05 00:00')),     '1Week', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2020-10-01 00:00'),d('2020-11-01 00:00'),d('2020-12-01 00:00')),    '1Month', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2019-01-01 00:00'),d('2020-01-01 00:00'),d('2021-01-01 00:00')),     '1Year', 'US/Central');
+   test_returned_times(cwms_t_date_table(d('2010-01-01 00:00'),d('2020-01-01 00:00'),d('2030-01-01 00:00')),   '1Decade', 'US/Central');
+
 end test_get_lrts_times_utc;
 --------------------------------------------------------------------------------
 -- procedure test_cwdb_150
@@ -3579,11 +3584,11 @@ procedure test_cwdb_153
 is
    l_cwms_ts_id     varchar2(191) := 'TestLoc1.Code.Inst.~1Day.0.CWDB-153';
    l_local_tz       varchar2(28)  := 'US/Central';
-   l_nonlocal_tz    varchar2(28)  := 'US/Pacific'; 
+   l_nonlocal_tz    varchar2(28)  := 'US/Pacific';
    l_start_time     date := date '2017-10-16';
    l_value_count    pls_integer := 25;
    l_crsr           sys_refcursor;
-   l_dump_values    boolean := true;
+   l_dump_values    boolean := false;
    l_date_times     cwms_t_date_table;
    l_values         cwms_t_double_tab;
    l_quality_codes  cwms_t_number_tab;
@@ -3613,14 +3618,17 @@ begin
    l_local_times.extend(l_value_count);
    l_utc_times.extend(l_value_count);
    l_nonlocal_times.extend(l_value_count);
+   if l_dump_values then
+      dbms_output.put_line('==> Created data');
+   end if;
    for i in 1..l_value_count loop
       l_local_times(i) := l_start_time + i - 1;
       l_utc_times(i) := cwms_util.change_timezone(l_local_times(i), l_local_tz, 'UTC');
       l_nonlocal_times(i) := cwms_util.change_timezone(l_local_times(i), l_local_tz, l_nonlocal_tz);
       l_zts(i) := cwms_t_ztsv(l_utc_times(i), i, 3);
       if l_dump_values then
-         dbms_output.put_line(
-            i
+         dbms_output.put_line(''
+            ||chr(9)||i
             ||chr(9)||l_zts(i).date_time
             ||chr(9)||l_zts(i).value
             ||chr(9)||l_zts(i).quality_code);
@@ -3657,10 +3665,10 @@ begin
          l_quality_codes;
    close l_crsr;
    if l_dump_values then
-      dbms_output.put_line(chr(10));
+      dbms_output.put_line('==> Retrieved data');
       for i in 1..l_date_times.count loop
-         dbms_output.put_line(
-            i
+         dbms_output.put_line(''
+            ||chr(9)||i
             ||chr(9)||l_date_times(i)
             ||chr(9)||to_number(l_values(i))
             ||chr(9)||l_quality_codes(i));
@@ -3694,10 +3702,10 @@ begin
          l_quality_codes;
    close l_crsr;
    if l_dump_values then
-      dbms_output.put_line(chr(10));
+      dbms_output.put_line('==> Retrieved data');
       for i in 1..l_date_times.count loop
-         dbms_output.put_line(
-            i
+         dbms_output.put_line(''
+            ||chr(9)||i
             ||chr(9)||l_date_times(i)
             ||chr(9)||to_number(l_values(i))
             ||chr(9)||l_quality_codes(i));
@@ -3731,10 +3739,10 @@ begin
          l_quality_codes;
    close l_crsr;
    if l_dump_values then
-      dbms_output.put_line(chr(10));
+      dbms_output.put_line('==> Retrieved data');
       for i in 1..l_date_times.count loop
-         dbms_output.put_line(
-            i
+         dbms_output.put_line(''
+            ||chr(9)||i
             ||chr(9)||l_date_times(i)
             ||chr(9)||to_number(l_values(i))
             ||chr(9)||l_quality_codes(i));
@@ -3755,7 +3763,7 @@ begin
    l_local_tz    := 'America/Los_Angeles';
    l_start_time  := date '2005-01-01';
    l_value_count := 31;
-   
+
    begin
       cwms_loc.delete_location(
          p_location_id   => cwms_util.split_text(l_cwms_ts_id, 1, '.'),
@@ -3768,7 +3776,7 @@ begin
       p_location_id	=> cwms_util.split_text(l_cwms_ts_id, 1, '.'),
       p_time_zone_id => l_local_tz,
       p_db_office_id => c_office_id);
-      
+
    ----------------------------
    -- create the time series --
    ----------------------------
@@ -3781,8 +3789,10 @@ begin
          3);
    end loop;
    if l_dump_values then
+      dbms_output.put_line('==> Created data');
       for i in 1..l_value_count loop
-         dbms_output.put_line(i
+         dbms_output.put_line(''
+         ||chr(9)||i
          ||chr(9)||l_ts(i).date_time
          ||chr(9)||l_ts(i).value
          ||chr(9)||l_ts(i).quality_code);
@@ -3800,12 +3810,12 @@ begin
       p_version_date     => cwms_util.non_versioned,
       p_office_id        => c_office_id,
       p_create_as_lrts   => 'T');
-      
+
    if l_dump_values then
       -----------------------------------
       -- select the data from the view --
       -----------------------------------
-      dbms_output.put_line('Stored data');
+      dbms_output.put_line('==> Stored data');
       for rec in (select date_time,
                          value,
                          quality_code
@@ -3813,10 +3823,10 @@ begin
                    where cwms_ts_id = l_cwms_ts_id
                      and unit_id = c_ts_unit
                      and start_date = date '2005-01-01'
-                   order by date_time  
+                   order by date_time
                  )
       loop
-         dbms_output.put_line(rec.date_time||chr(9)||rec.value||chr(9)||rec.quality_code);
+         dbms_output.put_line(chr(9)||rec.date_time||chr(9)||rec.value||chr(9)||rec.quality_code);
       end loop;
    end if;
 
@@ -3842,7 +3852,7 @@ begin
          c_ts_unit,
          date '2005-01-01',
          date '2005-02-01');
-      ts1 := systimestamp;   
+      ts1 := systimestamp;
       cwms_ts.retrieve_ts_multi(
          p_at_tsv_rc       => l_crsr,
          p_timeseries_info => l_ts_req,
@@ -3854,11 +3864,11 @@ begin
          p_next            => 'F',
          p_version_date    => null,
          p_max_version     => 'T',
-         p_office_id       => null);
-      ts2 := systimestamp;   
+         p_office_id       => c_office_id);
+      ts2 := systimestamp;
       dbms_output.put_line((ts2-ts1));
       loop
-         fetch l_crsr 
+         fetch l_crsr
           into l_seq_out,
                l_tsid_out,
                l_unit_out,
@@ -3867,22 +3877,23 @@ begin
                l_data_tz_out,
                l_data_out,
                l_loc_tz_out;
-         exit when l_crsr%notfound; 
+         exit when l_crsr%notfound;
          fetch l_data_out
           bulk collect
           into l_date_times,
                l_values,
                l_quality_codes;
-         close l_data_out;            
+         close l_data_out;
          if l_dump_values then
-            dbms_output.put_line(l_seq_out
+            dbms_output.put_line('==> Retrieved data'
+               ||chr(9)||l_seq_out
                ||chr(9)||l_unit_out
                ||chr(9)||l_start_out
                ||chr(9)||l_end_out
                ||chr(9)||l_data_tz_out
                ||chr(9)||l_loc_tz_out);
             for i in 1..l_date_times.count loop
-               dbms_output.put_line(null
+               dbms_output.put_line(''
                   ||chr(9)||i
                   ||chr(9)||l_date_times(i)
                   ||chr(9)||to_number(l_values(i))
@@ -3898,7 +3909,7 @@ begin
             end loop;
          end if;
       end loop;
-      close l_crsr;      
+      close l_crsr;
       -----------------------------------------------
       -- retrieve the data with a too early window --
       -----------------------------------------------
@@ -3907,7 +3918,7 @@ begin
          c_ts_unit,
          date '2004-10-01',
          date '2004-11-01');
-      ts1 := systimestamp;   
+      ts1 := systimestamp;
       cwms_ts.retrieve_ts_multi(
          p_at_tsv_rc       => l_crsr,
          p_timeseries_info => l_ts_req,
@@ -3919,11 +3930,11 @@ begin
          p_next            => 'F',
          p_version_date    => null,
          p_max_version     => 'T',
-         p_office_id       => null);
-      ts2 := systimestamp;   
+         p_office_id       => c_office_id);
+      ts2 := systimestamp;
       dbms_output.put_line((ts2-ts1));
       loop
-         fetch l_crsr 
+         fetch l_crsr
           into l_seq_out,
                l_tsid_out,
                l_unit_out,
@@ -3932,15 +3943,16 @@ begin
                l_data_tz_out,
                l_data_out,
                l_loc_tz_out;
-         exit when l_crsr%notfound; 
+         exit when l_crsr%notfound;
          fetch l_data_out
           bulk collect
           into l_date_times,
                l_values,
                l_quality_codes;
-         close l_data_out;            
+         close l_data_out;
          if l_dump_values then
-            dbms_output.put_line(l_seq_out
+            dbms_output.put_line('==> Retrieved data'
+               ||chr(9)||l_seq_out
                ||chr(9)||l_unit_out
                ||chr(9)||l_start_out
                ||chr(9)||l_end_out
@@ -3963,7 +3975,7 @@ begin
          c_ts_unit,
          date '2005-03-01',
          date '2005-04-01');
-      ts1 := systimestamp;   
+      ts1 := systimestamp;
       cwms_ts.retrieve_ts_multi(
          p_at_tsv_rc       => l_crsr,
          p_timeseries_info => l_ts_req,
@@ -3975,11 +3987,11 @@ begin
          p_next            => 'F',
          p_version_date    => null,
          p_max_version     => 'T',
-         p_office_id       => null);
-      ts2 := systimestamp;   
+         p_office_id       => c_office_id);
+      ts2 := systimestamp;
       dbms_output.put_line((ts2-ts1));
       loop
-         fetch l_crsr 
+         fetch l_crsr
           into l_seq_out,
                l_tsid_out,
                l_unit_out,
@@ -3988,15 +4000,16 @@ begin
                l_data_tz_out,
                l_data_out,
                l_loc_tz_out;
-         exit when l_crsr%notfound; 
+         exit when l_crsr%notfound;
          fetch l_data_out
           bulk collect
           into l_date_times,
                l_values,
                l_quality_codes;
-         close l_data_out;            
+         close l_data_out;
          if l_dump_values then
-            dbms_output.put_line(l_seq_out
+            dbms_output.put_line('==> Retrieved data'
+               ||chr(9)||l_seq_out
                ||chr(9)||l_unit_out
                ||chr(9)||l_start_out
                ||chr(9)||l_end_out

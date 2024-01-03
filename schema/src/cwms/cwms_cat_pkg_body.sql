@@ -1288,38 +1288,48 @@ IS
       END IF;
 
     open p_cwms_cat for
-      select v.db_office_id,
-             v.base_location_id,
-             v.cwms_ts_id,
-             v.interval_utc_offset,
-             v.time_zone_id as lrts_timezone,
-             t.net_ts_active_flag as ts_active_flag,
-             p.net_privilege_bit as user_privileges
-        from at_cwms_ts_id v,
-             at_cwms_ts_id t,
-             av_sec_ts_privileges p
-       where t.ts_code = v.ts_code
-         and p.ts_code = v.ts_code
-         and p.username = cwms_util.get_user_id
-         and (l_loc_group_code is null or
-              v.location_code in (select location_code
-                                    from at_loc_group_assignment
-                                   where loc_group_code = l_loc_group_code
-                                 )
-             )
-         and (l_ts_group_code is null or
-              v.ts_code in (select ts_code
-                              from at_ts_group_assignment
-                              where ts_group_code=l_ts_group_code
-                           )
-             )
-         and (l_db_office_code is null or
-              v.db_office_code = l_db_office_code
-             )
-         and upper(v.cwms_ts_id) like upper (l_ts_subselect_string) escape '\'
-       order by upper(cwms_util.split_text(v.cwms_ts_id, 1, '.')), -- location
-                upper (v.cwms_ts_id),                              -- tsid
-                upper (v.db_office_id) asc;                        -- office
+      select q1.db_office_id,
+             q1.base_location_id,
+             q1.cwms_ts_id,
+             q1.interval_utc_offset,
+             q1.lrts_timezone,
+             q1.ts_active_flag,
+             q2.net_privilege_bit as user_privileges
+        from (select v.ts_code,
+                     v.db_office_id,
+                     v.base_location_id,
+                     v.cwms_ts_id,
+                     v.interval_utc_offset,
+                     v.time_zone_id as lrts_timezone,
+                     t.net_ts_active_flag as ts_active_flag
+                from at_cwms_ts_id v,
+                     at_cwms_ts_id t
+               where t.ts_code = v.ts_code
+                 and (l_loc_group_code is null or
+                      v.location_code in (select location_code
+                                            from at_loc_group_assignment
+                                           where loc_group_code = l_loc_group_code
+                                         )
+                     )
+                 and (l_ts_group_code is null or
+                      v.ts_code in (select ts_code
+                                      from at_ts_group_assignment
+                                      where ts_group_code=l_ts_group_code
+                                   )
+                     )
+                 and (l_db_office_code is null or
+                      v.db_office_code = l_db_office_code
+                     )
+                 and upper(v.cwms_ts_id) like upper (l_ts_subselect_string) escape '\'
+             ) q1
+             left outer join
+             (select ts_code,
+                     net_privilege_bit
+                from av_sec_ts_privileges
+               where username = cwms_util.get_user_id
+             ) q2 on q2.ts_code = q1.ts_code
+       order by upper (cwms_ts_id),
+                upper (db_office_id) asc;
 END cat_ts_id;
 
    FUNCTION cat_ts_id_tab (p_ts_subselect_string   IN VARCHAR2 DEFAULT NULL ,

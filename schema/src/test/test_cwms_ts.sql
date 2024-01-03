@@ -98,6 +98,9 @@ procedure cwdb_211_update_tsv_dml_counters_to_include_streamed_dml;
 --%test (Test TOP_OF_INTERVAL_UTC)
 procedure test_top_of_interval_utc;
 
+--%test (Test GET_REG_TS_TIMES)
+procedure test_get_reg_ts_times_utc;
+
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
@@ -157,7 +160,7 @@ AS
     IS
         l_count   NUMBER;
     BEGIN
-        CWMS_TS.DELETE_TS (p_cwms_ts_id, cwms_util.delete_all);
+        CWMS_TS.DELETE_TS (p_cwms_ts_id, cwms_util.delete_all, p_db_office_id => '&&office_id');
         SELECT COUNT (*)
           INTO l_count
           FROM at_cwms_ts_id
@@ -202,7 +205,8 @@ AS
                               l_times,
                               l_values,
                               l_qualities,
-                              'Delete Insert');
+                              'Delete Insert',
+                              p_office_id   => '&&office_id');
         END LOOP;
         SELECT COUNT (*)
           INTO l_count
@@ -312,7 +316,8 @@ AS
                           l_times,
                           l_values,
                           l_qualities,
-                          'Delete Insert');
+                          'Delete Insert',
+                          p_office_id => '&&office_id');
         SELECT COUNT (*)
           INTO l_count
           FROM av_tsv
@@ -372,7 +377,8 @@ AS
                           l_times,
                           l_values,
                           l_qualities,
-                          'Delete Insert');
+                          'Delete Insert',
+                          p_office_id => '&&office_id');
         SELECT COUNT (*)
           INTO l_count
           FROM av_tsv
@@ -415,9 +421,10 @@ AS
             '&&office_id',
 --          test_base_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
             test_base_location_id || '.Flow.Ave.0.0.raw');
-        cwms_loc.rename_loc('&&office_id',
-		test_base_location_id,
-		test_renamed_base_location_id);
+      cwms_loc.rename_location(
+         test_base_location_id,
+         test_renamed_base_location_id,
+         '&&office_id');
 	COMMIT;
 --      delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
         delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.0.0.raw');
@@ -1058,11 +1065,6 @@ AS
         ------------------------
         -- store the location --
         ------------------------
-        begin
-           cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
-        exception
-           when others then null;
-        end;
         cwms_loc.store_location (p_location_id    => l_location_id,
                                  p_time_zone_id   => l_time_zone,
                                  p_active         => 'T',
@@ -2398,6 +2400,274 @@ AS
       ut.expect(cwms_ts.top_of_interval_utc(l_utc_time, '1Decade',   'US/Pacific', 'T')).to_equal(to_date('2020-01-01 08:00', l_date_fmt));
 
    end test_top_of_interval_utc;
+   --------------------------------------------------------------------------------
+   -- procedure procedure test_get_reg_ts_times_utc
+   --------------------------------------------------------------------------------
+   procedure test_get_reg_ts_times_utc
+   is
+      l_expected_times_1hour_spring_utc   date_table_type;
+      l_expected_times_1hour_spring_local date_table_type;
+      l_expected_times_1hour_fall_utc     date_table_type;
+      l_expected_times_1hour_fall_local   date_table_type;
+      l_expected_times_1day_spring_utc    date_table_type;
+      l_expected_times_1day_spring_local  date_table_type;
+      l_expected_times_1day_fall_utc      date_table_type;
+      l_expected_times_1day_fall_local    date_table_type;
+      l_reg_times                          date_table_type;
+      l_time_window                        date_range_t;
+      l_time_zone                          varchar2(28) := 'US/Pacific';
+   begin
+      l_expected_times_1hour_spring_utc := date_table_type(
+         timestamp '2023-03-12 07:15:00',
+         timestamp '2023-03-12 08:15:00',
+         timestamp '2023-03-12 09:15:00',
+         timestamp '2023-03-12 10:15:00',
+         timestamp '2023-03-12 11:15:00',
+         timestamp '2023-03-12 12:15:00');
+      l_expected_times_1hour_spring_local := date_table_type(
+         timestamp '2023-03-11 23:15:00',
+         timestamp '2023-03-12 00:15:00',
+         timestamp '2023-03-12 01:15:00',
+         timestamp '2023-03-12 03:15:00',
+         timestamp '2023-03-12 04:15:00',
+         timestamp '2023-03-12 05:15:00');
+      l_expected_times_1hour_fall_utc := date_table_type(
+         timestamp '2023-11-05 07:15:00',
+         timestamp '2023-11-05 08:15:00',
+         timestamp '2023-11-05 09:15:00',
+         timestamp '2023-11-05 10:15:00',
+         timestamp '2023-11-05 11:15:00',
+         timestamp '2023-11-05 12:15:00');
+      l_expected_times_1hour_fall_local := date_table_type(
+         timestamp '2023-11-05 00:15:00',
+         timestamp '2023-11-05 01:15:00',
+         timestamp '2023-11-05 02:15:00',
+         timestamp '2023-11-05 03:15:00',
+         timestamp '2023-11-05 04:15:00');
+
+      l_expected_times_1day_spring_utc := date_table_type(
+         timestamp '2023-03-09 12:00:00',
+         timestamp '2023-03-10 12:00:00',
+         timestamp '2023-03-11 12:00:00',
+         timestamp '2023-03-12 12:00:00',
+         timestamp '2023-03-13 12:00:00',
+         timestamp '2023-03-14 12:00:00');
+      l_expected_times_1day_spring_local := date_table_type(
+         timestamp '2023-03-09 12:00:00',
+         timestamp '2023-03-10 12:00:00',
+         timestamp '2023-03-11 12:00:00',
+         timestamp '2023-03-12 12:00:00',
+         timestamp '2023-03-13 12:00:00',
+         timestamp '2023-03-14 12:00:00');
+      l_expected_times_1day_fall_utc := date_table_type(
+         timestamp '2023-03-09 12:00:00',
+         timestamp '2023-03-10 12:00:00',
+         timestamp '2023-03-11 12:00:00',
+         timestamp '2023-03-12 12:00:00',
+         timestamp '2023-03-13 12:00:00',
+         timestamp '2023-03-14 12:00:00');
+      l_expected_times_1day_fall_local := date_table_type(
+         timestamp '2023-11-02 12:00:00',
+         timestamp '2023-11-03 12:00:00',
+         timestamp '2023-11-04 12:00:00',
+         timestamp '2023-11-05 12:00:00',
+         timestamp '2023-11-06 12:00:00',
+         timestamp '2023-11-07 12:00:00');
+      -----------------------------------------------
+      -- 1Hour interval across Spring DST boundary --
+      -----------------------------------------------
+      l_time_window := date_range_t(
+         trunc(l_expected_times_1hour_spring_utc(1), 'HH'),
+         trunc(l_expected_times_1hour_spring_utc(l_expected_times_1hour_spring_utc.count), 'HH'));
+      ---------------
+      -- UTC times --
+      ---------------
+      dbms_output.put_line('==> 1HOUR SPRING UTC');
+      l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
+         p_date_range         => l_time_window,
+         p_interval           => '1Hour',
+         p_offset             => 15,
+         p_interval_time_zone => 'UTC');
+      ut.expect(l_reg_times.count).to_equal(l_expected_times_1hour_spring_utc.count);
+      if l_reg_times.count = l_expected_times_1hour_spring_utc.count then
+         for i in 1..l_reg_times.count loop
+            ut.expect(l_reg_times(i)).to_equal(l_expected_times_1hour_spring_utc(i));
+         end loop;
+      else
+         dbms_output.put_line(l_time_window.start_time('UTC')||' - '||l_time_window.end_time('UTC'));
+         for i in 1..l_reg_times.count loop
+            dbms_output.put_line(i||chr(9)||l_reg_times(i));
+         end loop;
+      end if;
+      -----------------
+      -- local times --
+      -----------------
+      dbms_output.put_line('==> 1HOUR SPRING '||upper(l_time_zone));
+      l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
+         p_date_range         => l_time_window,
+         p_interval           => '1Hour',
+         p_offset             => 15,
+         p_interval_time_zone => l_time_zone);
+      ut.expect(l_reg_times.count).to_equal(l_expected_times_1hour_spring_local.count);
+      if l_reg_times.count = l_expected_times_1hour_spring_local.count then
+         for i in 1..l_reg_times.count loop
+            ut.expect(cwms_util.change_timezone(l_reg_times(i), 'UTC', l_time_zone)).to_equal(l_expected_times_1hour_spring_local(i));
+         end loop;
+      else
+         dbms_output.put_line(l_time_window.start_time('UTC')||' - '||l_time_window.end_time('UTC'));
+         for i in 1..l_reg_times.count loop
+            dbms_output.put_line(i||chr(9)||l_reg_times(i));
+         end loop;
+      end if;
+      ---------------------------------------------
+      -- 1Hour interval across Fall DST boundary --
+      ---------------------------------------------
+      l_time_window := date_range_t(
+         trunc(l_expected_times_1hour_fall_utc(1), 'HH'),
+         trunc(l_expected_times_1hour_fall_utc(l_expected_times_1hour_fall_utc.count), 'HH'));
+      ---------------
+      -- UTC times --
+      ---------------
+      dbms_output.put_line('==> 1HOUR FALL UTC');
+      l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
+         p_date_range         => l_time_window,
+         p_interval           => '1Hour',
+         p_offset             => 15,
+         p_interval_time_zone => 'UTC');
+      ut.expect(l_reg_times.count).to_equal(l_expected_times_1hour_fall_utc.count);
+      if l_reg_times.count = l_expected_times_1hour_fall_utc.count then
+         for i in 1..l_reg_times.count loop
+            ut.expect(l_reg_times(i)).to_equal(l_expected_times_1hour_fall_utc(i));
+         end loop;
+      else
+         dbms_output.put_line(l_time_window.start_time('UTC')||' - '||l_time_window.end_time('UTC'));
+         for i in 1..l_reg_times.count loop
+            dbms_output.put_line(i||chr(9)||l_reg_times(i));
+         end loop;
+      end if;
+      -----------------
+      -- local times --
+      -----------------
+      dbms_output.put_line('==> 1HOUR FALL '||upper(l_time_zone));
+      l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
+         p_date_range         => l_time_window,
+         p_interval           => '1Hour',
+         p_offset             => 15,
+         p_interval_time_zone => l_time_zone);
+      ut.expect(l_reg_times.count).to_equal(l_expected_times_1hour_fall_local.count);
+      if l_reg_times.count = l_expected_times_1hour_fall_local.count then
+         for i in 1..l_reg_times.count loop
+            ut.expect(cwms_util.change_timezone(l_reg_times(i), 'UTC', l_time_zone)).to_equal(l_expected_times_1hour_fall_local(i));
+         end loop;
+      else
+         dbms_output.put_line(l_time_window.start_time('UTC')||' - '||l_time_window.end_time('UTC'));
+         for i in 1..l_reg_times.count loop
+            dbms_output.put_line(i||chr(9)||l_reg_times(i));
+         end loop;
+      end if;
+      ----------------------------------------------
+      -- 1Day interval across Spring DST boundary --
+      ----------------------------------------------
+      ---------------
+      -- UTC times --
+      ---------------
+      l_time_window := date_range_t(
+         trunc(l_expected_times_1day_spring_utc(1), 'DD'),
+         trunc(l_expected_times_1day_spring_utc(l_expected_times_1day_spring_utc.count), 'DD'),
+         'UTC');
+      dbms_output.put_line('==> 1DAY SPRING UTC');
+      l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
+         p_date_range         => l_time_window,
+         p_interval           => '1Day',
+         p_offset             => '12Hours',
+         p_interval_time_zone => 'UTC');
+      ut.expect(l_reg_times.count).to_equal(l_expected_times_1day_spring_utc.count);
+      if l_reg_times.count = l_expected_times_1day_spring_utc.count then
+         for i in 1..l_reg_times.count loop
+            ut.expect(l_reg_times(i)).to_equal(l_expected_times_1day_spring_utc(i));
+         end loop;
+      else
+         dbms_output.put_line(l_time_window.start_time('UTC')||' - '||l_time_window.end_time('UTC'));
+         for i in 1..l_reg_times.count loop
+            dbms_output.put_line(i||chr(9)||l_reg_times(i));
+         end loop;
+      end if;
+      -----------------
+      -- local times --
+      -----------------
+      l_time_window := date_range_t(
+         trunc(l_expected_times_1day_spring_local(1), 'DD'),
+         trunc(l_expected_times_1day_spring_local(l_expected_times_1day_spring_local.count), 'DD'),
+         l_time_zone);
+      dbms_output.put_line('==> 1DAY SPRING '||upper(l_time_zone));
+      l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
+         p_date_range         => l_time_window,
+         p_interval           => '1Day',
+         p_offset             => '12Hours',
+         p_interval_time_zone => l_time_zone);
+      ut.expect(l_reg_times.count).to_equal(l_expected_times_1day_spring_local.count);
+      if l_reg_times.count = l_expected_times_1day_spring_local.count then
+         for i in 1..l_reg_times.count loop
+            ut.expect(cwms_util.change_timezone(l_reg_times(i), 'UTC', l_time_zone)).to_equal(l_expected_times_1day_spring_local(i));
+         end loop;
+      else
+         dbms_output.put_line(l_time_window.start_time('UTC')||' - '||l_time_window.end_time('UTC'));
+         for i in 1..l_reg_times.count loop
+            dbms_output.put_line(i||chr(9)||l_reg_times(i));
+         end loop;
+      end if;
+      --------------------------------------------
+      -- 1Day interval across Fall DST boundary --
+      --------------------------------------------
+      ---------------
+      -- UTC times --
+      ---------------
+      l_time_window := date_range_t(
+         trunc(l_expected_times_1day_fall_utc(1), 'DD'),
+         trunc(l_expected_times_1day_fall_utc(l_expected_times_1day_fall_utc.count), 'DD'),
+         'UTC');
+      dbms_output.put_line('==> 1DAY FALL UTC');
+      l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
+         p_date_range         => l_time_window,
+         p_interval           => '1Day',
+         p_offset             => '12Hours',
+         p_interval_time_zone => 'UTC');
+      ut.expect(l_reg_times.count).to_equal(l_expected_times_1day_fall_utc.count);
+      if l_reg_times.count = l_expected_times_1day_fall_utc.count then
+         for i in 1..l_reg_times.count loop
+            ut.expect(l_reg_times(i)).to_equal(l_expected_times_1day_fall_utc(i));
+         end loop;
+      else
+         dbms_output.put_line(l_time_window.start_time('UTC')||' - '||l_time_window.end_time('UTC'));
+         for i in 1..l_reg_times.count loop
+            dbms_output.put_line(i||chr(9)||l_reg_times(i));
+         end loop;
+      end if;
+      -----------------
+      -- local times --
+      -----------------
+      l_time_window := date_range_t(
+         trunc(l_expected_times_1day_fall_local(1), 'DD'),
+         trunc(l_expected_times_1day_fall_local(l_expected_times_1day_fall_local.count), 'DD'),
+         l_time_zone);
+      dbms_output.put_line('==> 1DAY FALL '||upper(l_time_zone));
+      l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
+         p_date_range         => l_time_window,
+         p_interval           => '1Day',
+         p_offset             => '12Hours',
+         p_interval_time_zone => l_time_zone);
+      ut.expect(l_reg_times.count).to_equal(l_expected_times_1day_fall_local.count);
+      if l_reg_times.count = l_expected_times_1day_fall_local.count then
+         for i in 1..l_reg_times.count loop
+            ut.expect(cwms_util.change_timezone(l_reg_times(i), 'UTC', l_time_zone)).to_equal(l_expected_times_1day_fall_local(i));
+         end loop;
+      else
+         dbms_output.put_line(l_time_window.start_time('UTC')||' - '||l_time_window.end_time('UTC'));
+         for i in 1..l_reg_times.count loop
+            dbms_output.put_line(i||chr(9)||l_reg_times(i));
+         end loop;
+      end if;
+   end test_get_reg_ts_times_utc;
 
 END test_cwms_ts;
 /
