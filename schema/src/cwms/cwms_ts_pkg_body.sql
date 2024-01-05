@@ -386,9 +386,9 @@ AS
    end interval_offset_minutes;
 
    --------------------------------------------------------------------------------
-   -- function top_of_interval_utc
+   -- function top_of_interval_plus_offset_utc
    --------------------------------------------------------------------------------
-   function top_of_interval_utc(
+   function top_of_interval_plus_offset_utc(
       p_date_time          in date,
       p_interval           in varchar2,
       p_interval_offset    in varchar2,
@@ -483,7 +483,7 @@ AS
       return l_top;
    exception
       when others then cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
-   end top_of_interval_utc;
+   end top_of_interval_plus_offset_utc;
 
    --------------------------------------------------------------------------------
    -- function top_of_interval_tz
@@ -528,7 +528,7 @@ AS
       l_dates.extend(4);
       l_dates(1) := p_date_time;
       l_dates(2) := l_date_time;
-      l_top := top_of_interval_utc(
+      l_top := top_of_interval_plus_offset_utc(
          l_date_time,
          p_interval,
          p_interval_offset,
@@ -607,7 +607,7 @@ AS
       ------------------------------------------------------------------------------
       -- return top of current interval if p_date_time within its snapping window --
       ------------------------------------------------------------------------------
-      l_prev_top := top_of_interval_utc(
+      l_prev_top := top_of_interval_plus_offset_utc(
          p_date_time       => p_date_time,
          p_interval        => p_interval,
          p_interval_offset => p_interval_offset,
@@ -618,7 +618,7 @@ AS
       ---------------------------------------------------------------------------
       -- return top of next interval if p_date_time within its snapping window --
       ---------------------------------------------------------------------------
-      l_next_top := top_of_interval_utc(
+      l_next_top := top_of_interval_plus_offset_utc(
          p_date_time       => p_date_time,
          p_interval        => p_interval,
          p_interval_offset => p_interval_offset,
@@ -801,7 +801,7 @@ AS
       RETURN DATE
    IS
    BEGIN
-      return top_of_interval_utc(
+      return top_of_interval_plus_offset_utc(
          p_date_time       => p_datetime,
          p_interval        => p_ts_interval,
          p_interval_offset => nvl(p_ts_offset, 0),
@@ -817,7 +817,7 @@ AS
       RETURN DATE
    IS
    BEGIN
-      return top_of_interval_utc(
+      return top_of_interval_plus_offset_utc(
          p_date_time       => p_datetime,
          p_interval        => p_ts_interval,
          p_interval_offset => nvl(p_ts_offset, 0),
@@ -2502,13 +2502,13 @@ AS
                 where ts_code = p_ts_code;
 
                l_local_tz := cwms_loc.get_local_timezone(l_location_code);
-               p_reg_start_time := top_of_interval_utc(
+               p_reg_start_time := top_of_interval_plus_offset_utc(
                   p_date_time        => cwms_util.change_timezone(l_start_time, 'UTC', l_local_tz),
                   p_interval         => p_interval,
                   p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
                   p_next             => 'T');
 
-               p_reg_end_time := top_of_interval_utc(
+               p_reg_end_time := top_of_interval_plus_offset_utc(
                   p_date_time        => cwms_util.change_timezone(l_end_time, 'UTC', l_local_tz),
                   p_interval         => p_interval,
                   p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
@@ -2517,13 +2517,13 @@ AS
                p_reg_start_time := cwms_util.change_timezone(p_reg_start_time, l_local_tz, 'UTC');
                p_reg_end_time   := cwms_util.change_timezone(p_reg_end_time,   l_local_tz, 'UTC');
             else
-               p_reg_start_time := top_of_interval_utc(
+               p_reg_start_time := top_of_interval_plus_offset_utc(
                   p_date_time        => l_start_time,
                   p_interval         => p_interval,
                   p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
                   p_next             => 'T');
 
-               p_reg_end_time := top_of_interval_utc(
+               p_reg_end_time := top_of_interval_plus_offset_utc(
                   p_date_time        => l_end_time,
                   p_interval         => p_interval,
                   p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
@@ -5369,6 +5369,7 @@ AS
                             p_utc_offset        => l_utc_offset);
             existing_utc_offset := l_utc_offset;
          WHEN OTHERS THEN
+            dbms_output.put_line('==> ERROR is '||sqlerrm);
             cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
       END;                                               -- END - Find TS_CODE
 
@@ -7173,7 +7174,24 @@ AS
       else
          cwms_err.raise('INVALID_DELETE_ACTION', p_delete_action);
       end if;
-
+      ----------------------------------------------
+      -- clear the deleted timeseries from caches --
+      ----------------------------------------------
+      cwms_cache.remove_by_value(g_ts_code_cache, l_ts_code);
+      cwms_cache.remove(g_ts_id_cache, l_ts_code);
+      cwms_cache.remove(g_ts_id_cache, l_db_office_id||'/'||upper(l_cwms_ts_id));
+      cwms_cache.remove(g_is_lrts_cache, l_ts_code);
+      declare
+         l_keys str_tab_t := cwms_cache.keys(g_ts_id_alias_cache); -- can't put this in a cursor for loop because of in/out parameter
+      begin
+         for i in 1..l_keys.count loop
+            if cwms_util.split_text(l_keys(i), 1, '/') = l_db_office_code
+               and cwms_cache.get(g_ts_id_alias_cache, l_keys(i)) = l_cwms_ts_id
+            then
+               cwms_cache.remove(g_ts_id_alias_cache, l_keys(i));
+            end if;
+         end loop;
+      end;
       if l_publish_message then
          -------------------------------
          -- publish TSDeleted message --
@@ -10252,9 +10270,9 @@ end retrieve_existing_item_counts;
       -------------------
       l_office_code := cwms_util.get_db_office_code(p_office_id);
       l_cache_key := l_office_code
-         ||chr(9)||upper(p_category_id)
-         ||chr(9)||upper(p_group_id)
-         ||chr(9)||upper(p_alias_id);
+         ||'/'||upper(p_category_id)
+         ||'/'||upper(p_group_id)
+         ||'/'||upper(p_alias_id);
       l_ts_id := cwms_cache.get(g_ts_id_alias_cache, l_cache_key);
       if l_ts_id is null then
          -----------------------------------
@@ -14323,10 +14341,10 @@ end retrieve_existing_item_counts;
    end set_package_log_property_text;
 
 begin
-   g_ts_code_cache.name     := 'cwms_ts.ts_code_cache';
-   g_ts_id_cache.name       := 'cwms_ts.ts_id_cache';
-   g_ts_id_alias_cache.name := 'cwms_ts.ts_id_alias_cache';
-   g_is_lrts_cache.name     := 'cwms_ts.is_lrts_cache';
+   g_ts_code_cache.name     := 'cwms_ts.g_ts_code_cache';
+   g_ts_id_cache.name       := 'cwms_ts.g_ts_id_cache';
+   g_ts_id_alias_cache.name := 'cwms_ts.g_ts_id_alias_cache';
+   g_is_lrts_cache.name     := 'cwms_ts.g_is_lrts_cache';
 END cwms_ts;                                                --end package body
 /
 SHOW ERRORS;

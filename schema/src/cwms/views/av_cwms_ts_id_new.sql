@@ -37,7 +37,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID_NEW',
 */
 ');
 
-CREATE OR REPLACE FORCE VIEW av_cwms_ts_id
+CREATE OR REPLACE FORCE VIEW av_cwms_ts_id_new
 (
     db_office_id,
     cwms_ts_id,

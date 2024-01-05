@@ -535,7 +535,7 @@ as
          THEN
             IF l_username = '&cwms_schema' or l_username = 'NOBODY' or l_username = 'CCP' or l_username = 'SYS' or upper(l_username) = upper(l_upass_id)
             THEN
-               RETURN 'CWMS';
+               l_office_id := 'CWMS';
             ELSE
          BEGIN
             SELECT a.office_id
@@ -642,9 +642,6 @@ as
               INTO l_db_office_id
               FROM cwms_office
              WHERE office_code = p_db_office_code;
-
-
-            RETURN l_db_office_id;
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN NULL;
@@ -6708,7 +6705,7 @@ begin
    g_parameter_id_cache.name        := 'cwms_util.g_parameter_id_cache';
    g_base_parameter_code_cache.name := 'cwms_util.g_base_parameter_code_cache';
    g_office_id_cache.name           := 'cwms_util.g_office_id_cache';
-   g_office_code_cache.name         := 'cwms_util.g_office_id_cache';
+   g_office_code_cache.name         := 'cwms_util.g_office_code_cache';
 
 END cwms_util;
 /

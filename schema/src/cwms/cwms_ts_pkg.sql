@@ -254,7 +254,7 @@ AS
     *
     * @see cwms_ts.top_of_interval_tz
     */
-   function top_of_interval_utc(
+   function top_of_interval_plus_offset_utc(
       p_date_time          in date,
       p_interval           in varchar2,
       p_interval_offset    in varchar2,
@@ -282,7 +282,7 @@ AS
     *                  <li>p_output_time_zone is in valid</li>
     *                  </ul>
     *
-    * @see cwms_ts.top_of_interval_utc
+    * @see cwms_ts.top_of_interval_plus_offset_utc
     */
    function top_of_interval_tz(
       p_date_time        in date,
@@ -312,7 +312,7 @@ AS
     *                  <li>p_interval_offset - p_interval_backward <= 0</li>
     *                  </ul>
     *
-    * @see cwms_ts.top_of_interval_utc
+    * @see cwms_ts.top_of_interval_plus_offset_utc
     * @see cwms_ts.snap_to_interval_offset_tz
     */
    function snap_to_interval_offset_utc(
@@ -367,8 +367,8 @@ AS
     * @param p_ts_interval The data interval length in minutes
     *
     * @return The beginning time of the next interval
-    * @deprecated Use top_of_interval_utc
-    * @see cwms_ts.top_of_interval_utc
+    * @deprecated Use top_of_interval_plus_offset_utc
+    * @see cwms_ts.top_of_interval_plus_offset_utc
     */
    FUNCTION get_time_on_after_interval (p_datetime      IN DATE,
                                         p_ts_offset     IN NUMBER,
@@ -383,8 +383,8 @@ AS
     * @param p_ts_interval The data interval length in minutes
     *
     * @return The beginning time of the current interval
-    * @deprecated Use top_of_interval_utc
-    * @see cwms_ts.top_of_interval_utc
+    * @deprecated Use top_of_interval_plus_offset_utc
+    * @see cwms_ts.top_of_interval_plus_offset_utc
     */
    FUNCTION get_time_on_before_interval (p_datetime      IN DATE,
                                          p_ts_offset     IN NUMBER,

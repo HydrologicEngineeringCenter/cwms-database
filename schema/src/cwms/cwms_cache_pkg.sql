@@ -36,32 +36,34 @@ type str_str_cache_t
 /**
  * Generic hash type for keys and values of varchar2 or implicityly convertable to/from varchar2. Variables of this type implement the cache data for specific purposes.
  *
- * @member name             The name of this cache, defaults to null. Package global variable caches are named in package body initialization
- * @member enabled          A flag specifying whether the cache is currently enabled
- * @member dbms_output      A flag specifying whether cache operations will be output to dbms_output
- * @member payloads_by_key  The table of payloads indexed by keys for this cache
- * @member keys_by_time     The table of keys indexed by access time for this cache
- * @member capacity         The current capacity of this cache
- * @member get_count        The number of times get() has been called on this chache since it was created, enabled, or had its capacity changed
- * @member hit_count        The number of cache hits on this chache since it was created, enabled, or had its capacity changed
- * @member miss_count       The number of cache misses on this chache since it was created, enabled, or had its capacity changed
- * @member put_count        The number of times put() has been called on this chache since it was created, enabled, or had its capacity changed
- * @member remove_count     The number of times remove() has been called on this cache since it was created, enabled, or had its capacity changed.
- * @member trim_count       The number of least-recently-accessed key/payload pairs removed from this chache to prevent exceeding capacity since it was created, enabled, or had its capacity changed
+ * @member name              The name of this cache, defaults to null. Package global variable caches are named in package body initialization
+ * @member enabled           A flag specifying whether the cache is currently enabled
+ * @member dbms_output       A flag specifying whether cache operations will be output to dbms_output
+ * @member output_call_stack A flag specifying whether the call stack will be included when outputting cache operations
+ * @member payloads_by_key   The table of payloads indexed by keys for this cache
+ * @member keys_by_time      The table of keys indexed by access time for this cache
+ * @member capacity          The current capacity of this cache
+ * @member get_count         The number of times get() has been called on this chache since it was created, enabled, or had its capacity changed
+ * @member hit_count         The number of cache hits on this chache since it was created, enabled, or had its capacity changed
+ * @member miss_count        The number of cache misses on this chache since it was created, enabled, or had its capacity changed
+ * @member put_count         The number of times put() has been called on this chache since it was created, enabled, or had its capacity changed
+ * @member remove_count      The number of times remove() has been called on this cache since it was created, enabled, or had its capacity changed.
+ * @member trim_count        The number of least-recently-accessed key/payload pairs removed from this chache to prevent exceeding capacity since it was created, enabled, or had its capacity changed
  */
 is record(
-   name             varchar2(64),
-   enabled          boolean := true,
-   dbms_output      boolean := false,
-   payload_by_key   str_payload_by_str_t,
-   key_by_time      str_key_by_time_t,
-   capacity         binary_integer := g_default_capacity,
-   get_count        binary_integer := 0,
-   hit_count        binary_integer := 0,
-   miss_count       binary_integer := 0,
-   put_count        binary_integer := 0,
-   remove_count     binary_integer := 0,
-   trim_count       binary_integer := 0);
+   name              varchar2(64),
+   enabled           boolean := true,
+   dbms_output       boolean := false,
+   output_call_stack boolean := false,
+   payload_by_key    str_payload_by_str_t,
+   key_by_time       str_key_by_time_t,
+   capacity          binary_integer := g_default_capacity,
+   get_count         binary_integer := 0,
+   hit_count         binary_integer := 0,
+   miss_count        binary_integer := 0,
+   put_count         binary_integer := 0,
+   remove_count      binary_integer := 0,
+   trim_count        binary_integer := 0);
 /**
  * @param p_cache The cache variable
  * @return The current number of cached key/payload pairs
@@ -141,6 +143,13 @@ procedure remove_by_value(
 procedure clear(
    p_cache in out nocopy str_str_cache_t);
 /**
+ * Retrieves all keys for the cache
+ * @return the all keys
+ */
+function keys(
+   p_cache in out nocopy str_str_cache_t)
+   return str_tab_t;
+/**
  * Disables the cache, optionally also clearing it. Operations that would normally modify the cache do not do so when disabled.
  * @param p_cache The cache variable
  * @param p_clear A flag specfying whether to also clear the cache. If true, then resets counts to zero.
@@ -217,6 +226,14 @@ function hit_ratio(
  * @param p_output Whether to print operations to dbms_out
  */
 procedure set_dbms_output(
+   p_cache  in out nocopy str_str_cache_t,
+   p_output in boolean);
+/**
+ * Specifies whether to print the call stack whenever operations are printed to dbms_out
+ * @param p_cache  The cache variable
+ * @param p_output Whether to print the call stack whenever operations are printed to dbms_out
+ */
+procedure set_output_call_stack(
    p_cache  in out nocopy str_str_cache_t,
    p_output in boolean);
    

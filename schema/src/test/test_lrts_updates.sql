@@ -106,6 +106,19 @@ v_timezone_ids   str_tab_t      := str_tab_t();
 v_timezone_codes number_tab_t   := number_tab_t();
 c_ts_values_utc  ztsv_array_tab := ztsv_array_tab();
 --------------------------------------------------------------------------------
+-- procedure clear_caches
+--------------------------------------------------------------------------------
+procedure clear_caches
+is
+begin
+   cwms_cache.clear(cwms_loc.g_location_code_cache);
+   cwms_cache.clear(cwms_loc.g_location_id_cache);
+   cwms_cache.clear(cwms_ts.g_ts_code_cache);
+   cwms_cache.clear(cwms_ts.g_ts_id_cache);
+   cwms_cache.clear(cwms_ts.g_ts_id_alias_cache);
+   cwms_cache.clear(cwms_ts.g_is_lrts_cache);
+end clear_caches;
+--------------------------------------------------------------------------------
 -- procedure teardown
 --------------------------------------------------------------------------------
 procedure teardown
@@ -114,6 +127,7 @@ is
    exc_location_id_not_found exception;
    pragma exception_init(exc_location_id_not_found, -20025);
 begin
+   clear_caches;
    for i in 1..c_location_ids.count loop
       select ts_code
         bulk collect
@@ -138,6 +152,7 @@ begin
       end;
    end loop;
    commit;
+   clear_caches;
 end teardown;
 --------------------------------------------------------------------------------
 -- procedure setup

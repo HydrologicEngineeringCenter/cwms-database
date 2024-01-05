@@ -63,13 +63,17 @@ AS
    BEGIN
       IF p_location_code IS NOT NULL
       THEN
-         SELECT      bl.base_location_id
-                  || SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
-                  || pl.sub_location_id
-           INTO   l_location_id
-           FROM   at_physical_location pl, at_base_location bl
-          WHERE   pl.location_code = p_location_code
-                  AND bl.base_location_code = pl.base_location_code;
+         l_location_id := cwms_cache.get(g_location_id_cache, p_location_code);
+         if l_location_id is null then
+            SELECT      bl.base_location_id
+                     || SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
+                     || pl.sub_location_id
+              INTO   l_location_id
+              FROM   at_physical_location pl, at_base_location bl
+             WHERE   pl.location_code = p_location_code
+                     AND bl.base_location_code = pl.base_location_code;
+            cwms_cache.put(g_location_id_cache, p_location_code, l_location_id);
+         end if;
       END IF;
 
       RETURN l_location_id;
@@ -82,53 +86,59 @@ AS
    is
       l_office_id   varchar2(16);
       l_location_id varchar2(57);
+      l_cache_key   varchar2(32767);
    begin
       l_office_id := nvl(upper(trim(p_office_id)), cwms_util.user_office_id);
-      -----------------------------
-      -- first try a location id --
-      -----------------------------
-      begin
-         select bl.base_location_id
-                ||substr('-', 1, length(pl.sub_location_id))
-                ||pl.sub_location_id
-           into l_location_id
-           from at_physical_location pl,
-                at_base_location bl,
-                cwms_office o
-          where o.office_id = l_office_id
-            and bl.db_office_code = o.office_code
-            and pl.base_location_code = bl.base_location_code
-            and upper(p_location_id_or_alias) = upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id);
-      exception
-         when no_data_found then
-         -------------------------------
-         -- next try a location alias --
-         -------------------------------
-         l_location_id :=  get_location_id_from_alias(
-            p_alias_id  => p_location_id_or_alias,
-            p_office_id => l_office_id);
-         if l_location_id is null then
+      l_cache_key := l_office_id||'/'||upper(p_location_id_or_alias);
+      l_location_id := cwms_cache.get(g_location_id_cache, l_cache_key);
+      if l_location_id is null then
+         -----------------------------
+         -- first try a location id --
+         -----------------------------
+         begin
+            select bl.base_location_id
+                   ||substr('-', 1, length(pl.sub_location_id))
+                   ||pl.sub_location_id
+              into l_location_id
+              from at_physical_location pl,
+                   at_base_location bl,
+                   cwms_office o
+             where o.office_id = l_office_id
+               and bl.db_office_code = o.office_code
+               and pl.base_location_code = bl.base_location_code
+               and upper(p_location_id_or_alias) = upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id);
+         exception
+            when no_data_found then
             -------------------------------
-            -- finally try a public name --
+            -- next try a location alias --
             -------------------------------
-            begin
-               select bl.base_location_id
-                      ||substr('-', 1, length(pl.sub_location_id))
-                      ||pl.sub_location_id
-                 into l_location_id
-                 from at_physical_location pl,
-                      at_base_location bl,
-                      cwms_office o
-                where o.office_id = l_office_id
-                  and bl.db_office_code = o.office_code
-                  and pl.base_location_code = bl.base_location_code
-                  and upper(p_location_id_or_alias) = upper(pl.public_name);
-            exception
-               when no_data_found then
-                  cwms_err.raise('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
-            end;
-         end if;
-      end;
+            l_location_id :=  get_location_id_from_alias(
+               p_alias_id  => p_location_id_or_alias,
+               p_office_id => l_office_id);
+            if l_location_id is null then
+               -------------------------------
+               -- finally try a public name --
+               -------------------------------
+               begin
+                  select bl.base_location_id
+                         ||substr('-', 1, length(pl.sub_location_id))
+                         ||pl.sub_location_id
+                    into l_location_id
+                    from at_physical_location pl,
+                         at_base_location bl,
+                         cwms_office o
+                   where o.office_id = l_office_id
+                     and bl.db_office_code = o.office_code
+                     and pl.base_location_code = bl.base_location_code
+                     and upper(p_location_id_or_alias) = upper(pl.public_name);
+               exception
+                  when no_data_found then
+                     cwms_err.raise('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
+               end;
+            end if;
+         end;
+         cwms_cache.put(g_location_id_cache, l_cache_key, l_location_id);
+      end if;
       return l_location_id;
    end get_location_id;
 
@@ -1242,10 +1252,11 @@ AS
                   select count(*)
                     into l_tmp
                     from (select local_time,
-                                 cwms_ts.get_time_on_before_interval(
-                                    local_time,
-                                    rec.interval_utc_offset,
-                                    rec.interval) as interval_time
+                                 cwms_ts.top_of_interval_plus_offset_utc(
+                                    p_date_time       => local_time,
+                                    p_interval        => rec.interval,
+                                    p_interval_offset => rec.interval_utc_offset,
+                                    p_next            => 'F') as interval_time
                             from (select cwms_util.change_timezone(date_time, 'UTC', p_time_zone_id) as local_time
                                     from av_tsv where ts_code = rec.ts_code
                                  )
@@ -1683,10 +1694,11 @@ AS
                   select count(*)
                     into l_tmp
                     from (select local_time,
-                                 cwms_ts.get_time_on_before_interval(
-                                    local_time,
-                                    rec.interval_utc_offset,
-                                    rec.interval) as interval_time
+                                 cwms_ts.top_of_interval_plus_offset_utc(
+                                    p_date_time       => local_time,
+                                    p_interval        => rec.interval,
+                                    p_interval_offset => rec.interval_utc_offset,
+                                    p_next            => 'F') as interval_time
                             from (select cwms_util.change_timezone(date_time, 'UTC', p_time_zone_id) as local_time
                                     from av_tsv where ts_code = rec.ts_code
                                  )
@@ -2561,6 +2573,41 @@ AS
                 WHERE   apl.location_code = l_location_code_old;
             END IF;
       END CASE;
+      -----------------------------------------------------------
+      -- remove old names from the location code and id caches --
+      -----------------------------------------------------------
+      cwms_cache.remove(g_location_code_cache, l_db_office_code||'/'||upper(l_location_id_old));
+      cwms_cache.remove_by_value(g_location_id_cache, l_db_office_id||'/'||upper(l_location_id_old));
+      if l_old_loc_is_base_loc then
+         ---------------------------------------------------------------------
+         -- we have to check the value of every key for a matching base_loc --
+         ---------------------------------------------------------------------
+         declare
+            l_partial_val varchar2(256);
+            l_keys        str_tab_t;
+         begin
+            -----------------------------
+            -- the location code cache --
+            -----------------------------
+            l_partial_val := l_db_office_code||'/'||upper(l_location_id_old)||'-';
+            l_keys        := cwms_cache.keys(g_location_code_cache);
+            for i in 1..l_keys.count loop
+               if instr(cwms_cache.get(g_location_code_cache, l_keys(i)), l_partial_val) = 1 then
+                  cwms_cache.remove(g_location_code_cache, l_keys(i));
+               end if;
+            end loop;
+            ---------------------------
+            -- the location id cache --
+            ---------------------------
+            l_partial_val := l_db_office_id||'/'||upper(l_location_id_old)||'-';
+            l_keys        := cwms_cache.keys(g_location_id_cache);
+            for i in 1..l_keys.count loop
+               if instr(cwms_cache.get(g_location_id_cache, l_keys(i)), l_partial_val) = 1 then
+                  cwms_cache.remove(g_location_id_cache, l_keys(i));
+               end if;
+            end loop;
+         end;
+      end if;
 
       COMMIT;
    --
@@ -2639,6 +2686,7 @@ AS
       l_base_location_code   NUMBER;
       l_location_code        NUMBER;
       l_db_office_code        NUMBER;
+      l_db_office_id         cwms_office.office_id%type;
       l_delete_action        VARCHAR2 (22);
       l_cursor               SYS_REFCURSOR;
       l_this_is_a_base_loc   BOOLEAN := FALSE;
@@ -2649,6 +2697,8 @@ AS
       --
       l_location_codes        number_tab_t;
       l_location_ids         str_tab_t;
+      l_location_id           varchar2(57);
+      l_location_id_cache_val varchar2(256);
    --
    BEGIN
       -------------------
@@ -2681,9 +2731,16 @@ AS
          cwms_err.raise ('INVALID_DELETE_ACTION', p_delete_action);
       END IF;
 
-      l_base_location_id := cwms_util.get_base_id (p_location_id);
-      l_sub_location_id  := cwms_util.get_sub_id (p_location_id);
-      l_db_office_code   := cwms_util.get_office_code (p_db_office_id);
+      l_db_office_code := cwms_util.get_office_code (p_db_office_id);
+
+      select office_id
+        into l_db_office_id
+        from cwms_office
+       where office_code = l_db_office_code;
+
+      l_location_id      := get_location_id(p_location_id, l_db_office_id);
+      l_base_location_id := cwms_util.get_base_id (l_location_id);
+      l_sub_location_id  := cwms_util.get_sub_id (l_location_id);
 
       -- You can only delete a location if that location does not have
       -- any child records.
@@ -2699,7 +2756,7 @@ AS
             cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id);
       END;
 
-      l_location_code := get_location_code (p_db_office_id, p_location_id);
+      l_location_code := get_location_code (l_db_office_id, l_location_id);
 
       --
       IF l_sub_location_id IS NULL
@@ -2723,7 +2780,6 @@ AS
               FROM   at_cwms_ts_id
              WHERE   location_code = l_location_code;
       END IF;
-
       LOOP
          FETCH l_cursor
          INTO l_cwms_ts_id;
@@ -2779,7 +2835,7 @@ AS
          -- collect location and all sub-locations --
          --------------------------------------------
          select location_code,
-                p_location_id || substr ('-', 1, length (sub_location_id)) || sub_location_id
+                l_location_id || substr ('-', 1, length (sub_location_id)) || sub_location_id
            bulk collect into
                 l_location_codes,
                 l_location_ids
@@ -2790,7 +2846,7 @@ AS
          -- collect just the location --
          -------------------------------
          select location_code,
-                p_location_id
+                l_location_id
            bulk collect
            into l_location_codes,
                 l_location_ids
@@ -3114,14 +3170,14 @@ AS
                                where apl.base_location_code = l_base_location_code
                              )
                   loop
-                     delete from at_physical_location where location_code = rec.location_code;
+                     cwms_cache.remove_by_value(g_location_id_cache, get_location_id(rec.location_code));
                      cwms_cache.remove_by_value(g_location_code_cache, rec.location_code);
+                     delete from at_physical_location where location_code = rec.location_code;
                   end loop;
 
                   delete
                     from at_base_location abl
                    where abl.base_location_code = l_base_location_code;
-                  cwms_cache.remove_by_value(g_location_code_cache, l_base_location_code);
                else -- Deleting a single Sub Location --------------------------------
                   delete
                     from at_physical_location apl
@@ -3153,6 +3209,8 @@ AS
                   end if;
             end;
          end loop;
+         l_location_id_cache_val := upper(l_db_office_id)||'/'||upper(l_location_id);
+         cwms_cache.remove_by_value(g_location_id_cache, l_location_id_cache_val);
       end if;
       commit;
 
@@ -10910,6 +10968,7 @@ end unassign_loc_groups;
 
 begin
    g_location_code_cache.name := 'cwms_loc.g_location_code_cache';
+   g_location_id_cache.name   := 'cwms_loc.g_location_id_cache';
 END cwms_loc;
 /
 show errors;
