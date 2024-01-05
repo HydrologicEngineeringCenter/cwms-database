@@ -10,6 +10,10 @@ CREATE OR REPLACE PACKAGE cwms_ts
  * @since CWMS 2.0
  */
 AS
+   g_ts_code_cache     cwms_cache.str_str_cache_t;
+   g_ts_id_cache       cwms_cache.str_str_cache_t;
+   g_ts_id_alias_cache cwms_cache.str_str_cache_t;
+   g_is_lrts_cache     cwms_cache.str_str_cache_t;
    /*
     * Not documented. Package-specific and session-specific logging properties
     */
@@ -980,7 +984,46 @@ AS
       p_interval        in number,
       p_local_time_zone in varchar2)
       return date_table_type deterministic;
-
+   /**
+    * Returns whether a time series id references an LRTS
+    *
+    * @param p_cwms_ts_id The time series identifier to test
+    * @param p_office_id  The office that owns the time series identifier to test. If not specified or NULL, the session user's default office is used.
+    * @ return Whether a time series id references an LRTS
+    */
+   function is_lrts(
+      p_cwms_ts_id in varchar,
+      p_office_id  in varchar2 default null)
+      return boolean;
+   /**
+    * Returns whether a time series code references an LRTS
+    *
+    * @param p_ts_code The time series code to test
+    * @ return Whether a time series code references an LRTS
+    */
+   function is_lrts(
+      p_ts_code in number)
+      return boolean;
+   /**
+    * Returns whether a time series id references an LRTS
+    *
+    * @param p_cwms_ts_id The time series identifier to test
+    * @param p_office_id  The office that owns the time series identifier to test. If not specified or NULL, the session user's default office is used.
+    * @ return 'T' if the time series is an LRTS, otherwise 'F'
+    */
+   function is_lrts_char(
+      p_cwms_ts_id in varchar,
+      p_office_id  in varchar2 default null)
+      return varchar2;
+   /**
+    * Returns whether a time series code references an LRTS
+    *
+    * @param p_ts_code The time series code to test
+    * @ return 'T' if the time series is an LRTS, otherwise 'F'
+    */
+   function is_lrts_char(
+      p_ts_code in number)
+      return varchar2;
    /**
     * Retrieves time series data for a specified time series and time window, including LRTS time zone
     *

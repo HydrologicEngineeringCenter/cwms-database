@@ -24,6 +24,7 @@ DECLARE
       'av_cwms_media',
       'av_cwms_ts_id',
       'av_cwms_ts_id2',
+      'av_cwms_ts_id_new',
       'av_cwms_user',              -- created in at_schema_2
       'av_dataexchange_job',
       'av_deleted_ts_id',
@@ -153,6 +154,7 @@ END;
 @@cwms/views/av_cwms_media_type
 @@cwms/views/av_cwms_ts_id
 @@cwms/views/av_cwms_ts_id2
+@@cwms/views/av_cwms_ts_id_new
 @@cwms/views/av_data_q_changed
 @@cwms/views/av_data_q_protection
 @@cwms/views/av_data_q_range

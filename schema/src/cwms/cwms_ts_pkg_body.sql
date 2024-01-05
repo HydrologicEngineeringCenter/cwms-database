@@ -39,20 +39,25 @@ AS
    is
       l_office_id    varchar2(16) := cwms_util.get_db_office_id_from_code(p_db_office_code);
       l_cwms_ts_code number;
+      l_cache_key    varchar2(32767) := p_db_office_code||'/'||upper(p_cwms_ts_id);
    begin
-      begin
-         select ts_code
-           into l_cwms_ts_code
-           from at_cwms_ts_id
-          where upper(cwms_ts_id) = upper(get_cwms_ts_id(trim(p_cwms_ts_id), l_office_id))
-            and db_office_code = p_db_office_code;
-      exception
-         when no_data_found then
-            cwms_err.raise (
-               'TS_ID_NOT_FOUND',
-               trim (p_cwms_ts_id),
-               l_office_id);
-      end;
+      l_cwms_ts_code := cwms_cache.get(g_ts_code_cache, l_cache_key);
+      if l_cwms_ts_code is null then
+         begin
+            select ts_code
+              into l_cwms_ts_code
+              from at_cwms_ts_id
+             where upper(cwms_ts_id) = upper(get_cwms_ts_id(trim(p_cwms_ts_id), l_office_id))
+               and db_office_code = p_db_office_code;
+         exception
+            when no_data_found then
+               cwms_err.raise (
+                  'TS_ID_NOT_FOUND',
+                  trim (p_cwms_ts_id),
+                  l_office_id);
+         end;
+         cwms_cache.put(g_ts_code_cache, l_cache_key, l_cwms_ts_code);
+      end if;
       return l_cwms_ts_code;
    end get_ts_code;
 
@@ -63,11 +68,14 @@ AS
    IS
       l_cwms_ts_id   VARCHAR2(191);
    begin
-      select cwms_ts_id
-        into l_cwms_ts_id
-        from at_cwms_ts_id
-       where ts_code = p_ts_code;
-
+      l_cwms_ts_id := cwms_cache.get(g_ts_id_cache, p_ts_code);
+      if l_cwms_ts_id is null then
+         select cwms_ts_id
+           into l_cwms_ts_id
+           from at_cwms_ts_id
+          where ts_code = p_ts_code;
+         cwms_cache.put(g_ts_id_cache, p_ts_code, l_cwms_ts_id);
+      end if;
       return l_cwms_ts_id;
    end;
 
@@ -106,26 +114,31 @@ AS
    is
       l_cwms_ts_id varchar2(191);
       l_parts      str_tab_t;
+      l_cache_key  varchar2(32767) := upper(p_office_id)||'/'||upper(p_cwms_ts_id);
    begin
-      -----------
-      -- as is --
-      -----------
-      begin
-         select cwms_ts_id
-           into l_cwms_ts_id
-           from at_cwms_ts_id
-          where upper(cwms_ts_id) = upper(p_cwms_ts_id)
-            and upper(db_office_id) = upper(p_office_id);
-      exception
-         when no_data_found then
-            ----------------------------
-            -- try time series alias  --
-            -- (will try loc aliases) --
-            ----------------------------
-            l_cwms_ts_id := cwms_ts.get_ts_id_from_alias(p_cwms_ts_id, null, null, p_office_id);
-      end;
+      l_cwms_ts_id := cwms_cache.get(g_ts_id_cache, l_cache_key);
       if l_cwms_ts_id is null then
-         l_cwms_ts_id := p_cwms_ts_id;
+         -----------
+         -- as is --
+         -----------
+         begin
+            select cwms_ts_id
+              into l_cwms_ts_id
+              from at_cwms_ts_id
+             where upper(cwms_ts_id) = upper(p_cwms_ts_id)
+               and upper(db_office_id) = upper(p_office_id);
+         exception
+            when no_data_found then
+               ----------------------------
+               -- try time series alias  --
+               -- (will try loc aliases) --
+               ----------------------------
+               l_cwms_ts_id := cwms_ts.get_ts_id_from_alias(p_cwms_ts_id, null, null, p_office_id);
+         end;
+         if l_cwms_ts_id is null then
+            l_cwms_ts_id := p_cwms_ts_id;
+         end if;
+         cwms_cache.put(g_ts_id_cache, l_cache_key, l_cwms_ts_id);
       end if;
       return l_cwms_ts_id;
    end;
@@ -2660,6 +2673,63 @@ AS
       end if;
       return l_utc_times;
    end get_lrts_times_utc;
+   --------------------------------------------------------------------------------
+   -- function is_lrts
+   --------------------------------------------------------------------------------
+   function is_lrts(
+      p_cwms_ts_id in varchar,
+      p_office_id  in varchar2 default null)
+      return boolean
+   is
+   begin
+      return is_lrts_char(get_ts_code(p_cwms_ts_id, p_office_id)) = 'T';
+   end is_lrts;
+   --------------------------------------------------------------------------------
+   -- function is_lrts
+   --------------------------------------------------------------------------------
+   function is_lrts(
+      p_ts_code in number)
+      return boolean
+   is
+   begin
+      return is_lrts_char(p_ts_code) = 'T';
+   end is_lrts;
+   --------------------------------------------------------------------------------
+   -- function is_lrts_char
+   --------------------------------------------------------------------------------
+   function is_lrts_char(
+      p_cwms_ts_id in varchar,
+      p_office_id  in varchar2 default null)
+      return varchar2
+   is
+   begin
+      return is_lrts_char(get_ts_code(p_cwms_ts_id, p_office_id));
+   end is_lrts_char;
+   --------------------------------------------------------------------------------
+   -- function is_lrts_char
+   --------------------------------------------------------------------------------
+   function is_lrts_char(
+      p_ts_code in number)
+      return varchar2
+   is
+      l_is_lrts_char varchar2(1);
+   begin
+      l_is_lrts_char := cwms_cache.get(g_is_lrts_cache, p_ts_code);
+      if l_is_lrts_char is null then
+         l_is_lrts_char := 'F';
+         select 'T'
+           into l_is_lrts_char
+           from dual
+          where exists(select ts_code
+                         from at_cwms_ts_id
+                        where ts_code = p_ts_code
+                          and (interval_id like '~%' or interval_id like '%Local')
+                          and interval_utc_offset != cwms_util.utc_offset_irregular
+                      );
+         cwms_cache.put(g_is_lrts_cache, p_ts_code, l_is_lrts_char);
+      end if;
+      return l_is_lrts_char;
+   end is_lrts_char;
    --
    --*******************************************************************   --
    --*******************************************************************   --
@@ -10175,55 +10245,63 @@ end retrieve_existing_item_counts;
       l_ts_id       varchar2(191);
       l_parts       str_tab_t;
       l_location_id varchar2(57);
+      l_cache_key   varchar2(32767);
    begin
       -------------------
       -- sanity checks --
       -------------------
       l_office_code := cwms_util.get_db_office_code(p_office_id);
-
-      -----------------------------------
-      -- retrieve and return the ts id --
-      -----------------------------------
-      begin
-         select distinct ts_code
-           into l_ts_code
-           from at_ts_group_assignment a,
-                at_ts_group g,
-                at_ts_category c
-          where a.office_code = l_office_code
-            and upper(c.ts_category_id) = upper(nvl(p_category_id, c.ts_category_id))
-            and upper(g.ts_group_id) = upper(nvl(p_group_id, g.ts_group_id))
-            and upper(a.ts_alias_id) = upper(p_alias_id)
-            and g.ts_category_code = c.ts_category_code
-            and a.ts_group_code = g.ts_group_code;
-      exception
-         when no_data_found then
-            ------------------------------------
-            -- see if the location is aliased --
-            ------------------------------------
-            l_parts := cwms_util.split_text(p_alias_id, '.');
-            if l_parts.count = 6 then
-               l_location_id := cwms_loc.get_location_id(l_parts(1), p_office_id);
-               if l_location_id is not null and l_location_id != l_parts(1) then
-                  l_parts(1) := l_location_id;
-                  l_ts_id := cwms_util.join_text(l_parts, '.');
-                  l_ts_code := cwms_ts.get_ts_code(l_ts_id, p_office_id);
-                  if l_ts_code is null then
-                     l_ts_id := null;
+      l_cache_key := l_office_code
+         ||chr(9)||upper(p_category_id)
+         ||chr(9)||upper(p_group_id)
+         ||chr(9)||upper(p_alias_id);
+      l_ts_id := cwms_cache.get(g_ts_id_alias_cache, l_cache_key);
+      if l_ts_id is null then
+         -----------------------------------
+         -- retrieve and return the ts id --
+         -----------------------------------
+         begin
+            select distinct ts_code
+              into l_ts_code
+              from at_ts_group_assignment a,
+                   at_ts_group g,
+                   at_ts_category c
+             where a.office_code = l_office_code
+               and upper(c.ts_category_id) = upper(nvl(p_category_id, c.ts_category_id))
+               and upper(g.ts_group_id) = upper(nvl(p_group_id, g.ts_group_id))
+               and upper(a.ts_alias_id) = upper(p_alias_id)
+               and g.ts_category_code = c.ts_category_code
+               and a.ts_group_code = g.ts_group_code;
+         exception
+            when no_data_found then
+               ------------------------------------
+               -- see if the location is aliased --
+               ------------------------------------
+               l_parts := cwms_util.split_text(p_alias_id, '.');
+               if l_parts.count = 6 then
+                  l_location_id := cwms_loc.get_location_id(l_parts(1), p_office_id);
+                  if l_location_id is not null and l_location_id != l_parts(1) then
+                     l_parts(1) := l_location_id;
+                     l_ts_id := cwms_util.join_text(l_parts, '.');
+                     l_ts_code := cwms_ts.get_ts_code(l_ts_id, p_office_id);
+                     if l_ts_code is null then
+                        l_ts_id := null;
+                     end if;
                   end if;
                end if;
-            end if;
-         when too_many_rows
-         then
-            cwms_err.raise (
-               'ERROR',
-               'Alias ('
-               || p_alias_id
-               || ') matches more than one time series.');
-      end;
+            when too_many_rows
+            then
+               cwms_err.raise (
+                  'ERROR',
+                  'Alias ('
+                  || p_alias_id
+                  || ') matches more than one time series.');
+         end;
 
-      if l_ts_code is not null and l_ts_id is null then
-         l_ts_id := get_ts_id (l_ts_code);
+         if l_ts_code is not null and l_ts_id is null then
+            l_ts_id := get_ts_id (l_ts_code);
+         end if;
+         cwms_cache.put(g_ts_id_alias_cache, l_cache_key,l_ts_id);
       end if;
 
       return l_ts_id;
@@ -14244,6 +14322,11 @@ end retrieve_existing_item_counts;
       v_package_log_prop_text := nvl(p_text, sys_context('userenv', 'sid'));
    end set_package_log_property_text;
 
+begin
+   g_ts_code_cache.name     := 'cwms_ts.ts_code_cache';
+   g_ts_id_cache.name       := 'cwms_ts.ts_id_cache';
+   g_ts_id_alias_cache.name := 'cwms_ts.ts_id_alias_cache';
+   g_is_lrts_cache.name     := 'cwms_ts.is_lrts_cache';
 END cwms_ts;                                                --end package body
 /
 SHOW ERRORS;
