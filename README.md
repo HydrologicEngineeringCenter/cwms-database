@@ -70,7 +70,7 @@ NOTE: If building manually from the github link images you may need additional p
 docker volume create cwmsdb_volume
 docker network create cwmsdb_net
 docker run -d --name cwmsdb -e ORACLE_PDB=CWMSDEV -e ORACLE_PWD="simplePassword0#" -p 1521:1521 -e5500:5500 -p 2484:2484 \
--v cwms_db_volume:/opt/oracle/oradata \
+-v cwms_db_volume:/opt/oracle/oradata --network cwmsdb_net \
 registry.hecdev.net/oracle/database:19.17.0-ee
 
 docker logs -f cwmsdb
