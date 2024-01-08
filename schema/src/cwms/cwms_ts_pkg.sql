@@ -989,7 +989,7 @@ AS
     *
     * @param p_cwms_ts_id The time series identifier to test
     * @param p_office_id  The office that owns the time series identifier to test. If not specified or NULL, the session user's default office is used.
-    * @ return Whether a time series id references an LRTS
+    * @return Whether a time series id references an LRTS
     */
    function is_lrts(
       p_cwms_ts_id in varchar,
@@ -999,7 +999,7 @@ AS
     * Returns whether a time series code references an LRTS
     *
     * @param p_ts_code The time series code to test
-    * @ return Whether a time series code references an LRTS
+    * @return Whether a time series code references an LRTS
     */
    function is_lrts(
       p_ts_code in number)
@@ -1009,7 +1009,7 @@ AS
     *
     * @param p_cwms_ts_id The time series identifier to test
     * @param p_office_id  The office that owns the time series identifier to test. If not specified or NULL, the session user's default office is used.
-    * @ return 'T' if the time series is an LRTS, otherwise 'F'
+    * @return 'T' if the time series is an LRTS, otherwise 'F'
     */
    function is_lrts_char(
       p_cwms_ts_id in varchar,
@@ -1019,7 +1019,7 @@ AS
     * Returns whether a time series code references an LRTS
     *
     * @param p_ts_code The time series code to test
-    * @ return 'T' if the time series is an LRTS, otherwise 'F'
+    * @return 'T' if the time series is an LRTS, otherwise 'F'
     */
    function is_lrts_char(
       p_ts_code in number)
