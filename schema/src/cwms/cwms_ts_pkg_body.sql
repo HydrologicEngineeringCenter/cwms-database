@@ -72,7 +72,7 @@ AS
       if l_cwms_ts_id is null then
          select cwms_ts_id
            into l_cwms_ts_id
-           from at_cwms_ts_id
+           from av_cwms_ts_id
           where ts_code = p_ts_code;
          cwms_cache.put(g_ts_id_cache, p_ts_code, l_cwms_ts_id);
       end if;
@@ -2679,57 +2679,147 @@ AS
    function is_lrts(
       p_cwms_ts_id in varchar,
       p_office_id  in varchar2 default null)
-      return boolean
+      return varchar2
    is
    begin
-      return is_lrts_char(get_ts_code(p_cwms_ts_id, p_office_id)) = 'T';
+      return is_lrts(get_ts_code(p_cwms_ts_id, p_office_id));
    end is_lrts;
    --------------------------------------------------------------------------------
    -- function is_lrts
    --------------------------------------------------------------------------------
    function is_lrts(
       p_ts_code in number)
-      return boolean
+      return varchar2
    is
+      l_is_lrts varchar2(1);
    begin
-      return is_lrts_char(p_ts_code) = 'T';
+      l_is_lrts := cwms_cache.get(g_is_lrts_cache, p_ts_code);
+      if l_is_lrts is null then
+         l_is_lrts := 'F';
+         begin
+            select 'T'
+              into l_is_lrts
+              from dual
+             where exists(select ts_code
+                            from at_cwms_ts_id
+                           where ts_code = p_ts_code
+                             and (interval_id like '~%' or interval_id like '%Local')
+                             and interval_utc_offset != cwms_util.utc_offset_irregular
+                         );
+         exception
+            when no_data_found then null;
+         end;
+         cwms_cache.put(g_is_lrts_cache, p_ts_code, l_is_lrts);
+      end if;
+      return l_is_lrts;
    end is_lrts;
    --------------------------------------------------------------------------------
-   -- function is_lrts_char
+   -- function format_lrts_interval
    --------------------------------------------------------------------------------
-   function is_lrts_char(
-      p_cwms_ts_id in varchar,
-      p_office_id  in varchar2 default null)
+   function format_lrts_interval(
+      p_interval_id    in varchar2,
+      p_use_new_format in boolean)
+      return varchar2
+   is
+      l_interval_id cwms_interval.interval_id%type;
+   begin
+      case
+      when p_use_new_format and substr(p_interval_id, 1, 1) = '~' then
+         -------------------------------
+         -- convert old to new format --
+         -------------------------------
+         l_interval_id := regexp_replace(p_interval_id, '^~(.+)$', '\1Local');
+      when not p_use_new_format and substr(upper(p_interval_id), -5, 5) = 'LOCAL' then
+         -------------------------------
+         -- convert new to old format --
+         -------------------------------
+         l_interval_id := regexp_replace(p_interval_id, '^(.+)Local$', '~\1', 1, 1, 'i');
+      else
+         ---------------
+         -- no change --
+         ---------------
+         l_interval_id := p_interval_id;
+      end case;
+      return l_interval_id;
+   end format_lrts_interval;
+   --------------------------------------------------------------------------------
+   -- function format_lrts_interval
+   --------------------------------------------------------------------------------
+   function format_lrts_interval(
+      p_interval_id in varchar2)
       return varchar2
    is
    begin
-      return is_lrts_char(get_ts_code(p_cwms_ts_id, p_office_id));
-   end is_lrts_char;
+      return format_lrts_interval(p_interval_id, use_new_lrts_format = 'T');
+   end format_lrts_interval;
    --------------------------------------------------------------------------------
-   -- function is_lrts_char
+   -- function format_lrts
    --------------------------------------------------------------------------------
-   function is_lrts_char(
-      p_ts_code in number)
+   function format_lrts(
+      p_ts_id          in varchar2,
+      p_use_new_format in boolean)
       return varchar2
    is
-      l_is_lrts_char varchar2(1);
+      l_interval_id cwms_interval.interval_id%type;
+      l_ts_id       at_cwms_ts_id.cwms_ts_id%type;
+      l_pos         binary_integer;
    begin
-      l_is_lrts_char := cwms_cache.get(g_is_lrts_cache, p_ts_code);
-      if l_is_lrts_char is null then
-         l_is_lrts_char := 'F';
-         select 'T'
-           into l_is_lrts_char
-           from dual
-          where exists(select ts_code
-                         from at_cwms_ts_id
-                        where ts_code = p_ts_code
-                          and (interval_id like '~%' or interval_id like '%Local')
-                          and interval_utc_offset != cwms_util.utc_offset_irregular
-                      );
-         cwms_cache.put(g_is_lrts_cache, p_ts_code, l_is_lrts_char);
+      l_interval_id := regexp_substr(p_ts_id, '[^.]+', 1, 4);
+      l_pos         := instr(p_ts_id, l_interval_id);
+      if p_use_new_format and substr(l_interval_id, 1, 1) = '~'
+         or not p_use_new_format and substr(upper(l_interval_id), -5, 5) = 'LOCAL'
+      then
+         ---------------------
+         -- need to convert --
+         ---------------------
+         l_ts_id := substr(p_ts_id, 1, l_pos-1)
+            || format_lrts_interval(l_interval_id, p_use_new_format)
+            || substr(p_ts_id, l_pos+length(l_interval_id));
+      else
+         ---------------
+         -- no change --
+         ---------------
+         l_ts_id := p_ts_id;
       end if;
-      return l_is_lrts_char;
-   end is_lrts_char;
+      return l_ts_id;
+   end format_lrts;
+   --------------------------------------------------------------------------------
+   -- function format_lrts
+   --------------------------------------------------------------------------------
+   function format_lrts(
+      p_ts_id in varchar2)
+      return varchar2
+   is
+   begin
+      return format_lrts(p_ts_id, use_new_lrts_format = 'T');
+   end format_lrts;
+   --------------------------------------------------------------------------------
+   -- procedure set_use_new_lrts_format
+   --------------------------------------------------------------------------------
+   procedure set_use_new_lrts_format(
+      p_use_new_format in varchar2)
+   is
+      l_flag char(1) := upper(substr(p_use_new_format, 1, 1));
+   begin
+      if l_flag in ('T', 'F') then
+         cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', l_flag);
+      else
+         cwms_err.raise('INVALID_T_F_FLAG', p_use_new_format);
+      end if;
+      cwms_cache.clear(g_ts_code_cache);
+      cwms_cache.clear(g_ts_id_cache);
+      cwms_cache.clear(g_ts_id_alias_cache);
+      cwms_cache.clear(g_is_lrts_cache);
+   end set_use_new_lrts_format;
+   --------------------------------------------------------------------------------
+   -- function use_new_lrts_format
+   --------------------------------------------------------------------------------
+   function use_new_lrts_format
+      return varchar2
+   is
+   begin
+      return cwms_util.get_session_info_txt('USE_NEW_LRTS_ID_FORMAT');
+   end use_new_lrts_format;
    --
    --*******************************************************************   --
    --*******************************************************************   --
@@ -2842,7 +2932,10 @@ AS
       --
       -- set the out parameters
       --
-      p_cwms_ts_id_out := l_cwms_ts_id;
+      p_cwms_ts_id_out := case
+                          when is_lrts(l_cwms_ts_id, l_office_id) = 'F' then l_cwms_ts_id
+                          else format_lrts(l_cwms_ts_id)
+                          end;
       p_units_out      := l_units;
 
       --
@@ -2866,7 +2959,7 @@ AS
                 p_time_zone_id
            from at_cwms_ts_id
           where upper(db_office_id) = upper(l_office_id)
-            and upper(cwms_ts_id) = upper(p_cwms_ts_id_out);
+            and upper(cwms_ts_id) = upper(l_cwms_ts_id);
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -2885,7 +2978,7 @@ AS
                       p_time_zone_id
                  from at_cwms_ts_id
                 where upper(db_office_id) = upper(l_office_id)
-                  and upper(cwms_ts_id) = upper(p_cwms_ts_id_out);
+                  and upper(cwms_ts_id) = upper(l_cwms_ts_id);
             EXCEPTION
                WHEN NO_DATA_FOUND
                THEN
@@ -2898,12 +2991,12 @@ AS
       end if;
 
       set_action ('Handle start and end times');
-      l_is_lrts :=  l_interval = 0 and l_utc_offset != cwms_util.utc_offset_irregular;
+      l_is_lrts :=  is_lrts(l_ts_code) = 'T';
       if l_is_lrts then
          select interval
            into l_interval
            from cwms_interval
-          where upper(interval_id) = substr(upper(cwms_util.split_text(p_cwms_ts_id_out, 4, '.')), 2);
+          where upper(interval_id) = substr(upper(cwms_util.split_text(l_cwms_ts_id, 4, '.')), 2);
       end if;
       setup_retrieve (l_start_time,
                       l_end_time,
@@ -9583,9 +9676,10 @@ end retrieve_existing_item_counts;
                             'Time series category',
                             cwms_util.strip(p_ts_category_id));
          ELSE
-            IF     l_rec.db_office_code = cwms_util.db_office_code_all
-               AND l_office_code != cwms_util.db_office_code_all
+            IF cwms_util.get_db_office_code not in (l_rec.db_office_code, cwms_util.db_office_code_all)
             THEN
+               dbms_output.put_line('owner office = '||l_rec.db_office_code);
+               dbms_output.put_line('user office  = '||cwms_util.get_db_office_code);
                cwms_err.raise (
                   'ERROR',
                      'CWMS time series category '

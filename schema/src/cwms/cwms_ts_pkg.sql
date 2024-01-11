@@ -989,29 +989,9 @@ AS
     *
     * @param p_cwms_ts_id The time series identifier to test
     * @param p_office_id  The office that owns the time series identifier to test. If not specified or NULL, the session user's default office is used.
-    * @return Whether a time series id references an LRTS
-    */
-   function is_lrts(
-      p_cwms_ts_id in varchar,
-      p_office_id  in varchar2 default null)
-      return boolean;
-   /**
-    * Returns whether a time series code references an LRTS
-    *
-    * @param p_ts_code The time series code to test
-    * @return Whether a time series code references an LRTS
-    */
-   function is_lrts(
-      p_ts_code in number)
-      return boolean;
-   /**
-    * Returns whether a time series id references an LRTS
-    *
-    * @param p_cwms_ts_id The time series identifier to test
-    * @param p_office_id  The office that owns the time series identifier to test. If not specified or NULL, the session user's default office is used.
     * @return 'T' if the time series is an LRTS, otherwise 'F'
     */
-   function is_lrts_char(
+   function is_lrts(
       p_cwms_ts_id in varchar,
       p_office_id  in varchar2 default null)
       return varchar2;
@@ -1021,8 +1001,62 @@ AS
     * @param p_ts_code The time series code to test
     * @return 'T' if the time series is an LRTS, otherwise 'F'
     */
-   function is_lrts_char(
+   function is_lrts(
       p_ts_code in number)
+      return varchar2;
+   /**
+    * Returns an interval formatted in either the old (~1Day) or new (1DayLocal) format based on specified format
+    *
+    * @param p_interval_id    The LRTS interval to format
+    * @param p_use_new_format A flag specifying whether to use the new LRTS format
+    * @return The formatted LRTS interval
+    */
+   function format_lrts_interval(
+      p_interval_id    in varchar2,
+      p_use_new_format in boolean)
+      return varchar2;
+   /**
+    * Returns an interval formatted in either the old (~1Day) or new (1DayLocal) format based on specified format
+    *
+    * @param p_interval_id  The LRTS interval to format
+    * @return The formatted LRTS interval
+    */
+   function format_lrts_interval(
+      p_interval_id in varchar2)
+      return varchar2;
+   /**
+    * Returns an LRTS ID formatted in either the old (~1Day) or new (1DayLocal) format based on specified format
+    *
+    * @param p_tsid           The LRTS ID to format
+    * @param p_use_new_format A flag specifying whether to use the new LRTS format
+    * @return The formatted LRTS ID
+    */
+   function format_lrts(
+      p_ts_id          in varchar2,
+      p_use_new_format in boolean)
+      return varchar2;
+   /**
+    * Returns an LRTS ID formatted in either the old (~1Day) or new (1DayLocal) format based on session setting
+    *
+    * @param p_tsid           The LRTS ID to format
+    * @return The formatted LRTS ID
+    */
+   function format_lrts(
+      p_ts_id in varchar2)
+      return varchar2;
+   /**
+    * Sets a session setting specifying whether to use the new LRTS ID format on output
+    *
+    * @param p_use_new_format A flag ('T'/'F') specifying whether to use the new format
+    */
+   procedure set_use_new_lrts_format(
+      p_use_new_format in varchar2);
+   /**
+    * Returns the session setting of whether to use the new LRTS ID format on output
+    *
+    * @return The session setting of whether to use the new LRTS ID format on output
+    */
+   function use_new_lrts_format
       return varchar2;
    /**
     * Retrieves time series data for a specified time series and time window, including LRTS time zone

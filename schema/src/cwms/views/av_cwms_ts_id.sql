@@ -1,14 +1,8 @@
---
--- AV_CWMS_TS_ID    (View)
---
---  Dependencies:
---   AT_CWMS_TS_ID (Synonym)
---
 -- delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', null,
 '
 /**
- * Displays CWMS Time Series Identifiers
+ * Displays CWMS Time Series Identifiers with LRTS as new LRTS IDs
  *
  * @since CWMS 2.0
  *
@@ -39,7 +33,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', nul
  * @field location_code       Unique numeric code that identifies the full location of the time series
  * @field parameter_code      Unique numeric code that identifies the parameter for the time series
  * @field historic_flag       Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is part of the hitoric record
- * @field time_zone_id        The time zone of the location for this time series 
+ * @field time_zone_id        The time zone of the location for this time series
 */
 ');
 
@@ -75,14 +69,98 @@ CREATE OR REPLACE FORCE VIEW av_cwms_ts_id
     time_zone_id
 )
 AS
-    SELECT    db_office_id, cwms_ts_id, unit_id, abstract_param_id,
-                base_location_id, sub_location_id, location_id, base_parameter_id,
-                sub_parameter_id, parameter_id, parameter_type_id, interval_id,
-                duration_id, version_id, interval, interval_utc_offset,base_loc_active_flag,
-                loc_active_flag, ts_active_flag, net_ts_active_flag, version_flag,
-                ts_code, db_office_code, base_location_code, location_code,
-                parameter_code, historic_flag, time_zone_id
-      FROM    at_cwms_ts_id
+    SELECT db_office_id,
+           case
+           when 'T' = (select 'T'
+                         from dual
+                        where exists(select str_value
+                                       from  at_session_info
+                                      where item_name = 'USE_NEW_LRTS_ID_FORMAT'
+                                        and str_value = 'T')
+                                    )
+           then
+              ----------------------------
+              -- use new LRTS ID format --
+              ----------------------------
+              case
+              when substr(interval_id, 1, 1) = '~' and interval_utc_offset != -2147483648 then
+                 ----------------
+                 -- TS is LRTS --
+                 ----------------
+                 location_id
+                 ||'.'||parameter_id
+                 ||'.'||parameter_type_id
+                 ||'.'||regexp_replace(interval_id, '^~(.+)$', '\1Local')
+                 ||'.'||duration_id
+                 ||'.'||version_id
+              else
+                 --------------------
+                 -- TS is not LRTS --
+                 --------------------
+                 cwms_ts_id
+              end
+           else
+              ----------------------------
+              -- use old LRTS ID format --
+              ----------------------------
+              cwms_ts_id
+           end as cwms_ts_id,
+           unit_id,
+           abstract_param_id,
+           base_location_id,
+           sub_location_id,
+           location_id,
+           base_parameter_id,
+           sub_parameter_id,
+           parameter_id,
+           parameter_type_id,
+           case
+           when 'T' = (select 'T'
+                         from dual
+                        where exists(select str_value
+                                       from  at_session_info
+                                      where item_name = 'USE_NEW_LRTS_ID_FORMAT'
+                                        and str_value = 'T')
+                                    )
+           then
+              ----------------------------
+              -- use new LRTS ID format --
+              ----------------------------
+              case
+              when substr(interval_id, 1, 1) = '~' and interval_utc_offset != -2147483648 then
+                 ----------------
+                 -- TS is LRTS --
+                 ----------------
+                 regexp_replace(interval_id, '^~(.+)$', '\1Local')
+              else
+                 --------------------
+                 -- TS is not LRTS --
+                 --------------------
+                 interval_id
+              end
+           else
+              ----------------------------
+              -- use old LRTS ID format --
+              ----------------------------
+              interval_id
+           end as interval_id,
+           duration_id,
+           version_id,
+           interval,
+           interval_utc_offset,
+           base_loc_active_flag,
+           loc_active_flag,
+           ts_active_flag,
+           net_ts_active_flag,
+           version_flag,
+           ts_code,
+           db_office_code,
+           base_location_code,
+           location_code,
+           parameter_code,
+           historic_flag,
+           time_zone_id
+      FROM at_cwms_ts_id
 /
 
 begin
