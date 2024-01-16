@@ -2714,9 +2714,91 @@ AS
       return l_is_lrts;
    end is_lrts;
    --------------------------------------------------------------------------------
-   -- function format_lrts_interval
+   -- function is_new_lrts_format
    --------------------------------------------------------------------------------
-   function format_lrts_interval(
+   function is_new_lrts_format(
+      p_id in varchar2)
+      return varchar
+   is
+      l_parts str_tab_t;
+      l_index binary_integer;
+   begin
+      l_parts := cwms_util.split_text(p_id);
+      l_index := l_parts.count;
+      case l_parts.count
+      when 1 then l_index := 1;
+      when 6 then l_index := 4;
+      else
+         cwms_err.raise('ERROR', 'P_Id is not a valid time series or interval identifier');
+      end case;
+      return case
+             when regexp_like(upper(l_parts(l_index)), '^\d+[A-Z]+LOCAL$') then 'T'
+             else 'F'
+             end;
+   end is_new_lrts_format;
+   --------------------------------------------------------------------------------
+   -- function format_lrts_interval_input
+   --------------------------------------------------------------------------------
+   function format_lrts_interval_input(
+      p_interval_id   in varchar2,
+      p_revert_format in boolean)
+      return varchar2
+   is
+   begin
+      if p_revert_format and regexp_like(upper(p_interval_id), '^\d+\w+LOCAL$') then
+         return regexp_replace(p_interval_id, '^(\d+[a-z]+)Local$', '~\1', 1, 1, 'i');
+      else
+         return p_interval_id;
+      end if;
+   end format_lrts_interval_input;
+   --------------------------------------------------------------------------------
+   -- function format_lrts_interval_input
+   --------------------------------------------------------------------------------
+   function format_lrts_interval_input(
+      p_interval_id in varchar2)
+      return varchar2
+   is
+   begin
+      return format_lrts_interval_input(p_interval_id, use_new_lrts_format = 'T');
+   end format_lrts_interval_input;
+   --------------------------------------------------------------------------------
+   -- function format_lrts_input
+   --------------------------------------------------------------------------------
+   function format_lrts_input(
+      p_cwms_ts_id    in varchar2,
+      p_revert_format in boolean)
+      return varchar2
+   is
+      l_pos1 binary_integer;
+      l_pos2 binary_integer;
+   begin
+      if p_revert_format then
+         l_pos1 := instr(p_cwms_ts_id, '.', 1, 3);
+         l_pos2 := instr(p_cwms_ts_id, '.', l_pos1+1);
+         if 0 in (l_pos1, l_pos2) then
+            cwms_err.raise('INVALID_ITEM', p_cwms_ts_id, 'CWMS time series identifier');
+         end if;
+         return substr(p_cwms_ts_id, 1, l_pos1)
+                || format_lrts_interval_input(substr(p_cwms_ts_id, l_pos1+1, l_pos2 - l_pos1-1), true)
+                || substr(p_cwms_ts_id, l_pos2);
+      else
+         return p_cwms_ts_id;
+      end if;
+   end format_lrts_input;
+   --------------------------------------------------------------------------------
+   -- function format_lrts_input
+   --------------------------------------------------------------------------------
+   function format_lrts_input(
+      p_cwms_ts_id in varchar2)
+      return varchar2
+   is
+   begin
+      return format_lrts_input(p_cwms_ts_id, use_new_lrts_format = 'T');
+   end format_lrts_input;
+   --------------------------------------------------------------------------------
+   -- function format_lrts_interval_output
+   --------------------------------------------------------------------------------
+   function format_lrts_interval_output(
       p_interval_id    in varchar2,
       p_use_new_format in boolean)
       return varchar2
@@ -2741,21 +2823,21 @@ AS
          l_interval_id := p_interval_id;
       end case;
       return l_interval_id;
-   end format_lrts_interval;
+   end format_lrts_interval_output;
    --------------------------------------------------------------------------------
-   -- function format_lrts_interval
+   -- function format_lrts_interval_output
    --------------------------------------------------------------------------------
-   function format_lrts_interval(
+   function format_lrts_interval_output(
       p_interval_id in varchar2)
       return varchar2
    is
    begin
-      return format_lrts_interval(p_interval_id, use_new_lrts_format = 'T');
-   end format_lrts_interval;
+      return format_lrts_interval_output(p_interval_id, use_new_lrts_format = 'T');
+   end format_lrts_interval_output;
    --------------------------------------------------------------------------------
-   -- function format_lrts
+   -- function format_lrts_output
    --------------------------------------------------------------------------------
-   function format_lrts(
+   function format_lrts_output(
       p_ts_id          in varchar2,
       p_use_new_format in boolean)
       return varchar2
@@ -2773,7 +2855,7 @@ AS
          -- need to convert --
          ---------------------
          l_ts_id := substr(p_ts_id, 1, l_pos-1)
-            || format_lrts_interval(l_interval_id, p_use_new_format)
+            || format_lrts_interval_output(l_interval_id, p_use_new_format)
             || substr(p_ts_id, l_pos+length(l_interval_id));
       else
          ---------------
@@ -2782,17 +2864,17 @@ AS
          l_ts_id := p_ts_id;
       end if;
       return l_ts_id;
-   end format_lrts;
+   end format_lrts_output;
    --------------------------------------------------------------------------------
-   -- function format_lrts
+   -- function format_lrts_output
    --------------------------------------------------------------------------------
-   function format_lrts(
+   function format_lrts_output(
       p_ts_id in varchar2)
       return varchar2
    is
    begin
-      return format_lrts(p_ts_id, use_new_lrts_format = 'T');
-   end format_lrts;
+      return format_lrts_output(p_ts_id, use_new_lrts_format = 'T');
+   end format_lrts_output;
    --------------------------------------------------------------------------------
    -- procedure set_use_new_lrts_format
    --------------------------------------------------------------------------------
@@ -2934,7 +3016,7 @@ AS
       --
       p_cwms_ts_id_out := case
                           when is_lrts(l_cwms_ts_id, l_office_id) = 'F' then l_cwms_ts_id
-                          else format_lrts(l_cwms_ts_id)
+                          else format_lrts_output(l_cwms_ts_id)
                           end;
       p_units_out      := l_units;
 

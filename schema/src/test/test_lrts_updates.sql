@@ -85,8 +85,10 @@ procedure test_get_lrts_times_utc;
 procedure test_cwdb_150;
 --%test(Test Jira issue CWDB-153 - Daily LRTS data returned at incorrect timestamps)
 procedure test_cwdb_153;
---%test(Test LRTS old and new ID formatting based on session setting)
-procedure test_lrts_id_formatting;
+--%test(Test formatting LRTS IDs on output)
+procedure test_lrts_id_output_formatting;
+--%test(Test formatting LFTS IDs on input)
+procedure test_lrts_id_input_formatting;
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
 c_office_id     constant varchar2(3)  := '&&office_id';
@@ -4029,9 +4031,9 @@ begin
    end;
 end test_cwdb_153;
 --------------------------------------------------------------------------------
--- procedure test_lrts_id_formatting
+-- procedure test_lrts_id_output_formatting
 --------------------------------------------------------------------------------
-procedure test_lrts_id_formatting
+procedure test_lrts_id_output_formatting
 is
    l_location_id      cwms_v_loc.location_id%type := c_location_ids(1);
    l_lrts_ts_id       cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.~1Day.0.Lrts';
@@ -4193,16 +4195,16 @@ begin
       dbms_output.put_line(chr(10)||'==> Setting session to use '||case when i = 1 then 'OLD' else 'NEW' end||' LRTS ID format');
       cwms_ts.set_use_new_lrts_format(substr('FT', i, 1));
       if i = 1 then
-         ut.expect(cwms_ts.format_lrts(l_lrts_ts_id)).to_equal(l_lrts_ts_id);
+         ut.expect(cwms_ts.format_lrts_output(l_lrts_ts_id)).to_equal(l_lrts_ts_id);
       else
-         ut.expect(cwms_ts.format_lrts(l_lrts_ts_id)).to_equal(regexp_replace(l_lrts_ts_id, '\.~([^.]+)\.', '.\1Local.'));
+         ut.expect(cwms_ts.format_lrts_output(l_lrts_ts_id)).to_equal(regexp_replace(l_lrts_ts_id, '\.~([^.]+)\.', '.\1Local.'));
       end if;
 
       dbms_output.put_line('==> Testing CWMS_V_TS_ID');
       for rec in (select cwms_ts_id, interval_id, version_id from cwms_v_ts_id where location_id = l_location_id) loop
          if rec.version_id = 'Lrts' then
-            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts(l_lrts_ts_id));
-            ut.expect(rec.interval_id).to_equal(cwms_ts.format_lrts_interval('~1Day'));
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id));
+            ut.expect(rec.interval_id).to_equal(cwms_ts.format_lrts_interval_output('~1Day'));
          else
             ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
             ut.expect(rec.interval_id).to_equal('~1Day');
@@ -4212,8 +4214,8 @@ begin
       dbms_output.put_line('==> Testing CWMS_V_TS_ID2');
       for rec in (select cwms_ts_id, interval_id, version_id from cwms_v_ts_id2 where location_id = l_location_id and aliased_item is null) loop
          if rec.version_id = 'Lrts' then
-            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts(l_lrts_ts_id));
-            ut.expect(rec.interval_id).to_equal(cwms_ts.format_lrts_interval('~1Day'));
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id));
+            ut.expect(rec.interval_id).to_equal(cwms_ts.format_lrts_interval_output('~1Day'));
          else
             ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
             ut.expect(rec.interval_id).to_equal('~1Day');
@@ -4223,7 +4225,7 @@ begin
       dbms_output.put_line('==> Testing CWMS_V_TS_CAT_GRP');
       for rec in (select * from cwms_v_ts_cat_grp where cat_db_office_id = c_office_id and ts_category_id = 'TestCategory1') loop
          if rec.ts_group_id = 'TestGroup1' then
-            ut.expect(rec.shared_ref_ts_id).to_equal(cwms_ts.format_lrts(l_lrts_ts_id));
+            ut.expect(rec.shared_ref_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id));
          else
             ut.expect(rec.shared_ref_ts_id).to_equal(l_prts_ts_id);
          end if;
@@ -4232,12 +4234,12 @@ begin
       dbms_output.put_line('==> Testing CWMS_V_TS_GRP_ASSGN');
       for rec in (select * from cwms_v_ts_grp_assgn where db_office_id = c_office_id and category_id = 'TestCategory1') loop
          if rec.attribute = 1 then
-            ut.expect(rec.ts_id).to_equal(cwms_ts.format_lrts(l_lrts_ts_id));
+            ut.expect(rec.ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id));
          else
             ut.expect(rec.ts_id).to_equal(l_prts_ts_id);
          end if;
          if rec.group_id = 'TestGroup1' then
-            ut.expect(rec.shared_ref_ts_id).to_equal(cwms_ts.format_lrts(l_lrts_ts_id));
+            ut.expect(rec.shared_ref_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id));
          else
             ut.expect(rec.shared_ref_ts_id).to_equal(l_prts_ts_id);
          end if;
@@ -4257,7 +4259,7 @@ begin
          p_end_time       => l_end_time,
          p_office_id      => c_office_id);
       close l_crsr;
-      ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts(l_lrts_ts_id));
+      ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id));
       ut.expect(l_unit_out).to_equal(c_ts_unit);
       ut.expect(l_time_zone_out).to_equal(c_timezone_ids(1));
 
@@ -4289,7 +4291,7 @@ begin
          p_end_time         => l_end_time,
          p_db_office_id     => c_office_id);
       close l_crsr;
-      ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts(l_lrts_ts_id));
+      ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id));
       ut.expect(l_unit_out).to_equal(c_ts_unit);
       ut.expect(l_time_zone_out).to_equal(c_timezone_ids(1));
 
@@ -4331,7 +4333,7 @@ begin
          exit when l_crsr%notfound;
          close l_data_crsr;
          if l_count = 1 then
-            ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts(l_lrts_ts_id));
+            ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id));
             ut.expect(l_unit_out).to_equal(c_ts_unit);
             ut.expect(l_time_zone_out).to_equal(c_timezone_ids(1));
          else
@@ -4516,7 +4518,45 @@ begin
    cwms_loc.delete_location('TestLoc1', cwms_util.delete_all, c_office_id);
    cwms_ts.delete_ts_category('TestCategory1', 'T', c_office_id);
    cwms_ts.set_use_new_lrts_format('F');
-end test_lrts_id_formatting;
+end test_lrts_id_output_formatting;
+--------------------------------------------------------------------------------
+-- procedure test_lrts_id_input_formatting
+--------------------------------------------------------------------------------
+procedure test_lrts_id_input_formatting
+is
+   l_location_id      cwms_v_loc.location_id%type := c_location_ids(1);
+   l_lrts_ts_id_old   cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.~1Day.0.Lrts';
+   l_lrts_ts_id_new   cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.1DayLocal.0.Lrts';
+   l_prts_ts_id       cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.~1Day.0.Prts';
+begin
+   -------------------------------------------------
+   -- delete the location and all ts if it exists --
+   -------------------------------------------------
+   begin
+      cwms_loc.delete_location('TestLoc1', cwms_util.delete_all, c_office_id);
+   exception
+      when others then null;
+   end;
+   ------------------------
+   -- store the location --
+   ------------------------
+   cwms_loc.store_location(
+      p_location_id  => l_location_id,
+      p_time_zone_id => c_timezone_ids(1),
+      p_db_office_id => c_office_id);
+      
+   for i in 1..2 loop
+      dbms_output.put_line(chr(10)||'==> Setting session to use '||case when i = 1 then 'OLD' else 'NEW' end||' LRTS ID format');
+      cwms_ts.set_use_new_lrts_format(substr('FT', i, 1));
+      if i = 1 then
+         ut.expect(cwms_ts.format_lrts_output(l_lrts_ts_id_old)).to_equal(l_lrts_ts_id_old);
+         ut.expect(cwms_ts.format_lrts_input(l_lrts_ts_id_new)).to_equal(l_lrts_ts_id_new);
+      else
+         ut.expect(cwms_ts.format_lrts_output(l_lrts_ts_id_old)).to_equal(l_lrts_ts_id_new);
+         ut.expect(cwms_ts.format_lrts_input(l_lrts_ts_id_new)).to_equal(l_lrts_ts_id_old);
+      end if;
+   end loop;   
+end test_lrts_id_input_formatting;
 
 end test_lrts_updates;
 /

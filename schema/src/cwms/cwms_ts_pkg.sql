@@ -1005,23 +1005,72 @@ AS
       p_ts_code in number)
       return varchar2;
    /**
+    * Returns whether a time series or interval identifier is in the new LRTS ID format
+    *
+    * @param p_id The time series or interval identifier
+    * @return 'T' if the identifier is in the new LRTS format, otherwise 'F'
+    */
+   function is_new_lrts_format(
+      p_id in varchar2)
+      return varchar;
+   /**
+    * Normalizes an interval id to the old LRTS format base on specified format
+    *
+    * @param p_interval_id   The interval identiier to normalize
+    * @param p_revert_format A flag specifying whether to revert the interval from the new (1DayLocal) to old (~1Day) format
+    * @return The normalized interval identifier
+    */
+   function format_lrts_interval_input(
+      p_interval_id   in varchar2,
+      p_revert_format in boolean)
+      return varchar2;
+   /**
+    * Normalizes an interval id to the old LRTS format base on session setting
+    *
+    * @param p_interval_id   The interval identiier to normalize
+    * @return The normalized interval identifier
+    */
+   function format_lrts_interval_input(
+      p_interval_id in varchar2)
+      return varchar2;
+   /**
+    * Normalizes an time series id to the old LRTS format base on specified format
+    *
+    * @param p_cwms_ts_id    The time series identiier to normalize
+    * @param p_revert_format A flag specifying whether to revert the interval from the new (1DayLocal) to old (~1Day) format
+    * @return The normalized interval identifier
+    */
+   function format_lrts_input(
+      p_cwms_ts_id    in varchar2,
+      p_revert_format in boolean)
+      return varchar2;
+   /**
+    * Normalizes an time series id to the old LRTS format base on session setting
+    *
+    * @param p_cwms_ts_id    The time series identiier to normalize
+    * @return The normalized interval identifier
+    */
+   function format_lrts_input(
+      p_cwms_ts_id in varchar2)
+      return varchar2;
+   /**
     * Returns an interval formatted in either the old (~1Day) or new (1DayLocal) format based on specified format
     *
     * @param p_interval_id    The LRTS interval to format
     * @param p_use_new_format A flag specifying whether to use the new LRTS format
     * @return The formatted LRTS interval
     */
-   function format_lrts_interval(
+   function format_lrts_interval_output(
       p_interval_id    in varchar2,
       p_use_new_format in boolean)
       return varchar2;
    /**
-    * Returns an interval formatted in either the old (~1Day) or new (1DayLocal) format based on specified format
+    * Returns an interval formatted in either the old (~1Day) or new (1DayLocal) format based on session setting
     *
     * @param p_interval_id  The LRTS interval to format
     * @return The formatted LRTS interval
     */
-   function format_lrts_interval(
+   function format_lrts_interval_output(
       p_interval_id in varchar2)
       return varchar2;
    /**
@@ -1031,7 +1080,7 @@ AS
     * @param p_use_new_format A flag specifying whether to use the new LRTS format
     * @return The formatted LRTS ID
     */
-   function format_lrts(
+   function format_lrts_output(
       p_ts_id          in varchar2,
       p_use_new_format in boolean)
       return varchar2;
@@ -1041,7 +1090,7 @@ AS
     * @param p_tsid           The LRTS ID to format
     * @return The formatted LRTS ID
     */
-   function format_lrts(
+   function format_lrts_output(
       p_ts_id in varchar2)
       return varchar2;
    /**
