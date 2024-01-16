@@ -7230,20 +7230,33 @@ AS
                 prev_location_code = l_location_code
           where ts_code = l_ts_code;
       elsif l_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
-         ---------------------------------
-         -- delete ts group assignments --
-         ---------------------------------
-         delete
-           from at_ts_group_assignment
-          where ts_code = l_ts_code
-             or ts_ref_code = l_ts_code;
-         ---------------------------
-         -- delete the ts extents --
-         ---------------------------
+         --------------------
+         -- dependent data --
+         --------------------
+         update at_ts_group set shared_ts_ref_code = null where shared_ts_ref_code = l_ts_code;
+         delete from at_ts_group_assignment where l_ts_code in (ts_code, ts_ref_code);
+         delete from at_location_level where ts_code = l_ts_code;
+         delete from at_forecast_ts where ts_code = l_ts_code;
+         delete from at_xchg_dss_ts_mappings where cwms_ts_code = l_ts_code;
+         delete from at_screening where ts_code = l_ts_code;
+         delete from at_shef_decode where ts_code = l_ts_code;
+         delete from at_tr_template where ts_code_indep_1 = l_ts_code;
+         delete from at_transform_criteria where l_ts_code in (ts_code, resultant_ts_code);
+         -------------
+         -- ts data --
+         -------------
+         -- extents
          delete from at_ts_extents where ts_code = l_ts_code;
-         --------------------
-         -- delete ts data --
-         --------------------
+         -- binary
+         delete from at_blob where blob_code in (select blob_code from at_tsv_binary where ts_code = l_ts_code);
+         delete from at_tsv_binary where ts_code = l_ts_code;
+         -- text
+         delete from at_tsv_std_text where ts_code = l_ts_code;
+         delete from at_clob where clob_code in (select clob_code from at_tsv_text where ts_code = l_ts_code);
+         delete from at_tsv_text where ts_code = l_ts_code;
+         -- profiles
+         update at_ts_profile set reference_ts_code = null where reference_ts_code = l_ts_code;
+         -- normal
          for rec in (select table_name
                        from at_ts_table_properties
                       where start_date in (select distinct start_date
@@ -7251,10 +7264,6 @@ AS
                                             where ts_code = l_ts_code)) loop
             execute immediate replace('delete from $t where ts_code = :1', '$t', rec.table_name) using l_ts_code;
          end loop;
-
-         delete from at_tsv_std_text where ts_code = l_ts_code;
-         delete from at_tsv_text where ts_code = l_ts_code;
-         delete from at_tsv_binary where ts_code = l_ts_code;
 
          if l_delete_action = cwms_util.delete_data then
             l_publish_message := false;
