@@ -89,7 +89,7 @@ procedure test_cwdb_153;
 procedure test_lrts_id_formatting;
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
-c_office_id     constant varchar2(3)  := 'SWT';
+c_office_id     constant varchar2(3)  := '&&office_id';
 c_location_ids  constant str_tab_t    := str_tab_t('TestLoc1', 'TestLoc1-WithSub', 'TestLoc2');
 c_timezone_ids  constant str_tab_t    := str_tab_t('US/Central', null, 'CST'); -- make sure tz(2) is null
 c_intvl_offsets constant number_tab_t := number_tab_t(0, 10, 20);
@@ -4513,6 +4513,9 @@ begin
       end loop;
       close l_crsr;
    end loop;
+   cwms_loc.delete_location('TestLoc1', cwms_util.delete_all, c_office_id);
+   cwms_ts.delete_ts_category('TestCategory1', 'T', c_office_id);
+   cwms_ts.set_use_new_lrts_format('F');
 end test_lrts_id_formatting;
 
 end test_lrts_updates;
