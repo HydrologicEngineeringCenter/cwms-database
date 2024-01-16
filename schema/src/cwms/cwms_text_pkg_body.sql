@@ -3078,6 +3078,9 @@ as
       ----------------------------
       l_office_id      := cwms_util.get_db_office_id(p_office_id);
       l_tsid           := cwms_ts.get_ts_id(p_tsid, l_office_id);
+      if l_tsid is null then
+          cwms_err.raise ('TS_ID_NOT_FOUND', trim (p_tsid), l_office_id);
+      end if;
       l_ts_code        := cwms_ts.get_ts_code(l_tsid, l_office_id);
       l_text_mask      := cwms_util.normalize_wildcards(p_text_mask);
       l_time_zone      := nvl(p_time_zone, cwms_loc.get_local_timezone(substr(l_tsid, 1, instr(l_tsid, '.') - 1), l_office_id));
