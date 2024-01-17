@@ -7,13 +7,13 @@ create or replace package &&cwms_schema..test_cwms_err as
 --%rollback(manual)
 
 --%test(Test raise TS_ID_NOT_FOUND with p1 and p2 works )
---%test(Test raise TS_ID_NOT_FOUND with null and p2 works)
     procedure raise_ts_not_found_p1_p2;
+
+--%test(Test raise TS_ID_NOT_FOUND with null and p2 works)
     procedure raise_ts_not_found_null_p2;
 
     procedure setup;
     procedure teardown;
-
 end test_cwms_err;
 /
 create or replace package body &&cwms_schema..test_cwms_err as
