@@ -4545,7 +4545,21 @@ is
    l_lrts_ts_id_old   cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.~1Day.0.Lrts';
    l_lrts_ts_id_new   cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.1DayLocal.0.Lrts';
    l_prts_ts_id       cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.~1Day.0.Prts';
+   l_count            binary_integer := 10;
+   l_ts_data          cwms_t_ztsv_array;
+   l_start_time       date;
+   l_end_time         date;
 begin
+   ------------------------
+   -- create the ts data --
+   ------------------------
+   l_ts_data := cwms_t_ztsv_array();
+   l_ts_data.extend(l_count);
+   for i in 1..l_count loop
+      l_ts_data(i) := cwms_t_ztsv(date '2023-01-01' + (i-1), i, 0);
+   end loop;
+   l_start_time := l_ts_data(1).date_time;
+   l_end_time   := l_ts_data(l_count).date_time;
    -------------------------------------------------
    -- delete the location and all ts if it exists --
    -------------------------------------------------
@@ -4613,6 +4627,103 @@ begin
          end loop;
       end loop;
    end loop;
+   -------------------------------
+   -- test the input formatting --
+   -------------------------------
+   for i in 0..6 loop
+      continue when i = 3; -- invalid value
+      cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', i);
+      if i in (0, 4) then
+         -- shouldn't revert
+         ut.expect(cwms_ts.format_lrts_input(l_lrts_ts_id_new)).to_equal(l_lrts_ts_id_new);
+         ut.expect(cwms_ts.format_lrts_input(l_lrts_ts_id_old)).to_equal(l_lrts_ts_id_old);
+      else
+         -- should revert
+         ut.expect(cwms_ts.format_lrts_input(l_lrts_ts_id_new)).to_equal(l_lrts_ts_id_old);
+         ut.expect(cwms_ts.format_lrts_input(l_lrts_ts_id_old)).to_equal(l_lrts_ts_id_old);
+      end if;
+   end loop;
+   ------------------------------
+   -- test storing time series --
+   ------------------------------
+   cwms_ts.set_allow_new_lrts_format_on_input('F');
+   ---------------------
+   -- no new LRTS IDs --
+   ---------------------
+   -- should succeed
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_lrts_ts_id_old,
+      p_units           => c_ts_unit,
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'T');
+   cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
+   -- should fail
+   begin
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_lrts_ts_id_new,
+         p_units           => c_ts_unit,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_office_id       => c_office_id,
+         p_create_as_lrts  => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+INVALID_INTERVAL_ID: "1DayLocal" is not a valid CWMS timeseries interval.+', 'mn')).to_be_true;
+   end;
+   cwms_ts.set_allow_new_lrts_format_on_input('T');
+   -------------------------
+   -- allow new LRTS IDs --
+   ------------------------
+   -- should succeed
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_lrts_ts_id_old,
+      p_units           => c_ts_unit,
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'T');
+   cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
+   -- should succeed
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_lrts_ts_id_new,
+      p_units           => c_ts_unit,
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'T');
+   cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_all, c_office_id);
+   cwms_ts.set_allow_new_lrts_format_on_input('T');
+   ---------------------------
+   -- reqiure new LRTS IDs --
+   --------------------------
+   -- should fail
+   begin
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_lrts_ts_id_old,
+         p_units           => c_ts_unit,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_office_id       => c_office_id,
+         p_create_as_lrts  => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         dbms_output.put_line(dbms_utility.format_error_stack);
+         --ut.expect(regexp_like(dbms_utility.format_error_stack, '.+INVALID_INTERVAL_ID: "1DayLocal" is not a valid CWMS timeseries interval.+', 'mn')).to_be_true;
+   end;
+   -- should succeed
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_lrts_ts_id_new,
+      p_units           => c_ts_unit,
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'T');
+   cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_all, c_office_id);
+
 end test_lrts_id_input_formatting;
 
 end test_lrts_updates;
