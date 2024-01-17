@@ -1,4 +1,3 @@
-drop package body &&cwms_schema..test_cwms_err;
 create or replace package &&cwms_schema..test_cwms_err as
 
 --%suite(Test cwms_err package code)
