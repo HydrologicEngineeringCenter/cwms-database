@@ -74,10 +74,11 @@ AS
            when 'T' = (select 'T'
                          from dual
                         where exists(select str_value
-                                       from  at_session_info
+                                       from at_session_info
                                       where item_name = 'USE_NEW_LRTS_ID_FORMAT'
-                                        and str_value = 'T')
+                                        and bitand(num_value, 4) = 4
                                     )
+                      )
            then
               ----------------------------
               -- use new LRTS ID format --
@@ -118,10 +119,11 @@ AS
            when 'T' = (select 'T'
                          from dual
                         where exists(select str_value
-                                       from  at_session_info
+                                       from at_session_info
                                       where item_name = 'USE_NEW_LRTS_ID_FORMAT'
-                                        and str_value = 'T')
+                                        and bitand(num_value, 4) = 4
                                     )
+                      )
            then
               ----------------------------
               -- use new LRTS ID format --

@@ -21,6 +21,37 @@ AS
    function package_log_property_text return varchar2;
 
    /**
+    * Constant specifing to always use the old LRTS ID format in routines and views.
+    * New LRTS IDs on input will be invalid and no new LRTS IDs will be output.
+    * Input flag to store time series as LRTS is required in routintes that create time series.
+    */
+   use_old_lrts_ids_always       constant integer := 0;
+   /**
+    * Constant specifing to allow use of the new LRTS ID format on input in routines.
+    * Old and new LRTS IDs can both be used on input.
+    * Input flag to store time series as LRTS is required only for old LRTS IDs in routintes that create time series.
+    * May be ORed with use_new_lrts_ids_on_output.
+    */
+   allow_new_lrts_ids_on_input   constant integer := 1;
+   /**
+    * Constant specifing to require use of the new LRTS ID format on input in routines.
+    * Old LRTS IDs will be interpreted strictly as PRTS.
+    * Input flag to store time series as LRTS is ignored in routintes that create time series.
+    * May be ORed with use_new_lrts_ids_on_output.
+    */
+   require_new_lrts_ids_on_input constant integer := 2;
+   /**
+    * Constant specifing to use the new LRTS ID format on output in routines and views.
+    * LRTS IDs output from routines and views will be in new LRTS format.
+    * May be ORed with allow_new_lrts_ids_on_input or require_new_lrts_ids_on_input.
+    */
+   use_new_lrts_ids_on_output     constant integer := 4;
+   not_use_new_lrts_ids_on_output constant integer := 3; -- bit mask to turn off
+   /**
+    * Clears all session-level caches associated with this package
+    */
+   procedure clear_all_caches;
+   /**
     * Sets text value of package logging property
     *
     * @param p_text The text of the package logging property. If unspecified or NULL, the current session identifier is used.
@@ -1094,19 +1125,60 @@ AS
       p_ts_id in varchar2)
       return varchar2;
    /**
-    * Sets a session setting specifying whether to use the new LRTS ID format on output
+    * Sets a session setting specifying whether to use the new LRTS ID format in output from routines and views.
     *
     * @param p_use_new_format A flag ('T'/'F') specifying whether to use the new format
     */
-   procedure set_use_new_lrts_format(
+   procedure set_use_new_lrts_format_on_output(
       p_use_new_format in varchar2);
    /**
-    * Returns the session setting of whether to use the new LRTS ID format on output
+    * Returns the session setting of whether to use the new LRTS ID format in output from routines and views.
     *
-    * @return The session setting of whether to use the new LRTS ID format on output
+    * @return The session setting of whether to use the new LRTS ID format as a flag ('T'/'F').
     */
-   function use_new_lrts_format
+   function use_new_lrts_format_on_output
       return varchar2;
+   /**
+    * Sets a session setting specifying whether to allow (not require) the new LRTS ID format in input parameters to routines.
+    *
+    * @param p_allow_new_format A flag ('T'/'F') specifying whether to allow the new format.
+    *                           <ul>
+    *                           <li>If 'T', LRTS ID input parameters may be in old or new format (implicitly sets requiring the new format to 'F').
+    *                               Routines that take a flag specifying whether to create an LRTS (vs PRTS) will continue to require the flag only
+    *                               if the old format is used. New format IDs will created as LRTS regardless of the flag value.
+    *                           <li>If 'F', new LRTS ID input parameters will not be recognized (implicitly sets requiring the new format to 'F').</li>
+    *                           </ul>
+    */
+   procedure set_allow_new_lrts_format_on_input(
+      p_allow_new_format in varchar2);
+   /**
+    * Returns the session setting of whether to allow (not require) the new LRTS ID format in input parameters to routines.
+    *
+    * @return The session setting of whether to allow the new format as a flag ('T'/'F').
+    */
+   function allow_new_lrts_format_on_input
+      return varchar2;
+   /**
+    * Sets a session setting specifying whether to require the new LRTS ID format in input parameters to routines
+    *
+    * @param p_require_new_format A flag ('T'/'F') specifying whether to require the new format.
+    *                             <ul>
+    *                             <li>If 'T', LRTS ID input parameters must be in the new format (old format IDs will be interpreted as PRTS).
+    *                                 Routines that take a flag specifying whether to create an LRTS (vs PRTS) ignore the flag and create the
+    *                                 time series based on the ID.
+    *                             <li>If 'F', new LRTS ID input parameters will not be recognized (implicitly sets allowing the new format to 'F').</li>
+    *                             </ul>
+    */
+   procedure set_require_new_lrts_format_on_input(
+      p_require_new_format in varchar2);
+   /**
+    * Returns the session setting of whether to require the new LRTS ID format in input parameters to routines.
+    *
+    * @return The session setting of whether to require the new format as a flag ('T'/'F').
+    */
+   function require_new_lrts_format_on_input
+      return varchar2;
+
    /**
     * Retrieves time series data for a specified time series and time window, including LRTS time zone
     *

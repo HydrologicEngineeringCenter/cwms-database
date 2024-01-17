@@ -81,14 +81,15 @@ CREATE OR REPLACE FORCE VIEW av_cwms_ts_id2
 AS
    select db_office_id,
           case
-          when 'T' = (select 'T'
-                        from dual
-                       where exists(select str_value
-                                      from  at_session_info
-                                     where item_name = 'USE_NEW_LRTS_ID_FORMAT'
-                                       and str_value = 'T')
-                                   )
-          then
+           when 'T' = (select 'T'
+                         from dual
+                        where exists(select str_value
+                                       from at_session_info
+                                      where item_name = 'USE_NEW_LRTS_ID_FORMAT'
+                                        and bitand(num_value, 4) = 4
+                                    )
+                      )
+           then
              ----------------------------
              -- use new LRTS ID format --
              ----------------------------
@@ -125,14 +126,15 @@ AS
           parameter_id,
           parameter_type_id,
           case
-          when 'T' = (select 'T'
-                        from dual
-                       where exists(select str_value
-                                      from  at_session_info
-                                     where item_name = 'USE_NEW_LRTS_ID_FORMAT'
-                                       and str_value = 'T')
-                                   )
-          then
+           when 'T' = (select 'T'
+                         from dual
+                        where exists(select str_value
+                                       from at_session_info
+                                      where item_name = 'USE_NEW_LRTS_ID_FORMAT'
+                                        and bitand(num_value, 4) = 4
+                                    )
+                      )
+           then
              ----------------------------
              -- use new LRTS ID format --
              ----------------------------

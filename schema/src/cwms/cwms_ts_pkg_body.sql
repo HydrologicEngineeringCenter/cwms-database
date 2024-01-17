@@ -32,6 +32,15 @@ AS
                                         p_db_office_id));
    END get_ts_code;
 
+   procedure clear_all_caches
+   is
+   begin
+      cwms_cache.clear(g_ts_code_cache);
+      cwms_cache.clear(g_ts_id_cache);
+      cwms_cache.clear(g_ts_id_alias_cache);
+      cwms_cache.clear(g_is_lrts_cache);
+   end;
+
    function get_ts_code (
       p_cwms_ts_id     in varchar2,
       p_db_office_code in number)
@@ -2759,7 +2768,7 @@ AS
       return varchar2
    is
    begin
-      return format_lrts_interval_input(p_interval_id, use_new_lrts_format = 'T');
+      return format_lrts_interval_input(p_interval_id, use_new_lrts_format_on_output = 'T');
    end format_lrts_interval_input;
    --------------------------------------------------------------------------------
    -- function format_lrts_input
@@ -2793,7 +2802,7 @@ AS
       return varchar2
    is
    begin
-      return format_lrts_input(p_cwms_ts_id, use_new_lrts_format = 'T');
+      return format_lrts_input(p_cwms_ts_id, use_new_lrts_format_on_output = 'T');
    end format_lrts_input;
    --------------------------------------------------------------------------------
    -- function format_lrts_interval_output
@@ -2832,7 +2841,7 @@ AS
       return varchar2
    is
    begin
-      return format_lrts_interval_output(p_interval_id, use_new_lrts_format = 'T');
+      return format_lrts_interval_output(p_interval_id, use_new_lrts_format_on_output = 'T');
    end format_lrts_interval_output;
    --------------------------------------------------------------------------------
    -- function format_lrts_output
@@ -2873,35 +2882,130 @@ AS
       return varchar2
    is
    begin
-      return format_lrts_output(p_ts_id, use_new_lrts_format = 'T');
+      return format_lrts_output(p_ts_id, use_new_lrts_format_on_output = 'T');
    end format_lrts_output;
    --------------------------------------------------------------------------------
-   -- procedure set_use_new_lrts_format
+   -- procedure set_use_new_lrts_format_on_output
    --------------------------------------------------------------------------------
-   procedure set_use_new_lrts_format(
+   procedure set_use_new_lrts_format_on_output(
       p_use_new_format in varchar2)
    is
-      l_flag char(1) := upper(substr(p_use_new_format, 1, 1));
+      l_current integer := nvl(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), 0);
    begin
-      if l_flag in ('T', 'F') then
-         cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', l_flag);
+      case upper(substr(p_use_new_format, 1, 1))
+      when 'T' then
+         if bitand(l_current, use_new_lrts_ids_on_output) != use_new_lrts_ids_on_output then
+            cwms_util.set_session_info(
+               'USE_NEW_LRTS_ID_FORMAT',
+               l_current + use_new_lrts_ids_on_output - bitand(l_current, use_new_lrts_ids_on_output)); -- bitor
+         end if;
+      when 'F' then
+         if bitand(l_current, use_new_lrts_ids_on_output) = use_new_lrts_ids_on_output then
+            cwms_util.set_session_info(
+               'USE_NEW_LRTS_ID_FORMAT',
+               bitand(l_current, not_use_new_lrts_ids_on_output));
+         end if;
       else
          cwms_err.raise('INVALID_T_F_FLAG', p_use_new_format);
-      end if;
-      cwms_cache.clear(g_ts_code_cache);
-      cwms_cache.clear(g_ts_id_cache);
-      cwms_cache.clear(g_ts_id_alias_cache);
-      cwms_cache.clear(g_is_lrts_cache);
-   end set_use_new_lrts_format;
+      end case;
+      clear_all_caches;
+   end set_use_new_lrts_format_on_output;
    --------------------------------------------------------------------------------
-   -- function use_new_lrts_format
+   -- function use_new_lrts_format_on_output
    --------------------------------------------------------------------------------
-   function use_new_lrts_format
+   function use_new_lrts_format_on_output
       return varchar2
    is
    begin
-      return cwms_util.get_session_info_txt('USE_NEW_LRTS_ID_FORMAT');
-   end use_new_lrts_format;
+      return case bitand(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), use_new_lrts_ids_on_output)
+             when use_new_lrts_ids_on_output then 'T'
+             else 'F'
+             end;
+   end use_new_lrts_format_on_output;
+   --------------------------------------------------------------------------------
+   -- procedure set_allow_new_lrts_format_on_input
+   --------------------------------------------------------------------------------
+   procedure set_allow_new_lrts_format_on_input(
+      p_allow_new_format in varchar2)
+   is
+      l_current integer := nvl(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), 0);
+   begin
+      case upper(substr(p_allow_new_format, 1, 1))
+      when 'T' then
+         if bitand(l_current, allow_new_lrts_ids_on_input) != allow_new_lrts_ids_on_input then
+            if bitand(l_current, use_new_lrts_ids_on_output) = use_new_lrts_ids_on_output then
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', use_new_lrts_ids_on_output + allow_new_lrts_ids_on_input);
+            else
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', allow_new_lrts_ids_on_input);
+            end if;
+         end if;
+      when 'F' then
+         if bitand(l_current, allow_new_lrts_ids_on_input) != allow_new_lrts_ids_on_input then
+            if bitand(l_current, use_new_lrts_ids_on_output) = use_new_lrts_ids_on_output then
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', use_new_lrts_ids_on_output);
+            else
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', 0);
+            end if;
+         end if;
+      else
+         cwms_err.raise('INVALID_T_F_FLAG', p_allow_new_format);
+      end case;
+      clear_all_caches;
+   end set_allow_new_lrts_format_on_input;
+   --------------------------------------------------------------------------------
+   -- function allow_new_lrts_format_on_input
+   --------------------------------------------------------------------------------
+   function allow_new_lrts_format_on_input
+      return varchar2
+   is
+   begin
+      return case bitand(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), allow_new_lrts_ids_on_input)
+             when allow_new_lrts_ids_on_input then 'T'
+             else 'F'
+             end;
+   end allow_new_lrts_format_on_input;
+   --------------------------------------------------------------------------------
+   -- procedure set_require_new_lrts_format_on_input
+   --------------------------------------------------------------------------------
+   procedure set_require_new_lrts_format_on_input(
+      p_require_new_format in varchar2)
+   is
+      l_current integer := nvl(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), 0);
+   begin
+      case upper(substr(p_require_new_format, 1, 1))
+      when 'T' then
+         if bitand(l_current, require_new_lrts_ids_on_input) != require_new_lrts_ids_on_input then
+            if bitand(l_current, use_new_lrts_ids_on_output) = use_new_lrts_ids_on_output then
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', use_new_lrts_ids_on_output + require_new_lrts_ids_on_input);
+            else
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', require_new_lrts_ids_on_input);
+            end if;
+         end if;
+      when 'F' then
+         if bitand(l_current, require_new_lrts_ids_on_input) != require_new_lrts_ids_on_input then
+            if bitand(l_current, use_new_lrts_ids_on_output) = use_new_lrts_ids_on_output then
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', use_new_lrts_ids_on_output);
+            else
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', 0);
+            end if;
+         end if;
+      else
+         cwms_err.raise('INVALID_T_F_FLAG', p_require_new_format);
+      end case;
+      clear_all_caches;
+   end set_require_new_lrts_format_on_input;
+   --------------------------------------------------------------------------------
+   -- function function require_new_lrts_format_on_input
+   --------------------------------------------------------------------------------
+   function require_new_lrts_format_on_input
+      return varchar2
+   is
+   begin
+      return case bitand(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), require_new_lrts_ids_on_input)
+             when require_new_lrts_ids_on_input then 'T'
+             else 'F'
+             end;
+   end require_new_lrts_format_on_input;
    --
    --*******************************************************************   --
    --*******************************************************************   --
