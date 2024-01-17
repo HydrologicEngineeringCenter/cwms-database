@@ -7,9 +7,9 @@ create or replace package &&cwms_schema..test_cwms_err as
 --%rollback(manual)
 
 --%test(Test raise TS_ID_NOT_FOUND with p1 and p2 works )
-    procedure raise_ts_not_found_p1_p2;
 --%test(Test raise TS_ID_NOT_FOUND with null and p2 works)
-    procedure raise_p1_null_p2_nonnull;
+    procedure raise_ts_not_found_p1_p2;
+    procedure raise_ts_not_found_null_p2;
 
     procedure setup;
     procedure teardown;
@@ -34,7 +34,7 @@ create or replace package body &&cwms_schema..test_cwms_err as
         null;
     end teardown;
 --------------------------------------------------------------------------------
--- procedure raise_p1_thru_p9
+-- procedure raise_ts_not_found_p1_p2
 --------------------------------------------------------------------------------
     procedure raise_ts_not_found_p1_p2
         is
@@ -54,6 +54,7 @@ create or replace package body &&cwms_schema..test_cwms_err as
             ut.expect(instr(cwms_err.get_error_message, 'unlikelysecondparam') != 0).to_be_true;
             ut.expect(instr(cwms_err.get_error_message, '%2') != 0).to_be_false;
     end raise_ts_not_found_p1_p2;
+
 --------------------------------------------------------------------------------
 -- procedure raise_ts_not_found_null_p2
 --------------------------------------------------------------------------------
