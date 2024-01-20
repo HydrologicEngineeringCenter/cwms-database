@@ -1,5 +1,11 @@
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
+   procedure clear_all_caches
+   is
+   begin
+      cwms_cache.clear(g_location_code_cache);
+      cwms_cache.clear(g_location_id_cache);
+   end;
    --
    -- num_group_assigned_to_shef return the number of groups -
    -- currently assigned in the at_shef_decode table.

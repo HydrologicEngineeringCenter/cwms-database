@@ -1,4 +1,3 @@
-drop package test_lrts_updstes;
 create or replace package test_lrts_updates as
 
 --%suite(Test schema for full LRTS compatibility)
@@ -4549,7 +4548,16 @@ is
    l_ts_data          cwms_t_ztsv_array;
    l_start_time       date;
    l_end_time         date;
+   l_crsr             sys_refcursor;
+   l_date_times       cwms_t_date_table;
+   l_values           cwms_t_double_tab;
+   l_quality_codes    cwms_t_number_tab;
+   l_min_value        binary_double;
+   l_max_value        binary_double;
+   l_ts_data_out      cwms_t_ztsv_array;
 begin
+   cwms_loc.clear_all_caches;
+   cwms_ts.clear_all_caches;
    ------------------------
    -- create the ts data --
    ------------------------
@@ -4575,6 +4583,12 @@ begin
       p_location_id  => l_location_id,
       p_time_zone_id => c_timezone_ids(1),
       p_db_office_id => c_office_id);
+   ---------------------------------
+   -- create the ts group catgory --
+   ---------------------------------
+   cwms_ts.store_ts_category(
+      p_ts_category_id => 'TestCategory',
+      p_db_office_id   => c_office_id);
    --------------------------------
    -- test all flag combinations --
    --------------------------------
@@ -4630,6 +4644,8 @@ begin
    -------------------------------
    -- test the input formatting --
    -------------------------------
+   cwms_loc.clear_all_caches;
+   cwms_ts.clear_all_caches;
    for i in 0..6 loop
       continue when i = 3; -- invalid value
       cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', i);
@@ -4643,14 +4659,27 @@ begin
          ut.expect(cwms_ts.format_lrts_input(l_lrts_ts_id_old)).to_equal(l_lrts_ts_id_old);
       end if;
    end loop;
-   ------------------------------
-   -- test storing time series --
-   ------------------------------
-   cwms_ts.set_allow_new_lrts_format_on_input('F');
+   --------------------------
+   -- test time series API --
+   --------------------------
    ---------------------
    -- no new LRTS IDs --
    ---------------------
+   cwms_loc.clear_all_caches;
+   cwms_ts.clear_all_caches;
+   cwms_ts.set_allow_new_lrts_format_on_input('F');
    -- should succeed
+   --.... create, update, store ts
+   cwms_ts.create_ts(
+      p_cwms_ts_id => l_lrts_ts_id_old,
+      p_utc_offset => 0,
+      p_versioned  => 'F',
+      p_office_id  => c_office_id);
+   cwms_ts.update_ts_id(
+      p_cwms_ts_id          => l_lrts_ts_id_old,
+      p_interval_utc_offset => 420,
+      p_db_office_id        => c_office_id);
+   cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
    cwms_ts.zstore_ts(
       p_cwms_ts_id      => l_lrts_ts_id_old,
       p_units           => c_ts_unit,
@@ -4658,8 +4687,92 @@ begin
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'T');
+   --.... retrieve ts
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc  => l_crsr,
+      p_cwms_ts_id => l_lrts_ts_id_old,
+      p_units      => c_ts_unit,
+      p_start_time => l_start_time,
+      p_end_time   => l_end_time,
+      p_office_id  => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(l_count);
+   --.... get IDs and codes
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_old, c_office_id)).to_equal(l_lrts_ts_id_new);
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_old, c_office_id)).to_equal(l_lrts_ts_id_old);
+   ut.expect(cwms_ts.get_ts_code(l_lrts_ts_id_old, c_office_id)).to_be_not_null;
+   ut.expect(cwms_ts.get_db_unit_id(l_lrts_ts_id_old)).to_equal(c_ts_unit);
+   ut.expect(cwms_ts.get_location_id(l_lrts_ts_id_old, c_office_id)).to_equal(l_location_id);
+   --.... get/set info
+   ut.expect(cwms_ts.get_tsid_time_zone(l_lrts_ts_id_old, c_office_id)).to_equal(c_timezone_ids(1));
+   cwms_ts.set_tsid_versioned(l_lrts_ts_id_old, 'T', c_office_id);
+   ut.expect(cwms_ts.is_tsid_versioned_f(l_lrts_ts_id_old, c_office_id)).to_equal('T');
+   cwms_ts.get_tsid_version_dates(l_crsr, l_lrts_ts_id_old, date '1000-01-01', date '3000-01-01', 'UTC', c_office_id);
+   fetch l_crsr bulk collect into l_date_times;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(1);
+   ut.expect(cwms_ts.get_ts_interval(l_lrts_ts_id_old)).to_equal(0);
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_old)).to_equal('1DayLocal');
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_old)).to_equal('~1Day');
+   ut.expect(cwms_ts.get_ts_min_date(l_lrts_ts_id_old, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_start_time);
+   ut.expect(cwms_ts.get_ts_max_date(l_lrts_ts_id_old, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_end_time);
+   cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_old, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+   ut.expect(l_min_value).to_equal(1);
+   ut.expect(l_max_value).to_equal(l_count);
+   l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_old, 1, l_count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_count);
+   cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_old, c_office_id);
+   ut.expect(cwms_ts.get_nulls_storage_policy_ts(l_lrts_ts_id_old, c_office_id)).to_equal(cwms_ts.filter_out_null_values);
+   cwms_ts.set_nulls_storage_policy_ts(null, l_lrts_ts_id_old, c_office_id);
+   cwms_ts.set_filter_duplicates_ts('T', l_lrts_ts_id_old, c_office_id);
+   ut.expect(cwms_ts.get_filter_duplicates(l_lrts_ts_id_old, c_office_id)).to_equal('T');
+   cwms_ts.set_historic(l_lrts_ts_id_old, 'T', c_office_id);
+   ut.expect(cwms_ts.is_historic(l_lrts_ts_id_old, c_office_id)).to_equal('T');
+   --.... group operations
+   cwms_ts.store_ts_group(
+      p_ts_category_id   => 'TestCategory',
+      p_ts_group_id      => 'TestGroup_old',
+      p_shared_ts_ref_id => l_lrts_ts_id_old,
+      p_db_office_id     => c_office_id);
+   cwms_ts.assign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old, c_office_id);
+   cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 'F', c_office_id);
+   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
+   --.... delete, undelete
+   cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_key, c_office_id);
+   cwms_ts.undelete_ts(l_lrts_ts_id_old, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
    -- should fail
+   --.... create, update, store ts
+   begin
+      cwms_ts.create_ts(
+         p_cwms_ts_id => l_lrts_ts_id_new,
+         p_utc_offset => 0,
+         p_versioned  => 'F',
+         p_office_id  => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+1DayLocal is not a valid interval.+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.update_ts_id(
+         p_cwms_ts_id          => l_lrts_ts_id_new,
+         p_interval_utc_offset => 420,
+         p_db_office_id        => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
    begin
       cwms_ts.zstore_ts(
          p_cwms_ts_id      => l_lrts_ts_id_new,
@@ -4673,11 +4786,198 @@ begin
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+INVALID_INTERVAL_ID: "1DayLocal" is not a valid CWMS timeseries interval.+', 'mn')).to_be_true;
    end;
-   cwms_ts.set_allow_new_lrts_format_on_input('T');
+   begin
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc  => l_crsr,
+         p_cwms_ts_id => l_lrts_ts_id_new,
+         p_units      => c_ts_unit,
+         p_start_time => l_start_time,
+         p_end_time   => l_end_time,
+         p_office_id  => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   --.... get IDs and codes
+   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_new, c_office_id)).to_be_null;
+   begin
+      ut.expect(cwms_ts.get_ts_code(l_lrts_ts_id_new, c_office_id)).to_be_null;
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   ut.expect(cwms_ts.get_db_unit_id(l_lrts_ts_id_new)).to_equal(c_ts_unit);
+   begin
+      ut.expect(cwms_ts.get_location_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_location_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   --.... get/set info
+   begin
+      ut.expect(cwms_ts.get_tsid_time_zone(l_lrts_ts_id_new, c_office_id)).to_equal(c_timezone_ids(1));
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.set_tsid_versioned(l_lrts_ts_id_new, 'T', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      ut.expect(cwms_ts.is_tsid_versioned_f(l_lrts_ts_id_new, c_office_id)).to_equal('T');
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.get_tsid_version_dates(l_crsr, l_lrts_ts_id_new, date '1000-01-01', date '3000-01-01', 'UTC', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   ut.expect(cwms_ts.get_ts_interval(l_lrts_ts_id_new)).to_equal(0);
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_new)).to_equal('1DayLocal');
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_new)).to_equal('~1Day');
+   begin
+      ut.expect(cwms_ts.get_ts_min_date(l_lrts_ts_id_new, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_start_time);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      ut.expect(cwms_ts.get_ts_max_date(l_lrts_ts_id_new, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_end_time);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_new, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_new, 1, l_count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_new, c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      ut.expect(cwms_ts.get_nulls_storage_policy_ts(l_lrts_ts_id_new, c_office_id)).to_equal(cwms_ts.filter_out_null_values);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.set_filter_duplicates_ts('T', l_lrts_ts_id_new, c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      ut.expect(cwms_ts.get_filter_duplicates(l_lrts_ts_id_new, c_office_id)).to_equal('T');
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.set_historic(l_lrts_ts_id_new, 'T', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      ut.expect(cwms_ts.is_historic(l_lrts_ts_id_new, c_office_id)).to_equal('T');
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   --.... group operations
+   begin
+      cwms_ts.store_ts_group(
+         p_ts_category_id   => 'TestCategory',
+         p_ts_group_id      => 'TestGroup_new',
+         p_shared_ts_ref_id => l_lrts_ts_id_new,
+         p_db_office_id     => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   cwms_ts.store_ts_group(
+      p_ts_category_id   => 'TestCategory',
+      p_ts_group_id      => 'TestGroup_new',
+      p_db_office_id     => c_office_id);
+   begin
+      cwms_ts.assign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new, c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 'F', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
+   --.... delete, undelete
+   begin
+      cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_all, c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+
    -------------------------
    -- allow new LRTS IDs --
    ------------------------
+   cwms_loc.clear_all_caches;
+   cwms_ts.clear_all_caches;
+   cwms_ts.set_allow_new_lrts_format_on_input('T');
    -- should succeed
+   --.... create, update, store ts
+   cwms_ts.create_ts(
+      p_cwms_ts_id => l_lrts_ts_id_old,
+      p_utc_offset => 0,
+      p_versioned  => 'F',
+      p_office_id  => c_office_id);
+   cwms_ts.update_ts_id(
+      p_cwms_ts_id          => l_lrts_ts_id_old,
+      p_interval_utc_offset => 420,
+      p_db_office_id        => c_office_id);
+   cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
    cwms_ts.zstore_ts(
       p_cwms_ts_id      => l_lrts_ts_id_old,
       p_units           => c_ts_unit,
@@ -4685,8 +4985,81 @@ begin
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'T');
+   --.... retrieve ts
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc  => l_crsr,
+      p_cwms_ts_id => l_lrts_ts_id_old,
+      p_units      => c_ts_unit,
+      p_start_time => l_start_time,
+      p_end_time   => l_end_time,
+      p_office_id  => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(l_count);
+   --.... get IDs and codes
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_old, c_office_id)).to_equal(l_lrts_ts_id_new);
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_old, c_office_id)).to_equal(l_lrts_ts_id_old);
+   ut.expect(cwms_ts.get_ts_code(l_lrts_ts_id_old, c_office_id)).to_be_not_null;
+   ut.expect(cwms_ts.get_db_unit_id(l_lrts_ts_id_old)).to_equal(c_ts_unit);
+   ut.expect(cwms_ts.get_location_id(l_lrts_ts_id_old, c_office_id)).to_equal(l_location_id);
+   --.... get/set info
+   ut.expect(cwms_ts.get_tsid_time_zone(l_lrts_ts_id_old, c_office_id)).to_equal(c_timezone_ids(1));
+   cwms_ts.set_tsid_versioned(l_lrts_ts_id_old, 'T', c_office_id);
+   ut.expect(cwms_ts.is_tsid_versioned_f(l_lrts_ts_id_old, c_office_id)).to_equal('T');
+   cwms_ts.get_tsid_version_dates(l_crsr, l_lrts_ts_id_old, date '1000-01-01', date '3000-01-01', 'UTC', c_office_id);
+   fetch l_crsr bulk collect into l_date_times;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(1);
+   ut.expect(cwms_ts.get_ts_interval(l_lrts_ts_id_old)).to_equal(0);
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_old)).to_equal('1DayLocal');
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_old)).to_equal('~1Day');
+   ut.expect(cwms_ts.get_ts_min_date(l_lrts_ts_id_old, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_start_time);
+   ut.expect(cwms_ts.get_ts_max_date(l_lrts_ts_id_old, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_end_time);
+   cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_old, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+   ut.expect(l_min_value).to_equal(1);
+   ut.expect(l_max_value).to_equal(l_count);
+   l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_old, 1, l_count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_count);
+   cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_old, c_office_id);
+   ut.expect(cwms_ts.get_nulls_storage_policy_ts(l_lrts_ts_id_old, c_office_id)).to_equal(cwms_ts.filter_out_null_values);
+   cwms_ts.set_nulls_storage_policy_ts(null, l_lrts_ts_id_old, c_office_id);
+   cwms_ts.set_filter_duplicates_ts('T', l_lrts_ts_id_old, c_office_id);
+   ut.expect(cwms_ts.get_filter_duplicates(l_lrts_ts_id_old, c_office_id)).to_equal('T');
+   cwms_ts.set_historic(l_lrts_ts_id_old, 'T', c_office_id);
+   ut.expect(cwms_ts.is_historic(l_lrts_ts_id_old, c_office_id)).to_equal('T');
+   --.... group operations
+   cwms_ts.store_ts_group(
+      p_ts_category_id   => 'TestCategory',
+      p_ts_group_id      => 'TestGroup_old',
+      p_shared_ts_ref_id => l_lrts_ts_id_old,
+      p_db_office_id     => c_office_id);
+   cwms_ts.assign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old, c_office_id);
+   cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 'F', c_office_id);
+   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
+   --.... delete, undelete
+   cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_key, c_office_id);
+   cwms_ts.undelete_ts(l_lrts_ts_id_old, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
    -- should succeed
+   --.... create, update, store ts
+   cwms_ts.create_ts(
+      p_cwms_ts_id => l_lrts_ts_id_new,
+      p_utc_offset => 0,
+      p_versioned  => 'F',
+      p_office_id  => c_office_id);
+   cwms_ts.update_ts_id(
+      p_cwms_ts_id          => l_lrts_ts_id_new,
+      p_interval_utc_offset => 420,
+      p_db_office_id        => c_office_id);
+   cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_all, c_office_id);
    cwms_ts.zstore_ts(
       p_cwms_ts_id      => l_lrts_ts_id_new,
       p_units           => c_ts_unit,
@@ -4694,12 +5067,99 @@ begin
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'T');
+   --.... retrieve ts
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc  => l_crsr,
+      p_cwms_ts_id => l_lrts_ts_id_new,
+      p_units      => c_ts_unit,
+      p_start_time => l_start_time,
+      p_end_time   => l_end_time,
+      p_office_id  => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(l_count);
+   --.... get IDs and codes
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_lrts_ts_id_new);
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_lrts_ts_id_old);
+   ut.expect(cwms_ts.get_ts_code(l_lrts_ts_id_new, c_office_id)).to_be_not_null;
+   ut.expect(cwms_ts.get_db_unit_id(l_lrts_ts_id_new)).to_equal(c_ts_unit);
+   ut.expect(cwms_ts.get_location_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_location_id);
+   --.... get/set info
+   ut.expect(cwms_ts.get_tsid_time_zone(l_lrts_ts_id_new, c_office_id)).to_equal(c_timezone_ids(1));
+   cwms_ts.set_tsid_versioned(l_lrts_ts_id_new, 'T', c_office_id);
+   ut.expect(cwms_ts.is_tsid_versioned_f(l_lrts_ts_id_new, c_office_id)).to_equal('T');
+   cwms_ts.get_tsid_version_dates(l_crsr, l_lrts_ts_id_new, date '1000-01-01', date '3000-01-01', 'UTC', c_office_id);
+   fetch l_crsr bulk collect into l_date_times;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(1);
+   ut.expect(cwms_ts.get_ts_interval(l_lrts_ts_id_new)).to_equal(0);
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_new)).to_equal('1DayLocal');
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_new)).to_equal('~1Day');
+   ut.expect(cwms_ts.get_ts_min_date(l_lrts_ts_id_new, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_start_time);
+   ut.expect(cwms_ts.get_ts_max_date(l_lrts_ts_id_new, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_end_time);
+   cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_new, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+   ut.expect(l_min_value).to_equal(1);
+   ut.expect(l_max_value).to_equal(l_count);
+   l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_new, 1, l_count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_count);
+   cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_new, c_office_id);
+   ut.expect(cwms_ts.get_nulls_storage_policy_ts(l_lrts_ts_id_new, c_office_id)).to_equal(cwms_ts.filter_out_null_values);
+   cwms_ts.set_nulls_storage_policy_ts(null, l_lrts_ts_id_new, c_office_id);
+   cwms_ts.set_filter_duplicates_ts('T', l_lrts_ts_id_new, c_office_id);
+   ut.expect(cwms_ts.get_filter_duplicates(l_lrts_ts_id_new, c_office_id)).to_equal('T');
+   cwms_ts.set_historic(l_lrts_ts_id_new, 'T', c_office_id);
+   ut.expect(cwms_ts.is_historic(l_lrts_ts_id_new, c_office_id)).to_equal('T');
+   --.... group operations
+   cwms_ts.store_ts_group(
+      p_ts_category_id   => 'TestCategory',
+      p_ts_group_id      => 'TestGroup_new',
+      p_shared_ts_ref_id => l_lrts_ts_id_new,
+      p_db_office_id     => c_office_id);
+   cwms_ts.assign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new, c_office_id);
+   cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 'F', c_office_id);
+   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
+   --.... delete, undelete
+   cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_key, c_office_id);
+   cwms_ts.undelete_ts(l_lrts_ts_id_new, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_all, c_office_id);
-   cwms_ts.set_allow_new_lrts_format_on_input('T');
+
    ---------------------------
    -- reqiure new LRTS IDs --
    --------------------------
+   cwms_loc.clear_all_caches;
+   cwms_ts.clear_all_caches;
+   cwms_ts.set_require_new_lrts_format_on_input('T');
    -- should fail
+   --.... create, update, store ts
+   begin
+      cwms_ts.create_ts(
+         p_cwms_ts_id => l_lrts_ts_id_old,
+         p_utc_offset => 0,
+         p_versioned  => 'F',
+         p_office_id  => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   begin
+      cwms_ts.update_ts_id(
+         p_cwms_ts_id          => l_lrts_ts_id_old,
+         p_interval_utc_offset => 420,
+         p_db_office_id        => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+1DayLocal is not a valid interval.+', 'mn')).to_be_true;
+   end;
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+ERROR: Session requires new LRTS ID format.+', 'mn')).to_be_true;
+   end;
    begin
       cwms_ts.zstore_ts(
          p_cwms_ts_id      => l_lrts_ts_id_old,
@@ -4711,10 +5171,195 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         dbms_output.put_line(dbms_utility.format_error_stack);
-         --ut.expect(regexp_like(dbms_utility.format_error_stack, '.+INVALID_INTERVAL_ID: "1DayLocal" is not a valid CWMS timeseries interval.+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+ERROR: Session requires new LRTS ID format.+', 'mn')).to_be_true;
+   end;
+   --.... retrieve ts
+   begin
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc  => l_crsr,
+         p_cwms_ts_id => l_lrts_ts_id_old,
+         p_units      => c_ts_unit,
+         p_start_time => l_start_time,
+         p_end_time   => l_end_time,
+         p_office_id  => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   --.... get IDs and codes
+   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_old, c_office_id)).to_be_null;
+   begin
+      ut.expect(cwms_ts.get_ts_code(l_lrts_ts_id_old, c_office_id)).to_be_null;
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   ut.expect(cwms_ts.get_db_unit_id(l_lrts_ts_id_old)).to_equal(c_ts_unit);
+   begin
+      ut.expect(cwms_ts.get_location_id(l_lrts_ts_id_old, c_office_id)).to_equal(l_location_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   --.... get/set info
+   begin
+      ut.expect(cwms_ts.get_tsid_time_zone(l_lrts_ts_id_old, c_office_id)).to_equal(c_timezone_ids(1));
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.set_tsid_versioned(l_lrts_ts_id_old, 'T', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      ut.expect(cwms_ts.is_tsid_versioned_f(l_lrts_ts_id_old, c_office_id)).to_equal('T');
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.get_tsid_version_dates(l_crsr, l_lrts_ts_id_old, date '1000-01-01', date '3000-01-01', 'UTC', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   ut.expect(cwms_ts.get_ts_interval(l_lrts_ts_id_old)).to_equal(0);
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_old)).to_equal('1DayLocal');
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_old)).to_equal('~1Day');
+   begin
+      ut.expect(cwms_ts.get_ts_min_date(l_lrts_ts_id_old, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_start_time);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      ut.expect(cwms_ts.get_ts_max_date(l_lrts_ts_id_old, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_end_time);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_old, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_old, 1, l_count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_old, c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      ut.expect(cwms_ts.get_nulls_storage_policy_ts(l_lrts_ts_id_old, c_office_id)).to_equal(cwms_ts.filter_out_null_values);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.set_filter_duplicates_ts('T', l_lrts_ts_id_old, c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      ut.expect(cwms_ts.get_filter_duplicates(l_lrts_ts_id_old, c_office_id)).to_equal('T');
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.set_historic(l_lrts_ts_id_old, 'T', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      ut.expect(cwms_ts.is_historic(l_lrts_ts_id_old, c_office_id)).to_equal('T');
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   --.... group operations
+   begin
+      cwms_ts.store_ts_group(
+         p_ts_category_id   => 'TestCategory',
+         p_ts_group_id      => 'TestGroup_old',
+         p_shared_ts_ref_id => l_lrts_ts_id_old,
+         p_db_office_id     => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   cwms_ts.store_ts_group(
+      p_ts_category_id   => 'TestCategory',
+      p_ts_group_id      => 'TestGroup_old',
+      p_db_office_id     => c_office_id);
+   begin
+      cwms_ts.assign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old, c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 'F', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
+   --.... delete, undelete
+   --.... delete, undelete
+   begin
+      cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
    -- should succeed
+   --.... create, update, store ts
+   cwms_ts.create_ts(
+      p_cwms_ts_id => l_lrts_ts_id_new,
+      p_utc_offset => 0,
+      p_versioned  => 'F',
+      p_office_id  => c_office_id);
+   cwms_ts.update_ts_id(
+      p_cwms_ts_id          => l_lrts_ts_id_new,
+      p_interval_utc_offset => 420,
+      p_db_office_id        => c_office_id);
+   cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_all, c_office_id);
    cwms_ts.zstore_ts(
       p_cwms_ts_id      => l_lrts_ts_id_new,
       p_units           => c_ts_unit,
@@ -4722,8 +5367,72 @@ begin
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'T');
+   --.... retrieve ts
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc  => l_crsr,
+      p_cwms_ts_id => l_lrts_ts_id_new,
+      p_units      => c_ts_unit,
+      p_start_time => l_start_time,
+      p_end_time   => l_end_time,
+      p_office_id  => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(l_count);
+   --.... get IDs and codes
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_lrts_ts_id_new);
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_lrts_ts_id_old);
+   ut.expect(cwms_ts.get_ts_code(l_lrts_ts_id_new, c_office_id)).to_be_not_null;
+   ut.expect(cwms_ts.get_db_unit_id(l_lrts_ts_id_new)).to_equal(c_ts_unit);
+   ut.expect(cwms_ts.get_location_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_location_id);
+   --.... get/set info
+   ut.expect(cwms_ts.get_tsid_time_zone(l_lrts_ts_id_new, c_office_id)).to_equal(c_timezone_ids(1));
+   cwms_ts.set_tsid_versioned(l_lrts_ts_id_new, 'T', c_office_id);
+   ut.expect(cwms_ts.is_tsid_versioned_f(l_lrts_ts_id_new, c_office_id)).to_equal('T');
+   cwms_ts.get_tsid_version_dates(l_crsr, l_lrts_ts_id_new, date '1000-01-01', date '3000-01-01', 'UTC', c_office_id);
+   fetch l_crsr bulk collect into l_date_times;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(1);
+   ut.expect(cwms_ts.get_ts_interval(l_lrts_ts_id_new)).to_equal(0);
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_new)).to_equal('1DayLocal');
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   ut.expect(cwms_ts.get_ts_interval_string(l_lrts_ts_id_new)).to_equal('~1Day');
+   ut.expect(cwms_ts.get_ts_min_date(l_lrts_ts_id_new, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_start_time);
+   ut.expect(cwms_ts.get_ts_max_date(l_lrts_ts_id_new, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_end_time);
+   cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_new, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+   ut.expect(l_min_value).to_equal(1);
+   ut.expect(l_max_value).to_equal(l_count);
+   l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_new, 1, l_count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_count);
+   cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_new, c_office_id);
+   ut.expect(cwms_ts.get_nulls_storage_policy_ts(l_lrts_ts_id_new, c_office_id)).to_equal(cwms_ts.filter_out_null_values);
+   cwms_ts.set_nulls_storage_policy_ts(null, l_lrts_ts_id_new, c_office_id);
+   cwms_ts.set_filter_duplicates_ts('T', l_lrts_ts_id_new, c_office_id);
+   ut.expect(cwms_ts.get_filter_duplicates(l_lrts_ts_id_new, c_office_id)).to_equal('T');
+   cwms_ts.set_historic(l_lrts_ts_id_new, 'T', c_office_id);
+   ut.expect(cwms_ts.is_historic(l_lrts_ts_id_new, c_office_id)).to_equal('T');
+   --.... group operations
+   cwms_ts.store_ts_group(
+      p_ts_category_id   => 'TestCategory',
+      p_ts_group_id      => 'TestGroup_new',
+      p_shared_ts_ref_id => l_lrts_ts_id_new,
+      p_db_office_id     => c_office_id);
+   cwms_ts.assign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new, c_office_id);
+   cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 'F', c_office_id);
+   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
+   --.... delete, undelete
+   cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_key, c_office_id);
+   cwms_ts.undelete_ts(l_lrts_ts_id_new, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_all, c_office_id);
 
+   cwms_ts.set_allow_new_lrts_format_on_input('F');
+   cwms_ts.set_use_new_lrts_format_on_output('F');
 end test_lrts_id_input_formatting;
 
 end test_lrts_updates;

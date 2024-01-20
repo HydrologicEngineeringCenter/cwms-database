@@ -57,7 +57,8 @@ AS
    is
       l_office_id    varchar2(16) := cwms_util.get_db_office_id_from_code(p_db_office_code);
       l_cwms_ts_code number;
-      l_cache_key    varchar2(32767) := p_db_office_code||'/'||upper(p_cwms_ts_id);
+      l_cwms_ts_id   at_cwms_ts_id.cwms_ts_id%type := format_lrts_input(p_cwms_ts_id);
+      l_cache_key    varchar2(32767) := p_db_office_code||'/'||upper(l_cwms_ts_id);
    begin
       l_cwms_ts_code := cwms_cache.get(g_ts_code_cache, l_cache_key);
       if l_cwms_ts_code is null then
@@ -65,7 +66,7 @@ AS
             select ts_code
               into l_cwms_ts_code
               from at_cwms_ts_id
-             where upper(cwms_ts_id) = upper(get_cwms_ts_id(trim(p_cwms_ts_id), l_office_id))
+             where upper(cwms_ts_id) = upper(get_cwms_ts_id(trim(l_cwms_ts_id), l_office_id))
                and db_office_code = p_db_office_code;
          exception
             when no_data_found then
@@ -94,7 +95,9 @@ AS
           where ts_code = p_ts_code;
          cwms_cache.put(g_ts_id_cache, p_ts_code, l_cwms_ts_id);
       end if;
-      return l_cwms_ts_id;
+      return format_lrts_output(
+         l_cwms_ts_id,
+         use_new_lrts_format_on_output = 'T' and is_lrts(p_ts_code) = 'T');
    end;
 
    function clean_ts_id(
@@ -860,7 +863,7 @@ AS
    FUNCTION get_location_id (p_cwms_ts_code IN NUMBER)
       RETURN VARCHAR2
    IS
-      l_location_id   VARCHAR2 (57);
+      l_location_id   av_cwms_ts_id.location_id%type;
    BEGIN
       BEGIN
          SELECT location_id
@@ -1520,20 +1523,18 @@ AS
       RETURN VARCHAR2
    is
       l_time_zone_id cwms_time_zone.time_zone_name%type;
+      l_office_id    at_cwms_ts_id.db_office_id%type := cwms_util.get_db_office_id(p_office_id);
    begin
       select time_zone_id
         into l_time_zone_id
         from at_cwms_ts_id
        where upper(cwms_ts_id) = upper(get_ts_id(p_ts_id, p_office_id))
-         and db_office_id = cwms_util.get_db_office_id(p_office_id);
+         and db_office_id = l_office_id;
 
       return l_time_zone_id;
    exception
       when no_data_found then
-            cwms_err.raise (
-               'INVALID_ITEM',
-               p_ts_id,
-               'CWMS Timeseries Identifier');
+            cwms_err.raise('TS_ID_NOT_FOUND', p_ts_id,l_office_id);
    END get_tsid_time_zone;
 
 
@@ -1868,7 +1869,7 @@ AS
          l_cwms_ts_id := cwms_util.join_text(l_parts, '.');
       end if;
       --parse values from timeseries_desc using regular expressions
-      parse_ts (l_cwms_ts_id,
+      parse_ts (format_lrts_input(l_cwms_ts_id),
                 l_base_location_id,
                 l_sub_location_id,
                 l_base_parameter_id,
@@ -1942,36 +1943,53 @@ AS
       DBMS_APPLICATION_INFO.set_action (
          'check code lookups, scalar subquery');
 
-      select base_parameter_code
-        into l_base_parameter_code
-        from cwms_base_parameter p
-       where upper(p.base_parameter_id) = upper(l_base_parameter_id);
+      begin
+         select base_parameter_code
+           into l_base_parameter_code
+           from cwms_base_parameter p
+          where upper(p.base_parameter_id) = upper(l_base_parameter_id);
+      exception
+         when no_data_found then null;
+      end;
 
-       select parameter_type_code
-         into l_parameter_type_code
-         from cwms_parameter_type
-        where upper(parameter_type_id) = upper(l_parameter_type_id);
+      begin
+         select parameter_type_code
+           into l_parameter_type_code
+           from cwms_parameter_type
+          where upper(parameter_type_id) = upper(l_parameter_type_id);
+      exception
+         when no_data_found then null;
+      end;
 
-       select interval_code,
-              interval
-         into l_interval_code,
-              l_interval
-         from cwms_interval
-        where upper(interval_id) = upper(l_interval_id);
+      begin
+         select interval_code,
+                interval
+           into l_interval_code,
+                l_interval
+           from cwms_interval
+          where upper(interval_id) = upper(l_interval_id);
 
-        if substr(l_interval_id, 1, 1) = '~' then
-          select interval
-            into l_lrts_interval
-            from cwms_interval
-           where upper(interval_id) = upper(substr(l_interval_id, 2));
-        end if;
 
-       select duration_code,
-              duration
-         into l_duration_code,
-              l_duration
-         from cwms_duration
-        where upper(duration_id) = upper(l_duration_id);
+          if substr(l_interval_id, 1, 1) = '~' then
+            select interval
+              into l_lrts_interval
+              from cwms_interval
+             where upper(interval_id) = upper(substr(l_interval_id, 2));
+          end if;
+      exception
+         when no_data_found then null;
+      end;
+
+      begin
+         select duration_code,
+                duration
+           into l_duration_code,
+                l_duration
+           from cwms_duration
+       where upper(duration_id) = upper(l_duration_id);
+      exception
+         when no_data_found then null;
+      end;
 
       IF    l_base_parameter_code IS NULL
          OR l_duration_code IS NULL
@@ -2120,6 +2138,9 @@ AS
                      -- LRTS --
                      ----------
                      if p_utc_offset not in (cwms_util.utc_offset_undefined, cwms_util.utc_offset_irregular) then
+                        if require_new_lrts_format_on_input = 'T' and is_new_lrts_format(p_cwms_ts_id) = 'F' then
+                           new_lrts_id_required_error(l_cwms_ts_id);
+                        end if;
                         -----------------------------
                         -- set the interval offset --
                         -----------------------------
@@ -2741,7 +2762,7 @@ AS
       l_parts str_tab_t;
       l_index binary_integer;
    begin
-      l_parts := cwms_util.split_text(p_id);
+      l_parts := cwms_util.split_text(p_id, '.');
       l_index := l_parts.count;
       case l_parts.count
       when 1 then l_index := 1;
@@ -2791,6 +2812,7 @@ AS
    is
       l_pos1 binary_integer;
       l_pos2 binary_integer;
+      l_cwms_ts_id at_cwms_ts_id.cwms_ts_id%type;
    begin
       if p_revert_format then
          l_pos1 := instr(p_cwms_ts_id, '.', 1, 3);
@@ -2798,12 +2820,13 @@ AS
          if 0 in (l_pos1, l_pos2) then
             cwms_err.raise('INVALID_ITEM', p_cwms_ts_id, 'CWMS time series identifier');
          end if;
-         return substr(p_cwms_ts_id, 1, l_pos1)
-                || format_lrts_interval_input(substr(p_cwms_ts_id, l_pos1+1, l_pos2 - l_pos1-1), true)
-                || substr(p_cwms_ts_id, l_pos2);
+         l_cwms_ts_id := substr(p_cwms_ts_id, 1, l_pos1)
+                         || format_lrts_interval_input(substr(p_cwms_ts_id, l_pos1+1, l_pos2 - l_pos1-1), true)
+                         || substr(p_cwms_ts_id, l_pos2);
       else
-         return p_cwms_ts_id;
+         l_cwms_ts_id := p_cwms_ts_id;
       end if;
+      return l_cwms_ts_id;
    end format_lrts_input;
    --------------------------------------------------------------------------------
    -- function format_lrts_input
@@ -3100,7 +3123,7 @@ AS
       -- initialization --
       --------------------
       l_office_id := NVL (p_office_id, cwms_util.user_office_id);
-      l_cwms_ts_id := get_cwms_ts_id (p_cwms_ts_id, l_office_id);
+      l_cwms_ts_id := get_cwms_ts_id (format_lrts_input(p_cwms_ts_id), l_office_id);
       l_units := NVL (cwms_util.get_unit_id(p_units, l_Office_id), get_db_unit_id (l_cwms_ts_id));
       l_time_zone := NVL (p_time_zone, 'UTC');
 
@@ -5572,7 +5595,7 @@ AS
          SELECT i.interval
            INTO l_interval_value
            FROM cwms_interval i
-          WHERE UPPER (i.interval_id) = UPPER (regexp_substr (l_cwms_ts_id, '[^.]+', 1, 4));
+          WHERE UPPER (i.interval_id) = UPPER (regexp_substr (format_lrts_input(l_cwms_ts_id), '[^.]+', 1, 4));
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -5641,7 +5664,7 @@ AS
                select interval
                  into l_irr_interval
                  from cwms_interval
-                where interval_id = substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 2);
+                where interval_id = substr(cwms_util.split_text(format_lrts_input(p_cwms_ts_id), 4, '.'), 2);
                l_first_time := cast(p_timeseries_data(1).date_time at time zone l_loc_tz as date);
                l_irr_offset := (l_first_time - get_time_on_before_interval(
                   p_datetime    => l_first_time,
@@ -5656,7 +5679,7 @@ AS
             end if;
             create_ts_code (p_ts_code           => l_ts_code,
                             p_office_id         => l_office_id,
-                            p_cwms_ts_id        => format_lrts_input(l_cwms_ts_id),
+                            p_cwms_ts_id        => l_cwms_ts_id,
                             p_versioned         => case when nvl(p_version_date, cwms_util.non_versioned) = cwms_util.non_versioned then 'F' else 'T' end,
                             p_fail_if_exists    => 'F', -- in case of race condition will return ts_code generated by other thread
                             p_utc_offset        => l_utc_offset);
@@ -7385,34 +7408,8 @@ AS
       ---------------------
       -- get the ts code --
       ---------------------
-      if p_db_office_code is null then
-         l_db_office_code := cwms_util.get_office_code(null);
-      end if;
-
-      select office_id
-        into l_db_office_id
-        from cwms_office
-       where office_code = l_db_office_code;
-
-      l_cwms_ts_id := get_cwms_ts_id(p_cwms_ts_id, l_db_office_id);
-
-      begin
-         select ts_code
-           into l_ts_code
-           from at_cwms_ts_id mcts
-          where upper(mcts.cwms_ts_id) = upper(l_cwms_ts_id) and mcts.db_office_code = l_db_office_code;
-      exception
-         when no_data_found then
-            begin
-               select ts_code
-                 into l_ts_code
-                 from at_cwms_ts_id mcts
-                where upper(mcts.cwms_ts_id) = upper(l_cwms_ts_id) and mcts.db_office_code = l_db_office_code;
-            exception
-               when no_data_found then
-                  cwms_err.raise('TS_ID_NOT_FOUND', l_cwms_ts_id,cwms_util.get_db_office_id_from_code(p_db_office_code));
-            end;
-      end;
+      l_db_office_id := cwms_util.get_db_office_id(p_db_office_code);
+      l_ts_code := get_ts_code(format_lrts_input(p_cwms_ts_id), l_db_office_code);
 
       if l_delete_action = cwms_util.delete_key then
          ---------------------------------------
@@ -8016,7 +8013,7 @@ AS
       l_office_code := cwms_util.get_db_office_code(l_office_id);
 
       parse_ts(
-         p_cwms_ts_id        => p_cwms_ts_id,
+         p_cwms_ts_id        => format_lrts_input(p_cwms_ts_id),
          p_base_location_id  => l_base_location_id,
          p_sub_location_id   => l_sub_location_id,
          p_base_parameter_id => l_base_parameter_id,
@@ -9887,8 +9884,6 @@ end retrieve_existing_item_counts;
          ELSE
             IF cwms_util.get_db_office_code not in (l_rec.db_office_code, cwms_util.db_office_code_all)
             THEN
-               dbms_output.put_line('owner office = '||l_rec.db_office_code);
-               dbms_output.put_line('user office  = '||cwms_util.get_db_office_code);
                cwms_err.raise (
                   'ERROR',
                      'CWMS time series category '
@@ -10656,7 +10651,11 @@ end retrieve_existing_item_counts;
       EXCEPTION
          WHEN ts_id_not_found
          THEN
-            NULL;
+            begin
+               l_ts_code := get_ts_code(format_lrts_input(p_ts_id_or_alias), p_office_id);
+            exception
+               when ts_id_not_found then null;
+            end;
       END;
 
       IF l_ts_code IS NOT NULL
@@ -11020,8 +11019,15 @@ end retrieve_existing_item_counts;
    FUNCTION get_ts_interval_string (p_cwms_ts_id IN VARCHAR2)
       RETURN VARCHAR2
    IS
+      l_interval_string cwms_interval.interval_id%type;
    BEGIN
-      return regexp_substr (p_cwms_ts_id, '[^.]+', 1, 4);
+      l_interval_string := regexp_substr(format_lrts_input(p_cwms_ts_id), '[^.]+', 1, 4);
+      if use_new_lrts_format_on_output = 'T' and  substr(l_interval_string, 1, 1) = '~' then
+         l_interval_string := regexp_replace(l_interval_string, '^~(.+)$', '\1Local');
+      elsif use_new_lrts_format_on_output = 'F' and  upper(substr(l_interval_string, -5)) = 'LOCAL' then
+         l_interval_string := regexp_replace(l_interval_string, '^(.+)Local$', '~\1', 1, 1, 'i');
+      end if;
+      return l_interval_string;
    END get_ts_interval_string;
 
    FUNCTION get_interval (p_interval_id IN VARCHAR2)
@@ -11029,11 +11035,15 @@ end retrieve_existing_item_counts;
    IS
       l_interval NUMBER;
    BEGIN
-      SELECT interval
-        INTO l_interval
-        FROM cwms_interval
-       WHERE UPPER(interval_id) = UPPER(p_interval_id);
-
+      begin
+         SELECT interval
+           INTO l_interval
+           FROM cwms_interval
+          WHERE UPPER(interval_id) = UPPER(format_lrts_interval_input(p_interval_id));
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_INTERVAL_ID', p_interval_id);
+      end;
       RETURN l_interval;
    END get_interval;
 
