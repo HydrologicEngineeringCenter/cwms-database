@@ -45,14 +45,14 @@ create or replace package body &&cwms_schema..test_cwms_err as
         --------------------------------------------
         -- make sure p1 thru p9 get substituted --
         --------------------------------------------
-        cwms_err.raise(TS_ID_NOT_FOUND, 'thefirstarg', 'unlikelysecondparam');
+        cwms_err.raise('TS_ID_NOT_FOUND', 'thefirstarg', 'unlikelysecondparam');
     exception
         when TS_ID_NOT_FOUND then
-            ut.expect(instr(cwms_err.get_error_message, 'TS_ID_NOT_FOUND') != 0).to_be_true;
-            ut.expect(instr(cwms_err.get_error_message, 'thefirstarg') != 0).to_be_true;
-            ut.expect(instr(cwms_err.get_error_message, '%1') != 0).to_be_false;
-            ut.expect(instr(cwms_err.get_error_message, 'unlikelysecondparam') != 0).to_be_true;
-            ut.expect(instr(cwms_err.get_error_message, '%2') != 0).to_be_false;
+            ut.expect(instr(SQLERRM , 'TS_ID_NOT_FOUND') != 0).to_be_true;
+            ut.expect(instr(SQLERRM , 'thefirstarg') != 0).to_be_true;
+            ut.expect(instr(SQLERRM , '%1') != 0).to_be_false;
+            ut.expect(instr(SQLERRM , 'unlikelysecondparam') != 0).to_be_true;
+            ut.expect(instr(SQLERRM , '%2') != 0).to_be_false;
     end raise_ts_not_found_p1_p2;
 
 --------------------------------------------------------------------------------
@@ -67,13 +67,13 @@ create or replace package body &&cwms_schema..test_cwms_err as
         --------------------------------------------
         -- make sure p2 still gets substituted    --
         --------------------------------------------
-        cwms_err.raise(TS_ID_NOT_FOUND, null, 'unlikelysecondparam');
+        cwms_err.raise('TS_ID_NOT_FOUND', null, 'unlikelysecondparam');
     exception
         when TS_ID_NOT_FOUND then
-            ut.expect(instr(cwms_err.get_error_message, 'TS_ID_NOT_FOUND') != 0).to_be_true;
-            ut.expect(instr(cwms_err.get_error_message, '%1') != 0).to_be_true;
-            ut.expect(instr(cwms_err.get_error_message, 'unlikelysecondparam') != 0).to_be_true;
-            ut.expect(instr(cwms_err.get_error_message, '%2') != 0).to_be_false;
+            ut.expect(instr(SQLERRM , 'TS_ID_NOT_FOUND') != 0).to_be_true;
+            ut.expect(instr(SQLERRM , '%1') != 0).to_be_true;
+            ut.expect(instr(SQLERRM , 'unlikelysecondparam') != 0).to_be_true;
+            ut.expect(instr(SQLERRM , '%2') != 0).to_be_false;
 
     end raise_ts_not_found_null_p2;
 
