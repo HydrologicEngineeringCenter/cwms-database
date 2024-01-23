@@ -27,34 +27,55 @@ is
          l_code := -20999;
          l_errm := 'UNKNOWN_EXCEPTION: The requested exception not in the CWMS_ERROR table: "'||p_err||'"';
       end;
+      
+      -- The error message could contain %1 and %2 but p_1 is null. %2 should still be replaced with p_2.
+      -- Only look for %n if message contained %n-1
 
-      if p_1 is not null then 
-         l_errm := replace(l_errm,'%1',p_1);
-         if p_2 is not null then 
-            l_errm := replace(l_errm,'%2',p_2);
-            if p_3 is not null then 
-               l_errm := replace(l_errm,'%3',p_3);
-               if p_4 is not null then 
-                  l_errm := replace(l_errm,'%4',p_4);
-                  if p_5 is not null then 
-                     l_errm := replace(l_errm,'%5',p_5);
-                     if p_6 is not null then 
-                        l_errm := replace(l_errm,'%6',p_6);
-                        if p_7 is not null then 
-                           l_errm := replace(l_errm,'%7',p_7);
-                           if p_8 is not null then 
-                              l_errm := replace(l_errm,'%8',p_8);
-                              if p_9 is not null then 
-                                 l_errm := replace(l_errm,'%9',p_9);
-                              end if;
-                           end if;
-                        end if;
-                     end if;
-                  end if;
+      if instr(l_errm, '%1') != 0 then
+           if p_1 is not null then
+               l_errm := replace(l_errm, '%1', p_1);
+           end if;
+           if instr(l_errm, '%2') != 0 then
+               if p_2 is not null then
+                   l_errm := replace(l_errm, '%2', p_2);
                end if;
-            end if;
-         end if;
-      end if;
+               if instr(l_errm, '%3') != 0 then
+                   if p_3 is not null then
+                       l_errm := replace(l_errm, '%3', p_3);
+                   end if;
+                   if instr(l_errm, '%4') != 0 then
+                       if p_4 is not null then
+                           l_errm := replace(l_errm, '%4', p_4);
+                       end if;
+                       if instr(l_errm, '%5') != 0 then
+                           if p_5 is not null then
+                               l_errm := replace(l_errm, '%5', p_5);
+                           end if;
+                           if instr(l_errm, '%6') != 0 then
+                               if p_6 is not null then
+                                   l_errm := replace(l_errm, '%6', p_6);
+                               end if;
+                               if instr(l_errm, '%7') != 0 then
+                                   if p_7 is not null then
+                                       l_errm := replace(l_errm, '%7', p_7);
+                                   end if;
+                                   if instr(l_errm, '%8') != 0 then
+                                       if p_8 is not null then
+                                           l_errm := replace(l_errm, '%8', p_8);
+                                       end if;
+                                       if instr(l_errm, '%9') != 0 then
+                                           if p_9 is not null then
+                                               l_errm := replace(l_errm, '%9', p_9);
+                                           end if;
+                                       end if;
+                                   end if;
+                               end if;
+                           end if;
+                       end if;
+                   end if;
+               end if;
+           end if;
+       end if;
 
       raise_application_error(l_code, l_errm, TRUE);
 
