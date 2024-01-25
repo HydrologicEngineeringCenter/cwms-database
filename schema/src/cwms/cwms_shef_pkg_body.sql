@@ -11,10 +11,22 @@ AS
         FROM av_data_streams_current
        WHERE data_stream_code = p_data_stream_code;
 
-      OPEN p_shef_crit_lines FOR
-         SELECT a.shef_crit_line
-           FROM at_shef_decode_spec a
-          WHERE a.crit_file_code = l_crit_file_code;
+      if cwms_ts.use_new_lrts_format_on_output = 'T' then
+         open p_shef_crit_lines for
+            select case when b.interval_id like '~%' and b.interval_utc_offset != -2147483648 then
+                      regexp_replace(a.shef_crit_line, '\.~(\d+\w+)\.', '.\1Local.')
+                   else
+                      a.shef_crit_line
+                   end as shef_crit_line
+              from at_shef_decode_spec a,
+                   at_cwms_ts_id b
+             where b.ts_code = a.ts_code;
+      else
+         OPEN p_shef_crit_lines FOR
+            SELECT a.shef_crit_line
+              FROM at_shef_decode_spec a
+             WHERE a.crit_file_code = l_crit_file_code;
+      end if;
    END cat_shef_crit_lines;
 
    FUNCTION get_update_crit_file_flag (p_data_stream_id   IN VARCHAR2,
@@ -3870,7 +3882,7 @@ AS
             p_reported    => SYSTIMESTAMP AT TIME ZONE 'UTC',
             p_message     => l_message,
             p_msg_level   => cwms_msg.msg_level_normal,
-            p_publish     => TRUE,
+            p_publish     => FALSE,
             p_immediate   => FALSE); -- commit required to actually enqueue message
    END notify_data_stream_state;
 

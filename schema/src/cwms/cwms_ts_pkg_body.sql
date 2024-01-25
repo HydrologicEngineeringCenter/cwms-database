@@ -146,7 +146,7 @@ AS
             select cwms_ts_id
               into l_cwms_ts_id
               from at_cwms_ts_id
-             where upper(cwms_ts_id) = upper(p_cwms_ts_id)
+             where upper(cwms_ts_id) = upper(format_lrts_input(p_cwms_ts_id))
                and upper(db_office_id) = upper(p_office_id);
          exception
             when no_data_found then
@@ -1861,12 +1861,25 @@ AS
       ----------------------------------------------
       -- remove any aliases from location portion --
       ----------------------------------------------
-      l_parts := cwms_util.split_text(p_cwms_ts_id, '.', 1);
+      l_parts := cwms_util.split_text(p_cwms_ts_id, '.');
       l_parts(1) := cwms_loc.get_location_id(l_parts(1), p_office_id);
       if l_parts(1) is null then
          l_cwms_ts_id := p_cwms_ts_id;
       else
          l_cwms_ts_id := cwms_util.join_text(l_parts, '.');
+      end if;
+      if allow_new_lrts_format_on_input = 'T' then
+         if substr(upper(l_parts(4)), -5) = 'LOCAL' then
+            l_cwms_ts_id := format_lrts_input(l_cwms_ts_id, true);
+         end if;
+      elsif require_new_lrts_format_on_input = 'T' then
+         if substr(l_parts(4), 1, 1) = '~' then
+            if p_utc_offset != cwms_util.utc_offset_irregular then
+               new_lrts_id_required_error(l_cwms_ts_id);
+            end if;
+         elsif substr(upper(l_parts(4)), -5) = 'LOCAL' then
+            l_cwms_ts_id := format_lrts_input(l_cwms_ts_id, true);
+         end if;
       end if;
       --parse values from timeseries_desc using regular expressions
       parse_ts (format_lrts_input(l_cwms_ts_id),
@@ -2838,7 +2851,7 @@ AS
    begin
       return format_lrts_input(
          p_cwms_ts_id,
-         cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT') in (1,2,5,6));
+         nvl(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), 0) in (1,2,5,6));
    end format_lrts_input;
    --------------------------------------------------------------------------------
    -- function format_lrts_interval_output
@@ -2914,11 +2927,12 @@ AS
    -- function format_lrts_output
    --------------------------------------------------------------------------------
    function format_lrts_output(
-      p_ts_id in varchar2)
+      p_ts_id     in varchar2,
+      p_office_id in varchar2)
       return varchar2
    is
    begin
-      return format_lrts_output(p_ts_id, use_new_lrts_format_on_output = 'T');
+      return format_lrts_output(p_ts_id, use_new_lrts_format_on_output = 'T' and is_lrts(p_ts_id, p_office_id) = 'T');
    end format_lrts_output;
    --------------------------------------------------------------------------------
    -- procedure set_use_new_lrts_format_on_output
@@ -2930,16 +2944,16 @@ AS
    begin
       case upper(substr(p_use_new_format, 1, 1))
       when 'T' then
-         if bitand(l_current, use_new_lrts_ids_on_output) != use_new_lrts_ids_on_output then
+         if bitand(l_current, g_use_new_lrts_ids_on_output) != g_use_new_lrts_ids_on_output then
             cwms_util.set_session_info(
                'USE_NEW_LRTS_ID_FORMAT',
-               l_current + use_new_lrts_ids_on_output - bitand(l_current, use_new_lrts_ids_on_output)); -- bitor
+               l_current + g_use_new_lrts_ids_on_output - bitand(l_current, g_use_new_lrts_ids_on_output)); -- bitor
          end if;
       when 'F' then
-         if bitand(l_current, use_new_lrts_ids_on_output) = use_new_lrts_ids_on_output then
+         if bitand(l_current, g_use_new_lrts_ids_on_output) = g_use_new_lrts_ids_on_output then
             cwms_util.set_session_info(
                'USE_NEW_LRTS_ID_FORMAT',
-               bitand(l_current, not_use_new_lrts_ids_on_output));
+               bitand(l_current, g_not_use_new_lrts_ids_on_output));
          end if;
       else
          cwms_err.raise('INVALID_T_F_FLAG', p_use_new_format);
@@ -2953,8 +2967,8 @@ AS
       return varchar2
    is
    begin
-      return case bitand(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), use_new_lrts_ids_on_output)
-             when use_new_lrts_ids_on_output then 'T'
+      return case bitand(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), g_use_new_lrts_ids_on_output)
+             when g_use_new_lrts_ids_on_output then 'T'
              else 'F'
              end;
    end use_new_lrts_format_on_output;
@@ -2968,17 +2982,17 @@ AS
    begin
       case upper(substr(p_allow_new_format, 1, 1))
       when 'T' then
-         if bitand(l_current, allow_new_lrts_ids_on_input) != allow_new_lrts_ids_on_input then
-            if bitand(l_current, use_new_lrts_ids_on_output) = use_new_lrts_ids_on_output then
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', use_new_lrts_ids_on_output + allow_new_lrts_ids_on_input);
+         if bitand(l_current, g_allow_new_lrts_ids_on_input) != g_allow_new_lrts_ids_on_input then
+            if bitand(l_current, g_use_new_lrts_ids_on_output) = g_use_new_lrts_ids_on_output then
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_use_new_lrts_ids_on_output + g_allow_new_lrts_ids_on_input);
             else
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', allow_new_lrts_ids_on_input);
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_allow_new_lrts_ids_on_input);
             end if;
          end if;
       when 'F' then
-         if bitand(l_current, allow_new_lrts_ids_on_input) != allow_new_lrts_ids_on_input then
-            if bitand(l_current, use_new_lrts_ids_on_output) = use_new_lrts_ids_on_output then
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', use_new_lrts_ids_on_output);
+         if bitand(l_current, g_allow_new_lrts_ids_on_input) != g_allow_new_lrts_ids_on_input then
+            if bitand(l_current, g_use_new_lrts_ids_on_output) = g_use_new_lrts_ids_on_output then
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_use_new_lrts_ids_on_output);
             else
                cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', 0);
             end if;
@@ -2995,8 +3009,8 @@ AS
       return varchar2
    is
    begin
-      return case bitand(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), allow_new_lrts_ids_on_input)
-             when allow_new_lrts_ids_on_input then 'T'
+      return case bitand(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), g_allow_new_lrts_ids_on_input)
+             when g_allow_new_lrts_ids_on_input then 'T'
              else 'F'
              end;
    end allow_new_lrts_format_on_input;
@@ -3010,17 +3024,17 @@ AS
    begin
       case upper(substr(p_require_new_format, 1, 1))
       when 'T' then
-         if bitand(l_current, require_new_lrts_ids_on_input) != require_new_lrts_ids_on_input then
-            if bitand(l_current, use_new_lrts_ids_on_output) = use_new_lrts_ids_on_output then
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', use_new_lrts_ids_on_output + require_new_lrts_ids_on_input);
+         if bitand(l_current, g_require_new_lrts_ids_on_input) != g_require_new_lrts_ids_on_input then
+            if bitand(l_current, g_use_new_lrts_ids_on_output) = g_use_new_lrts_ids_on_output then
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_use_new_lrts_ids_on_output + g_require_new_lrts_ids_on_input);
             else
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', require_new_lrts_ids_on_input);
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_require_new_lrts_ids_on_input);
             end if;
          end if;
       when 'F' then
-         if bitand(l_current, require_new_lrts_ids_on_input) != require_new_lrts_ids_on_input then
-            if bitand(l_current, use_new_lrts_ids_on_output) = use_new_lrts_ids_on_output then
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', use_new_lrts_ids_on_output);
+         if bitand(l_current, g_require_new_lrts_ids_on_input) != g_require_new_lrts_ids_on_input then
+            if bitand(l_current, g_use_new_lrts_ids_on_output) = g_use_new_lrts_ids_on_output then
+               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_use_new_lrts_ids_on_output);
             else
                cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', 0);
             end if;
@@ -3037,8 +3051,8 @@ AS
       return varchar2
    is
    begin
-      return case bitand(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), require_new_lrts_ids_on_input)
-             when require_new_lrts_ids_on_input then 'T'
+      return case bitand(cwms_util.get_session_info_num('USE_NEW_LRTS_ID_FORMAT'), g_require_new_lrts_ids_on_input)
+             when g_require_new_lrts_ids_on_input then 'T'
              else 'F'
              end;
    end require_new_lrts_format_on_input;
@@ -3154,10 +3168,7 @@ AS
       --
       -- set the out parameters
       --
-      p_cwms_ts_id_out := case
-                          when is_lrts(l_cwms_ts_id, l_office_id) = 'F' then l_cwms_ts_id
-                          else format_lrts_output(l_cwms_ts_id)
-                          end;
+      p_cwms_ts_id_out := format_lrts_output(l_cwms_ts_id, use_new_lrts_format_on_output = 'T' and is_lrts(l_cwms_ts_id, l_office_id) = 'T');
       p_units_out      := l_units;
 
       --
@@ -5666,6 +5677,9 @@ AS
                  from cwms_interval
                 where interval_id = substr(cwms_util.split_text(format_lrts_input(p_cwms_ts_id), 4, '.'), 2);
                l_first_time := cast(p_timeseries_data(1).date_time at time zone l_loc_tz as date);
+               if not l_allow_sub_minute then
+                  l_first_time := trunc(l_first_time, 'MI');
+               end if;
                l_irr_offset := (l_first_time - get_time_on_before_interval(
                   p_datetime    => l_first_time,
                   p_ts_offset   => 0,
@@ -7449,8 +7463,8 @@ AS
          delete from at_tsv_binary where ts_code = l_ts_code;
          -- text
          delete from at_tsv_std_text where ts_code = l_ts_code;
-         delete from at_clob where clob_code in (select clob_code from at_tsv_text where ts_code = l_ts_code);
          delete from at_tsv_text where ts_code = l_ts_code;
+         delete from at_clob where clob_code in (select clob_code from at_tsv_text where ts_code = l_ts_code);
          -- profiles
          update at_ts_profile set reference_ts_code = null where reference_ts_code = l_ts_code;
          -- normal
@@ -8257,6 +8271,8 @@ AS
                         p_utc_offset_new   IN NUMBER DEFAULT NULL,
                         p_office_id        IN VARCHAR2 DEFAULT NULL)
    IS
+      l_cwms_ts_id_old            at_cwms_ts_id.cwms_ts_id%type;
+      l_cwms_ts_id_new            at_cwms_ts_id.cwms_ts_id%type;
       l_utc_offset_old            at_cwms_ts_spec.interval_utc_offset%TYPE;
       --
       l_location_code_old         at_cwms_ts_spec.location_code%TYPE;
@@ -8294,6 +8310,8 @@ AS
       DBMS_APPLICATION_INFO.set_module ('rename_ts_code',
                                         'get ts_code from materialized view');
 
+      l_cwms_ts_id_old := format_lrts_input(p_cwms_ts_id_old);
+      l_cwms_ts_id_new := format_lrts_input(p_cwms_ts_id_new);
       --
       --------------------------------------------------------
       -- Set office_id...
@@ -8314,7 +8332,7 @@ AS
       -- Confirm old cwms_ts_id exists...
       --------------------------------------------------------
       l_ts_code_old :=
-         get_ts_code (p_cwms_ts_id     => clean_ts_id(p_cwms_ts_id_old),
+         get_ts_code (p_cwms_ts_id     => clean_ts_id(l_cwms_ts_id_old),
                       p_db_office_id   => l_office_id);
 
       --
@@ -8335,7 +8353,7 @@ AS
       BEGIN
          --
          l_ts_code_new :=
-            get_ts_code (p_cwms_ts_id     => clean_ts_id(p_cwms_ts_id_new),
+            get_ts_code (p_cwms_ts_id     => clean_ts_id(l_cwms_ts_id_new),
                          p_db_office_id   => l_office_id);
       --
 
@@ -8357,7 +8375,7 @@ AS
       ------------------------------------------------------------------
       -- Parse cwms_id_new --
       ------------------------------------------------------------------
-      parse_ts (clean_ts_id(p_cwms_ts_id_new),
+      parse_ts (clean_ts_id(l_cwms_ts_id_new),
                 l_base_location_id_new,
                 l_sub_location_id_new,
                 l_base_parameter_id_new,
@@ -8569,6 +8587,11 @@ AS
        WHERE s.ts_code = l_ts_code_old;
 
       COMMIT;
+      
+      --------------------------
+      -- clear package caches --
+      --------------------------
+      clear_all_caches;
 
       --
       ---------------------------------
@@ -11052,8 +11075,9 @@ end retrieve_existing_item_counts;
       p_interval_minutes IN NUMBER)
       RETURN NUMBER
    IS
+      l_date_time_utc date := trunc(p_date_time_utc, 'MI');
    BEGIN
-      return round((p_date_time_utc - get_time_on_before_interval(p_date_time_utc, 0, p_interval_minutes)) * 1440);
+      return (l_date_time_utc - get_time_on_before_interval(p_date_time_utc, 0, p_interval_minutes)) * 1440;
    END get_utc_interval_offset;
 
    FUNCTION get_times_for_time_window (
@@ -11150,7 +11174,7 @@ end retrieve_existing_item_counts;
              interval_utc_offset
         into l_interval,
              l_offset
-        from cwms_v_ts_id
+        from at_cwms_ts_id
        where ts_code = p_ts_code;
 
       if l_interval = 0 then

@@ -25,28 +25,28 @@ AS
     * New LRTS IDs on input will be invalid and no new LRTS IDs will be output.
     * Input flag to store time series as LRTS is required in routintes that create time series.
     */
-   use_old_lrts_ids_always       constant integer := 0;
+   g_use_old_lrts_ids_always       constant integer := 0;
    /**
     * Constant specifing to allow use of the new LRTS ID format on input in routines.
     * Old and new LRTS IDs can both be used on input.
     * Input flag to store time series as LRTS is required only for old LRTS IDs in routintes that create time series.
-    * May be ORed with use_new_lrts_ids_on_output.
+    * May be ORed with g_use_new_lrts_ids_on_output.
     */
-   allow_new_lrts_ids_on_input   constant integer := 1;
+   g_allow_new_lrts_ids_on_input   constant integer := 1;
    /**
     * Constant specifing to require use of the new LRTS ID format on input in routines.
     * Old LRTS IDs will be interpreted strictly as PRTS.
     * Input flag to store time series as LRTS is ignored in routintes that create time series.
-    * May be ORed with use_new_lrts_ids_on_output.
+    * May be ORed with g_use_new_lrts_ids_on_output.
     */
-   require_new_lrts_ids_on_input constant integer := 2;
+   g_require_new_lrts_ids_on_input constant integer := 2;
    /**
     * Constant specifing to use the new LRTS ID format on output in routines and views.
     * LRTS IDs output from routines and views will be in new LRTS format.
-    * May be ORed with allow_new_lrts_ids_on_input or require_new_lrts_ids_on_input.
+    * May be ORed with g_allow_new_lrts_ids_on_input or g_require_new_lrts_ids_on_input.
     */
-   use_new_lrts_ids_on_output     constant integer := 4;
-   not_use_new_lrts_ids_on_output constant integer := 3; -- bit mask to turn off
+   g_use_new_lrts_ids_on_output     constant integer := 4;
+   g_not_use_new_lrts_ids_on_output constant integer := 3; -- bit mask to turn off
    /**
     * Clears all session-level caches associated with this package
     */
@@ -1118,11 +1118,13 @@ AS
    /**
     * Returns an LRTS ID formatted in either the old (~1Day) or new (1DayLocal) format based on session setting
     *
-    * @param p_tsid           The LRTS ID to format
+    * @param p_tsid      The time series ID to format. If the time series is not an LRTS the ID is return unchanged.
+    * @param p_office_id The office that owns the time series ID to format.
     * @return The formatted LRTS ID
     */
    function format_lrts_output(
-      p_ts_id in varchar2)
+      p_ts_id     in varchar2,
+      p_office_id in varchar2)
       return varchar2;
    /**
     * Sets a session setting specifying whether to use the new LRTS ID format in output from routines and views.

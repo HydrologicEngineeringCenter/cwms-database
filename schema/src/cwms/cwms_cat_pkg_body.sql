@@ -3968,7 +3968,7 @@ IS
       for rec in (select distinct * from av_loc_lvl_ts_map) loop
          cwms_level.get_level_indicator_values(
             p_cursor               => l_cursor,
-            p_tsid                 => rec.cwms_ts_id,
+            p_tsid                 => cwms_ts.format_lrts_input(rec.cwms_ts_id),
             p_specified_level_mask => cwms_util.split_text(rec.location_level_id, 5, '.'),
             p_indicator_id_mask    => rec.level_indicator_id,
             p_office_id            => rec.office_id);

@@ -317,7 +317,7 @@ begin
    -------------------------------------------------------------------
    l_office_id   := p_ts_profile.location.get_office_id;
    l_office_code := p_ts_profile.location.get_office_code;
-   l_key_parameter_code := cwms_util.get_parameter_code(p_ts_profile.key_parameter_id);
+   l_key_parameter_code := cwms_util.get_parameter_code(p_ts_profile.key_parameter_id, l_office_id);
    begin
       l_location_code := p_ts_profile.location.get_location_code;
    exception
@@ -819,7 +819,7 @@ begin
              left outer join
              (select ts_code,
                      cwms_ts_id
-                from at_cwms_ts_id
+                from av_cwms_ts_id
              ) q2 on q2.ts_code = q1.reference_ts_code
        where q1.location_id like cwms_util.normalize_wildcards(p_location_id_mask) escape '\'
          and q1.key_parameter_id like cwms_util.normalize_wildcards(p_key_parameter_id_mask) escape '\';

@@ -666,10 +666,22 @@ as
             THEN
                l_db_office_id := user_office_id;
             ELSE
-               SELECT office_id
-                 INTO l_db_office_id
-                 FROM cwms_office
-                WHERE (office_id) = UPPER (p_db_office_id);
+               begin
+                  l_db_office_code := p_db_office_id;
+               exception
+                  when others then null;
+               end;
+               if l_db_office_code is null then
+                  select office_id
+                    into l_db_office_id
+                    from cwms_office
+                   where office_id = upper(p_db_office_id);
+               else
+                  select office_id
+                    into l_db_office_id
+                    from cwms_office
+                   where office_code = l_db_office_code;
+               end if;
             END IF;
 
          EXCEPTION

@@ -2705,6 +2705,7 @@ AS
       l_location_ids         str_tab_t;
       l_location_id           varchar2(57);
       l_location_id_cache_val varchar2(256);
+      l_clob_codes            number_tab_t;
    --
    BEGIN
       -------------------
@@ -3077,6 +3078,28 @@ AS
          ---------------
          -- forecasts --
          ---------------
+         select clob_code
+           bulk collect
+           into l_clob_codes
+           from at_clob
+          where clob_code in
+               (select clob_code
+                 from at_forecast_text
+                where forecast_spec_code in
+                (select forecast_spec_code
+                   from at_forecast_spec
+                  where target_location_code in (select * from table (l_location_codes))
+                     or source_location_code in (select * from table (l_location_codes)))
+               );
+         delete
+           from at_forecast_text
+          where forecast_spec_code in
+                (select forecast_spec_code
+                   from at_forecast_spec
+                  where target_location_code in (select * from table (l_location_codes))
+                     or source_location_code in (select * from table (l_location_codes))
+                );
+         delete from at_clob where clob_code in (select * from table (l_clob_codes));
          delete
            from at_forecast_spec
           where target_location_code in (select * from table (l_location_codes))

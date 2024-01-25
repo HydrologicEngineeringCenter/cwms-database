@@ -4035,52 +4035,76 @@ end test_cwdb_153;
 --------------------------------------------------------------------------------
 procedure test_lrts_id_output_formatting
 is
-   l_location_id      cwms_v_loc.location_id%type := c_location_ids(1);
-   l_lrts_ts_id_old   cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.~1Day.0.Lrts';
-   l_lrts_ts_id_new   cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.1DayLocal.0.Lrts';
-   l_prts_ts_id       cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.~1Day.0.Prts';
-   l_ts_data          cwms_t_ztsv_array;
-   l_count            binary_integer := 10;
-   l_crsr             sys_refcursor;
-   l_ts_id_out        cwms_v_ts_id.cwms_ts_id%type;
-   l_unit_out         cwms_v_ts_id.unit_id%type;
-   l_time_zone_out    cwms_v_ts_id.time_zone_id%type;
-   l_retrieve_time    date;
-   l_ts_request       cwms_t_timeseries_req_array;
-   l_seq              binary_integer;
-   l_start_time       date;
-   l_end_time         date;
-   l_data_time_zone   cwms_v_ts_id.time_zone_id%type;
-   l_data_crsr        sys_refcursor;
-   l_office_id_out    cwms_v_ts_id.db_office_id%type;
-   l_base_location    cwms_v_ts_id.base_location_id%type;
-   l_intvl_offset     binary_integer;
-   l_active_flag      varchar2(1);
-   l_user_privs       number;
-   l_cat_office_id    cwms_v_ts_id.db_office_id%type;
-   l_category_id      cwms_v_ts_cat_grp.ts_category_id%type;
-   l_ts_category_desc cwms_v_ts_cat_grp.ts_category_desc%type;
-   l_grp_office_id    cwms_v_ts_id.db_office_id%type;
-   l_group_id         cwms_v_ts_cat_grp.ts_group_id%type;
-   l_group_desc       cwms_v_ts_cat_grp.ts_group_desc%type;
-   l_alias_id         cwms_v_ts_grp_assgn.alias_id%type;
-   l_ref_ts_id        cwms_v_ts_grp_assgn.ref_ts_id%type;
-   l_shared_alias_id  cwms_v_ts_cat_grp.shared_ts_alias_id%type;
-   l_shared_ref_ts_id cwms_v_ts_cat_grp.shared_ref_ts_id%type;
-   l_attribute        cwms_v_ts_grp_assgn.attribute%type;
-   l_code             integer;
-   l_xchg_set_code    integer;
-   l_dss_pathname     varchar2(391);
-   l_dss_param_type   varchar2(8);
-   l_dss_tz_usage     varchar2(8);
+   location_id_not_found exception;
+   pragma exception_init(location_id_not_found, -20025);
+   l_now               date := trunc(sysdate, 'MI');
+   l_location_id       cwms_v_loc.location_id%type := c_location_ids(1);
+   l_lrts_ts_id_old    cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Elev-Lrts.Inst.~1Day.0.Test';
+   l_lrts_ts_id_new    cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Elev-Lrts.Inst.1DayLocal.0.Test';
+   l_prts_ts_id        cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Elev-Prts.Inst.~1Day.0.Test';
+   l_ts_data           cwms_t_ztsv_array;
+   l_count             binary_integer := 10;
+   l_rec_count         binary_integer;
+   l_crsr              sys_refcursor;
+   l_ts_id_out         cwms_v_ts_id.cwms_ts_id%type;
+   l_unit_out          cwms_v_ts_id.unit_id%type;
+   l_time_zone_out     cwms_v_ts_id.time_zone_id%type;
+   l_retrieve_time     date;
+   l_ts_request        cwms_t_timeseries_req_array;
+   l_seq               binary_integer;
+   l_start_time        date;
+   l_end_time          date;
+   l_data_time_zone    cwms_v_ts_id.time_zone_id%type;
+   l_data_crsr         sys_refcursor;
+   l_office_id_out     cwms_v_ts_id.db_office_id%type;
+   l_base_location     cwms_v_ts_id.base_location_id%type;
+   l_intvl_offset      binary_integer;
+   l_active_flag       varchar2(1);
+   l_user_privs        number;
+   l_cat_office_id     cwms_v_ts_id.db_office_id%type;
+   l_category_id       cwms_v_ts_cat_grp.ts_category_id%type;
+   l_ts_category_desc  cwms_v_ts_cat_grp.ts_category_desc%type;
+   l_grp_office_id     cwms_v_ts_id.db_office_id%type;
+   l_group_id          cwms_v_ts_cat_grp.ts_group_id%type;
+   l_group_desc        cwms_v_ts_cat_grp.ts_group_desc%type;
+   l_alias_id          cwms_v_ts_grp_assgn.alias_id%type;
+   l_ref_ts_id         cwms_v_ts_grp_assgn.ref_ts_id%type;
+   l_shared_alias_id   cwms_v_ts_cat_grp.shared_ts_alias_id%type;
+   l_shared_ref_ts_id  cwms_v_ts_cat_grp.shared_ref_ts_id%type;
+   l_attribute         cwms_v_ts_grp_assgn.attribute%type;
+   l_code              integer;
+   l_xchg_set_code     integer;
+   l_dss_pathname      varchar2(391);
+   l_dss_param_type    varchar2(8);
+   l_dss_tz_usage      varchar2(8);
+   l_ts_profile_data   varchar2(4000);
+   l_forecast_date     date;
+   l_issue_date        date;
+   l_version_date      date;
+   l_min_date          date;
+   l_max_date          date;
+   l_shef_decode_specs cwms_shef.cat_shef_decode_spec_tab_t;
+   l_location_id_out   cwms_v_loc.location_id%type;
+   l_key_parameter_id  cwms_v_ts_profile.key_parameter_id%type;
+   l_description       cwms_v_ts_profile.description%type;
+   l_data_dissem_recs  cwms_data_dissem.cat_ts_transfer_tab_t;
 begin
-   ------------------------
-   -- create the ts data --
-   ------------------------
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   cwms_ts.set_require_new_lrts_format_on_input('F');
+   cwms_ts.set_allow_new_lrts_format_on_input('F');
+   cwms_data_dissem.set_ts_filtering('F', 'F', c_office_id);
+   ---------------------------------------
+   -- create the ts and ts_profile data --
+   --------------------------------------
    l_ts_data := cwms_t_ztsv_array();
    l_ts_data.extend(l_count);
    for i in 1..l_count loop
-      l_ts_data(i) := cwms_t_ztsv(date '2023-01-01' + (i-1), i, 0);
+      l_ts_data(i) := cwms_t_ztsv(l_now-l_count+i, i, 0);
+      l_ts_profile_data := l_ts_profile_data
+         ||to_char(l_ts_data(i).date_time, 'yyyy-mm-dd hh24:mi:ss') -- field 1 (Date_Time)
+         ||chr(9)||to_number(l_ts_data(i).value)                    -- field 2 (Depth)
+         ||chr(9)||to_number(l_ts_data(i).value)                    -- field 3 (Temp)
+         ||chr(10);
    end loop;
    l_start_time := l_ts_data(1).date_time;
    l_end_time   := l_ts_data(l_count).date_time;
@@ -4088,11 +4112,12 @@ begin
    -- delete the location and all ts if it exists --
    -------------------------------------------------
    begin
-      cwms_loc.delete_location('TestLoc1', cwms_util.delete_all, c_office_id);
+      cwms_loc.delete_location(l_location_id, cwms_util.delete_all, c_office_id);
+      commit;
    exception
-      when others then null;
+      when location_id_not_found then null;
    end;
-   ------------------------
+   ----------------------
    -- store the location --
    ------------------------
    cwms_loc.store_location(
@@ -4102,23 +4127,110 @@ begin
    --------------------
    -- store the LRTS --
    --------------------
+   -- Values
    cwms_ts.zstore_ts(
       p_cwms_ts_id      => l_lrts_ts_id_old,
-      p_units           => c_ts_unit,
+      p_units           => 'ft',
       p_timeseries_data => l_ts_data,
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'T');
+   -- Standard Text
+   cwms_text.store_ts_std_text(
+      p_tsid        => l_lrts_ts_id_old,
+      p_std_text_id => 'A',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_attribute   => 1,
+      p_office_id   => c_office_id);
+   -- Non-standard Text
+   cwms_text.store_ts_text(
+      p_tsid        => l_lrts_ts_id_old,
+      p_text        => 'Some text',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
    --------------------
    -- store the PRTS --
    --------------------
    cwms_ts.zstore_ts(
       p_cwms_ts_id      => l_prts_ts_id,
-      p_units           => c_ts_unit,
+      p_units           => 'ft',
       p_timeseries_data => l_ts_data,
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'F');
+   -- Standard Text
+   cwms_text.store_ts_std_text(
+      p_tsid        => l_prts_ts_id,
+      p_std_text_id => 'A',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   -- Non-standard Text
+   cwms_text.store_ts_text(
+      p_tsid        => l_prts_ts_id,
+      p_text        => 'Some text',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   commit;
+   --------------------------------------------------------
+   -- create location levels, indicators, and conditions --
+   --------------------------------------------------------
+   cwms_level.store_specified_level('Lrts', 'Dummy level', 'F', c_office_id);
+   cwms_level.store_location_level3(
+      p_location_level_id => l_location_id||'.Elev-Lrts.Inst.0.Test',
+      p_level_value       => null,
+      p_level_units       => 'ft',
+      p_tsid              => l_lrts_ts_id_old,
+      p_office_id         => c_office_id);
+   commit;
+   cwms_level.store_loc_lvl_indicator(
+      p_loc_lvl_indicator_id => l_location_id||'.Elev-Lrts.Inst.0.Test.VALUE',
+      p_minimum_duration     => to_dsinterval('000 00:00:01'),
+      p_maximum_age          => to_dsinterval('001 00:00:00'),
+      p_office_id            => c_office_id);
+   commit;
+   for i in 1..5 loop
+      cwms_level.store_loc_lvl_indicator_cond(
+         p_loc_lvl_indicator_id  => l_location_id||'.Elev-Lrts.Inst.0.Test.VALUE',
+         p_level_indicator_value => i,
+         p_expression            => 'V',
+         p_comparison_operator_1 => 'LT',
+         p_comparison_value_1    => 2*i,
+         p_comparison_unit_id    => 'ft',
+         p_office_id             => c_office_id);
+   end loop;
+   commit;
+   cwms_level.store_specified_level('Prts', 'Dummy level', 'F', c_office_id);
+   cwms_level.store_location_level3(
+      p_location_level_id => l_location_id||'.Elev-Prts.Inst.0.Test',
+      p_level_value       => null,
+      p_level_units       => 'ft',
+      p_tsid              => l_prts_ts_id,
+      p_office_id         => c_office_id);
+   commit;
+   cwms_level.store_loc_lvl_indicator(
+      p_loc_lvl_indicator_id => l_location_id||'.Elev-Prts.Inst.0.Test.VALUE',
+      p_minimum_duration     => to_dsinterval('000 00:00:01'),
+      p_maximum_age          => to_dsinterval('001 00:00:00'),
+      p_office_id            => c_office_id);
+   commit;
+   for i in 1..5 loop
+      cwms_level.store_loc_lvl_indicator_cond(
+         p_loc_lvl_indicator_id  => l_location_id||'.Elev-Prts.Inst.0.Test.VALUE',
+         p_level_indicator_value => i,
+         p_expression            => 'V',
+         p_comparison_operator_1 => 'LT',
+         p_comparison_value_1    => 2*i,
+         p_comparison_unit_id    => 'ft',
+         p_office_id             => c_office_id);
+   end loop;
+   commit;
    ---------------------------------------------
    -- create ts groups and assign time series --
    ---------------------------------------------
@@ -4139,15 +4251,15 @@ begin
       p_ts_category_id => 'TestCategory1',
       p_ts_group_id    => 'TestGroup1',
       p_ts_alias_array => cwms_t_ts_alias_tab(
-                             cwms_t_ts_alias(l_lrts_ts_id_old, 1, 'TestGroup1_TimeSeries1', null),
-                             cwms_t_ts_alias(l_prts_ts_id, 2, 'TestGroup1_TimeSeries2', null)),
+                             cwms_t_ts_alias(l_lrts_ts_id_old, 1, 'TestGroup1_TimeSeries1', l_lrts_ts_id_old),
+                             cwms_t_ts_alias(l_prts_ts_id, 2, 'TestGroup1_TimeSeries2', l_prts_ts_id)),
       p_db_office_id   => c_office_id);
    cwms_ts.assign_ts_groups(
       p_ts_category_id => 'TestCategory1',
       p_ts_group_id    => 'TestGroup2',
       p_ts_alias_array => cwms_t_ts_alias_tab(
-                             cwms_t_ts_alias(l_lrts_ts_id_old, 1, 'TestGroup2_TimeSeries1', null),
-                             cwms_t_ts_alias(l_prts_ts_id, 2, 'TestGroup2_TimeSeries2', null)),
+                             cwms_t_ts_alias(l_lrts_ts_id_old, 1, 'TestGroup2_TimeSeries1', l_lrts_ts_id_old),
+                             cwms_t_ts_alias(l_prts_ts_id, 2, 'TestGroup2_TimeSeries2', l_prts_ts_id)),
       p_db_office_id   => c_office_id);
    ------------------------------
    -- create data exchange set --
@@ -4189,48 +4301,255 @@ begin
       p_parameter_type    => 'INST-VAL',
       p_units             => 'n/a',
       p_fail_if_exists    => 'F');
+   -----------------------
+   -- create a forecast --
+   -----------------------
+   cwms_forecast.store_spec(
+      p_location_id    => l_location_id,
+      p_forecast_id    => 'TEST',
+      p_fail_if_exists => 'F',
+      p_ignore_nulls   => 'F',
+      p_source_agency  => 'USACE',
+      p_source_office  => c_office_id,
+      p_valid_lifetime => 24,
+      p_office_id      => c_office_id);
+   dbms_output.put_line(l_ts_data(1).date_time);
+   dbms_output.put_line(cwms_ts.get_utc_interval_offset(l_ts_data(1).date_time, 1440));
+   cwms_ts.create_ts(
+      p_cwms_ts_id  => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
+      p_utc_offset  => cwms_ts.get_utc_interval_offset(l_ts_data(1).date_time, 1440),
+      p_active_flag => 'T',
+      p_office_id   => c_office_id);
+   cwms_forecast.store_forecast(
+      p_location_id     => l_location_id,
+      p_forecast_id     => 'TEST',
+      p_forecast_time   => sysdate-1/2,
+      p_issue_time      => sysdate-1/2,
+      p_time_zone       => null,
+      p_fail_if_exists  => 'F',
+      p_text            => 'This is a test',
+      p_time_series     => cwms_t_ztimeseries_array(
+                              cwms_t_ztimeseries(replace(l_lrts_ts_id_old, '.Test', '.Forecast'), 'ft', l_ts_data),
+                              cwms_t_ztimeseries(replace(l_prts_ts_id, '.Test', '.Forecast'), 'ft', l_ts_data)),
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id);
+   commit;
+   ------------------------
+   -- create ts profiles --
+   ------------------------
+   l_code := cwms_util.create_parameter_code('Depth-Lrts', 'F', c_office_id);
+   l_code := cwms_util.create_parameter_code('Temp-Lrts', 'F', c_office_id);
+   l_code := cwms_util.create_parameter_code('Depth-Prts', 'F', c_office_id);
+   l_code := cwms_util.create_parameter_code('Temp-Prts', 'F', c_office_id);
+   dbms_output.put_line(l_ts_profile_data);
+   cwms_ts_profile.store_ts_profile(
+      p_location_id      => l_location_id,
+      p_key_parameter_id => 'Depth-Lrts',
+      p_profile_params   => 'Depth-Lrts,Temp-Lrts',
+      p_description      => 'LRTS Profile',
+      p_ref_ts_id        => l_lrts_ts_id_old,
+      p_fail_if_exists   => 'F',
+      p_office_id        => c_office_id);
+   cwms_ts_profile.store_ts_profile_parser(
+      p_location_id      => l_location_id,
+      p_key_parameter_id => 'Depth-Lrts',
+      p_record_delimiter => chr(10),
+      p_field_delimiter  => chr(9),
+      p_time_field       => 1,
+      p_time_start_col   => null,
+      p_time_end_col     => null,
+      p_time_format      => 'yyyy-mm-dd hh24:mi:ss',
+      p_time_zone        => 'UTC',
+      p_parameter_info   => 'Depth-Lrts,ft,2'||chr(10)||'Temp-Lrts,F,3',
+      p_fail_if_exists   => 'F',
+      p_office_id        => c_office_id);
+   cwms_ts_profile.store_ts_profile_instance(
+      p_location_id      => l_location_id,
+      p_key_parameter_id => 'Depth-Lrts',
+      p_profile_data     => l_ts_profile_data,
+      p_version_id       => 'Profile',
+      p_store_rule       => cwms_util.replace_all,
+      p_version_date     => cwms_util.non_versioned,
+      p_office_id        => c_office_id);
+
+   cwms_ts_profile.store_ts_profile(
+      p_location_id      => l_location_id,
+      p_key_parameter_id => 'Depth-Prts',
+      p_profile_params   => 'Depth-Prts,Temp-Prts',
+      p_description      => 'LRTS Profile',
+      p_ref_ts_id        => l_prts_ts_id,
+      p_fail_if_exists   => 'F',
+      p_office_id        => c_office_id);
+   cwms_ts_profile.store_ts_profile_parser(
+      p_location_id      => l_location_id,
+      p_key_parameter_id => 'Depth-Prts',
+      p_record_delimiter => chr(10),
+      p_field_delimiter  => chr(9),
+      p_time_field       => 1,
+      p_time_start_col   => null,
+      p_time_end_col     => null,
+      p_time_format      => 'yyyy-mm-dd hh24:mi:ss',
+      p_time_zone        => 'UTC',
+      p_parameter_info   => 'Depth-Prts,ft,2'||chr(10)||'Temp-Prts,F,3',
+      p_fail_if_exists   => 'F',
+      p_office_id        => c_office_id);
+   cwms_ts_profile.store_ts_profile_instance(
+      p_location_id      => l_location_id,
+      p_key_parameter_id => 'Depth-Prts',
+      p_profile_data     => l_ts_profile_data,
+      p_version_id       => 'Profile',
+      p_store_rule       => cwms_util.replace_all,
+      p_version_date     => cwms_util.non_versioned,
+      p_office_id        => c_office_id);
+   --------------------------------
+   -- create some screening info --
+   --------------------------------
+   cwms_vt.create_screening_id (
+      p_screening_id        => 'Elev Range 1',
+      p_screening_id_desc   => 'Test Screening',
+      p_parameter_id        => 'Elev',
+      p_db_office_id        => c_office_id);
+   cwms_vt.assign_screening_id (
+      p_screening_id        => 'Elev Range 1',
+      p_scr_assign_array    => cwms_t_screen_assign_array(
+                                  cwms_t_screen_assign(l_lrts_ts_id_old, 'T', replace(l_lrts_ts_id_old, '.Test', '.Rev')),
+                                  cwms_t_screen_assign(l_prts_ts_id, 'T', replace(l_prts_ts_id, '.Test', '.Rev'))),
+      p_db_office_id        => c_office_id);
+   commit;
+   ----------------------------------
+   -- create some data stream info --
+   ----------------------------------
+   cwms_shef.store_data_stream (
+      p_data_stream_id  => 'Test_Data_Stream',
+      p_db_office_id    => c_office_id);
+   cwms_shef.store_shef_spec (
+      p_cwms_ts_id          => l_lrts_ts_id_old,
+      p_data_stream_id      => 'Test_Data_Stream',
+      p_shef_loc_id         => 'SHEFO2',
+      p_shef_pe_code        => 'HP',
+      p_shef_tse_code       => 'RGZ',
+      p_shef_duration_code  => 'I',
+      p_shef_unit_id        => 'ft',
+      p_time_zone_id        => 'UTC',
+      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
+                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
+                                  1440),
+      p_db_office_id        => c_office_id);
+   cwms_shef.store_shef_spec (
+      p_cwms_ts_id          => l_prts_ts_id,
+      p_data_stream_id      => 'Test_Data_Stream',
+      p_shef_loc_id         => 'SHEFO2',
+      p_shef_pe_code        => 'HH',
+      p_shef_tse_code       => 'RGZ',
+      p_shef_duration_code  => 'I',
+      p_shef_unit_id        => 'ft',
+      p_time_zone_id        => 'UTC',
+      p_interval_utc_offset => cwms_util.utc_offset_irregular,
+      p_db_office_id        => c_office_id);
+   commit;
+   ------------------
+   -- create a URL --
+   ------------------
+   cwms_loc.store_url(
+      p_location_id    => l_location_id,
+      p_url_id         => l_location_id||'_url',
+      p_url_address    => 'https://dummy.com/this_is_a_url',
+      p_fail_if_exists => 'F',
+      p_ignore_nulls   => 'T',
+      p_url_title      => 'URL for '||l_location_id,
+      p_office_id      => c_office_id);
    for i in 1..2 loop
       ------------------------------------
       -- verify expected tsids in views --
       ------------------------------------
       dbms_output.put_line(chr(10)||'==> Setting session to use '||case when i = 1 then 'OLD' else 'NEW' end||' LRTS ID format');
       cwms_ts.set_use_new_lrts_format_on_output(substr('FT', i, 1));
-      ut.expect(cwms_ts.use_new_lrts_format_on_output).to_equal(substr('FT', i, 1));
+      for rec in (select * from cwms_v_ts_id where cwms_ts_id like '%Elev-Prts.%.Test') loop
+         dbms_output.put_line(rec.cwms_ts_id||chr(9)||rec.interval_utc_offset);
+      end loop;
+      if cwms_ts.format_lrts_output(l_prts_ts_id, c_office_id) != l_prts_ts_id then
+         cwms_err.raise('ERROR', 'Formatting '||l_prts_ts_id||'. Expected '||l_prts_ts_id||' but got '||cwms_ts.format_lrts_output(l_prts_ts_id, c_office_id));
+      end if;
       if i = 1 then
-         ut.expect(cwms_ts.format_lrts_output(l_lrts_ts_id_old)).to_equal(l_lrts_ts_id_old);
+         if cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id) != l_lrts_ts_id_old then
+            cwms_err.raise('ERROR', 'Formatting '||l_lrts_ts_id_old||'. Expected '||l_lrts_ts_id_old||' but got '||cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         end if;
       else
-         ut.expect(cwms_ts.format_lrts_output(l_lrts_ts_id_old)).to_equal(l_lrts_ts_id_new);
+         if cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id) != l_lrts_ts_id_new then
+            cwms_err.raise('ERROR', 'Formatting '||l_lrts_ts_id_old||'. Expected '||l_lrts_ts_id_new||' but got '||cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         end if;
       end if;
 
+      dbms_output.put_line('==> Testing CWMS_V_TS_EXTENTS_UTC');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_ts_extents_utc where location_id = l_location_id) loop
+         l_rec_count := l_rec_count + 1;
+         if rec.ts_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.ts_id like '%.Elev-Prts.%.Text' then
+            ut.expect(rec.ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_TS_EXTENTS_LOCAL');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_ts_extents_local where location_id = l_location_id) loop
+         l_rec_count := l_rec_count + 1;
+         if rec.ts_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.ts_id like '%.Elev-Prts.%.Test' then
+            ut.expect(rec.ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_ACTIVE_FLAG');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_active_flag where cwms_ts_id like l_location_id||'.%') loop
+         l_rec_count := l_rec_count + 1;
+         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
       dbms_output.put_line('==> Testing CWMS_V_TS_ID');
-      for rec in (select cwms_ts_id, interval_id, version_id from cwms_v_ts_id where location_id = l_location_id) loop
-         if rec.version_id = 'Lrts' then
-            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old));
+      l_rec_count := 0;
+      for rec in (select cwms_ts_id, interval_id from cwms_v_ts_id where location_id = l_location_id) loop
+         l_rec_count := l_rec_count + 1;
+         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
             ut.expect(rec.interval_id).to_equal(cwms_ts.format_lrts_interval_output('~1Day'));
-         else
+         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
             ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
             ut.expect(rec.interval_id).to_equal('~1Day');
          end if;
       end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
 
       dbms_output.put_line('==> Testing CWMS_V_TS_ID2');
+      l_rec_count := 0;
       for rec in (select cwms_ts_id, interval_id, version_id from cwms_v_ts_id2 where location_id = l_location_id and aliased_item is null) loop
-         if rec.version_id = 'Lrts' then
-            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old));
+         l_rec_count := l_rec_count + 1;
+         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
             ut.expect(rec.interval_id).to_equal(cwms_ts.format_lrts_interval_output('~1Day'));
-         else
+         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
             ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
             ut.expect(rec.interval_id).to_equal('~1Day');
          end if;
       end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
 
       dbms_output.put_line('==> Testing CWMS_V_TSV_DQU');
       select distinct cwms_ts_id
         into l_ts_id_out
         from cwms_v_tsv_dqu
-       where substr(cwms_ts_id, 1, instr(cwms_ts_id, '.')-1) = l_location_id
-         and substr(cwms_ts_id, instr(cwms_ts_id, '.', -1)+1) = 'Lrts'
-         and unit_id = c_ts_unit
+       where cwms_ts_id like l_location_id||'.Elev-Lrts.%.Test'
+         and unit_id = 'ft'
          and aliased_item is null;
       if i = 1 then
          ut.expect(l_ts_id_out).to_equal(l_lrts_ts_id_old);
@@ -4238,28 +4557,216 @@ begin
          ut.expect(l_ts_id_out).to_equal(l_lrts_ts_id_new);
       end if;
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_CAT_GRP');
-      for rec in (select * from cwms_v_ts_cat_grp where cat_db_office_id = c_office_id and ts_category_id = 'TestCategory1') loop
-         if rec.ts_group_id = 'TestGroup1' then
-            ut.expect(rec.shared_ref_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old));
+      dbms_output.put_line('==> Testing CWMS_V_TSV_DQU_24H');
+      select distinct cwms_ts_id
+        into l_ts_id_out
+        from cwms_v_tsv_dqu_24h
+       where cwms_ts_id like l_location_id||'.Elev-Lrts.%.Test'
+         and unit_id = 'ft'
+         and aliased_item is null;
+      if i = 1 then
+         ut.expect(l_ts_id_out).to_equal(l_lrts_ts_id_old);
+      else
+         ut.expect(l_ts_id_out).to_equal(l_lrts_ts_id_new);
+      end if;
+
+      dbms_output.put_line('==> Testing CWMS_V_TSV_DQU_30D');
+      select distinct cwms_ts_id
+        into l_ts_id_out
+        from cwms_v_tsv_dqu_30d
+       where cwms_ts_id like l_location_id||'.Elev-Lrts.%.Test'
+         and unit_id = 'ft'
+         and aliased_item is null;
+      if i = 1 then
+         ut.expect(l_ts_id_out).to_equal(l_lrts_ts_id_old);
+      else
+         ut.expect(l_ts_id_out).to_equal(l_lrts_ts_id_new);
+      end if;
+
+      dbms_output.put_line('==> Testing CWMS_V_TS_TEXT');
+      l_rec_count := 0;
+      for rec in (select distinct
+                         cwms_ts_id,
+                         attribute,
+                         to_char(text_value) as text
+                    from cwms_v_ts_text
+                   where location_id = l_location_id
+                     and aliased_item is null
+                   order by attribute
+                 )
+      loop
+         l_rec_count := l_rec_count + 1;
+         if rec.attribute < 3 then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
          else
-            ut.expect(rec.shared_ref_ts_id).to_equal(l_prts_ts_id);
+            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
          end if;
       end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_GRP_ASSGN');
-      for rec in (select * from cwms_v_ts_grp_assgn where db_office_id = c_office_id and category_id = 'TestCategory1') loop
-         if rec.attribute = 1 then
-            ut.expect(rec.ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old));
+      dbms_output.put_line('==> Testing CWMS_V_LOCATION_LEVEL');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_location_level where location_id = l_location_id) loop
+         l_rec_count := l_rec_count + 1;
+         if rec.specified_level_id = 'Lrts' then
+            ut.expect(rec.tsid).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.specified_level_id = 'Prts' then
+            ut.expect(rec.tsid).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_LOC_LVL_CUR_MAX_IND');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_loc_lvl_cur_max_ind) loop
+         l_rec_count := l_rec_count + 1;
+         if rec.level_indicator_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.level_indicator_id like '%.Elev-Prts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+
+      dbms_output.put_line('==> Testing CWMS_V_LOC_LVL_TS_MAP');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_loc_lvl_ts_map) loop
+         l_rec_count := l_rec_count + 1;
+         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_TS_ALIAS');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_ts_alias where db_office_id = c_office_id and category_id = 'TestCategory1') loop
+         l_rec_count := l_rec_count + 1;
+         if substr(rec.alias_id, -11) = 'TimeSeries1' then
+            ut.expect(rec.ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
          else
             ut.expect(rec.ts_id).to_equal(l_prts_ts_id);
          end if;
-         if rec.group_id = 'TestGroup1' then
-            ut.expect(rec.shared_ref_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old));
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_TS_CAT_GRP');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_ts_cat_grp where cat_db_office_id = c_office_id and ts_category_id = 'TestCategory1') loop
+         l_rec_count := l_rec_count + 1;
+         if rec.ts_group_id = 'TestGroup1' then
+            ut.expect(rec.shared_ref_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
          else
             ut.expect(rec.shared_ref_ts_id).to_equal(l_prts_ts_id);
          end if;
       end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_TS_GRP_ASSGN');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_ts_grp_assgn where db_office_id = c_office_id and category_id = 'TestCategory1') loop
+         l_rec_count := l_rec_count + 1;
+         if rec.attribute = 1 then
+            ut.expect(rec.ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+            ut.expect(rec.ref_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         else
+            ut.expect(rec.ts_id).to_equal(l_prts_ts_id);
+            ut.expect(rec.ref_ts_id).to_equal(l_prts_ts_id);
+         end if;
+         if rec.group_id = 'TestGroup1' then
+            ut.expect(rec.shared_ref_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         else
+            ut.expect(rec.shared_ref_ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_TS_MSG_ARCHIVE');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_ts_msg_archive  where cwms_ts_id like l_location_id||'.%') loop
+         l_rec_count := l_rec_count + 1;
+         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_FORECAST_EX');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_forecast_ex where location_id = l_location_id) loop
+         l_rec_count := l_rec_count + 1;
+         if rec.cwms_ts_id like '%.Elev-Lrts.%.Forecast' then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(replace(l_lrts_ts_id_old, '.Test', '.Forecast'), c_office_id));
+         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Forecast' then
+            ut.expect(rec.cwms_ts_id).to_equal(replace(l_prts_ts_id, '.Test', '.Forecast'));
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_TS_PROFILE');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_ts_profile where location_id = l_location_id) loop
+         l_rec_count := l_rec_count + 1;
+         if rec.key_parameter_id = 'Depth-Lrts' then
+            ut.expect(rec.elev_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.key_parameter_id = 'Depth-Prts' then
+            ut.expect(rec.elev_ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_SCREENED_TS_IDS');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_screened_ts_ids where screening_id = 'Elev Range 1') loop
+         l_rec_count := l_rec_count + 1;
+         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_SCREENING_ASSIGNMENTS');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_screening_assignments where screening_id = 'Elev Range 1') loop
+         l_rec_count := l_rec_count + 1;
+         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_SHEF_DECODE_SPEC');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_shef_decode_spec where data_stream_id = 'Test_Data_Stream') loop
+         l_rec_count := l_rec_count + 1;
+         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
+
+      dbms_output.put_line('==> Testing CWMS_V_CURRENT_MAP_DATA');
+      l_rec_count := 0;
+      for rec in (select * from cwms_v_current_map_data where cwms_ts_id like l_location_id||'.%') loop
+         l_rec_count := l_rec_count + 1;
+         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
+            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      ut.expect(l_rec_count).to_be_greater_than(0);
       ---------------------------------------------------
       -- verify expected tsids in non-catalog routines --
       ---------------------------------------------------
@@ -4270,13 +4777,13 @@ begin
          p_units_out      => l_unit_out,
          p_time_zone_id   => l_time_zone_out,
          p_cwms_ts_id     => l_lrts_ts_id_old,
-         p_units          => c_ts_unit,
+         p_units          => 'ft',
          p_start_time     => l_start_time,
          p_end_time       => l_end_time,
          p_office_id      => c_office_id);
       close l_crsr;
-      ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old));
-      ut.expect(l_unit_out).to_equal(c_ts_unit);
+      ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+      ut.expect(l_unit_out).to_equal('ft');
       ut.expect(l_time_zone_out).to_equal(c_timezone_ids(1));
 
       cwms_ts.retrieve_ts_out(
@@ -4285,13 +4792,13 @@ begin
          p_units_out      => l_unit_out,
          p_time_zone_id   => l_time_zone_out,
          p_cwms_ts_id     => l_prts_ts_id,
-         p_units          => c_ts_unit,
+         p_units          => 'ft',
          p_start_time     => l_start_time,
          p_end_time       => l_end_time,
          p_office_id      => c_office_id);
       close l_crsr;
       ut.expect(l_ts_id_out).to_equal(l_prts_ts_id);
-      ut.expect(l_unit_out).to_equal(c_ts_unit);
+      ut.expect(l_unit_out).to_equal('ft');
       ut.expect(l_time_zone_out).to_equal(c_timezone_ids(1));
 
       dbms_output.put_line('==> Testing ZRETRIEVE_TS_JAVA');
@@ -4301,14 +4808,14 @@ begin
          p_units_out        => l_unit_out,
          p_cwms_ts_id_out   => l_ts_id_out,
          p_time_zone_id     => l_time_zone_out,
-         p_units_in         => c_ts_unit,
+         p_units_in         => 'ft',
          p_cwms_ts_id_in    => l_lrts_ts_id_old,
          p_start_time       => l_start_time,
          p_end_time         => l_end_time,
          p_db_office_id     => c_office_id);
       close l_crsr;
-      ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old));
-      ut.expect(l_unit_out).to_equal(c_ts_unit);
+      ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+      ut.expect(l_unit_out).to_equal('ft');
       ut.expect(l_time_zone_out).to_equal(c_timezone_ids(1));
 
       cwms_ts.zretrieve_ts_java(
@@ -4317,20 +4824,20 @@ begin
          p_units_out        => l_unit_out,
          p_cwms_ts_id_out   => l_ts_id_out,
          p_time_zone_id     => l_time_zone_out,
-         p_units_in         => c_ts_unit,
+         p_units_in         => 'ft',
          p_cwms_ts_id_in    => l_prts_ts_id,
          p_start_time       => l_start_time,
          p_end_time         => l_end_time,
          p_db_office_id     => c_office_id);
       ut.expect(l_ts_id_out).to_equal(l_prts_ts_id);
-      ut.expect(l_unit_out).to_equal(c_ts_unit);
+      ut.expect(l_unit_out).to_equal('ft');
       ut.expect(l_time_zone_out).to_equal(c_timezone_ids(1));
       close l_crsr;
 
       dbms_output.put_line('==> Testing RETRIEVE_TS_MULTI');
       l_ts_request := cwms_t_timeseries_req_array(
-         cwms_t_timeseries_req(l_lrts_ts_id_old, c_ts_unit, l_start_time, l_end_time),
-         cwms_t_timeseries_req(l_prts_ts_id, c_ts_unit, l_start_time, l_end_time));
+         cwms_t_timeseries_req(l_lrts_ts_id_old, 'ft', l_start_time, l_end_time),
+         cwms_t_timeseries_req(l_prts_ts_id, 'ft', l_start_time, l_end_time));
       cwms_ts.retrieve_ts_multi(
          p_at_tsv_rc       => l_crsr,
          p_timeseries_info => l_ts_request,
@@ -4349,24 +4856,114 @@ begin
          exit when l_crsr%notfound;
          close l_data_crsr;
          if l_count = 1 then
-            ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old));
-            ut.expect(l_unit_out).to_equal(c_ts_unit);
+            ut.expect(l_ts_id_out).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
+            ut.expect(l_unit_out).to_equal('ft');
             ut.expect(l_time_zone_out).to_equal(c_timezone_ids(1));
          else
             ut.expect(l_ts_id_out).to_equal(l_prts_ts_id);
-            ut.expect(l_unit_out).to_equal(c_ts_unit);
+            ut.expect(l_unit_out).to_equal('ft');
             ut.expect(l_time_zone_out).to_equal(c_timezone_ids(1));
          end if;
          l_count := l_count + 1;
       end loop;
       close l_crsr;
+
+      declare
+         l_level_value_out      number;
+         l_level_comment_out    varchar2(256);
+         l_effective_date_out   date;
+         l_interval_origin_out  date;
+         l_interval_months_out  integer;
+         l_interval_minutes_out integer;
+         l_interpolate_out      varchar2(1);
+         l_tsid_out             varchar2(256);
+         l_expiration_date_out  date;
+         l_seasonal_values_out  seasonal_value_tab_t;
+      begin
+         dbms_output.put_line('==> Testing RETRIEVE_LOCATION_LEVEL3');
+         cwms_level.retrieve_location_level3(
+            p_level_value             => l_level_value_out,
+            p_level_comment           => l_level_comment_out,
+            p_effective_date          => l_effective_date_out,
+            p_interval_origin         => l_interval_origin_out,
+            p_interval_months         => l_interval_months_out,
+            p_interval_minutes        => l_interval_minutes_out,
+            p_interpolate             => l_interpolate_out,
+            p_tsid                    => l_tsid_out,
+            p_seasonal_values         => l_seasonal_values_out,
+            p_location_level_id       => l_location_id||'.Elev-Lrts.Inst.0.Test',
+            p_level_units             => 'ft',
+            p_date                    => sysdate,
+            p_timezone_id             => 'UTC',
+            p_office_id               => c_office_id);
+         if i = 1 then
+            ut.expect(l_tsid_out).to_equal(l_lrts_ts_id_old);
+         else
+            ut.expect(l_tsid_out).to_equal(l_lrts_ts_id_new);
+         end if;
+         cwms_level.retrieve_location_level3(
+            p_level_value             => l_level_value_out,
+            p_level_comment           => l_level_comment_out,
+            p_effective_date          => l_effective_date_out,
+            p_interval_origin         => l_interval_origin_out,
+            p_interval_months         => l_interval_months_out,
+            p_interval_minutes        => l_interval_minutes_out,
+            p_interpolate             => l_interpolate_out,
+            p_tsid                    => l_tsid_out,
+            p_seasonal_values         => l_seasonal_values_out,
+            p_location_level_id       => l_location_id||'.Elev-Prts.Inst.0.Test',
+            p_level_units             => 'ft',
+            p_date                    => sysdate,
+            p_timezone_id             => 'UTC',
+            p_office_id               => c_office_id);
+         dbms_output.put_line('==> Testing RETRIEVE_LOCATION_LEVEL4');
+         ut.expect(l_tsid_out).to_equal(l_prts_ts_id);
+         cwms_level.retrieve_location_level4(
+            p_level_value             => l_level_value_out,
+            p_level_comment           => l_level_comment_out,
+            p_effective_date          => l_effective_date_out,
+            p_interval_origin         => l_interval_origin_out,
+            p_interval_months         => l_interval_months_out,
+            p_interval_minutes        => l_interval_minutes_out,
+            p_interpolate             => l_interpolate_out,
+            p_tsid                    => l_tsid_out,
+            p_expiration_date         => l_expiration_date_out,
+            p_seasonal_values         => l_seasonal_values_out,
+            p_location_level_id       => l_location_id||'.Elev-Lrts.Inst.0.Test',
+            p_level_units             => 'ft',
+            p_date                    => sysdate,
+            p_timezone_id             => 'UTC',
+            p_office_id               => c_office_id);
+         if i = 1 then
+            ut.expect(l_tsid_out).to_equal(l_lrts_ts_id_old);
+         else
+            ut.expect(l_tsid_out).to_equal(l_lrts_ts_id_new);
+         end if;
+         cwms_level.retrieve_location_level4(
+            p_level_value             => l_level_value_out,
+            p_level_comment           => l_level_comment_out,
+            p_effective_date          => l_effective_date_out,
+            p_interval_origin         => l_interval_origin_out,
+            p_interval_months         => l_interval_months_out,
+            p_interval_minutes        => l_interval_minutes_out,
+            p_interpolate             => l_interpolate_out,
+            p_tsid                    => l_tsid_out,
+            p_expiration_date         => l_expiration_date_out,
+            p_seasonal_values         => l_seasonal_values_out,
+            p_location_level_id       => l_location_id||'.Elev-Prts.Inst.0.Test',
+            p_level_units             => 'ft',
+            p_date                    => sysdate,
+            p_timezone_id             => 'UTC',
+            p_office_id               => c_office_id);
+         ut.expect(l_tsid_out).to_equal(l_prts_ts_id);
+      end;
       -----------------------------------------------
       -- verify expected tsids in catalog routines --
       -----------------------------------------------
       dbms_output.put_line('==> Testing CAT_TS_ID');
       cwms_cat.cat_ts_id(
          p_cwms_cat            => l_crsr,
-         p_ts_subselect_string => l_location_id||'.*',
+         p_ts_subselect_string => l_location_id||'.*.Test',
          p_db_office_id        => c_office_id);
       l_count := 1;
       loop
@@ -4530,8 +5127,110 @@ begin
          end if;
       end loop;
       close l_crsr;
+
+      dbms_output.put_line('==> Testing CWMS_FORECAST.CAT_TS');
+      l_crsr := cwms_forecast.cat_ts_f(
+         p_location_id => l_location_id,
+         p_forecast_id => 'TEST',
+         p_office_id   => c_office_id);
+      loop
+         fetch l_crsr
+          into l_office_id_out,
+               l_forecast_date,
+               l_issue_date,
+               l_ts_id_out,
+               l_version_date,
+               l_min_date,
+               l_max_date,
+               l_time_zone_out;
+         exit when l_crsr%notfound;
+         if l_ts_id_out like '%.Elev-Lrts.%' then
+            if i = 1 then
+               ut.expect(l_ts_id_out).to_equal(replace(l_lrts_ts_id_old, '.Test', '.Forecast'));
+            else
+               ut.expect(l_ts_id_out).to_equal(replace(l_lrts_ts_id_new, '.Test', '.Forecast'));
+            end if;
+         else
+            ut.expect(l_ts_id_out).to_equal(replace(l_prts_ts_id, '.Test', '.Forecast'));
+         end if;
+      end loop;
+      close l_crsr;
+
+      dbms_output.put_line('==> Testing CWMS_TS_PROFILE.CAT_TS_PROFILE');
+      l_crsr := cwms_ts_profile.cat_ts_profile_f('*', '*', c_office_id);
+      loop
+         fetch l_crsr
+          into l_office_id_out,
+               l_location_id_out,
+               l_key_parameter_id,
+               l_data_crsr,
+               l_ts_id_out,
+               l_description;
+         exit when l_crsr%notfound;
+         close l_data_crsr;
+         if l_key_parameter_id = 'Depth-Lrts' then
+            if i = 1 then
+               ut.expect(l_ts_id_out).to_equal(l_lrts_ts_id_old);
+            else
+               ut.expect(l_ts_id_out).to_equal(l_lrts_ts_id_new);
+            end if;
+         else
+            ut.expect(l_ts_id_out).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+      close l_crsr;
+
+      dbms_output.put_line('==> Testing CWMS_SHEF.CAT_SHEF_DECODE_SPEC_TAB');
+      cwms_shef.cat_shef_decode_spec (
+         p_shef_decode_spec_rc => l_crsr,
+         p_data_stream_id      => 'Test_Data_Stream',
+         p_db_office_id        => c_office_id);
+      fetch l_crsr bulk collect into l_shef_decode_specs;
+      close l_crsr;
+      for j in 1..l_shef_decode_specs.count loop
+         if l_shef_decode_specs(j).cwms_ts_id like '%.Elev-Lrts.%' then
+            if i = 1 then
+               ut.expect(l_shef_decode_specs(j).cwms_ts_id).to_equal(l_lrts_ts_id_old);
+               ut.expect(cwms_util.split_text(cwms_util.split_text(l_shef_decode_specs(j).shef_crit_line, 1, ';'), 2, '=')).to_equal(l_lrts_ts_id_old);
+            else
+               ut.expect(l_shef_decode_specs(j).cwms_ts_id).to_equal(l_lrts_ts_id_new);
+               ut.expect(cwms_util.split_text(cwms_util.split_text(l_shef_decode_specs(j).shef_crit_line, 1, ';'), 2, '=')).to_equal(l_lrts_ts_id_new);
+            end if;
+         else
+            ut.expect(l_shef_decode_specs(j).cwms_ts_id).to_equal(l_prts_ts_id);
+            ut.expect(cwms_util.split_text(cwms_util.split_text(l_shef_decode_specs(j).shef_crit_line, 1, ';'), 2, '=')).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+
+      dbms_output.put_line('==> Testing CWMS_DATA_DISSEM.CAT_TS_TRANSFER');
+      cwms_data_dissem.cat_ts_transfer(l_crsr, c_office_id);
+      fetch l_crsr bulk collect into l_data_dissem_recs;
+      for j in 1..l_data_dissem_recs.count loop
+         if l_data_dissem_recs(j).cwms_ts_id like '%.Elev-Lrts.%.Test' then
+            if i = 1 then
+               ut.expect(l_data_dissem_recs(j).cwms_ts_id).to_equal(l_lrts_ts_id_old);
+            else
+               ut.expect(l_data_dissem_recs(j).cwms_ts_id).to_equal(l_lrts_ts_id_new);
+            end if;
+         elsif l_data_dissem_recs(j).cwms_ts_id like '%.Elev-Prts.%.Test' then
+            ut.expect(l_data_dissem_recs(j).cwms_ts_id).to_equal(l_prts_ts_id);
+         end if;
+      end loop;
+
    end loop;
-   cwms_loc.delete_location('TestLoc1', cwms_util.delete_all, c_office_id);
+   cwms_vt.delete_screening_id (
+      p_screening_id        => 'Elev Range 1',
+      p_parameter_id        => 'Elev',
+      p_parameter_type_id   => null,
+      p_duration_id         => null,
+      p_cascade             => 'T',
+      p_db_office_id        => 'SWT');
+   cwms_shef.delete_data_stream (
+      p_data_stream_id  => 'Test_Data_Stream',
+      p_cascade_all     => 'T',
+      p_db_office_id    => c_office_id);
+   cwms_level.delete_specified_level('Lrts', 'F', c_office_id);
+   cwms_loc.delete_location(l_location_id, cwms_util.delete_all, c_office_id);
    cwms_ts.delete_ts_category('TestCategory1', 'T', c_office_id);
    cwms_ts.set_use_new_lrts_format_on_output('F');
 end test_lrts_id_output_formatting;
@@ -4540,21 +5239,29 @@ end test_lrts_id_output_formatting;
 --------------------------------------------------------------------------------
 procedure test_lrts_id_input_formatting
 is
-   l_location_id      cwms_v_loc.location_id%type := c_location_ids(1);
-   l_lrts_ts_id_old   cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.~1Day.0.Lrts';
-   l_lrts_ts_id_new   cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.1DayLocal.0.Lrts';
-   l_prts_ts_id       cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.~1Day.0.Prts';
-   l_count            binary_integer := 10;
-   l_ts_data          cwms_t_ztsv_array;
-   l_start_time       date;
-   l_end_time         date;
-   l_crsr             sys_refcursor;
-   l_date_times       cwms_t_date_table;
-   l_values           cwms_t_double_tab;
-   l_quality_codes    cwms_t_number_tab;
-   l_min_value        binary_double;
-   l_max_value        binary_double;
-   l_ts_data_out      cwms_t_ztsv_array;
+   l_location_id       cwms_v_loc.location_id%type := c_location_ids(1);
+   l_lrts_ts_id_old    cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.~1Day.0.Lrts';
+   l_lrts_ts_id_new    cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.1DayLocal.0.Lrts';
+   l_prts_ts_id        cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Code.Inst.~1Day.0.Prts';
+   l_count             binary_integer := 10;
+   l_ts_data           cwms_t_ztsv_array;
+   l_start_time        date;
+   l_end_time          date;
+   l_crsr              sys_refcursor;
+   l_date_times        cwms_t_date_table;
+   l_values            cwms_t_double_tab;
+   l_quality_codes     cwms_t_number_tab;
+   l_min_value         binary_double;
+   l_max_value         binary_double;
+   l_ts_data_out       cwms_t_ztsv_array;
+   l_base_location_id  cwms_v_ts_id.base_location_id%type;
+   l_sub_location_id   cwms_v_ts_id.sub_location_id%type;
+   l_base_parameter_id cwms_v_ts_id.base_parameter_id%type;
+   l_sub_parameter_id  cwms_v_ts_id.sub_parameter_id%type;
+   l_parameter_type_id cwms_v_ts_id.parameter_type_id%type;
+   l_interval_id       cwms_v_ts_id.interval_id%type;
+   l_duration_id       cwms_v_ts_id.duration_id%type;
+   l_version_id        cwms_v_ts_id.version_id%type;
 begin
    cwms_loc.clear_all_caches;
    cwms_ts.clear_all_caches;
@@ -4668,6 +5375,28 @@ begin
    cwms_loc.clear_all_caches;
    cwms_ts.clear_all_caches;
    cwms_ts.set_allow_new_lrts_format_on_input('F');
+   cwms_ts.parse_ts(
+      p_cwms_ts_id        => l_lrts_ts_id_old,
+      p_base_location_id  => l_base_location_id,
+      p_sub_location_id   => l_sub_location_id,
+      p_base_parameter_id => l_base_parameter_id,
+      p_sub_parameter_id  => l_sub_parameter_id,
+      p_parameter_type_id => l_parameter_type_id,
+      p_interval_id       => l_interval_id,
+      p_duration_id       => l_duration_Id,
+      p_version_id        => l_version_id);
+   ut.expect(l_interval_id).to_equal(cwms_util.split_text(l_lrts_ts_id_old, 4, '.'));
+   cwms_ts.parse_ts(
+      p_cwms_ts_id        => l_lrts_ts_id_new,
+      p_base_location_id  => l_base_location_id,
+      p_sub_location_id   => l_sub_location_id,
+      p_base_parameter_id => l_base_parameter_id,
+      p_sub_parameter_id  => l_sub_parameter_id,
+      p_parameter_type_id => l_parameter_type_id,
+      p_interval_id       => l_interval_id,
+      p_duration_id       => l_duration_Id,
+      p_version_id        => l_version_id);
+   ut.expect(l_interval_id).to_equal(cwms_util.split_text(l_lrts_ts_id_new, 4, '.'));
    -- should succeed
    --.... create, update, store ts
    cwms_ts.create_ts(
@@ -4702,6 +5431,9 @@ begin
          l_quality_codes;
    close l_crsr;
    ut.expect(l_date_times.count).to_equal(l_count);
+   --.... rename ts
+   cwms_ts.rename_ts(l_lrts_ts_id_old, l_lrts_ts_id_old||'2', null, c_office_id);
+   cwms_ts.rename_ts(l_lrts_ts_id_old||'2', l_lrts_ts_id_old, null, c_office_id);
    --.... get IDs and codes
    cwms_ts.set_use_new_lrts_format_on_output('T');
    ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_old, c_office_id)).to_equal(l_lrts_ts_id_new);
@@ -4745,9 +5477,25 @@ begin
       p_db_office_id     => c_office_id);
    cwms_ts.assign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old, c_office_id);
    cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 'F', c_office_id);
+   cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old)), c_office_id);
+   cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_str_tab(l_lrts_ts_id_old), 'F', c_office_id);
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_key, c_office_id);
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   l_count := 0;
+   for rec in (select * from cwms_v_deleted_ts_id where location_id = l_location_id) loop
+      l_count := l_count + 1;
+      ut.expect(rec.cwms_ts_id).to_equal(l_lrts_ts_id_new);
+   end loop;
+   ut.expect(l_count).to_be_greater_than(0);
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   l_count := 0;
+   for rec in (select * from cwms_v_deleted_ts_id where location_id = l_location_id) loop
+      l_count := l_count + 1;
+      ut.expect(rec.cwms_ts_id).to_equal(l_lrts_ts_id_old);
+   end loop;
+   ut.expect(l_count).to_be_greater_than(0);
    cwms_ts.undelete_ts(l_lrts_ts_id_old, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
    -- should fail
@@ -4794,6 +5542,14 @@ begin
          p_start_time => l_start_time,
          p_end_time   => l_end_time,
          p_office_id  => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   --.... rename_ts
+   begin
+      cwms_ts.rename_ts(l_lrts_ts_id_new, l_lrts_ts_id_new||'2', null, c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
@@ -4950,6 +5706,20 @@ begin
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
+   begin
+      cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new)), c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_str_tab(l_lrts_ts_id_new), 'F', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
    --.... delete, undelete
    begin
@@ -4999,7 +5769,10 @@ begin
          l_values,
          l_quality_codes;
    close l_crsr;
-   ut.expect(l_date_times.count).to_equal(l_count);
+   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
+   --.... rename_ts
+   cwms_ts.rename_ts(l_lrts_ts_id_old, l_lrts_ts_id_old||'2', null, c_office_id);
+   cwms_ts.rename_ts(l_lrts_ts_id_old||'2', l_lrts_ts_id_old, null, c_office_id);
    --.... get IDs and codes
    cwms_ts.set_use_new_lrts_format_on_output('T');
    ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_old, c_office_id)).to_equal(l_lrts_ts_id_new);
@@ -5025,7 +5798,7 @@ begin
    ut.expect(cwms_ts.get_ts_max_date(l_lrts_ts_id_old, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_end_time);
    cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_old, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
    ut.expect(l_min_value).to_equal(1);
-   ut.expect(l_max_value).to_equal(l_count);
+   ut.expect(l_max_value).to_equal(l_ts_data.count);
    l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_old, 1, l_count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
    ut.expect(l_ts_data_out.count).to_equal(l_count);
    cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_old, c_office_id);
@@ -5043,9 +5816,25 @@ begin
       p_db_office_id     => c_office_id);
    cwms_ts.assign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old, c_office_id);
    cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 'F', c_office_id);
+   cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old)), c_office_id);
+   cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_str_tab(l_lrts_ts_id_old), 'F', c_office_id);
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_key, c_office_id);
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   l_count := 0;
+   for rec in (select * from cwms_v_deleted_ts_id where location_id = l_location_id) loop
+      ut.expect(rec.cwms_ts_id).to_equal(l_lrts_ts_id_new);
+      l_count := l_count + 1;
+   end loop;
+   ut.expect(l_count).to_be_greater_than(0);
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   l_count := 0;
+   for rec in (select * from cwms_v_deleted_ts_id where location_id = l_location_id) loop
+      ut.expect(rec.cwms_ts_id).to_equal(l_lrts_ts_id_old);
+      l_count := l_count + 1;
+   end loop;
+   ut.expect(l_count).to_be_greater_than(0);
    cwms_ts.undelete_ts(l_lrts_ts_id_old, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
    -- should succeed
@@ -5081,7 +5870,10 @@ begin
          l_values,
          l_quality_codes;
    close l_crsr;
-   ut.expect(l_date_times.count).to_equal(l_count);
+   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
+   --.... rename_ts
+   cwms_ts.rename_ts(l_lrts_ts_id_new, l_lrts_ts_id_new||'2', null, c_office_id);
+   cwms_ts.rename_ts(l_lrts_ts_id_new||'2', l_lrts_ts_id_new, null, c_office_id);
    --.... get IDs and codes
    cwms_ts.set_use_new_lrts_format_on_output('T');
    ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_lrts_ts_id_new);
@@ -5107,7 +5899,7 @@ begin
    ut.expect(cwms_ts.get_ts_max_date(l_lrts_ts_id_new, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_end_time);
    cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_new, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
    ut.expect(l_min_value).to_equal(1);
-   ut.expect(l_max_value).to_equal(l_count);
+   ut.expect(l_max_value).to_equal(l_ts_data.count);
    l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_new, 1, l_count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
    ut.expect(l_ts_data_out.count).to_equal(l_count);
    cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_new, c_office_id);
@@ -5125,9 +5917,24 @@ begin
       p_db_office_id     => c_office_id);
    cwms_ts.assign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new, c_office_id);
    cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 'F', c_office_id);
+   cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new)), c_office_id);
+   cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_str_tab(l_lrts_ts_id_new), 'F', c_office_id);
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_key, c_office_id);
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   l_count := 0;
+   for rec in (select * from cwms_v_deleted_ts_id where location_id = l_location_id) loop
+      ut.expect(rec.cwms_ts_id).to_equal(l_lrts_ts_id_new);
+      l_count := l_count + 1;
+   end loop;
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   l_count := 0;
+   for rec in (select * from cwms_v_deleted_ts_id where location_id = l_location_id) loop
+      l_count := l_count + 1;
+      ut.expect(rec.cwms_ts_id).to_equal(l_lrts_ts_id_old);
+   end loop;
+   ut.expect(l_count).to_be_greater_than(0);
    cwms_ts.undelete_ts(l_lrts_ts_id_new, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_all, c_office_id);
 
@@ -5182,6 +5989,14 @@ begin
          p_start_time => l_start_time,
          p_end_time   => l_end_time,
          p_office_id  => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   --.... rename_ts
+   begin
+      cwms_ts.rename_ts(l_lrts_ts_id_old, l_lrts_ts_id_old||'2', null, c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
@@ -5338,8 +6153,21 @@ begin
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
+   begin
+      cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old)), c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_str_tab(l_lrts_ts_id_old), 'F', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
-   --.... delete, undelete
    --.... delete, undelete
    begin
       cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
@@ -5381,7 +6209,10 @@ begin
          l_values,
          l_quality_codes;
    close l_crsr;
-   ut.expect(l_date_times.count).to_equal(l_count);
+   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
+   --.... rename_ts
+   cwms_ts.rename_ts(l_lrts_ts_id_new, l_lrts_ts_id_new||'2', null, c_office_id);
+   cwms_ts.rename_ts(l_lrts_ts_id_new||'2', l_lrts_ts_id_new, null, c_office_id);
    --.... get IDs and codes
    cwms_ts.set_use_new_lrts_format_on_output('T');
    ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_lrts_ts_id_new);
@@ -5407,7 +6238,7 @@ begin
    ut.expect(cwms_ts.get_ts_max_date(l_lrts_ts_id_new, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_end_time);
    cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_new, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
    ut.expect(l_min_value).to_equal(1);
-   ut.expect(l_max_value).to_equal(l_count);
+   ut.expect(l_max_value).to_equal(l_ts_data.count);
    l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_new, 1, l_count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
    ut.expect(l_ts_data_out.count).to_equal(l_count);
    cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_new, c_office_id);
@@ -5425,9 +6256,25 @@ begin
       p_db_office_id     => c_office_id);
    cwms_ts.assign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new, c_office_id);
    cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 'F', c_office_id);
+   cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new)), c_office_id);
+   cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_str_tab(l_lrts_ts_id_new), 'F', c_office_id);
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_key, c_office_id);
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   l_count := 0;
+   for rec in (select * from cwms_v_deleted_ts_id where location_id = l_location_id) loop
+      ut.expect(rec.cwms_ts_id).to_equal(l_lrts_ts_id_new);
+      l_count := l_count + 1;
+   end loop;
+   ut.expect(l_count).to_be_greater_than(0);
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   l_count := 0;
+   for rec in (select * from cwms_v_deleted_ts_id where location_id = l_location_id) loop
+      ut.expect(rec.cwms_ts_id).to_equal(l_lrts_ts_id_old);
+      l_count := l_count + 1;
+   end loop;
+   ut.expect(l_count).to_be_greater_than(0);
    cwms_ts.undelete_ts(l_lrts_ts_id_new, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_all, c_office_id);
 

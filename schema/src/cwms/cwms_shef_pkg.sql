@@ -695,6 +695,21 @@ AS
    /**
     * [description needed]
     *
+    * @param p_shef_decode_spec_rc [description needed]
+    * @param p_data_stream_id      [description needed]
+    * @param p_utc_version_date    [description needed]
+    * @param p_date_rank           [description needed]
+    * @param p_db_office_id        [description needed]
+    */
+   PROCEDURE cat_shef_decode_spec (
+      p_shef_decode_spec_rc      OUT SYS_REFCURSOR,
+      p_data_stream_id        IN     VARCHAR2,
+      p_utc_version_date      IN     DATE DEFAULT NULL,
+      p_date_rank             IN     NUMBER DEFAULT NULL,
+      p_db_office_id          IN     VARCHAR2 DEFAULT NULL);
+   /**
+    * [description needed]
+    *
     * @param p_data_stream_id [description needed]
     * @param p_db_office_id   [description needed]
     */
