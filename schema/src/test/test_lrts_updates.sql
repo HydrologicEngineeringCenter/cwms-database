@@ -87,7 +87,7 @@ procedure test_cwdb_150;
 procedure test_cwdb_153;
 --%test(Test formatting LRTS IDs on output)
 procedure test_lrts_id_output_formatting;
---%test(Test formatting LFTS IDs on input)
+--%test(Test formatting LRTS IDs on input)
 procedure test_lrts_id_input_formatting;
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
@@ -5290,6 +5290,13 @@ begin
       p_location_id  => l_location_id,
       p_time_zone_id => c_timezone_ids(1),
       p_db_office_id => c_office_id);
+   begin
+      cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_old, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised.');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
    ---------------------------------
    -- create the ts group catgory --
    ---------------------------------
@@ -5459,7 +5466,7 @@ begin
    ut.expect(cwms_ts.get_ts_max_date(l_lrts_ts_id_old, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_end_time);
    cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_old, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
    ut.expect(l_min_value).to_equal(1);
-   ut.expect(l_max_value).to_equal(l_count);
+   ut.expect(l_max_value).to_equal(l_ts_data.count);
    l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_old, 1, l_count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
    ut.expect(l_ts_data_out.count).to_equal(l_count);
    cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_old, c_office_id);
@@ -5900,8 +5907,8 @@ begin
    cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_new, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
    ut.expect(l_min_value).to_equal(1);
    ut.expect(l_max_value).to_equal(l_ts_data.count);
-   l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_new, 1, l_count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
-   ut.expect(l_ts_data_out.count).to_equal(l_count);
+   l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_new, 1, l_ts_data.count, c_ts_unit, l_start_time, l_end_time, 'UTC', c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
    cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_new, c_office_id);
    ut.expect(cwms_ts.get_nulls_storage_policy_ts(l_lrts_ts_id_new, c_office_id)).to_equal(cwms_ts.filter_out_null_values);
    cwms_ts.set_nulls_storage_policy_ts(null, l_lrts_ts_id_new, c_office_id);

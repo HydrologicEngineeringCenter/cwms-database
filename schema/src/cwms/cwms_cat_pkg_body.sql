@@ -3964,11 +3964,14 @@ IS
       l_attribute_units  varchar2(16);
       l_indicator_values number_tab_t;
       l_output_row       loc_lvl_cur_max_ind_t := loc_lvl_cur_max_ind_t(null, null, null, null, null, null, null);
+      l_revert_lrts_ids  boolean;
    begin
+      l_revert_lrts_ids := cwms_ts.use_new_lrts_format_on_output = 'T' and
+                           cwms_ts.require_new_lrts_format_on_input = 'F';
       for rec in (select distinct * from av_loc_lvl_ts_map) loop
          cwms_level.get_level_indicator_values(
             p_cursor               => l_cursor,
-            p_tsid                 => cwms_ts.format_lrts_input(rec.cwms_ts_id),
+            p_tsid                 => cwms_ts.format_lrts_input(rec.cwms_ts_id,l_revert_lrts_ids),
             p_specified_level_mask => cwms_util.split_text(rec.location_level_id, 5, '.'),
             p_indicator_id_mask    => rec.level_indicator_id,
             p_office_id            => rec.office_id);

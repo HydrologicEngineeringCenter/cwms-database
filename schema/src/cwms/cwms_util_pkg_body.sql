@@ -5266,12 +5266,23 @@ as
       THEN
          cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
       END IF;
+      l_item_name := UPPER (TRIM (p_item_name));
+      case
+      when l_item_name = 'USE_NEW_LRTS_ID_FORMAT' then
+         if p_num_value not in (0,1,2,4,5,6) then
+            cwms_err.raise(
+               'ERROR',
+               p_num_value
+               ||' is not a valid value for session item USE_NEW_LRTS_ID_FORMAT.'
+               ||chr(10)
+               ||'Value must be 0, 1, 2, 4, 5, or 6');
+         end if;
+      else null;
+      end case;
 
       -----------------------------
       -- insert/update the table --
       -----------------------------
-      l_item_name := UPPER (TRIM (p_item_name));
-
       MERGE INTO at_session_info t
            USING (SELECT l_item_name AS item_name FROM DUAL) d
               ON (t.item_name = d.item_name)

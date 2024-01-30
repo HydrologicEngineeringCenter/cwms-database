@@ -6827,7 +6827,7 @@ AS
                    )
             bulk collect
             into l_timeseries_data
-            from av_tsv_dqu
+            from av_tsv
             where ts_code = l_ts_code
                and start_date <= l_end_date
                and end_date > l_start_date
@@ -11077,7 +11077,7 @@ end retrieve_existing_item_counts;
    IS
       l_date_time_utc date := trunc(p_date_time_utc, 'MI');
    BEGIN
-      return (l_date_time_utc - get_time_on_before_interval(p_date_time_utc, 0, p_interval_minutes)) * 1440;
+      return round((l_date_time_utc - get_time_on_before_interval(p_date_time_utc, 0, p_interval_minutes)) * 1440, 9);
    END get_utc_interval_offset;
 
    FUNCTION get_times_for_time_window (
