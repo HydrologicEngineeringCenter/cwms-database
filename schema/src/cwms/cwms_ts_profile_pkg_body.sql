@@ -330,6 +330,12 @@ begin
    end;
    if p_ts_profile.reference_ts_id is not null then
       l_ref_ts_code := cwms_ts.get_ts_code(p_ts_profile.reference_ts_id, l_office_id);
+      if cwms_ts.require_new_lrts_format_on_input = 'T' and
+         cwms_ts.is_lrts(l_ref_ts_code) = 'T' and
+         cwms_ts.is_new_lrts_format(p_ts_profile.reference_ts_id) = 'F'
+      then
+         cwms_ts.new_lrts_id_required_error(p_ts_profile.reference_ts_id);
+      end if;
    end if;
    ---------------------------------------------
    -- get the existing record if there is one --

@@ -4313,8 +4313,6 @@ begin
       p_source_office  => c_office_id,
       p_valid_lifetime => 24,
       p_office_id      => c_office_id);
-   dbms_output.put_line(l_ts_data(1).date_time);
-   dbms_output.put_line(cwms_ts.get_utc_interval_offset(l_ts_data(1).date_time, 1440));
    cwms_ts.create_ts(
       p_cwms_ts_id  => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
       p_utc_offset  => cwms_ts.get_utc_interval_offset(l_ts_data(1).date_time, 1440),
@@ -5265,9 +5263,20 @@ is
    l_interval_id         cwms_v_ts_id.interval_id%type;
    l_duration_id         cwms_v_ts_id.duration_id%type;
    l_version_id          cwms_v_ts_id.version_id%type;
+   l_date_time           date;
+   l_version_date        date;
+   l_data_entry_date     date;
+   l_text                varchar2(32767);
+   l_clob                clob;
+   l_number              number;
+   l_blob                blob;
+   l_media_type          varchar2(84);
+   l_file_extension      varchar2(16);
 begin
    cwms_loc.clear_all_caches;
    cwms_ts.clear_all_caches;
+   cwms_ts.set_allow_new_lrts_format_on_input('F');
+   cwms_ts.set_use_new_lrts_format_on_output('F');
    ------------------------
    -- create the ts data --
    ------------------------
@@ -5312,6 +5321,35 @@ begin
    cwms_ts.store_ts_category(
       p_ts_category_id => 'TestCategory',
       p_db_office_id   => c_office_id);
+   -----------------------
+   -- create a forecast --
+   -----------------------
+   cwms_forecast.store_spec(
+      p_location_id    => l_location_id,
+      p_forecast_id    => 'TEST',
+      p_fail_if_exists => 'F',
+      p_ignore_nulls   => 'F',
+      p_source_agency  => 'USACE',
+      p_source_office  => c_office_id,
+      p_valid_lifetime => 24,
+      p_office_id      => c_office_id);
+   cwms_ts.create_ts(
+      p_cwms_ts_id  => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
+      p_utc_offset  => cwms_ts.get_utc_interval_offset(l_ts_data(1).date_time, 1440),
+      p_active_flag => 'T',
+      p_office_id   => c_office_id);
+   cwms_forecast.store_forecast(
+      p_location_id     => l_location_id,
+      p_forecast_id     => 'TEST',
+      p_forecast_time   => l_end_time,
+      p_issue_time      => l_start_time,
+      p_time_zone       => null,
+      p_fail_if_exists  => 'F',
+      p_text            => 'This is a test',
+      p_time_series     => cwms_t_ztimeseries_array(
+                              cwms_t_ztimeseries(replace(l_lrts_ts_id_old, '.Test', '.Forecast'), 'ft', l_ts_data)),
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id);
    ---------------------------
    -- create a screening id --
    ---------------------------
@@ -5519,12 +5557,42 @@ begin
    cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old)), c_office_id);
    cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_str_tab(l_lrts_ts_id_old), 'F', c_office_id);
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
-   --.... cwms_alarm package
+   --.... cwms_cat package
+   cwms_cat.cat_ts_aliases(
+      p_cwms_cat     => l_crsr,
+      p_ts_id        => l_lrts_ts_id_old,
+      p_db_office_id => c_office_id);
+   close l_crsr;
+   cwms_cat.cat_ts_id(
+      p_cwms_cat            => l_crsr,
+      p_ts_subselect_string => l_lrts_ts_id_old,
+      p_db_office_id        => c_office_id);
+   close l_crsr;
+   --.... cwms_level package
+   cwms_level.store_location_level(cwms_t_location_level(
+      c_office_id, l_location_id, 'Elev-Lrts', 'Inst', '0', 'Test',
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      'T', l_lrts_ts_id_old,
+      null, null, null, null, null, null));
    cwms_level.store_location_level3(
       p_location_level_id => l_location_id||'.Elev-Lrts.Inst.0.Test',
       p_level_value       => null,
       p_level_units       => 'ft',
       p_tsid              => l_lrts_ts_id_old,
+      p_office_id         => c_office_id);
+   l_ts_data_out := cwms_level.retrieve_location_level_values(
+      p_ts_id         => l_lrts_ts_id_old,
+      p_spec_level_id => 'Test',
+      p_level_units   => 'ft',
+      p_start_time    => l_start_time,
+      p_end_time      => l_end_time,
+      p_office_id     => c_office_id);
+   l_ts_data_out := cwms_level.retrieve_loc_lvl_values3(
+      p_ts_id             => l_lrts_ts_id_old,
+      p_location_level_id => l_location_id||'.Elev-Lrts.Inst.0.Test',
+      p_level_units       => 'ft',
+      p_start_time        => l_start_time,
+      p_end_time          => l_end_time,
       p_office_id         => c_office_id);
    cwms_level.store_loc_lvl_indicator(
       p_loc_lvl_indicator_id => l_location_id||'.Elev-Lrts.Inst.0.Test.VALUE',
@@ -5541,6 +5609,480 @@ begin
          p_comparison_unit_id    => 'ft',
          p_office_id             => c_office_id);
    end loop;
+   cwms_level.get_level_indicator_values (
+      p_cursor               => l_crsr,
+      p_tsid                 => l_lrts_ts_id_old,
+      p_eval_time            => l_end_time,
+      p_time_zone            => 'UTC',
+      p_specified_level_mask => 'Test',
+      p_indicator_id_mask    => 'VALUE',
+      p_unit_system          => 'EN',
+      p_office_id            => c_office_id);
+   close l_crsr;
+   cwms_level.get_level_indicator_max_values (
+      p_cursor               => l_crsr,
+      p_tsid                 => l_lrts_ts_id_old,
+      p_start_time           => l_start_time,
+      p_end_time             => l_end_time,
+      p_time_zone            => 'UTC',
+      p_specified_level_mask => 'Test',
+      p_indicator_id_mask    => 'VALUE',
+      p_unit_system          => 'EN',
+      p_office_id            => c_office_id);
+   close l_crsr;
+   l_ts_data_out := cwms_level.eval_level_indicator_expr (
+      p_tsid               => l_lrts_ts_id_old,
+      p_start_time         => l_start_time,
+      p_end_time           => l_end_time,
+      p_unit               => 'ft',
+      p_specified_level_id => 'Test',
+      p_indicator_id       => 'VALUE',
+      p_condition_number   => 3,
+      p_office_id          => c_office_id);
+   --.... cwms_forecast package
+   l_crsr := cwms_forecast.cat_ts_f(
+      p_location_id     => l_location_id,
+      p_forecast_id     => 'TEST',
+      p_cwms_ts_id_mask => l_lrts_ts_id_old,
+      p_office_id       => c_office_id);
+   close l_crsr;
+   cwms_forecast.retrieve_ts(
+      p_ts_cursor      => l_crsr,
+      p_version_date   => l_version_date,
+      p_location_id    => l_location_id,
+      p_forecast_id    => 'TEST',
+      p_cwms_ts_id     => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
+      p_units          => 'ft',
+      p_forecast_time  => l_end_time,
+      p_issue_time     => l_start_time,
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_time_zone      => c_timezone_ids(1),
+      p_office_id      => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
+   for i in 1..l_date_times.count loop
+      ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
+      ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
+      ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
+   end loop;
+   --.... cwms_text package
+   select date_time bulk collect into l_date_times from table(l_ts_data);
+   cwms_text.store_ts_std_text(
+      p_tsid         => l_lrts_ts_id_old,
+      p_std_text_id  => 'A',
+      p_times        => l_date_times,
+      p_time_zone    => 'UTC',
+      p_attribute    => 1,
+      p_office_id    => c_office_id);
+   cwms_text.store_ts_std_text(
+      p_tsid         => l_lrts_ts_id_old,
+      p_std_text_id  => 'B',
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_time_zone    => 'UTC',
+      p_attribute    => 2,
+      p_office_id    => c_office_id);
+   l_number := cwms_text.get_ts_std_text_count(
+      p_tsid             => l_lrts_ts_id_old,
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 2);
+   l_crsr := cwms_text.retrieve_ts_std_text_f (
+      p_tsid             => l_lrts_ts_id_old,
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   dbms_output.put_line(l_lrts_ts_id_old);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 2);
+   cwms_text.store_ts_std_text(
+      p_tsid         => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_std_text_id  => 'C',
+      p_times        => l_date_times,
+      p_time_zone    => 'UTC',
+      p_attribute    => 1,
+      p_office_id    => c_office_id);
+   cwms_text.store_ts_std_text(
+      p_tsid         => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_std_text_id  => 'D',
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_time_zone    => 'UTC',
+      p_attribute    => 2,
+      p_office_id    => c_office_id);
+   l_number := cwms_text.get_ts_std_text_count(
+      p_tsid             => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 2);
+   l_crsr := cwms_text.retrieve_ts_std_text_f (
+      p_tsid             => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   dbms_output.put_line(replace(l_lrts_ts_id_old, 'Elev', 'Text'));
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 2);
+   cwms_text.store_ts_text (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text        => 'Nonstandard text-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 1,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text        => 'Nonstandard text-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.store_text(
+      p_text           => 'First text in AT_CLOB table',
+      p_id             => '/TEST/STORE_TS_TEXT_ID-1',
+      p_fail_if_exists => 'F',
+      p_office_id      => c_office_id);
+   l_number := cwms_text.store_text(
+      p_text           => 'Second text in AT_CLOB table',
+      p_id             => '/TEST/STORE_TS_TEXT_ID-2',
+      p_fail_if_exists => 'F',
+      p_office_id      => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_text_count(
+      p_tsid        => l_lrts_ts_id_old,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 4);
+   l_crsr := cwms_text.retrieve_ts_text_f (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 4);
+   cwms_text.delete_ts_text (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_old, 'Elev', 'Text'), cwms_util.delete_all, c_office_id);
+   begin
+      cwms_text.store_ts_text (
+         p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+         p_text        => 'Nonstandard text-1',
+         p_start_time  => l_start_time,
+         p_end_time    => l_end_time,
+         p_time_zone   => 'UTC',
+         p_attribute   => 1,
+         p_office_id   => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(
+            dbms_utility.format_error_stack,
+            '.+Cannot use this version of STORE_TS_TEXT to store text to a non-existent irregular time series.+',
+            'mn')).to_be_true;
+   end;
+   cwms_text.store_ts_text (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_text        => 'Nonstandard text-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_text_count(
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 3);
+   l_crsr := cwms_text.retrieve_ts_text_f (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 3);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_old, 'Elev', 'Text'), cwms_util.delete_all, c_office_id);
+   cwms_text.store_ts_binary (
+      p_tsid        => l_lrts_ts_id_old,
+      p_binary      => utl_i18n.string_to_raw('Some binary-1', 'AL32UTF8'),
+      p_binary_type => '.bin',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 1,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary (
+      p_tsid        => l_lrts_ts_id_old,
+      p_binary      => utl_i18n.string_to_raw('Some binary-2', 'AL32UTF8'),
+      p_binary_type => '.bin',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_binary(
+      p_binary_code       => l_number,
+      p_binary            => utl_i18n.string_to_raw('First binary in AT_BLOB table', 'AL32UTF8'),
+      p_id                => '/TEST/STORE_TS_BINARY_ID-1',
+      p_media_type_or_ext => '.bin',
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+   cwms_text.store_binary(
+      p_binary_code       => l_number,
+      p_binary            => utl_i18n.string_to_raw('Second binary in AT_BLOB table', 'AL32UTF8'),
+      p_id                => '/TEST/STORE_TS_BINARY_ID-2',
+      p_media_type_or_ext => '.bin',
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => l_lrts_ts_id_old,
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => l_lrts_ts_id_old,
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_binary_count(
+      p_tsid             => l_lrts_ts_id_old,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 4);
+   l_crsr := cwms_text.retrieve_ts_binary_f (
+      p_tsid             => l_lrts_ts_id_old,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_file_extension,
+            l_media_type,
+            l_blob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+--      dbms_output.put_line(
+--         l_count
+--         ||chr(9)||l_date_time
+--         ||chr(9)||l_text
+--         ||chr(9)||l_number
+--         ||chr(9)||l_media_type
+--         ||chr(9)||l_file_extension
+--         ||chr(9)||utl_i18n.raw_to_char(l_blob));
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 4);
+   cwms_text.delete_ts_binary (
+      p_tsid             => l_lrts_ts_id_old,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   begin
+      cwms_text.store_ts_binary (
+         p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+         p_binary      => utl_i18n.string_to_raw('Some binary-1', 'AL32UTF8'),
+         p_binary_type => 'bin',
+         p_start_time  => l_start_time,
+         p_end_time    => l_end_time,
+         p_time_zone   => 'UTC',
+         p_attribute   => 1,
+         p_office_id   => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(
+            dbms_utility.format_error_stack,
+            '.+Cannot use this version of STORE_TS_BINARY to store binary to a non-existent irregular time series.+',
+            'mn')).to_be_true;
+   end;
+   cwms_text.store_ts_binary (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+      p_binary      => utl_i18n.string_to_raw('Some binary-2', 'AL32UTF8'),
+      p_binary_type => 'bin',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_binary_count(
+      p_tsid             => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 3);
+   l_crsr := cwms_text.retrieve_ts_binary_f (
+      p_tsid             => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_file_extension,
+            l_media_type,
+            l_blob;
+      exit when l_crsr%notfound;
+--      dbms_output.put_line(
+--         l_count
+--         ||chr(9)||l_date_time
+--         ||chr(9)||l_text
+--         ||chr(9)||l_number
+--         ||chr(9)||l_media_type
+--         ||chr(9)||l_file_extension
+--         ||chr(9)||utl_i18n.raw_to_char(l_blob));
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 3);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_old, 'Elev', 'Binary'), cwms_util.delete_all, c_office_id);
+   --.... cwms_alarm package
    cwms_alarm.notify_loc_lvl_ind_state (
       p_ts_id              => l_lrts_ts_id_old,
       p_specified_level_id => 'Test',
@@ -5549,11 +6091,6 @@ begin
       p_max_state_notify   => 5,
       p_office_id          => c_office_id);
    --.... other packages
-   cwms_level.store_location_level(cwms_t_location_level(
-      c_office_id, l_location_id, 'Elev-Lrts', 'Inst', '0', 'Test',
-      null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-      'T', l_lrts_ts_id_old,
-      null, null, null, null, null, null));
    cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_old, 'F', 'T', c_office_id);
    begin
       cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_new_copy, 'F', 'F', c_office_id);
@@ -5813,7 +6350,18 @@ begin
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
-   --.... other packages
+   --.... cwms_cat package
+   cwms_cat.cat_ts_aliases(
+      p_cwms_cat     => l_crsr,
+      p_ts_id        => l_lrts_ts_id_new,
+      p_db_office_id => c_office_id);
+   close l_crsr;
+   cwms_cat.cat_ts_id(
+      p_cwms_cat            => l_crsr,
+      p_ts_subselect_string => l_lrts_ts_id_old,
+      p_db_office_id        => c_office_id);
+   close l_crsr;
+   --.... cwms_level package
    begin
       cwms_level.store_location_level(cwms_t_location_level(
          c_office_id, l_location_id, 'Elev-Lrts', 'Inst', '0', 'Test',
@@ -5837,6 +6385,33 @@ begin
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
+   --.... cwms_forecast package
+   l_crsr := cwms_forecast.cat_ts_f(
+      p_location_id     => l_location_id,
+      p_forecast_id     => 'TEST',
+      p_cwms_ts_id_mask => l_lrts_ts_id_new,
+      p_office_id       => c_office_id);
+   close l_crsr;
+   begin
+      cwms_forecast.retrieve_ts(
+         p_ts_cursor      => l_crsr,
+         p_version_date   => l_version_date,
+         p_location_id    => l_location_id,
+         p_forecast_id    => 'TEST',
+         p_cwms_ts_id     => replace(l_lrts_ts_id_new, '.Test', '.Forecast'),
+         p_units          => 'ft',
+         p_forecast_time  => l_end_time,
+         p_issue_time     => l_start_time,
+         p_start_time     => l_start_time,
+         p_end_time       => l_end_time,
+         p_time_zone      => c_timezone_ids(1),
+         p_office_id      => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   --.... other packages
    begin
       cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_new, 'F', 'T', c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
@@ -5965,12 +6540,42 @@ begin
    cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old)), c_office_id);
    cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_str_tab(l_lrts_ts_id_old), 'F', c_office_id);
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
-   --.... cwms_alarm package
+   --.... cwms_cat package
+   cwms_cat.cat_ts_aliases(
+      p_cwms_cat     => l_crsr,
+      p_ts_id        => l_lrts_ts_id_old,
+      p_db_office_id => c_office_id);
+   close l_crsr;
+   cwms_cat.cat_ts_id(
+      p_cwms_cat            => l_crsr,
+      p_ts_subselect_string => l_lrts_ts_id_old,
+      p_db_office_id        => c_office_id);
+   close l_crsr;
+   --.... cwms_level package
+   cwms_level.store_location_level(cwms_t_location_level(
+      c_office_id, l_location_id, 'Elev-Lrts', 'Inst', '0', 'Test',
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      'T', l_lrts_ts_id_old,
+      null, null, null, null, null, null));
    cwms_level.store_location_level3(
       p_location_level_id => l_location_id||'.Elev-Lrts.Inst.0.Test',
       p_level_value       => null,
       p_level_units       => 'ft',
       p_tsid              => l_lrts_ts_id_old,
+      p_office_id         => c_office_id);
+   l_ts_data_out := cwms_level.retrieve_location_level_values(
+      p_ts_id         => l_lrts_ts_id_old,
+      p_spec_level_id => 'Test',
+      p_level_units   => 'ft',
+      p_start_time    => l_start_time,
+      p_end_time      => l_end_time,
+      p_office_id     => c_office_id);
+   l_ts_data_out := cwms_level.retrieve_loc_lvl_values3(
+      p_ts_id             => l_lrts_ts_id_old,
+      p_location_level_id => l_location_id||'.Elev-Lrts.Inst.0.Test',
+      p_level_units       => 'ft',
+      p_start_time        => l_start_time,
+      p_end_time          => l_end_time,
       p_office_id         => c_office_id);
    cwms_level.store_loc_lvl_indicator(
       p_loc_lvl_indicator_id => l_location_id||'.Elev-Lrts.Inst.0.Test.VALUE',
@@ -5987,6 +6592,487 @@ begin
          p_comparison_unit_id    => 'ft',
          p_office_id             => c_office_id);
    end loop;
+   cwms_level.get_level_indicator_values (
+      p_cursor               => l_crsr,
+      p_tsid                 => l_lrts_ts_id_old,
+      p_eval_time            => l_end_time,
+      p_time_zone            => 'UTC',
+      p_specified_level_mask => 'Test',
+      p_indicator_id_mask    => 'VALUE',
+      p_unit_system          => 'EN',
+      p_office_id            => c_office_id);
+   close l_crsr;
+   cwms_level.get_level_indicator_max_values (
+      p_cursor               => l_crsr,
+      p_tsid                 => l_lrts_ts_id_old,
+      p_start_time           => l_start_time,
+      p_end_time             => l_end_time,
+      p_time_zone            => 'UTC',
+      p_specified_level_mask => 'Test',
+      p_indicator_id_mask    => 'VALUE',
+      p_unit_system          => 'EN',
+      p_office_id            => c_office_id);
+   close l_crsr;
+   l_ts_data_out := cwms_level.eval_level_indicator_expr (
+      p_tsid               => l_lrts_ts_id_old,
+      p_start_time         => l_start_time,
+      p_end_time           => l_end_time,
+      p_unit               => 'ft',
+      p_specified_level_id => 'Test',
+      p_indicator_id       => 'VALUE',
+      p_condition_number   => 3,
+      p_office_id          => c_office_id);
+   --.... cwms_forecast package
+   l_crsr := cwms_forecast.cat_ts_f(
+      p_location_id     => l_location_id,
+      p_forecast_id     => 'TEST',
+      p_cwms_ts_id_mask => l_lrts_ts_id_old,
+      p_office_id       => c_office_id);
+   close l_crsr;
+   cwms_forecast.retrieve_ts(
+      p_ts_cursor      => l_crsr,
+      p_version_date   => l_version_date,
+      p_location_id    => l_location_id,
+      p_forecast_id    => 'TEST',
+      p_cwms_ts_id     => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
+      p_units          => 'ft',
+      p_forecast_time  => l_end_time,
+      p_issue_time     => l_start_time,
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_time_zone      => c_timezone_ids(1),
+      p_office_id      => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
+   for i in 1..l_date_times.count loop
+      ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
+      ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
+      ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
+   end loop;
+   --.... cwms_text package
+   select date_time bulk collect into l_date_times from table(l_ts_data);
+   cwms_text.store_ts_std_text(
+      p_tsid         => l_lrts_ts_id_old,
+      p_std_text_id  => 'A',
+      p_times        => l_date_times,
+      p_time_zone    => 'UTC',
+      p_attribute    => 1,
+      p_office_id    => c_office_id);
+   cwms_text.store_ts_std_text(
+      p_tsid         => l_lrts_ts_id_old,
+      p_std_text_id  => 'B',
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_time_zone    => 'UTC',
+      p_attribute    => 2,
+      p_office_id    => c_office_id);
+   l_number := cwms_text.get_ts_std_text_count(
+      p_tsid             => l_lrts_ts_id_old,
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 2);
+   l_crsr := cwms_text.retrieve_ts_std_text_f (
+      p_tsid             => l_lrts_ts_id_old,
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   dbms_output.put_line(l_lrts_ts_id_old);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 2);
+   cwms_text.store_ts_std_text(
+      p_tsid         => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_std_text_id  => 'C',
+      p_times        => l_date_times,
+      p_time_zone    => 'UTC',
+      p_attribute    => 1,
+      p_office_id    => c_office_id);
+   cwms_text.store_ts_std_text(
+      p_tsid         => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_std_text_id  => 'D',
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_time_zone    => 'UTC',
+      p_attribute    => 2,
+      p_office_id    => c_office_id);
+   l_number := cwms_text.get_ts_std_text_count(
+      p_tsid             => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 2);
+   l_crsr := cwms_text.retrieve_ts_std_text_f (
+      p_tsid             => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   dbms_output.put_line(replace(l_lrts_ts_id_old, 'Elev', 'Text'));
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 2);
+   cwms_text.delete_ts_std_text(
+      p_tsid             => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   cwms_text.store_ts_text (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text        => 'Nonstandard text-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 1,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text        => 'Nonstandard text-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.store_text(
+      p_text           => 'First text in AT_CLOB table',
+      p_id             => '/TEST/STORE_TS_TEXT_ID-1',
+      p_fail_if_exists => 'F',
+      p_office_id      => c_office_id);
+   l_number := cwms_text.store_text(
+      p_text           => 'Second text in AT_CLOB table',
+      p_id             => '/TEST/STORE_TS_TEXT_ID-2',
+      p_fail_if_exists => 'F',
+      p_office_id      => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_text_count(
+      p_tsid        => l_lrts_ts_id_old,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 4);
+   l_crsr := cwms_text.retrieve_ts_text_f (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 4);
+   cwms_text.delete_ts_text (
+      p_tsid        => l_lrts_ts_id_old,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_old, 'Elev', 'Text'), cwms_util.delete_all, c_office_id);
+   begin
+      cwms_text.store_ts_text (
+         p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+         p_text        => 'Nonstandard text-1',
+         p_start_time  => l_start_time,
+         p_end_time    => l_end_time,
+         p_time_zone   => 'UTC',
+         p_attribute   => 1,
+         p_office_id   => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(
+            dbms_utility.format_error_stack,
+            '.+Cannot use this version of STORE_TS_TEXT to store text to a non-existent irregular time series.+',
+            'mn')).to_be_true;
+   end;
+   cwms_text.store_ts_text (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_text        => 'Nonstandard text-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_text_count(
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 3);
+   l_crsr := cwms_text.retrieve_ts_text_f (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Text'),
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 3);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_old, 'Elev', 'Text'), cwms_util.delete_all, c_office_id);
+   cwms_text.store_ts_binary (
+      p_tsid        => l_lrts_ts_id_old,
+      p_binary      => utl_i18n.string_to_raw('Some binary-1', 'AL32UTF8'),
+      p_binary_type => '.bin',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 1,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary (
+      p_tsid        => l_lrts_ts_id_old,
+      p_binary      => utl_i18n.string_to_raw('Some binary-2', 'AL32UTF8'),
+      p_binary_type => '.bin',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_binary(
+      p_binary_code       => l_number,
+      p_binary            => utl_i18n.string_to_raw('First binary in AT_BLOB table', 'AL32UTF8'),
+      p_id                => '/TEST/STORE_TS_BINARY_ID-1',
+      p_media_type_or_ext => '.bin',
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+   cwms_text.store_binary(
+      p_binary_code       => l_number,
+      p_binary            => utl_i18n.string_to_raw('Second binary in AT_BLOB table', 'AL32UTF8'),
+      p_id                => '/TEST/STORE_TS_BINARY_ID-2',
+      p_media_type_or_ext => '.bin',
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => l_lrts_ts_id_old,
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => l_lrts_ts_id_old,
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_binary_count(
+      p_tsid             => l_lrts_ts_id_old,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 4);
+   l_crsr := cwms_text.retrieve_ts_binary_f (
+      p_tsid             => l_lrts_ts_id_old,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_file_extension,
+            l_media_type,
+            l_blob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+      --dbms_output.put_line(
+      --   l_count
+      --   ||chr(9)||l_date_time
+      --   ||chr(9)||l_text
+      --   ||chr(9)||l_number
+      --   ||chr(9)||l_media_type
+      --   ||chr(9)||l_file_extension
+      --   ||chr(9)||utl_i18n.raw_to_char(l_blob));
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 4);
+   cwms_text.delete_ts_binary (
+      p_tsid             => l_lrts_ts_id_old,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   begin
+      cwms_text.store_ts_binary (
+         p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+         p_binary      => utl_i18n.string_to_raw('Some binary-1', 'AL32UTF8'),
+         p_binary_type => 'bin',
+         p_start_time  => l_start_time,
+         p_end_time    => l_end_time,
+         p_time_zone   => 'UTC',
+         p_attribute   => 1,
+         p_office_id   => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(
+            dbms_utility.format_error_stack,
+            '.+Cannot use this version of STORE_TS_BINARY to store binary to a non-existent irregular time series.+',
+            'mn')).to_be_true;
+   end;
+   cwms_text.store_ts_binary (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+      p_binary      => utl_i18n.string_to_raw('Some binary-2', 'AL32UTF8'),
+      p_binary_type => 'bin',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_binary_count(
+      p_tsid             => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 3);
+   l_crsr := cwms_text.retrieve_ts_binary_f (
+      p_tsid             => replace(l_lrts_ts_id_old, 'Elev', 'Binary'),
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_file_extension,
+            l_media_type,
+            l_blob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+      --dbms_output.put_line(
+      --   l_count
+      --   ||chr(9)||l_date_time
+      --   ||chr(9)||l_text
+      --   ||chr(9)||l_number
+      --   ||chr(9)||l_media_type
+      --   ||chr(9)||l_file_extension
+      --   ||chr(9)||utl_i18n.raw_to_char(l_blob));
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 3);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_old, 'Elev', 'Binary'), cwms_util.delete_all, c_office_id);
+   --.... cwms_alarm package
    cwms_alarm.notify_loc_lvl_ind_state (
       p_ts_id              => l_lrts_ts_id_old,
       p_specified_level_id => 'Test',
@@ -5995,11 +7081,6 @@ begin
       p_max_state_notify   => 5,
       p_office_id          => c_office_id);
    --.... other packages
-   cwms_level.store_location_level(cwms_t_location_level(
-      c_office_id, l_location_id, 'Elev-Lrts', 'Inst', '0', 'Test',
-      null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-      'T', l_lrts_ts_id_old,
-      null, null, null, null, null, null));
    cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_old, 'F', 'T', c_office_id);
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_old_copy, 'F', 'F', c_office_id);
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_new_copy, 'F', 'F', c_office_id);
@@ -6120,12 +7201,42 @@ begin
    cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new)), c_office_id);
    cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_str_tab(l_lrts_ts_id_new), 'F', c_office_id);
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
-   --.... cwms_alarm package
+   --.... cwms_cat package
+   cwms_cat.cat_ts_aliases(
+      p_cwms_cat     => l_crsr,
+      p_ts_id        => l_lrts_ts_id_new,
+      p_db_office_id => c_office_id);
+   close l_crsr;
+   cwms_cat.cat_ts_id(
+      p_cwms_cat            => l_crsr,
+      p_ts_subselect_string => l_lrts_ts_id_new,
+      p_db_office_id        => c_office_id);
+   close l_crsr;
+   --.... cwms_level package
+   cwms_level.store_location_level(cwms_t_location_level(
+      c_office_id, l_location_id, 'Elev-Lrts', 'Inst', '0', 'Test',
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      'T', l_lrts_ts_id_new,
+      null, null, null, null, null, null));
    cwms_level.store_location_level3(
       p_location_level_id => l_location_id||'.Elev-Lrts.Inst.0.Test',
       p_level_value       => null,
       p_level_units       => 'ft',
       p_tsid              => l_lrts_ts_id_new,
+      p_office_id         => c_office_id);
+   l_ts_data_out := cwms_level.retrieve_location_level_values(
+      p_ts_id         => l_lrts_ts_id_new,
+      p_spec_level_id => 'Test',
+      p_level_units   => 'ft',
+      p_start_time    => l_start_time,
+      p_end_time      => l_end_time,
+      p_office_id     => c_office_id);
+   l_ts_data_out := cwms_level.retrieve_loc_lvl_values3(
+      p_ts_id             => l_lrts_ts_id_new,
+      p_location_level_id => l_location_id||'.Elev-Lrts.Inst.0.Test',
+      p_level_units       => 'ft',
+      p_start_time        => l_start_time,
+      p_end_time          => l_end_time,
       p_office_id         => c_office_id);
    cwms_level.store_loc_lvl_indicator(
       p_loc_lvl_indicator_id => l_location_id||'.Elev-Lrts.Inst.0.Test.VALUE',
@@ -6142,6 +7253,457 @@ begin
          p_comparison_unit_id    => 'ft',
          p_office_id             => c_office_id);
    end loop;
+   cwms_level.get_level_indicator_values (
+      p_cursor               => l_crsr,
+      p_tsid                 => l_lrts_ts_id_new,
+      p_eval_time            => l_end_time,
+      p_time_zone            => 'UTC',
+      p_specified_level_mask => 'Test',
+      p_indicator_id_mask    => 'VALUE',
+      p_unit_system          => 'EN',
+      p_office_id            => c_office_id);
+   close l_crsr;
+   cwms_level.get_level_indicator_max_values (
+      p_cursor               => l_crsr,
+      p_tsid                 => l_lrts_ts_id_new,
+      p_start_time           => l_start_time,
+      p_end_time             => l_end_time,
+      p_time_zone            => 'UTC',
+      p_specified_level_mask => 'Test',
+      p_indicator_id_mask    => 'VALUE',
+      p_unit_system          => 'EN',
+      p_office_id            => c_office_id);
+   close l_crsr;
+   l_ts_data_out := cwms_level.eval_level_indicator_expr (
+      p_tsid               => l_lrts_ts_id_new,
+      p_start_time         => l_start_time,
+      p_end_time           => l_end_time,
+      p_unit               => 'ft',
+      p_specified_level_id => 'Test',
+      p_indicator_id       => 'VALUE',
+      p_condition_number   => 3,
+      p_office_id          => c_office_id);
+   --.... cwms_forecast package
+   l_crsr := cwms_forecast.cat_ts_f(
+      p_location_id     => l_location_id,
+      p_forecast_id     => 'TEST',
+      p_cwms_ts_id_mask => l_lrts_ts_id_new,
+      p_office_id       => c_office_id);
+   close l_crsr;
+   cwms_forecast.retrieve_ts(
+      p_ts_cursor      => l_crsr,
+      p_version_date   => l_version_date,
+      p_location_id    => l_location_id,
+      p_forecast_id    => 'TEST',
+      p_cwms_ts_id     => replace(l_lrts_ts_id_new, '.Test', '.Forecast'),
+      p_units          => 'ft',
+      p_forecast_time  => l_end_time,
+      p_issue_time     => l_start_time,
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_time_zone      => c_timezone_ids(1),
+      p_office_id      => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
+   for i in 1..l_date_times.count loop
+      ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
+      ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
+      ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
+   end loop;
+   --.... cwms_text package
+   select date_time bulk collect into l_date_times from table(l_ts_data);
+   cwms_text.store_ts_std_text(
+      p_tsid         => l_lrts_ts_id_new,
+      p_std_text_id  => 'A',
+      p_times        => l_date_times,
+      p_time_zone    => 'UTC',
+      p_attribute    => 1,
+      p_office_id    => c_office_id);
+   cwms_text.store_ts_std_text(
+      p_tsid         => l_lrts_ts_id_new,
+      p_std_text_id  => 'B',
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_time_zone    => 'UTC',
+      p_attribute    => 2,
+      p_office_id    => c_office_id);
+   l_number := cwms_text.get_ts_std_text_count(
+      p_tsid             => l_lrts_ts_id_new,
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 2);
+   l_crsr := cwms_text.retrieve_ts_std_text_f (
+      p_tsid             => l_lrts_ts_id_new,
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   dbms_output.put_line(l_lrts_ts_id_new);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 2);
+   cwms_text.store_ts_std_text(
+      p_tsid         => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_std_text_id  => 'C',
+      p_times        => l_date_times,
+      p_time_zone    => 'UTC',
+      p_attribute    => 1,
+      p_office_id    => c_office_id);
+   cwms_text.store_ts_std_text(
+      p_tsid         => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_std_text_id  => 'D',
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_time_zone    => 'UTC',
+      p_attribute    => 2,
+      p_office_id    => c_office_id);
+   cwms_text.delete_ts_std_text(
+      p_tsid             => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   cwms_text.store_ts_text (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text        => 'Nonstandard text-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 1,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text        => 'Nonstandard text-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.store_text(
+      p_text           => 'First text in AT_CLOB table',
+      p_id             => '/TEST/STORE_TS_TEXT_ID-1',
+      p_fail_if_exists => 'F',
+      p_office_id      => c_office_id);
+   l_number := cwms_text.store_text(
+      p_text           => 'Second text in AT_CLOB table',
+      p_id             => '/TEST/STORE_TS_TEXT_ID-2',
+      p_fail_if_exists => 'F',
+      p_office_id      => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_text_count(
+      p_tsid        => l_lrts_ts_id_new,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 4);
+   l_crsr := cwms_text.retrieve_ts_text_f (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 4);
+   cwms_text.delete_ts_text (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_new, 'Elev', 'Text'), cwms_util.delete_all, c_office_id);
+   begin
+      cwms_text.store_ts_text (
+         p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+         p_text        => 'Nonstandard text-1',
+         p_start_time  => l_start_time,
+         p_end_time    => l_end_time,
+         p_time_zone   => 'UTC',
+         p_attribute   => 1,
+         p_office_id   => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(
+            dbms_utility.format_error_stack,
+            '.+Cannot use this version of STORE_TS_TEXT to store text to a non-existent irregular time series.+',
+            'mn')).to_be_true;
+   end;
+   cwms_text.store_ts_text (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_text        => 'Nonstandard text-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_text_count(
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 3);
+   l_crsr := cwms_text.retrieve_ts_text_f (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 3);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_new, 'Elev', 'Text'), cwms_util.delete_all, c_office_id);
+   cwms_text.store_ts_binary (
+      p_tsid        => l_lrts_ts_id_new,
+      p_binary      => utl_i18n.string_to_raw('Some binary-1', 'AL32UTF8'),
+      p_binary_type => '.bin',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 1,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary (
+      p_tsid        => l_lrts_ts_id_new,
+      p_binary      => utl_i18n.string_to_raw('Some binary-2', 'AL32UTF8'),
+      p_binary_type => '.bin',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_binary(
+      p_binary_code       => l_number,
+      p_binary            => utl_i18n.string_to_raw('First binary in AT_BLOB table', 'AL32UTF8'),
+      p_id                => '/TEST/STORE_TS_BINARY_ID-1',
+      p_media_type_or_ext => '.bin',
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+   cwms_text.store_binary(
+      p_binary_code       => l_number,
+      p_binary            => utl_i18n.string_to_raw('Second binary in AT_BLOB table', 'AL32UTF8'),
+      p_id                => '/TEST/STORE_TS_BINARY_ID-2',
+      p_media_type_or_ext => '.bin',
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => l_lrts_ts_id_new,
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => l_lrts_ts_id_new,
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_binary_count(
+      p_tsid             => l_lrts_ts_id_new,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 4);
+   l_crsr := cwms_text.retrieve_ts_binary_f (
+      p_tsid             => l_lrts_ts_id_new,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_file_extension,
+            l_media_type,
+            l_blob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+      --dbms_output.put_line(
+      --   l_count
+      --   ||chr(9)||l_date_time
+      --   ||chr(9)||l_text
+      --   ||chr(9)||l_number
+      --   ||chr(9)||l_media_type
+      --   ||chr(9)||l_file_extension
+      --   ||chr(9)||utl_i18n.raw_to_char(l_blob));
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 4);
+   cwms_text.delete_ts_binary (
+      p_tsid             => l_lrts_ts_id_new,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   begin
+      cwms_text.store_ts_binary (
+         p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+         p_binary      => utl_i18n.string_to_raw('Some binary-1', 'AL32UTF8'),
+         p_binary_type => 'bin',
+         p_start_time  => l_start_time,
+         p_end_time    => l_end_time,
+         p_time_zone   => 'UTC',
+         p_attribute   => 1,
+         p_office_id   => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(
+            dbms_utility.format_error_stack,
+            '.+Cannot use this version of STORE_TS_BINARY to store binary to a non-existent irregular time series.+',
+            'mn')).to_be_true;
+   end;
+   cwms_text.store_ts_binary (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+      p_binary      => utl_i18n.string_to_raw('Some binary-2', 'AL32UTF8'),
+      p_binary_type => 'bin',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_binary_count(
+      p_tsid             => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 3);
+   l_crsr := cwms_text.retrieve_ts_binary_f (
+      p_tsid             => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_file_extension,
+            l_media_type,
+            l_blob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+      --dbms_output.put_line(
+      --   l_count
+      --   ||chr(9)||l_date_time
+      --   ||chr(9)||l_text
+      --   ||chr(9)||l_number
+      --   ||chr(9)||l_media_type
+      --   ||chr(9)||l_file_extension
+      --   ||chr(9)||utl_i18n.raw_to_char(l_blob));
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 3);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_new, 'Elev', 'Binary'), cwms_util.delete_all, c_office_id);
+   --.... cwms_alarm package
    cwms_alarm.notify_loc_lvl_ind_state (
       p_ts_id              => l_lrts_ts_id_new,
       p_specified_level_id => 'Test',
@@ -6150,11 +7712,6 @@ begin
       p_max_state_notify   => 5,
       p_office_id          => c_office_id);
    --.... other packages
-   cwms_level.store_location_level(cwms_t_location_level(
-      c_office_id, l_location_id, 'Elev-Lrts', 'Inst', '0', 'Test',
-      null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-      'T', l_lrts_ts_id_new,
-      null, null, null, null, null, null));
    cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_new, 'F', 'T', c_office_id);
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_old_copy, 'F', 'F', c_office_id);
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_new_copy, 'F', 'F', c_office_id);
@@ -6200,6 +7757,10 @@ begin
          p_versioned  => 'F',
          p_office_id  => c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+ERROR: Session requires new LRTS ID format.+', 'mn')).to_be_true;
+   end;
    begin
       cwms_ts.update_ts_id(
          p_cwms_ts_id          => l_lrts_ts_id_old,
@@ -6208,11 +7769,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+1DayLocal is not a valid interval.+', 'mn')).to_be_true;
-   end;
-   exception
-      when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+ERROR: Session requires new LRTS ID format.+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.zstore_ts(
@@ -6415,7 +7972,18 @@ begin
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
-   --.... other packages
+   --.... cwms_cat package
+   cwms_cat.cat_ts_aliases(
+      p_cwms_cat     => l_crsr,
+      p_ts_id        => l_lrts_ts_id_old,
+      p_db_office_id => c_office_id);
+   close l_crsr;
+   cwms_cat.cat_ts_id(
+      p_cwms_cat            => l_crsr,
+      p_ts_subselect_string => l_lrts_ts_id_old,
+      p_db_office_id        => c_office_id);
+   close l_crsr;
+   --.... cwms_level package
    begin
       cwms_level.store_location_level(cwms_t_location_level(
          c_office_id, l_location_id, 'Elev-Lrts', 'Inst', '0', 'Test',
@@ -6439,6 +8007,38 @@ begin
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
+   --.... cwms_forecast package
+   l_crsr := cwms_forecast.cat_ts_f(
+      p_location_id     => l_location_id,
+      p_forecast_id     => 'TEST',
+      p_cwms_ts_id_mask => l_lrts_ts_id_old,
+      p_office_id       => c_office_id);
+   cwms_forecast.retrieve_ts(
+      p_ts_cursor      => l_crsr,
+      p_version_date   => l_version_date,
+      p_location_id    => l_location_id,
+      p_forecast_id    => 'TEST',
+      p_cwms_ts_id     => replace(l_lrts_ts_id_old, '.Test', '.Forecast'), -- doesn't fail; not required to be LRTS
+      p_units          => 'ft',
+      p_forecast_time  => l_end_time,
+      p_issue_time     => l_start_time,
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_time_zone      => c_timezone_ids(1),
+      p_office_id      => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
+   for i in 1..l_date_times.count loop
+      ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
+      ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
+      ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
+   end loop;
+   --.... other packages
    begin
       cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_old, 'F', 'T', c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
@@ -6451,7 +8051,6 @@ begin
          p_screening_id        => 'Elev Range 1',
          p_scr_assign_array    => cwms_t_screen_assign_array(cwms_t_screen_assign(l_lrts_ts_id_old, 'T', replace(l_lrts_ts_id_old, '.Test', '.Rev'))),
          p_db_office_id        => c_office_id);
-      cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when no_data_found then null;
    end;
@@ -6553,12 +8152,42 @@ begin
    cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new)), c_office_id);
    cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_str_tab(l_lrts_ts_id_new), 'F', c_office_id);
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
-   --.... cwms_alarm package
+   --.... cwms_cat package
+   cwms_cat.cat_ts_aliases(
+      p_cwms_cat     => l_crsr,
+      p_ts_id        => l_lrts_ts_id_new,
+      p_db_office_id => c_office_id);
+   close l_crsr;
+   cwms_cat.cat_ts_id(
+      p_cwms_cat            => l_crsr,
+      p_ts_subselect_string => l_lrts_ts_id_new,
+      p_db_office_id        => c_office_id);
+   close l_crsr;
+   --.... cwms_level package
+   cwms_level.store_location_level(cwms_t_location_level(
+      c_office_id, l_location_id, 'Elev-Lrts', 'Inst', '0', 'Test',
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      'T', l_lrts_ts_id_old,
+      null, null, null, null, null, null));
    cwms_level.store_location_level3(
       p_location_level_id => l_location_id||'.Elev-Lrts.Inst.0.Test',
       p_level_value       => null,
       p_level_units       => 'ft',
       p_tsid              => l_lrts_ts_id_new,
+      p_office_id         => c_office_id);
+   l_ts_data_out := cwms_level.retrieve_location_level_values(
+      p_ts_id         => l_lrts_ts_id_new,
+      p_spec_level_id => 'Test',
+      p_level_units   => 'ft',
+      p_start_time    => l_start_time,
+      p_end_time      => l_end_time,
+      p_office_id     => c_office_id);
+   l_ts_data_out := cwms_level.retrieve_loc_lvl_values3(
+      p_ts_id             => l_lrts_ts_id_new,
+      p_location_level_id => l_location_id||'.Elev-Lrts.Inst.0.Test',
+      p_level_units       => 'ft',
+      p_start_time        => l_start_time,
+      p_end_time          => l_end_time,
       p_office_id         => c_office_id);
    cwms_level.store_loc_lvl_indicator(
       p_loc_lvl_indicator_id => l_location_id||'.Elev-Lrts.Inst.0.Test.VALUE',
@@ -6575,6 +8204,487 @@ begin
          p_comparison_unit_id    => 'ft',
          p_office_id             => c_office_id);
    end loop;
+   cwms_level.get_level_indicator_values (
+      p_cursor               => l_crsr,
+      p_tsid                 => l_lrts_ts_id_new,
+      p_eval_time            => l_end_time,
+      p_time_zone            => 'UTC',
+      p_specified_level_mask => 'Test',
+      p_indicator_id_mask    => 'VALUE',
+      p_unit_system          => 'EN',
+      p_office_id            => c_office_id);
+   close l_crsr;
+   cwms_level.get_level_indicator_max_values (
+      p_cursor               => l_crsr,
+      p_tsid                 => l_lrts_ts_id_new,
+      p_start_time           => l_start_time,
+      p_end_time             => l_end_time,
+      p_time_zone            => 'UTC',
+      p_specified_level_mask => 'Test',
+      p_indicator_id_mask    => 'VALUE',
+      p_unit_system          => 'EN',
+      p_office_id            => c_office_id);
+   close l_crsr;
+   l_ts_data_out := cwms_level.eval_level_indicator_expr (
+      p_tsid               => l_lrts_ts_id_new,
+      p_start_time         => l_start_time,
+      p_end_time           => l_end_time,
+      p_unit               => 'ft',
+      p_specified_level_id => 'Test',
+      p_indicator_id       => 'VALUE',
+      p_condition_number   => 3,
+      p_office_id          => c_office_id);
+   --.... cwms_forecast package
+   l_crsr := cwms_forecast.cat_ts_f(
+      p_location_id     => l_location_id,
+      p_forecast_id     => 'TEST',
+      p_cwms_ts_id_mask => l_lrts_ts_id_new,
+      p_office_id       => c_office_id);
+   close l_crsr;
+   cwms_forecast.retrieve_ts(
+      p_ts_cursor      => l_crsr,
+      p_version_date   => l_version_date,
+      p_location_id    => l_location_id,
+      p_forecast_id    => 'TEST',
+      p_cwms_ts_id     => replace(l_lrts_ts_id_new, '.Test', '.Forecast'),
+      p_units          => 'ft',
+      p_forecast_time  => l_end_time,
+      p_issue_time     => l_start_time,
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_time_zone      => c_timezone_ids(1),
+      p_office_id      => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
+   for i in 1..l_date_times.count loop
+      ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
+      ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
+      ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
+   end loop;
+   --.... cwms_text package
+   select date_time bulk collect into l_date_times from table(l_ts_data);
+   cwms_text.store_ts_std_text(
+      p_tsid         => l_lrts_ts_id_new,
+      p_std_text_id  => 'A',
+      p_times        => l_date_times,
+      p_time_zone    => 'UTC',
+      p_attribute    => 1,
+      p_office_id    => c_office_id);
+   cwms_text.store_ts_std_text(
+      p_tsid         => l_lrts_ts_id_new,
+      p_std_text_id  => 'B',
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_time_zone    => 'UTC',
+      p_attribute    => 2,
+      p_office_id    => c_office_id);
+   l_number := cwms_text.get_ts_std_text_count(
+      p_tsid             => l_lrts_ts_id_new,
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 2);
+   l_crsr := cwms_text.retrieve_ts_std_text_f (
+      p_tsid             => l_lrts_ts_id_new,
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   dbms_output.put_line(l_lrts_ts_id_new);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 2);
+   cwms_text.store_ts_std_text(
+      p_tsid         => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_std_text_id  => 'C',
+      p_times        => l_date_times,
+      p_time_zone    => 'UTC',
+      p_attribute    => 1,
+      p_office_id    => c_office_id);
+   cwms_text.store_ts_std_text(
+      p_tsid         => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_std_text_id  => 'D',
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_time_zone    => 'UTC',
+      p_attribute    => 2,
+      p_office_id    => c_office_id);
+   l_number := cwms_text.get_ts_std_text_count(
+      p_tsid             => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 2);
+   l_crsr := cwms_text.retrieve_ts_std_text_f (
+      p_tsid             => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   dbms_output.put_line(replace(l_lrts_ts_id_new, 'Elev', 'Text'));
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 2);
+   cwms_text.delete_ts_std_text(
+      p_tsid             => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_std_text_id_mask => '*',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   cwms_text.store_ts_text (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text        => 'Nonstandard text-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 1,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text        => 'Nonstandard text-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.store_text(
+      p_text           => 'First text in AT_CLOB table',
+      p_id             => '/TEST/STORE_TS_TEXT_ID-1',
+      p_fail_if_exists => 'F',
+      p_office_id      => c_office_id);
+   l_number := cwms_text.store_text(
+      p_text           => 'Second text in AT_CLOB table',
+      p_id             => '/TEST/STORE_TS_TEXT_ID-2',
+      p_fail_if_exists => 'F',
+      p_office_id      => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_text_count(
+      p_tsid        => l_lrts_ts_id_new,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 4);
+   l_crsr := cwms_text.retrieve_ts_text_f (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 4);
+   cwms_text.delete_ts_text (
+      p_tsid        => l_lrts_ts_id_new,
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_new, 'Elev', 'Text'), cwms_util.delete_all, c_office_id);
+   begin
+      cwms_text.store_ts_text (
+         p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+         p_text        => 'Nonstandard text-1',
+         p_start_time  => l_start_time,
+         p_end_time    => l_end_time,
+         p_time_zone   => 'UTC',
+         p_attribute   => 1,
+         p_office_id   => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(
+            dbms_utility.format_error_stack,
+            '.+Cannot use this version of STORE_TS_TEXT to store text to a non-existent irregular time series.+',
+            'mn')).to_be_true;
+   end;
+   cwms_text.store_ts_text (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_text        => 'Nonstandard text-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_text_id (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_text_id     => '/TEST/STORE_TS_TEXT_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_text_count(
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 3);
+   l_crsr := cwms_text.retrieve_ts_text_f (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Text'),
+      p_text_mask   => '*',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_office_id   => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_clob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 3);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_new, 'Elev', 'Text'), cwms_util.delete_all, c_office_id);
+   cwms_text.store_ts_binary (
+      p_tsid        => l_lrts_ts_id_new,
+      p_binary      => utl_i18n.string_to_raw('Some binary-1', 'AL32UTF8'),
+      p_binary_type => '.bin',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 1,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary (
+      p_tsid        => l_lrts_ts_id_new,
+      p_binary      => utl_i18n.string_to_raw('Some binary-2', 'AL32UTF8'),
+      p_binary_type => '.bin',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_binary(
+      p_binary_code       => l_number,
+      p_binary            => utl_i18n.string_to_raw('First binary in AT_BLOB table', 'AL32UTF8'),
+      p_id                => '/TEST/STORE_TS_BINARY_ID-1',
+      p_media_type_or_ext => '.bin',
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+   cwms_text.store_binary(
+      p_binary_code       => l_number,
+      p_binary            => utl_i18n.string_to_raw('Second binary in AT_BLOB table', 'AL32UTF8'),
+      p_id                => '/TEST/STORE_TS_BINARY_ID-2',
+      p_media_type_or_ext => '.bin',
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => l_lrts_ts_id_new,
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => l_lrts_ts_id_new,
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_binary_count(
+      p_tsid             => l_lrts_ts_id_new,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 4);
+   l_crsr := cwms_text.retrieve_ts_binary_f (
+      p_tsid             => l_lrts_ts_id_new,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_file_extension,
+            l_media_type,
+            l_blob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+      --dbms_output.put_line(
+      --   l_count
+      --   ||chr(9)||l_date_time
+      --   ||chr(9)||l_text
+      --   ||chr(9)||l_number
+      --   ||chr(9)||l_media_type
+      --   ||chr(9)||l_file_extension
+      --   ||chr(9)||utl_i18n.raw_to_char(l_blob));
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 4);
+   cwms_text.delete_ts_binary (
+      p_tsid             => l_lrts_ts_id_new,
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   begin
+      cwms_text.store_ts_binary (
+         p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+         p_binary      => utl_i18n.string_to_raw('Some binary-1', 'AL32UTF8'),
+         p_binary_type => 'bin',
+         p_start_time  => l_start_time,
+         p_end_time    => l_end_time,
+         p_time_zone   => 'UTC',
+         p_attribute   => 1,
+         p_office_id   => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(
+            dbms_utility.format_error_stack,
+            '.+Cannot use this version of STORE_TS_BINARY to store binary to a non-existent irregular time series.+',
+            'mn')).to_be_true;
+   end;
+   cwms_text.store_ts_binary (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+      p_binary      => utl_i18n.string_to_raw('Some binary-2', 'AL32UTF8'),
+      p_binary_type => 'bin',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 2,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-1',
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_time_zone   => 'UTC',
+      p_attribute   => 3,
+      p_office_id   => c_office_id);
+   cwms_text.store_ts_binary_id (
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+      p_binary_id   => '/TEST/STORE_TS_BINARY_ID-2',
+      p_times       =>  l_date_times,
+      p_time_zone   => 'UTC',
+      p_attribute   => 4,
+      p_office_id   => c_office_id);
+   l_number := cwms_text.get_ts_binary_count(
+      p_tsid             => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   ut.expect(l_number).to_equal(l_ts_data.count * 3);
+   l_crsr := cwms_text.retrieve_ts_binary_f (
+      p_tsid             => replace(l_lrts_ts_id_new, 'Elev', 'Binary'),
+      p_binary_type_mask => 'bin',
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time,
+      p_time_zone        => 'UTC',
+      p_office_id        => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_date_time,
+            l_version_date,
+            l_data_entry_date,
+            l_text,
+            l_number,
+            l_file_extension,
+            l_media_type,
+            l_blob;
+      exit when l_crsr%notfound;
+      l_count := l_count + 1;
+      --dbms_output.put_line(
+      --   l_count
+      --   ||chr(9)||l_date_time
+      --   ||chr(9)||l_text
+      --   ||chr(9)||l_number
+      --   ||chr(9)||l_media_type
+      --   ||chr(9)||l_file_extension
+      --   ||chr(9)||utl_i18n.raw_to_char(l_blob));
+   end loop;
+   close l_crsr;
+   ut.expect(l_count).to_equal(l_ts_data.count * 3);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_new, 'Elev', 'Binary'), cwms_util.delete_all, c_office_id);
+   --.... cwms_alarm package
    cwms_alarm.notify_loc_lvl_ind_state (
       p_ts_id              => l_lrts_ts_id_new,
       p_specified_level_id => 'Test',
@@ -6583,13 +8693,14 @@ begin
       p_max_state_notify   => 5,
       p_office_id          => c_office_id);
    --.... other packages
-   cwms_level.store_location_level(cwms_t_location_level(
-      c_office_id, l_location_id, 'Elev-Lrts', 'Inst', '0', 'Test',
-      null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-      'T', l_lrts_ts_id_old,
-      null, null, null, null, null, null));
    cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_new, 'F', 'T', c_office_id);
-   cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_old_copy, 'F', 'F', c_office_id);
+   begin
+      cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_old_copy, 'F', 'F', c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+ERROR: Session requires new LRTS ID format.+', 'mn')).to_be_true;
+   end;
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_new_copy, 'F', 'F', c_office_id);
    cwms_vt.assign_screening_id (
       p_screening_id        => 'Elev Range 1',

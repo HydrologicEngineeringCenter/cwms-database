@@ -7409,6 +7409,7 @@ AS
       l_msgid            pls_integer;
       l_publish_message  boolean := true;
       l_published_msgid  integer;
+      l_codes            number_tab_t;
    begin
       ---------------------------------
       -- normalize the delete action --
@@ -7459,12 +7460,22 @@ AS
          -- extents
          delete from at_ts_extents where ts_code = l_ts_code;
          -- binary
-         delete from at_blob where blob_code in (select blob_code from at_tsv_binary where ts_code = l_ts_code);
+         select blob_code
+           bulk collect
+           into l_codes
+           from at_tsv_binary
+          where ts_code = l_ts_code;
          delete from at_tsv_binary where ts_code = l_ts_code;
+         delete from at_blob where blob_code in (select * from table(l_codes));
          -- text
          delete from at_tsv_std_text where ts_code = l_ts_code;
+         select clob_code
+           bulk collect
+           into l_codes
+           from at_tsv_text
+          where ts_code = l_ts_code;
          delete from at_tsv_text where ts_code = l_ts_code;
-         delete from at_clob where clob_code in (select clob_code from at_tsv_text where ts_code = l_ts_code);
+         delete from at_clob where clob_code in (select * from table (l_codes));
          -- profiles
          update at_ts_profile set reference_ts_code = null where reference_ts_code = l_ts_code;
          -- normal
@@ -8587,7 +8598,7 @@ AS
        WHERE s.ts_code = l_ts_code_old;
 
       COMMIT;
-      
+
       --------------------------
       -- clear package caches --
       --------------------------

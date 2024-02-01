@@ -1015,6 +1015,7 @@ AS
       p_interval        in number,
       p_local_time_zone in varchar2)
       return date_table_type deterministic;
+
    /**
     * Returns whether a time series id references an LRTS
     *
@@ -1180,6 +1181,11 @@ AS
     */
    function require_new_lrts_format_on_input
       return varchar2;
+   /*
+    * Undocumented
+    */
+    procedure new_lrts_id_required_error(
+      p_cwms_ts_id in varchar2);
 
    /**
     * Retrieves time series data for a specified time series and time window, including LRTS time zone

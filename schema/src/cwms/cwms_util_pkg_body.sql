@@ -125,8 +125,8 @@ as
             end;
             cwms_cache.put(g_timezone_cache, l_cache_key, l_timezone);
          end if;
-         return l_timezone;
       end if;
+      return l_timezone;
    end get_timezone;
 
    FUNCTION get_xml_time (p_local_time IN DATE, p_local_tz IN VARCHAR2)
