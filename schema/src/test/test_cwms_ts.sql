@@ -154,7 +154,7 @@ AS
     IS
         l_count   NUMBER;
     BEGIN
-        CWMS_TS.DELETE_TS (p_cwms_ts_id, cwms_util.delete_all);
+        CWMS_TS.DELETE_TS (p_cwms_ts_id, cwms_util.delete_all, p_db_office_id => '&&office_id');
         SELECT COUNT (*)
           INTO l_count
           FROM at_cwms_ts_id
@@ -199,7 +199,8 @@ AS
                               l_times,
                               l_values,
                               l_qualities,
-                              'Delete Insert');
+                              'Delete Insert',
+                              p_office_id   => '&&office_id');
         END LOOP;
         SELECT COUNT (*)
           INTO l_count
@@ -309,7 +310,8 @@ AS
                           l_times,
                           l_values,
                           l_qualities,
-                          'Delete Insert');
+                          'Delete Insert',
+                          p_office_id => '&&office_id');
         SELECT COUNT (*)
           INTO l_count
           FROM av_tsv
@@ -369,7 +371,8 @@ AS
                           l_times,
                           l_values,
                           l_qualities,
-                          'Delete Insert');
+                          'Delete Insert',
+                          p_office_id => '&&office_id');
         SELECT COUNT (*)
           INTO l_count
           FROM av_tsv
@@ -412,9 +415,10 @@ AS
             '&&office_id',
 --          test_base_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
             test_base_location_id || '.Flow.Ave.0.0.raw');
-        cwms_loc.rename_loc('&&office_id',
-		test_base_location_id,
-		test_renamed_base_location_id);
+      cwms_loc.rename_location(
+         test_base_location_id,
+         test_renamed_base_location_id,
+         '&&office_id');
 	COMMIT;
 --      delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
         delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.0.0.raw');
@@ -1055,11 +1059,6 @@ AS
         ------------------------
         -- store the location --
         ------------------------
-        begin
-           cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
-        exception
-           when others then null;
-        end;
         cwms_loc.store_location (p_location_id    => l_location_id,
                                  p_time_zone_id   => l_time_zone,
                                  p_active         => 'T',

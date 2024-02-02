@@ -3,135 +3,6 @@ SET define off
 CREATE OR REPLACE PACKAGE BODY cwms_cat
 IS
    -------------------------------------------------------------------------------
-   -- CAT_TS record-to-object conversion function
-   --
-   FUNCTION cat_ts_rec2obj (r IN cat_ts_rec_t)
-      RETURN cat_ts_obj_t
-   IS
-   BEGIN
-      RETURN cat_ts_obj_t (r.office_id, r.cwms_ts_id, r.interval_utc_offset);
-   END cat_ts_rec2obj;
-
-   -------------------------------------------------------------------------------
-   -- CAT_TS table-to-object conversion function
-   --
-   FUNCTION cat_ts_tab2obj (t IN cat_ts_tab_t)
-      RETURN cat_ts_otab_t
-   IS
-      o    cat_ts_otab_t;
-   BEGIN
-      FOR i IN 1 .. t.LAST
-      LOOP
-         o (i) := cat_ts_rec2obj (t (i));
-      END LOOP;
-
-      RETURN o;
-   END cat_ts_tab2obj;
-
-   -------------------------------------------------------------------------------
-   -- CAT_TS object-to-record conversion function
-   --
-   FUNCTION cat_ts_obj2rec (o IN cat_ts_obj_t)
-      RETURN cat_ts_rec_t
-   IS
-      r    cat_ts_rec_t := NULL;
-   BEGIN
-      IF o IS NOT NULL
-      THEN
-         r.office_id := o.office_id;
-         r.cwms_ts_id := o.cwms_ts_id;
-         r.interval_utc_offset := o.interval_utc_offset;
-      END IF;
-
-      RETURN r;
-   END cat_ts_obj2rec;
-
-   -------------------------------------------------------------------------------
-   -- CAT_TS object-to-table conversion function
-   --
-   FUNCTION cat_ts_obj2tab (o IN cat_ts_otab_t)
-      RETURN cat_ts_tab_t
-   IS
-      t    cat_ts_tab_t;
-   BEGIN
-      FOR i IN 1 .. o.LAST
-      LOOP
-         t (i) := cat_ts_obj2rec (o (i));
-      END LOOP;
-
-      RETURN t;
-   END cat_ts_obj2tab;
-
-   -------------------------------------------------------------------------------
-   -- CAT_TS_CWMS_20 record-to-object conversion function
-   --
-   FUNCTION cat_ts_cwms_20_rec2obj (r IN cat_ts_cwms_20_rec_t)
-      RETURN cat_ts_cwms_20_obj_t
-   IS
-   BEGIN
-      RETURN cat_ts_cwms_20_obj_t (r.office_id,
-                                   r.cwms_ts_id,
-                                   r.interval_utc_offset,
-                                   r.user_privileges,
-                                   r.inactive,
-                                   r.lrts_timezone
-                                  );
-   END cat_ts_cwms_20_rec2obj;
-
-   -------------------------------------------------------------------------------
-   -- CAT_TS_CWMS_20 table-to-object conversion function
-   --
-   FUNCTION cat_ts_cwms_20_tab2obj (t IN cat_ts_cwms_20_tab_t)
-      RETURN cat_ts_cwms_20_otab_t
-   IS
-      o    cat_ts_cwms_20_otab_t;
-   BEGIN
-      FOR i IN 1 .. t.LAST
-      LOOP
-         o (i) := cat_ts_cwms_20_rec2obj (t (i));
-      END LOOP;
-
-      RETURN o;
-   END cat_ts_cwms_20_tab2obj;
-
-   -------------------------------------------------------------------------------
-   -- CAT_TS_CWMS_20 object-to-record conversion function
-   --
-   FUNCTION cat_ts_cwms_20_obj2rec (o IN cat_ts_cwms_20_obj_t)
-      RETURN cat_ts_cwms_20_rec_t
-   IS
-      r    cat_ts_cwms_20_rec_t := NULL;
-   BEGIN
-      IF o IS NOT NULL
-      THEN
-         r.office_id := o.office_id;
-         r.cwms_ts_id := o.cwms_ts_id;
-         r.interval_utc_offset := o.interval_utc_offset;
-         r.user_privileges := o.user_privileges;
-         r.inactive := o.inactive;
-         r.lrts_timezone := o.lrts_timezone;
-      END IF;
-
-      RETURN r;
-   END cat_ts_cwms_20_obj2rec;
-
-   -------------------------------------------------------------------------------
-   -- CAT_TS_CWMS_20 object-to-table conversion function
-   --
-   FUNCTION cat_ts_cwms_20_obj2tab (o IN cat_ts_cwms_20_otab_t)
-      RETURN cat_ts_cwms_20_tab_t
-   IS
-      t    cat_ts_cwms_20_tab_t;
-   BEGIN
-      FOR i IN 1 .. o.LAST
-      LOOP
-         t (i) := cat_ts_cwms_20_obj2rec (o (i));
-      END LOOP;
-
-      RETURN t;
-   END cat_ts_cwms_20_obj2tab;
-
-   -------------------------------------------------------------------------------
    -- CAT_LOC record-to-object conversion function
    --
    FUNCTION cat_loc_rec2obj (r IN cat_loc_rec_t)
@@ -1055,173 +926,6 @@ IS
       RETURN t;
    END cat_dss_xchg_ts_map_obj2tab;
 
-   -------------------------------------------------------------------------------
-   -- DEPRICATED --
-   -- DEPRICATED -- procedure cat_ts(...)
-   -- DEPRICATED --
-   PROCEDURE cat_ts (p_cwms_cat                  OUT sys_refcursor,
-                     p_office_id             IN     VARCHAR2 DEFAULT NULL ,
-                     p_ts_subselect_string   IN     VARCHAR2 DEFAULT NULL
-                    )
-   -- DEPRICATED --
-   -- DEPRICATED --
-   -- DEPRICATED --
-   IS
-      l_office_id   VARCHAR2 (16);
-   BEGIN
-      IF p_office_id IS NULL
-      THEN
-         l_office_id := cwms_util.user_office_id;
-      ELSE
-         l_office_id := p_office_id;
-      END IF;
-
-      IF p_ts_subselect_string IS NULL
-      THEN
-         ---------------------------
-         -- only office specified --
-         ---------------------------
-         OPEN p_cwms_cat FOR
-              SELECT   db_office_id, cwms_ts_id, interval_utc_offset
-                FROM   at_cwms_ts_id
-               WHERE   db_office_id = UPPER (l_office_id)
-            ORDER BY   UPPER (cwms_ts_id) ASC;
-      ELSE
-         ---------------------------------------
-         -- both office and pattern specified --
-         ---------------------------------------
-         OPEN p_cwms_cat FOR
-              SELECT   db_office_id, cwms_ts_id, interval_utc_offset
-                FROM   at_cwms_ts_id
-               WHERE   db_office_id = UPPER (l_office_id)
-                       AND UPPER (cwms_ts_id) LIKE cwms_util.normalize_wildcards(upper(p_ts_subselect_string)) escape '\'
-            ORDER BY   UPPER (cwms_ts_id) ASC;
-      END IF;
-   END cat_ts;
-
-   -------------------------------------------------------------------------------
-   -- DEPRICATED --
-   -- DEPRICATED -- function cat_ts_tab(...)
-   -- DEPRICATED --
-   FUNCTION cat_ts_tab (p_office_id             IN VARCHAR2 DEFAULT NULL ,
-                        p_ts_subselect_string   IN VARCHAR2 DEFAULT NULL
-                       )
-      RETURN cat_ts_tab_t
-      PIPELINED
-   -- DEPRICATED --
-   -- DEPRICATED --
-   -- DEPRICATED --
-   IS
-      query_cursor   sys_refcursor;
-      output_row      cat_ts_rec_t;
-   BEGIN
-      cat_ts (query_cursor, p_office_id, p_ts_subselect_string);
-
-      LOOP
-         FETCH query_cursor INTO   output_row;
-
-         EXIT WHEN query_cursor%NOTFOUND;
-         PIPE ROW (output_row);
-      END LOOP;
-
-      CLOSE query_cursor;
-
-      RETURN;
-   END cat_ts_tab;
-
-   -------------------------------------------------------------------------------
-   -- DEPRICATED --
-   -- DEPRICATED -- procedure cat_ts_cwms_20(...)
-   -- DEPRICATED --
-   PROCEDURE cat_ts_cwms_20 (
-      p_cwms_cat                  OUT sys_refcursor,
-      p_office_id             IN     VARCHAR2 DEFAULT NULL ,
-      p_ts_subselect_string   IN     VARCHAR2 DEFAULT NULL
-   )
-   -- DEPRICATED --
-   -- DEPRICATED --
-   -- DEPRICATED --
-   IS
-      l_office_id   VARCHAR2 (16);
-   BEGIN
-      IF p_office_id IS NULL
-      THEN
-         l_office_id := cwms_util.user_office_id;
-      ELSE
-         l_office_id := p_office_id;
-      END IF;
-
-      IF p_ts_subselect_string IS NULL
-      THEN
-         ---------------------------
-         -- only office specified --
-         ---------------------------
-         OPEN p_cwms_cat FOR
-              SELECT   v.db_office_id, v.cwms_ts_id, v.interval_utc_offset, 255,
-                       -- substitute actual user privilege
-                       v.ts_active_flag,
-                       CASE z.time_zone_code
-                          WHEN 0 THEN NULL
-                          ELSE z.time_zone_name
-                       END
-                          AS lrts_timezone
-                FROM   at_cwms_ts_id v, at_cwms_ts_spec s, cwms_time_zone z
-               WHERE       s.ts_code = v.ts_code
-                       AND z.time_zone_code = NVL (s.time_zone_code, 0)
-                       AND v.db_office_id = UPPER (l_office_id)
-            ORDER BY   UPPER (v.cwms_ts_id) ASC;
-      ELSE
-         ---------------------------------------
-         -- both office and pattern specified --
-         ---------------------------------------
-         OPEN p_cwms_cat FOR
-              SELECT   v.db_office_id, v.cwms_ts_id, v.interval_utc_offset, 255,
-                       -- substitute actual user privilege
-                       v.ts_active_flag,
-                       CASE z.time_zone_code
-                          WHEN 0 THEN NULL
-                          ELSE z.time_zone_name
-                       END
-                          AS lrts_time_zone
-                FROM   at_cwms_ts_id v, at_cwms_ts_spec s, cwms_time_zone z
-               WHERE       s.ts_code = v.ts_code
-                       AND z.time_zone_code = NVL (s.time_zone_code, 0)
-                       AND v.db_office_id = UPPER (l_office_id)
-                       AND UPPER (v.cwms_ts_id) LIKE cwms_util.normalize_wildcards(upper(p_ts_subselect_string)) escape '\'
-            ORDER BY   UPPER (v.cwms_ts_id) ASC;
-      END IF;
-   END cat_ts_cwms_20;
-
-   -------------------------------------------------------------------------------
-   -- DEPRICATED --
-   -- DEPRICATED --function cat_ts_cwms_20_tab(...)
-   -- DEPRICATED --
-   FUNCTION cat_ts_cwms_20_tab (
-      p_office_id             IN VARCHAR2 DEFAULT NULL ,
-      p_ts_subselect_string   IN VARCHAR2 DEFAULT NULL
-   )
-      RETURN cat_ts_cwms_20_tab_t
-      PIPELINED
-   -- DEPRICATED --
-   -- DEPRICATED --
-   -- DEPRICATED --
-   IS
-      query_cursor   sys_refcursor;
-      output_row      cat_ts_cwms_20_rec_t;
-   BEGIN
-      cat_ts_cwms_20 (query_cursor, p_office_id, p_ts_subselect_string);
-
-      LOOP
-         FETCH query_cursor INTO   output_row;
-
-         EXIT WHEN query_cursor%NOTFOUND;
-         PIPE ROW (output_row);
-      END LOOP;
-
-      CLOSE query_cursor;
-
-      RETURN;
-   END cat_ts_cwms_20_tab;
 
    /*
    start cat_ts_id
@@ -1288,39 +992,50 @@ IS
       END IF;
 
     open p_cwms_cat for
-      select v.db_office_id,
-             v.base_location_id,
-             v.cwms_ts_id,
-             v.interval_utc_offset,
-             v.time_zone_id as lrts_timezone,
-             t.net_ts_active_flag as ts_active_flag,
-             p.net_privilege_bit as user_privileges
-        from at_cwms_ts_id v,
-             at_cwms_ts_id t,
-             av_sec_ts_privileges p
-       where t.ts_code = v.ts_code
-         and p.ts_code = v.ts_code
-         and p.username = cwms_util.get_user_id
-         and (l_loc_group_code is null or
-              v.location_code in (select location_code
-                                    from at_loc_group_assignment
-                                   where loc_group_code = l_loc_group_code
-                                 )
-             )
-         and (l_ts_group_code is null or
-              v.ts_code in (select ts_code
-                              from at_ts_group_assignment
-                              where ts_group_code=l_ts_group_code
-                           )
-             )
-         and (l_db_office_code is null or
-              v.db_office_code = l_db_office_code
-             )
-         and upper(v.cwms_ts_id) like upper (l_ts_subselect_string) escape '\'
-       order by upper(cwms_util.split_text(v.cwms_ts_id, 1, '.')), -- location
-                upper (v.cwms_ts_id),                              -- tsid
-                upper (v.db_office_id) asc;                        -- office
-END cat_ts_id;
+      select q1.db_office_id,
+             q1.base_location_id,
+             q1.cwms_ts_id,
+             q1.interval_utc_offset,
+             q1.time_zone_id as lrts_timezone,
+             q1.net_ts_active_flag as ts_active_flag,
+             q2.net_privilege_bit as user_privileges
+        from (select v.ts_code,
+                     v.db_office_id,
+                     v.base_location_id,
+                     v.cwms_ts_id,
+                     v.interval_utc_offset,
+                     v.time_zone_id,
+                     t.net_ts_active_flag
+                from av_cwms_ts_id v,
+                     at_cwms_ts_id t
+               where t.ts_code = v.ts_code
+                 and (l_loc_group_code is null or
+                      v.location_code in (select location_code
+                                            from at_loc_group_assignment
+                                           where loc_group_code = l_loc_group_code
+                                         )
+                     )
+                 and (l_ts_group_code is null or
+                      v.ts_code in (select ts_code
+                                      from at_ts_group_assignment
+                                      where ts_group_code=l_ts_group_code
+                                   )
+                     )
+                 and (l_db_office_code is null or
+                      v.db_office_code = l_db_office_code
+                     )
+                 and upper(v.cwms_ts_id) like upper (l_ts_subselect_string) escape '\'
+             ) q1
+             left outer join
+             (select ts_code,
+                     net_privilege_bit
+                from av_sec_ts_privileges
+               where username = cwms_util.get_user_id
+             ) q2 on q2.ts_code = q1.ts_code
+       order by upper(cwms_util.split_text(q1.cwms_ts_id, 1, '.')), -- location
+                upper (q1.cwms_ts_id),                              -- tsid
+                upper (q1.db_office_id) asc;                        -- office
+   END cat_ts_id;
 
    FUNCTION cat_ts_id_tab (p_ts_subselect_string   IN VARCHAR2 DEFAULT NULL ,
                            p_loc_category_id       IN VARCHAR2 DEFAULT NULL ,
@@ -3218,7 +2933,7 @@ END cat_ts_id;
                     tzuse.tz_usage_id AS dss_tz_usage_id
              FROM   at_xchg_set xset,
                     at_xchg_dss_ts_mappings xmap,
-                    at_cwms_ts_id tspec,
+                    av_cwms_ts_id tspec,
                     cwms_office o,
                     cwms_dss_parameter_type ptype,
                     cwms_time_zone tzone,
@@ -4249,11 +3964,14 @@ END cat_ts_id;
       l_attribute_units  varchar2(16);
       l_indicator_values number_tab_t;
       l_output_row       loc_lvl_cur_max_ind_t := loc_lvl_cur_max_ind_t(null, null, null, null, null, null, null);
+      l_revert_lrts_ids  boolean;
    begin
+      l_revert_lrts_ids := cwms_ts.use_new_lrts_format_on_output = 'T' and
+                           cwms_ts.require_new_lrts_format_on_input = 'F';
       for rec in (select distinct * from av_loc_lvl_ts_map) loop
          cwms_level.get_level_indicator_values(
             p_cursor               => l_cursor,
-            p_tsid                 => rec.cwms_ts_id,
+            p_tsid                 => cwms_ts.format_lrts_input(rec.cwms_ts_id,l_revert_lrts_ids),
             p_specified_level_mask => cwms_util.split_text(rec.location_level_id, 5, '.'),
             p_indicator_id_mask    => rec.level_indicator_id,
             p_office_id            => rec.office_id);

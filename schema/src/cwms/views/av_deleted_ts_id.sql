@@ -70,12 +70,52 @@ CREATE OR REPLACE FORCE VIEW av_deleted_ts_id
 )
 AS
 select co.office_id as db_office_id,
-       bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id
+       case
+       when 'T' = (select 'T'
+                     from dual
+                    where exists(select str_value
+                                   from at_session_info
+                                  where item_name = 'USE_NEW_LRTS_ID_FORMAT'
+                                    and bitand(num_value, 4) = 4
+                                )
+                  )
+       then
+          ----------------------------
+          -- use new LRTS ID format --
+          ----------------------------
+          case
+          when substr(interval_id, 1, 1) = '~' and interval_utc_offset != -2147483648 then
+             ----------------
+             -- TS is LRTS --
+             ----------------
+             bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id
+             ||'.'||bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id))||p.sub_parameter_id
+             ||'.'||pt.parameter_type_id
+             ||'.'||regexp_replace(i.interval_id, '^~(.+)$', '\1Local')
+             ||'.'||d.duration_id
+             ||'.'||ts.version
+          else
+             --------------------
+             -- TS is not LRTS --
+             --------------------
+             bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id
+             ||'.'||bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id))||p.sub_parameter_id
+             ||'.'||pt.parameter_type_id
+             ||'.'||i.interval_id
+             ||'.'||d.duration_id
+             ||'.'||ts.version
+          end
+       else
+          ----------------------------
+          -- use old LRTS ID format --
+          ----------------------------
+          bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id
           ||'.'||bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id))||p.sub_parameter_id
           ||'.'||pt.parameter_type_id
           ||'.'||i.interval_id
           ||'.'||d.duration_id
-          ||'.'||ts.version as cwms_ts_id,
+          ||'.'||ts.version
+       end as cwms_ts_id,
        u.unit_id,
        ap.abstract_param_id,
        bl.base_location_id,
@@ -85,7 +125,37 @@ select co.office_id as db_office_id,
        p.sub_parameter_id,
        bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id))||p.sub_parameter_id as parameter_id,
        pt.parameter_type_id,
-       i.interval_id,
+       case
+       when 'T' = (select 'T'
+                     from dual
+                    where exists(select str_value
+                                   from at_session_info
+                                  where item_name = 'USE_NEW_LRTS_ID_FORMAT'
+                                    and bitand(num_value, 4) = 4
+                                )
+                  )
+       then
+          ----------------------------
+          -- use new LRTS ID format --
+          ----------------------------
+          case
+          when substr(interval_id, 1, 1) = '~' and interval_utc_offset != -2147483648 then
+             ----------------
+             -- TS is LRTS --
+             ----------------
+             regexp_replace(i.interval_id, '^~(.+)$', '\1Local')
+          else
+             --------------------
+             -- TS is not LRTS --
+             --------------------
+             i.interval_id
+          end
+       else
+          ----------------------------
+          -- use old LRTS ID format --
+          ----------------------------
+          i.interval_id
+       end as cwms_ts_id,
        d.duration_id,
        ts.version as version_id,
        i.interval,

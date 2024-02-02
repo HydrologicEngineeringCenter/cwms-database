@@ -136,7 +136,7 @@ select tsx.ts_code,
        tsx.last_update,
        tsx.has_non_zero_quality
   from at_ts_extents tsx,
-       at_cwms_ts_id tid
+       av_cwms_ts_id tid
  where tid.ts_code = tsx.ts_code;
 
 begin

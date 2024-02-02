@@ -317,7 +317,7 @@ begin
    -------------------------------------------------------------------
    l_office_id   := p_ts_profile.location.get_office_id;
    l_office_code := p_ts_profile.location.get_office_code;
-   l_key_parameter_code := cwms_util.get_parameter_code(p_ts_profile.key_parameter_id);
+   l_key_parameter_code := cwms_util.get_parameter_code(p_ts_profile.key_parameter_id, l_office_id);
    begin
       l_location_code := p_ts_profile.location.get_location_code;
    exception
@@ -330,6 +330,12 @@ begin
    end;
    if p_ts_profile.reference_ts_id is not null then
       l_ref_ts_code := cwms_ts.get_ts_code(p_ts_profile.reference_ts_id, l_office_id);
+      if cwms_ts.require_new_lrts_format_on_input = 'T' and
+         cwms_ts.is_lrts(l_ref_ts_code) = 'T' and
+         cwms_ts.is_new_lrts_format(p_ts_profile.reference_ts_id) = 'F'
+      then
+         cwms_ts.new_lrts_id_required_error(p_ts_profile.reference_ts_id);
+      end if;
    end if;
    ---------------------------------------------
    -- get the existing record if there is one --
@@ -819,7 +825,7 @@ begin
              left outer join
              (select ts_code,
                      cwms_ts_id
-                from at_cwms_ts_id
+                from av_cwms_ts_id
              ) q2 on q2.ts_code = q1.reference_ts_code
        where q1.location_id like cwms_util.normalize_wildcards(p_location_id_mask) escape '\'
          and q1.key_parameter_id like cwms_util.normalize_wildcards(p_key_parameter_id_mask) escape '\';

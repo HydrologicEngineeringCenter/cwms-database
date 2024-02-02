@@ -7,11 +7,13 @@ CREATE OR REPLACE PACKAGE cwms_util
  * @since CWMS 2.0
  */
 AS
-   g_timezone_cache cwms_cache.str_str_cache_t;
-   g_time_zone_name_cache cwms_cache.str_str_cache_t;
-   g_time_zone_code_cache cwms_cache.str_str_cache_t;
-   g_parameter_id_cache cwms_cache.str_str_cache_t;
+   g_timezone_cache            cwms_cache.str_str_cache_t;
+   g_time_zone_name_cache      cwms_cache.str_str_cache_t;
+   g_time_zone_code_cache      cwms_cache.str_str_cache_t;
+   g_parameter_id_cache        cwms_cache.str_str_cache_t;
    g_base_parameter_code_cache cwms_cache.str_str_cache_t;
+   g_office_id_cache           cwms_cache.str_str_cache_t;
+   g_office_code_cache         cwms_cache.str_str_cache_t;
    /*
     * Not documented. Package-specific and session-specific logging properties
     */

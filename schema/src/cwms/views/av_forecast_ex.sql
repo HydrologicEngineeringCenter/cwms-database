@@ -94,7 +94,7 @@ select nvl(q1.office_id, q2.office_id) as office_id,
                 when (sysdate - fts.issue_date) * 24 < fs.max_age then 'T'
                 else 'F'
                 end as valid,
-                cwms_ts.get_ts_id(fts.ts_code) as cwms_ts_id,
+                tsid.cwms_ts_id,
                 fts.ts_code,
                 fts.version_date as utc_version_time,
                 cwms_util.change_timezone(fts.version_date, 'UTC', cwms_loc.get_local_timezone(pl.location_code)) as local_version_time,
@@ -105,12 +105,14 @@ select nvl(q1.office_id, q2.office_id) as office_id,
                 at_physical_location pl,
                 at_base_location bl,
                 at_cwms_ts_spec cts,
+                av_cwms_ts_id tsid,
                 cwms_office o
           where bl.db_office_code = o.office_code
             and pl.base_location_code = bl.base_location_code
             and fs.target_location_code = pl.location_code
             and fts.ts_code = cts.ts_code
             and fts.forecast_spec_code = fs.forecast_spec_code
+            and tsid.ts_code = cts.ts_code
        ) q1
        full outer join
        ( select o.office_id,

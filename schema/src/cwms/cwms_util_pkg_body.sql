@@ -125,8 +125,8 @@ as
             end;
             cwms_cache.put(g_timezone_cache, l_cache_key, l_timezone);
          end if;
-         return l_timezone;
       end if;
+      return l_timezone;
    end get_timezone;
 
    FUNCTION get_xml_time (p_local_time IN DATE, p_local_tz IN VARCHAR2)
@@ -516,36 +516,40 @@ as
       l_username    VARCHAR2 (32);
       l_upass_id    VARCHAR2 (32) := 'UPASSADM';
    BEGIN
-      l_username := get_user_id;
+      l_office_id := cwms_cache.get(g_office_id_cache, '<NULL>');
+      if l_office_id is null then
+         l_username := get_user_id;
 
-      BEGIN
-        SELECT prop_value INTO l_upass_id FROM at_properties where prop_id='sec.upass.id' and prop_category='CWMSDB' and office_code=53;
-      EXCEPTION WHEN OTHERS
-      THEN
-        NULL;
-      END;
-
-      SELECT SYS_CONTEXT ('CWMS_ENV', 'SESSION_OFFICE_ID')
-        INTO l_office_id
-        FROM DUAL;
-
-      IF l_office_id IS NULL
-      THEN
-         IF l_username = '&cwms_schema' or l_username = 'NOBODY' or l_username = 'CCP' or l_username = 'SYS' or upper(l_username) = upper(l_upass_id)
+         BEGIN
+           SELECT prop_value INTO l_upass_id FROM at_properties where prop_id='sec.upass.id' and prop_category='CWMSDB' and office_code=53;
+         EXCEPTION WHEN OTHERS
          THEN
-            RETURN 'CWMS';
-         ELSE
-      BEGIN
-         SELECT a.office_id
+           NULL;
+         END;
+
+         SELECT SYS_CONTEXT ('CWMS_ENV', 'SESSION_OFFICE_ID')
            INTO l_office_id
-           FROM cwms_office a, at_sec_user_office b
-          WHERE     b.username = l_username
-		AND a.office_code=b.db_office_code;
-	    EXCEPTION WHEN OTHERS THEN
-                cwms_err.raise ('SESSION_OFFICE_ID_NOT_SET');
-            END;
-         END IF;
-         END IF;
+           FROM DUAL;
+
+         IF l_office_id IS NULL
+         THEN
+            IF l_username = '&cwms_schema' or l_username = 'NOBODY' or l_username = 'CCP' or l_username = 'SYS' or upper(l_username) = upper(l_upass_id)
+            THEN
+               l_office_id := 'CWMS';
+            ELSE
+         BEGIN
+            SELECT a.office_id
+              INTO l_office_id
+              FROM cwms_office a, at_sec_user_office b
+             WHERE     b.username = l_username
+         AND a.office_code=b.db_office_code;
+          EXCEPTION WHEN OTHERS THEN
+                   cwms_err.raise ('SESSION_OFFICE_ID_NOT_SET');
+               END;
+            END IF;
+            END IF;
+         cwms_cache.put(g_office_id_cache, '<NULL>', l_office_id);
+      end if;
 
       RETURN l_office_id;
    END user_office_id;
@@ -569,13 +573,15 @@ as
    IS
       l_office_code   NUMBER (14) := 0;
       l_office_id     VARCHAR2 (16) := user_office_id;
-      BEGIN
-      SELECT office_code
-        INTO l_office_code
-        FROM cwms_office
-       WHERE office_id = l_office_id;
-
-
+   BEGIN
+      l_office_code := cwms_cache.get(g_office_code_cache, '<NULL>');
+      if l_office_code is null then
+         SELECT office_code
+           INTO l_office_code
+           FROM cwms_office
+          WHERE office_id = l_office_id;
+         cwms_cache.put(g_office_code_cache, '<NULL>', l_office_code);
+      end if;
       RETURN l_office_code;
    END user_office_code;
 
@@ -587,22 +593,29 @@ as
       RETURN NUMBER
    IS
       l_office_code   NUMBER := NULL;
+      l_cache_key     varchar2(32767) := nvl(upper(p_office_id), '<NULL>');
    BEGIN
-      IF p_office_id IS NULL
-      THEN
-         l_office_code := user_office_code;
-      ELSE
-         SELECT office_code
-           INTO l_office_code
-           FROM cwms_office
-          WHERE (office_id) = UPPER (p_office_id);
-      END IF;
+      l_office_code := cwms_cache.get(g_office_code_cache, l_cache_key);
+      if l_office_code is null then
+         BEGIN
+            IF p_office_id IS NULL
+            THEN
+               l_office_code := user_office_code;
+            ELSE
+               SELECT office_code
+                 INTO l_office_code
+                 FROM cwms_office
+                WHERE (office_id) = UPPER (p_office_id);
+            END IF;
 
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise ('INVALID_OFFICE_ID', p_office_id);
+         END;
+         cwms_cache.put(g_office_code_cache, l_cache_key, l_office_code);
+      end if;
       RETURN l_office_code;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         cwms_err.raise ('INVALID_OFFICE_ID', p_office_id);
    END get_office_code;
 
    --------------------------------------------------------
@@ -622,19 +635,20 @@ as
    IS
       l_db_office_id   VARCHAR2 (64);
    BEGIN
-      l_db_office_id := NULL;
-
-      SELECT office_id
-        INTO l_db_office_id
-        FROM cwms_office
-       WHERE office_code = p_db_office_code;
-
-
+      l_db_office_id := cwms_cache.get(g_office_id_cache, p_db_office_code);
+      if l_db_office_id is null then
+         BEGIN
+            SELECT office_id
+              INTO l_db_office_id
+              FROM cwms_office
+             WHERE office_code = p_db_office_code;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN NULL;
+         END;
+         cwms_cache.put(g_office_id_cache, p_db_office_code, l_db_office_id);
+      end if;
       RETURN l_db_office_id;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         RETURN l_db_office_id;
    END get_db_office_id_from_code;
 
    --------------------------------------------------------
@@ -645,21 +659,39 @@ as
       l_db_office_code   NUMBER := NULL;
       l_db_office_id     VARCHAR2 (16);
    BEGIN
-      IF p_db_office_id IS NULL
-      THEN
-         l_db_office_id := user_office_id;
-      ELSE
-         SELECT office_id
-           INTO l_db_office_id
-           FROM cwms_office
-          WHERE (office_id) = UPPER (p_db_office_id);
-      END IF;
+      l_db_office_id := cwms_cache.get(g_office_id_cache, nvl(upper(p_db_office_id), '<NULL>'));
+      if l_db_office_id is null then
+         BEGIN
+            IF p_db_office_id IS NULL
+            THEN
+               l_db_office_id := user_office_id;
+            ELSE
+               begin
+                  l_db_office_code := p_db_office_id;
+               exception
+                  when others then null;
+               end;
+               if l_db_office_code is null then
+                  select office_id
+                    into l_db_office_id
+                    from cwms_office
+                   where office_id = upper(p_db_office_id);
+               else
+                  select office_id
+                    into l_db_office_id
+                    from cwms_office
+                   where office_code = l_db_office_code;
+               end if;
+            END IF;
 
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise ('INVALID_OFFICE_ID', p_db_office_id);
+         END;
+         cwms_cache.put(g_office_id_cache, nvl(upper(p_db_office_id), '<NULL>'), l_db_office_id);
+      end if;
       RETURN l_db_office_id;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         cwms_err.raise ('INVALID_OFFICE_ID', p_db_office_id);
    END get_db_office_id;
 
    --------------------------------------------------------
@@ -5234,12 +5266,23 @@ as
       THEN
          cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
       END IF;
+      l_item_name := UPPER (TRIM (p_item_name));
+      case
+      when l_item_name = 'USE_NEW_LRTS_ID_FORMAT' then
+         if p_num_value not in (0,1,2,4,5,6) then
+            cwms_err.raise(
+               'ERROR',
+               p_num_value
+               ||' is not a valid value for session item USE_NEW_LRTS_ID_FORMAT.'
+               ||chr(10)
+               ||'Value must be 0, 1, 2, 4, 5, or 6');
+         end if;
+      else null;
+      end case;
 
       -----------------------------
       -- insert/update the table --
       -----------------------------
-      l_item_name := UPPER (TRIM (p_item_name));
-
       MERGE INTO at_session_info t
            USING (SELECT l_item_name AS item_name FROM DUAL) d
               ON (t.item_name = d.item_name)
@@ -6679,11 +6722,13 @@ as
    end output_debug_info;
 
 begin
-   g_timezone_cache.name := 'cwms_util.g_timezone_cache';
-   g_time_zone_name_cache.name := 'cwms_util.g_time_zone_name_cache';
-   g_time_zone_code_cache.name := 'cwms_util.g_time_zone_code_cache';
-   g_parameter_id_cache.name := 'cwms_util.g_parameter_id_cache';
+   g_timezone_cache.name            := 'cwms_util.g_timezone_cache';
+   g_time_zone_name_cache.name      := 'cwms_util.g_time_zone_name_cache';
+   g_time_zone_code_cache.name      := 'cwms_util.g_time_zone_code_cache';
+   g_parameter_id_cache.name        := 'cwms_util.g_parameter_id_cache';
    g_base_parameter_code_cache.name := 'cwms_util.g_base_parameter_code_cache';
+   g_office_id_cache.name           := 'cwms_util.g_office_id_cache';
+   g_office_code_cache.name         := 'cwms_util.g_office_code_cache';
 
 END cwms_util;
 /

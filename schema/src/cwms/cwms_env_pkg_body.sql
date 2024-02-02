@@ -1,5 +1,21 @@
 CREATE OR REPLACE PACKAGE BODY cwms_env
 AS
+   procedure pause_office_caching
+   is
+   begin
+      cwms_cache.disable(cwms_util.g_office_id_cache);
+      cwms_cache.disable(cwms_util.g_office_code_cache);
+   end pause_office_caching;
+
+   procedure resume_office_caching
+   is
+   begin
+      cwms_cache.enable(cwms_util.g_office_id_cache);
+      cwms_cache.enable(cwms_util.g_office_code_cache);
+
+      cwms_cache.remove(cwms_util.g_office_id_cache, '<NULL>');
+      cwms_cache.remove(cwms_util.g_office_code_cache, '<NULL>');
+   end resume_office_caching;
 
   PROCEDURE set_cwms_env (p_attribute IN VARCHAR2,p_value IN VARCHAR2)
   IS
@@ -26,11 +42,12 @@ AS
    is
       l_priv varchar2(255) := SYS_CONTEXT('CWMS_ENV','CWMS_PRIVILEGE');
       l_cur_office varchar2(5) := SYS_CONTEXT('CWMS_ENV','SESSION_OFFICE_ID');
-      l_cur_office_code cwms_office.office_code%type := NULL;      
+      l_cur_office_code cwms_office.office_code%type := NULL;
    begin
-     if l_cur_office is not null then
+      pause_office_caching;
+      if l_cur_office is not null then
          l_cur_office_code := CWMS_UTIL.GET_DB_OFFICE_CODE(l_cur_office);
-     end if;
+      end if;
       -- set environment so logging works
       set_cwms_env ('CWMS_PRIVILEGE', 'CAN_WRITE');
       set_cwms_env ('SESSION_OFFICE_ID', 'CWMS');
@@ -43,6 +60,7 @@ AS
       set_cwms_env ('CWMS_PRIVILEGE', l_priv);
       set_cwms_env ('SESSION_OFFICE_ID', l_cur_office);
       set_cwms_env ('SESSION_OFFICE_CODE', l_cur_office_code);
+      resume_office_caching;
    end;
 
 
@@ -56,10 +74,12 @@ AS
       l_username    VARCHAR2 (31);
    BEGIN
       BEGIN
+         pause_office_caching;
          l_office_id := CWMS_UTIL.GET_DB_OFFICE_ID (p_office_id);
       EXCEPTION
          WHEN OTHERS
          THEN
+            resume_office_caching;
             cwms_err.raise (
                'ERROR',
                   'Unable to set a default SESSION_OFFICE_ID. The user: '
@@ -81,9 +101,10 @@ AS
       THEN
          SET_CWMS_ENV (l_office_id_attr, l_office_id);
          SET_CWMS_ENV (l_office_code_attr, CWMS_UTIL.GET_DB_OFFICE_CODE(l_office_id));
-         SET_SESSION_PRIVILEGES; 
+         SET_SESSION_PRIVILEGES;
       ELSE
          l_username := cwms_util.get_user_id;
+         resume_office_caching;
          cwms_err.raise (
             'ERROR',
                'Unable to set SESSION_OFFICE_ID to: '
@@ -92,6 +113,7 @@ AS
             || l_username
             || ' does not have any assigned privileges for that office.');
       END IF;
+      resume_office_caching;
    END set_session_office_id;
 
    PROCEDURE clear_session_privileges
@@ -121,7 +143,7 @@ AS
       l_from_ip varchar(255) := SYS_CONTEXT('USERENV','IP_ADDRESS');
    BEGIN
       select granted_role into l_role from dba_role_privs where granted_role='WEB_USER' and grantee=USER;
-      l_msg := 'Login: ' || 'Session set to user ''' || p_user || ''' by ' 
+      l_msg := 'Login: ' || 'Session set to user ''' || p_user || ''' by '
                          || USER || ' from host ' || l_from_ip;
       log('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
       set_cwms_env('CWMS_USER',p_user);
@@ -166,7 +188,7 @@ AS
       l_rdl_privilege := 'NONE';
       l_ccp_privilege := 4;
       l_username := CWMS_UTIL.GET_USER_ID;
-      set_cwms_env ('CWMS_PRIVILEGE', 'READ_ONLY'); 
+      set_cwms_env ('CWMS_PRIVILEGE', 'READ_ONLY');
 
 
       SELECT SYS_CONTEXT ('CWMS_ENV', 'SESSION_OFFICE_ID')
@@ -191,7 +213,7 @@ AS
      FOR C IN (SELECT user_group_id FROM TABLE (cwms_sec.get_assigned_priv_groups_tab) WHERE db_office_id = l_office_id)
       LOOP
         l_canlogin := TRUE;
-        IF((C.user_group_id='CCP Mgr') OR 
+        IF((C.user_group_id='CCP Mgr') OR
             (C.user_group_id='CCP Proc') OR
             (C.user_group_id='CWMS DBA Users') OR
             (C.user_group_id='CWMS PD Users') OR
@@ -225,16 +247,16 @@ AS
                 l_ccp_privilege := 2;
             END IF;
         END IF;
-        IF(c.user_group_id='CCP Reviewer') 
+        IF(c.user_group_id='CCP Reviewer')
         THEN
             IF(l_ccp_privilege > 2)
             THEN
                 l_ccp_privilege := 3;
             END IF;
         END IF;
-        
+
       END LOOP;
-      
+
 
       IF (l_canwrite)
       THEN
@@ -243,7 +265,7 @@ AS
       THEN
          set_cwms_env ('CWMS_PRIVILEGE', 'CAN_LOGIN');
       END IF;
-      
+
       set_cwms_env('RDL_PRIVILEGE',l_rdl_privilege);
       set_cwms_env('CCP_PRIV_LEVEL',l_ccp_privilege);
    END set_session_privileges;

@@ -11,6 +11,7 @@ CREATE OR REPLACE PACKAGE cwms_loc
 AS
 
    g_location_code_cache cwms_cache.str_str_cache_t;
+   g_location_id_cache   cwms_cache.str_str_cache_t;
 
    c_str_site            constant varchar2 ( 4) := 'SITE';
    c_str_stream_location constant varchar2 (15) := 'STREAM_LOCATION';
@@ -49,6 +50,10 @@ AS
       p_vertical_datum_id in varchar2)
       return varchar2 deterministic;
 
+   /**
+    * Clears all session-level caches associated with this package
+    */
+   procedure clear_all_caches;
    /**
     * Sets text value of package logging property
     *
