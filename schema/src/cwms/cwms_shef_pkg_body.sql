@@ -573,6 +573,9 @@ AS
       l_shef_spec_alias_entry      at_properties.prop_value%TYPE;
       l_prop_comment               at_properties.prop_comment%TYPE;
       l_build_shef_id_table        BOOLEAN;
+      
+      x_ts_id_not_found           exception;
+      pragma exception_init(x_ts_id_not_found, -20001);
 
       --
       --
@@ -742,9 +745,14 @@ AS
             l_ts_code :=
                cwms_ts.get_ts_code (p_cwms_ts_id       => p_cwms_ts_id,
                                     p_db_office_code   => l_db_office_code);
+            if cwms_ts.require_new_lrts_format_on_input = 'T' and
+               cwms_ts.is_lrts(l_ts_code) = 'T' and
+               cwms_ts.is_new_lrts_format(p_cwms_ts_id) = 'F'
+            then
+               cwms_ts.new_lrts_id_required_error(p_cwms_ts_id);
+            end if;
          EXCEPTION
-            WHEN OTHERS
-            THEN
+            when x_ts_id_not_found then
                cwms_ts.create_ts_code (
                   p_ts_code             => l_ts_code,
                   p_cwms_ts_id          => p_cwms_ts_id,

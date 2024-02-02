@@ -5244,8 +5244,10 @@ is
    l_lrts_ts_id_old_copy cwms_v_ts_id.cwms_ts_id%type := l_location_id||'-Copy.Elev-Lrts.Inst.~1Day.0.Test';
    l_lrts_ts_id_new_copy cwms_v_ts_id.cwms_ts_id%type := l_location_id||'-Copy.Elev-Lrts.Inst.1DayLocal.0.Test';
    l_prts_ts_id          cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Elev-Prts.Inst.~1Day.0.Test';
+   l_rating_spec         cwms_v_rating_spec.rating_id%type := l_location_id||'.Elev;Stor.Linear.Production';
    l_count               binary_integer := 10;
    l_ts_data             cwms_t_ztsv_array;
+   l_ts_data2            cwms_t_ztsv_array;
    l_start_time          date;
    l_end_time            date;
    l_crsr                sys_refcursor;
@@ -5255,6 +5257,7 @@ is
    l_min_value           binary_double;
    l_max_value           binary_double;
    l_ts_data_out         cwms_t_ztsv_array;
+   l_ts_data_out2        cwms_t_ztsv_array;
    l_base_location_id    cwms_v_ts_id.base_location_id%type;
    l_sub_location_id     cwms_v_ts_id.sub_location_id%type;
    l_base_parameter_id   cwms_v_ts_id.base_parameter_id%type;
@@ -5272,6 +5275,69 @@ is
    l_blob                blob;
    l_media_type          varchar2(84);
    l_file_extension      varchar2(16);
+   l_shef_id             varchar2(8);
+   l_shef_pe_code        varchar2(2);
+   l_shef_tse_code       varchar2(3);
+   l_shef_duration_code  varchar2(4);
+   l_units               varchar2(32);
+   l_unit_sys            varchar2(32);
+   l_tz                  varchar2(32);
+   l_dltime              varchar2(32);
+   l_int_offset          varchar2(32);
+   l_int_backward        varchar2(32);
+   l_int_forward         varchar2(32);
+   l_cwms_ts_id          varchar2(191);
+   l_location_obj        cwms_t_location_obj;
+   l_project_obj         cwms_t_project_obj;
+   l_rating              clob := '
+<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
+  <rating-template office-id="'||c_office_id||'">
+    <parameters-id>Elev;Stor</parameters-id>
+    <version>Linear</version>
+    <ind-parameter-specs>
+      <ind-parameter-spec position="1">
+        <parameter>Elev</parameter>
+        <in-range-method>LINEAR</in-range-method>
+        <out-range-low-method>NEAREST</out-range-low-method>
+        <out-range-high-method>NEAREST</out-range-high-method>
+      </ind-parameter-spec>
+    </ind-parameter-specs>
+    <dep-parameter>Stor</dep-parameter>
+    <description/>
+  </rating-template>
+  <rating-spec office-id="'||c_office_id||'">
+    <rating-spec-id>'||l_rating_spec||'</rating-spec-id>
+    <template-id>Elev;Stor.Linear</template-id>
+    <location-id>'||l_location_id||'</location-id>
+    <version>Production</version>
+    <source-agency/>
+    <in-range-method>PREVIOUS</in-range-method>
+    <out-range-low-method>ERROR</out-range-low-method>
+    <out-range-high-method>PREVIOUS</out-range-high-method>
+    <active>true</active>
+    <auto-update>false</auto-update>
+    <auto-activate>false</auto-activate>
+    <auto-migrate-extension>false</auto-migrate-extension>
+    <ind-rounding-specs>
+      <ind-rounding-spec position="1">2222233332</ind-rounding-spec>
+    </ind-rounding-specs>
+    <dep-rounding-spec>2222233332</dep-rounding-spec>
+    <description/>
+  </rating-spec>
+  <simple-rating office-id="'||c_office_id||'">
+    <rating-spec-id>'||l_rating_spec||'</rating-spec-id>
+    <units-id vertical-datum="">ft;ac-ft</units-id>
+    <effective-date>1900-01-01T00:00:00Z</effective-date>
+    <active>true</active>
+    <description/>
+    <rating-points>
+      <point><ind>0</ind><dep>0</dep></point>
+      <point><ind>50</ind><dep>500</dep></point>
+    </rating-points>
+  </simple-rating>
+</ratings>
+';
+
 begin
    cwms_loc.clear_all_caches;
    cwms_ts.clear_all_caches;
@@ -5282,8 +5348,11 @@ begin
    ------------------------
    l_ts_data := cwms_t_ztsv_array();
    l_ts_data.extend(l_count);
+   l_ts_data2 := cwms_t_ztsv_array();
+   l_ts_data2.extend(l_count);
    for i in 1..l_count loop
       l_ts_data(i) := cwms_t_ztsv(date '2023-01-01' + (i-1), i, 0);
+      l_ts_data2(i) := cwms_t_ztsv(date '2023-01-01' + (i-1), i * 10, 0);
    end loop;
    l_start_time := l_ts_data(1).date_time;
    l_end_time   := l_ts_data(l_count).date_time;
@@ -5358,6 +5427,41 @@ begin
       p_screening_id_desc   => 'Test Screening',
       p_parameter_id        => 'Elev',
       p_db_office_id        => c_office_id);
+   ----------------------------------
+   -- create some data stream info --
+   ----------------------------------
+   cwms_shef.store_data_stream (
+      p_data_stream_id  => 'Test_Data_Stream',
+      p_db_office_id    => c_office_id);
+   -------------------------------------------------
+   -- create a rating, location levels and a pool --
+   -------------------------------------------------
+   cwms_rating.store_ratings_xml(l_clob, l_rating, 'F', 'T');
+   ut.expect(l_clob).to_be_null;
+   cwms_level.store_location_level(
+      p_location_level_id => l_location_id||'.Elev.Inst.0.Bottom of Normal',
+      p_level_value       => 2,
+      p_level_units       => 'ft',
+      p_effective_date    => date '1900-01-01',
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+   cwms_level.store_location_level(
+      p_location_level_id => l_location_id||'.Elev.Inst.0.Top of Normal',
+      p_level_value       => 8,
+      p_level_units       => 'ft',
+      p_effective_date    => date '1900-01-01',
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+   l_location_obj := cwms_t_location_obj(cwms_loc.get_location_code(c_office_id, l_location_id));
+   l_project_obj := cwms_t_project_obj(l_location_obj,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null);
+   cwms_project.store_project(l_project_obj, 'F');
+   cwms_pool.store_pool(
+      p_project_id      => l_location_id,
+      p_pool_name       => 'Normal',
+      p_bottom_level_id => 'Elev.Inst.0.Bottom of Normal',
+      p_top_level_id    =>'.Elev.Inst.0.Top of Normal',
+      p_fail_if_exists  => 'F',
+      p_office_id       => c_office_id);
    --------------------------------
    -- test all flag combinations --
    --------------------------------
@@ -5467,6 +5571,38 @@ begin
       p_duration_id       => l_duration_Id,
       p_version_id        => l_version_id);
    ut.expect(l_interval_id).to_equal(cwms_util.split_text(l_lrts_ts_id_new, 4, '.'));
+   cwms_shef.parse_criteria_record (
+      p_shef_id            => l_shef_id,
+      p_shef_pe_code       => l_shef_pe_code,
+      p_shef_tse_code      => l_shef_tse_code,
+      p_shef_duration_code => l_shef_duration_code,
+      p_units              => l_units,
+      p_unit_sys           => l_unit_sys,
+      p_tz                 => l_tz,
+      p_dltime             => l_dltime,
+      p_int_offset         => l_int_offset,
+      p_int_backward       => l_int_backward,
+      p_int_forward        => l_int_forward,
+      p_cwms_ts_id         => l_cwms_ts_id,
+      p_comment            => l_text,
+      p_criteria_record    => 'VIOK1.HP.RGZ.1440='||l_lrts_ts_id_old||';Units=ft;TZ=UTC;DLTime=false');
+   ut.expect(l_cwms_ts_id).to_equal(l_lrts_ts_id_old);
+   cwms_shef.parse_criteria_record (
+      p_shef_id            => l_shef_id,
+      p_shef_pe_code       => l_shef_pe_code,
+      p_shef_tse_code      => l_shef_tse_code,
+      p_shef_duration_code => l_shef_duration_code,
+      p_units              => l_units,
+      p_unit_sys           => l_unit_sys,
+      p_tz                 => l_tz,
+      p_dltime             => l_dltime,
+      p_int_offset         => l_int_offset,
+      p_int_backward       => l_int_backward,
+      p_int_forward        => l_int_forward,
+      p_cwms_ts_id         => l_cwms_ts_id,
+      p_comment            => l_text,
+      p_criteria_record    => 'VIOK1.HP.RGZ.1440='||l_lrts_ts_id_new||';Units=ft;TZ=UTC;DLTime=false');
+   ut.expect(l_cwms_ts_id).to_equal(l_lrts_ts_id_new);
    -- should succeed
    --.... create, update, store ts
    cwms_ts.create_ts(
@@ -5487,9 +5623,23 @@ begin
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'T');
    cwms_ts.zstore_ts(
+      p_cwms_ts_id      => replace(l_lrts_ts_id_old, 'Elev', 'Stor'),
+      p_units           => 'ac-ft',
+      p_timeseries_data => l_ts_data2,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'T');
+   cwms_ts.zstore_ts(
       p_cwms_ts_id      => l_lrts_ts_id_old_copy,
       p_units           => 'ft',
       p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'T');
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => replace(l_lrts_ts_id_old, 'Elev', 'Stor'),
+      p_units           => 'ac-ft',
+      p_timeseries_data => l_ts_data2,
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'T');
@@ -5703,7 +5853,6 @@ begin
       p_end_time         => l_end_time,
       p_time_zone        => 'UTC',
       p_office_id        => c_office_id);
-   dbms_output.put_line(l_lrts_ts_id_old);
    l_count := 0;
    loop
       fetch l_crsr
@@ -5748,7 +5897,6 @@ begin
       p_end_time         => l_end_time,
       p_time_zone        => 'UTC',
       p_office_id        => c_office_id);
-   dbms_output.put_line(replace(l_lrts_ts_id_old, 'Elev', 'Text'));
    l_count := 0;
    loop
       fetch l_crsr
@@ -5983,14 +6131,14 @@ begin
             l_blob;
       exit when l_crsr%notfound;
       l_count := l_count + 1;
---      dbms_output.put_line(
---         l_count
---         ||chr(9)||l_date_time
---         ||chr(9)||l_text
---         ||chr(9)||l_number
---         ||chr(9)||l_media_type
---         ||chr(9)||l_file_extension
---         ||chr(9)||utl_i18n.raw_to_char(l_blob));
+      -- dbms_output.put_line(
+      --    l_count
+      --    ||chr(9)||l_date_time
+      --    ||chr(9)||l_text
+      --    ||chr(9)||l_number
+      --    ||chr(9)||l_media_type
+      --    ||chr(9)||l_file_extension
+      --    ||chr(9)||utl_i18n.raw_to_char(l_blob));
    end loop;
    close l_crsr;
    ut.expect(l_count).to_equal(l_ts_data.count * 4);
@@ -6069,19 +6217,150 @@ begin
             l_media_type,
             l_blob;
       exit when l_crsr%notfound;
---      dbms_output.put_line(
---         l_count
---         ||chr(9)||l_date_time
---         ||chr(9)||l_text
---         ||chr(9)||l_number
---         ||chr(9)||l_media_type
---         ||chr(9)||l_file_extension
---         ||chr(9)||utl_i18n.raw_to_char(l_blob));
+      -- dbms_output.put_line(
+      --    l_count
+      --    ||chr(9)||l_date_time
+      --    ||chr(9)||l_text
+      --    ||chr(9)||l_number
+      --    ||chr(9)||l_media_type
+      --    ||chr(9)||l_file_extension
+      --    ||chr(9)||utl_i18n.raw_to_char(l_blob));
       l_count := l_count + 1;
    end loop;
    close l_crsr;
    ut.expect(l_count).to_equal(l_ts_data.count * 3);
    cwms_ts.delete_ts(replace(l_lrts_ts_id_old, 'Elev', 'Binary'), cwms_util.delete_all, c_office_id);
+   --.... cwms_pool package
+   cwms_pool.get_elev_offsets(
+      p_offsets    => l_ts_data_out,
+      p_project_id => l_location_id,
+      p_pool_name  => 'Normal',
+      p_limit      => 'Top',
+      p_unit       => 'ft',
+      p_tsid       => l_lrts_ts_id_old,
+      p_start_time => l_start_time,
+      p_end_time   => l_end_time,
+      p_timezone   => 'UTC',
+      p_office_id  => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_elev_offsets(
+      p_bottom_offsets => l_ts_data_out,
+      p_top_offsets    => l_ts_data_out2,
+      p_project_id     => l_location_id,
+      p_pool_name      => 'Normal',
+      p_unit           => 'ft',
+      p_tsid           => l_lrts_ts_id_old,
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_timezone       => 'UTC',
+      p_office_id      => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_pool_limit_elevs(
+      p_limit_elevs => l_ts_data_out,
+      p_project_id  => l_location_id,
+      p_pool_name   => 'Normal',
+      p_limit       => 'Top',
+      p_unit        => 'ft',
+      p_tsid        => l_lrts_ts_id_old,
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_timezone    => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_pool_limit_elevs(
+      p_bottom_elevs => l_ts_data_out,
+      p_top_elevs    => l_ts_data_out2,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_unit         => 'ft',
+      p_tsid         => l_lrts_ts_id_old,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_stor_offsets(
+      p_offsets     => l_ts_data_out,
+      p_project_id  => l_location_id,
+      p_pool_name   => 'Normal',
+      p_limit       => 'Top',
+      p_unit        => 'ac-ft',
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Stor'),
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_timezone    => 'UTC',
+      p_rating_spec => l_rating_spec,
+      p_office_id   => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_stor_offsets(
+      p_bottom_offsets => l_ts_data_out,
+      p_top_offsets    => l_ts_data_out2,
+      p_project_id     => l_location_id,
+      p_pool_name      => 'Normal',
+      p_unit           => 'ac-ft',
+      p_tsid           => replace(l_lrts_ts_id_old, 'Elev', 'Stor'),
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_timezone       => 'UTC',
+      p_rating_spec => l_rating_spec,
+      p_office_id      => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_pool_limit_stors(
+      p_limit_stors  => l_ts_data_out,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_limit        => 'Top',
+      p_unit         => 'ac-ft',
+      p_tsid         => l_lrts_ts_id_old,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_pool_limit_stors(
+      p_bottom_stors => l_ts_data_out,
+      p_top_stors    => l_ts_data_out2,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_unit         => 'ac-ft',
+      p_tsid         => l_lrts_ts_id_old,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_percent_full(
+      p_percent_full => l_ts_data_out,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_tsid         => l_lrts_ts_id_old,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||round(to_number(l_ts_data_out(i).value), 4));
+   -- end loop;
    --.... cwms_alarm package
    cwms_alarm.notify_loc_lvl_ind_state (
       p_ts_id              => l_lrts_ts_id_old,
@@ -6108,6 +6387,23 @@ begin
       p_screening_id        => 'Elev Range 1',
       p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_old)),
       p_db_office_id        => c_office_id);
+   cwms_shef.store_shef_spec (
+      p_cwms_ts_id          => l_lrts_ts_id_old,
+      p_data_stream_id      => 'Test_Data_Stream',
+      p_shef_loc_id         => 'SHEFO2',
+      p_shef_pe_code        => 'HP',
+      p_shef_tse_code       => 'RGZ',
+      p_shef_duration_code  => 'I',
+      p_shef_unit_id        => 'ft',
+      p_time_zone_id        => 'UTC',
+      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
+                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
+                                  1440),
+      p_db_office_id        => c_office_id);
+   cwms_shef.delete_shef_spec (
+      p_cwms_ts_id     => l_lrts_ts_id_old,
+      p_data_stream_id => 'Test_Data_Stream',
+      p_db_office_id   => c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_key, c_office_id);
    cwms_ts.set_use_new_lrts_format_on_output('T');
@@ -6127,6 +6423,7 @@ begin
    cwms_ts.undelete_ts(l_lrts_ts_id_old, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_old_copy, cwms_util.delete_all, c_office_id);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_old, 'Elev', 'Stor'), cwms_util.delete_all, c_office_id);
    -- should fail
    --.... create, update, store ts
    begin
@@ -6411,6 +6708,76 @@ begin
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
+   --.... cwms_pool package
+   begin
+      cwms_pool.get_elev_offsets(
+         p_offsets    => l_ts_data_out,
+         p_project_id => l_location_id,
+         p_pool_name  => 'Normal',
+         p_limit      => 'Top',
+         p_unit       => 'ft',
+         p_tsid       => l_lrts_ts_id_new,
+         p_start_time => l_start_time,
+         p_end_time   => l_end_time,
+         p_timezone   => 'UTC',
+         p_office_id  => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_pool.get_elev_offsets(
+         p_bottom_offsets => l_ts_data_out,
+         p_top_offsets    => l_ts_data_out2,
+         p_project_id     => l_location_id,
+         p_pool_name      => 'Normal',
+         p_unit           => 'ft',
+         p_tsid           => l_lrts_ts_id_new,
+         p_start_time     => l_start_time,
+         p_end_time       => l_end_time,
+         p_timezone       => 'UTC',
+         p_office_id      => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_pool.get_pool_limit_elevs(
+         p_limit_elevs => l_ts_data_out,
+         p_project_id  => l_location_id,
+         p_pool_name   => 'Normal',
+         p_limit       => 'Top',
+         p_unit        => 'ft',
+         p_tsid        => l_lrts_ts_id_new,
+         p_start_time  => l_start_time,
+         p_end_time    => l_end_time,
+         p_timezone    => 'UTC',
+         p_office_id   => c_office_id);
+      ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_pool.get_pool_limit_elevs(
+         p_bottom_elevs => l_ts_data_out,
+         p_top_elevs    => l_ts_data_out2,
+         p_project_id   => l_location_id,
+         p_pool_name    => 'Normal',
+         p_unit         => 'ft',
+         p_tsid         => l_lrts_ts_id_new,
+         p_start_time   => l_start_time,
+         p_end_time     => l_end_time,
+         p_timezone     => 'UTC',
+         p_office_id    => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
    --.... other packages
    begin
       cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_new, 'F', 'T', c_office_id);
@@ -6427,6 +6794,35 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when no_data_found then null;
+   end;
+   begin
+      cwms_shef.store_shef_spec (
+         p_cwms_ts_id          => l_lrts_ts_id_new,
+         p_data_stream_id      => 'Test_Data_Stream',
+         p_shef_loc_id         => 'SHEFO2',
+         p_shef_pe_code        => 'HP',
+         p_shef_tse_code       => 'RGZ',
+         p_shef_duration_code  => 'I',
+         p_shef_unit_id        => 'ft',
+         p_time_zone_id        => 'UTC',
+         p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
+                                     cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
+                                     1440),
+         p_db_office_id        => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_shef.delete_shef_spec (
+         p_cwms_ts_id     => l_lrts_ts_id_new,
+         p_data_stream_id => 'Test_Data_Stream',
+         p_db_office_id   => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
    --.... delete, undelete
    begin
@@ -6473,6 +6869,13 @@ begin
       p_cwms_ts_id      => l_lrts_ts_id_old_copy,
       p_units           => 'ft',
       p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'T');
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => replace(l_lrts_ts_id_old, 'Elev', 'Stor'),
+      p_units           => 'ac-ft',
+      p_timeseries_data => l_ts_data2,
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'T');
@@ -6686,7 +7089,6 @@ begin
       p_end_time         => l_end_time,
       p_time_zone        => 'UTC',
       p_office_id        => c_office_id);
-   dbms_output.put_line(l_lrts_ts_id_old);
    l_count := 0;
    loop
       fetch l_crsr
@@ -6731,7 +7133,6 @@ begin
       p_end_time         => l_end_time,
       p_time_zone        => 'UTC',
       p_office_id        => c_office_id);
-   dbms_output.put_line(replace(l_lrts_ts_id_old, 'Elev', 'Text'));
    l_count := 0;
    loop
       fetch l_crsr
@@ -7072,6 +7473,197 @@ begin
    close l_crsr;
    ut.expect(l_count).to_equal(l_ts_data.count * 3);
    cwms_ts.delete_ts(replace(l_lrts_ts_id_old, 'Elev', 'Binary'), cwms_util.delete_all, c_office_id);
+   --.... cwms_pool package
+   cwms_pool.get_elev_offsets(
+      p_offsets    => l_ts_data_out,
+      p_project_id => l_location_id,
+      p_pool_name  => 'Normal',
+      p_limit      => 'Top',
+      p_unit       => 'ft',
+      p_tsid       => l_lrts_ts_id_old,
+      p_start_time => l_start_time,
+      p_end_time   => l_end_time,
+      p_timezone   => 'UTC',
+      p_office_id  => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_elev_offsets(
+      p_bottom_offsets => l_ts_data_out,
+      p_top_offsets    => l_ts_data_out2,
+      p_project_id     => l_location_id,
+      p_pool_name      => 'Normal',
+      p_unit           => 'ft',
+      p_tsid           => l_lrts_ts_id_old,
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_timezone       => 'UTC',
+      p_office_id      => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_pool_limit_elevs(
+      p_limit_elevs => l_ts_data_out,
+      p_project_id  => l_location_id,
+      p_pool_name   => 'Normal',
+      p_limit       => 'Top',
+      p_unit        => 'ft',
+      p_tsid        => l_lrts_ts_id_old,
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_timezone    => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_pool_limit_elevs(
+      p_bottom_elevs => l_ts_data_out,
+      p_top_elevs    => l_ts_data_out2,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_unit         => 'ft',
+      p_tsid         => l_lrts_ts_id_old,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_stor_offsets(
+      p_offsets     => l_ts_data_out,
+      p_project_id  => l_location_id,
+      p_pool_name   => 'Normal',
+      p_limit       => 'Top',
+      p_unit        => 'ac-ft',
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Stor'),
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_timezone    => 'UTC',
+      p_rating_spec => l_rating_spec,
+      p_office_id   => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_stor_offsets(
+      p_bottom_offsets => l_ts_data_out,
+      p_top_offsets    => l_ts_data_out2,
+      p_project_id     => l_location_id,
+      p_pool_name      => 'Normal',
+      p_unit           => 'ac-ft',
+      p_tsid           => replace(l_lrts_ts_id_old, 'Elev', 'Stor'),
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_timezone       => 'UTC',
+      p_rating_spec => l_rating_spec,
+      p_office_id      => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_pool_limit_stors(
+      p_limit_stors  => l_ts_data_out,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_limit        => 'Top',
+      p_unit         => 'ac-ft',
+      p_tsid         => l_lrts_ts_id_old,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_pool_limit_stors(
+      p_bottom_stors => l_ts_data_out,
+      p_top_stors    => l_ts_data_out2,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_unit         => 'ac-ft',
+      p_tsid         => l_lrts_ts_id_old,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_stor_offsets(
+      p_offsets     => l_ts_data_out,
+      p_project_id  => l_location_id,
+      p_pool_name   => 'Normal',
+      p_limit       => 'Top',
+      p_unit        => 'ac-ft',
+      p_tsid        => replace(l_lrts_ts_id_old, 'Elev', 'Stor'),
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_timezone    => 'UTC',
+      p_rating_spec => l_rating_spec,
+      p_office_id   => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_stor_offsets(
+      p_bottom_offsets => l_ts_data_out,
+      p_top_offsets    => l_ts_data_out2,
+      p_project_id     => l_location_id,
+      p_pool_name      => 'Normal',
+      p_unit           => 'ac-ft',
+      p_tsid           => replace(l_lrts_ts_id_old, 'Elev', 'Stor'),
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_timezone       => 'UTC',
+      p_rating_spec => l_rating_spec,
+      p_office_id      => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_pool_limit_stors(
+      p_limit_stors  => l_ts_data_out,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_limit        => 'Top',
+      p_unit         => 'ac-ft',
+      p_tsid         => l_lrts_ts_id_old,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_pool_limit_stors(
+      p_bottom_stors => l_ts_data_out,
+      p_top_stors    => l_ts_data_out2,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_unit         => 'ac-ft',
+      p_tsid         => l_lrts_ts_id_old,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_percent_full(
+      p_percent_full => l_ts_data_out,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_tsid         => l_lrts_ts_id_old,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||round(to_number(l_ts_data_out(i).value), 4));
+   -- end loop;
    --.... cwms_alarm package
    cwms_alarm.notify_loc_lvl_ind_state (
       p_ts_id              => l_lrts_ts_id_old,
@@ -7092,6 +7684,23 @@ begin
       p_screening_id        => 'Elev Range 1',
       p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_old)),
       p_db_office_id        => c_office_id);
+   cwms_shef.store_shef_spec (
+      p_cwms_ts_id          => l_lrts_ts_id_old,
+      p_data_stream_id      => 'Test_Data_Stream',
+      p_shef_loc_id         => 'SHEFO2',
+      p_shef_pe_code        => 'HP',
+      p_shef_tse_code       => 'RGZ',
+      p_shef_duration_code  => 'I',
+      p_shef_unit_id        => 'ft',
+      p_time_zone_id        => 'UTC',
+      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
+                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
+                                  1440),
+      p_db_office_id        => c_office_id);
+   cwms_shef.delete_shef_spec (
+      p_cwms_ts_id     => l_lrts_ts_id_old,
+      p_data_stream_id => 'Test_Data_Stream',
+      p_db_office_id   => c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_key, c_office_id);
    cwms_ts.set_use_new_lrts_format_on_output('T');
@@ -7111,6 +7720,7 @@ begin
    cwms_ts.undelete_ts(l_lrts_ts_id_old, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_old_copy, cwms_util.delete_all, c_office_id);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_old, 'Elev', 'Stor'), cwms_util.delete_all, c_office_id);
    -- should succeed
    --.... create, update, store ts
    cwms_ts.create_ts(
@@ -7134,6 +7744,13 @@ begin
       p_cwms_ts_id      => l_lrts_ts_id_new_copy,
       p_units           => 'ft',
       p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'T');
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => replace(l_lrts_ts_id_new, 'Elev', 'Stor'),
+      p_units           => 'ac-ft',
+      p_timeseries_data => l_ts_data2,
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'T');
@@ -7347,7 +7964,6 @@ begin
       p_end_time         => l_end_time,
       p_time_zone        => 'UTC',
       p_office_id        => c_office_id);
-   dbms_output.put_line(l_lrts_ts_id_new);
    l_count := 0;
    loop
       fetch l_crsr
@@ -7703,6 +8319,137 @@ begin
    close l_crsr;
    ut.expect(l_count).to_equal(l_ts_data.count * 3);
    cwms_ts.delete_ts(replace(l_lrts_ts_id_new, 'Elev', 'Binary'), cwms_util.delete_all, c_office_id);
+   --.... cwms_pool package
+   cwms_pool.get_elev_offsets(
+      p_offsets    => l_ts_data_out,
+      p_project_id => l_location_id,
+      p_pool_name  => 'Normal',
+      p_limit      => 'Top',
+      p_unit       => 'ft',
+      p_tsid       => l_lrts_ts_id_new,
+      p_start_time => l_start_time,
+      p_end_time   => l_end_time,
+      p_timezone   => 'UTC',
+      p_office_id  => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_elev_offsets(
+      p_bottom_offsets => l_ts_data_out,
+      p_top_offsets    => l_ts_data_out2,
+      p_project_id     => l_location_id,
+      p_pool_name      => 'Normal',
+      p_unit           => 'ft',
+      p_tsid           => l_lrts_ts_id_new,
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_timezone       => 'UTC',
+      p_office_id      => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_pool_limit_elevs(
+      p_limit_elevs => l_ts_data_out,
+      p_project_id  => l_location_id,
+      p_pool_name   => 'Normal',
+      p_limit       => 'Top',
+      p_unit        => 'ft',
+      p_tsid        => l_lrts_ts_id_new,
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_timezone    => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_pool_limit_elevs(
+      p_bottom_elevs => l_ts_data_out,
+      p_top_elevs    => l_ts_data_out2,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_unit         => 'ft',
+      p_tsid         => l_lrts_ts_id_new,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_stor_offsets(
+      p_offsets     => l_ts_data_out,
+      p_project_id  => l_location_id,
+      p_pool_name   => 'Normal',
+      p_limit       => 'Top',
+      p_unit        => 'ac-ft',
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Stor'),
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_timezone    => 'UTC',
+      p_rating_spec => l_rating_spec,
+      p_office_id   => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_stor_offsets(
+      p_bottom_offsets => l_ts_data_out,
+      p_top_offsets    => l_ts_data_out2,
+      p_project_id     => l_location_id,
+      p_pool_name      => 'Normal',
+      p_unit           => 'ac-ft',
+      p_tsid           => replace(l_lrts_ts_id_new, 'Elev', 'Stor'),
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_timezone       => 'UTC',
+      p_rating_spec => l_rating_spec,
+      p_office_id      => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_pool_limit_stors(
+      p_limit_stors  => l_ts_data_out,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_limit        => 'Top',
+      p_unit         => 'ac-ft',
+      p_tsid         => l_lrts_ts_id_new,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_pool_limit_stors(
+      p_bottom_stors => l_ts_data_out,
+      p_top_stors    => l_ts_data_out2,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_unit         => 'ac-ft',
+      p_tsid         => l_lrts_ts_id_new,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_percent_full(
+      p_percent_full => l_ts_data_out,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_tsid         => l_lrts_ts_id_new,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||round(to_number(l_ts_data_out(i).value), 4));
+   -- end loop;
    --.... cwms_alarm package
    cwms_alarm.notify_loc_lvl_ind_state (
       p_ts_id              => l_lrts_ts_id_new,
@@ -7723,6 +8470,23 @@ begin
       p_screening_id        => 'Elev Range 1',
       p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_new)),
       p_db_office_id        => c_office_id);
+   cwms_shef.store_shef_spec (
+      p_cwms_ts_id          => l_lrts_ts_id_new,
+      p_data_stream_id      => 'Test_Data_Stream',
+      p_shef_loc_id         => 'SHEFO2',
+      p_shef_pe_code        => 'HP',
+      p_shef_tse_code       => 'RGZ',
+      p_shef_duration_code  => 'I',
+      p_shef_unit_id        => 'ft',
+      p_time_zone_id        => 'UTC',
+      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
+                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
+                                  1440),
+      p_db_office_id        => c_office_id);
+   cwms_shef.delete_shef_spec (
+      p_cwms_ts_id     => l_lrts_ts_id_new,
+      p_data_stream_id => 'Test_Data_Stream',
+      p_db_office_id   => c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_key, c_office_id);
    cwms_ts.set_use_new_lrts_format_on_output('T');
@@ -7741,6 +8505,7 @@ begin
    cwms_ts.undelete_ts(l_lrts_ts_id_new, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_all, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_new_copy, cwms_util.delete_all, c_office_id);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_new, 'Elev', 'Stor'), cwms_util.delete_all, c_office_id);
 
    ---------------------------
    -- reqiure new LRTS IDs --
@@ -8038,6 +8803,76 @@ begin
       ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
       ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
    end loop;
+   --.... cwms_pool package
+   begin
+      cwms_pool.get_elev_offsets(
+         p_offsets    => l_ts_data_out,
+         p_project_id => l_location_id,
+         p_pool_name  => 'Normal',
+         p_limit      => 'Top',
+         p_unit       => 'ft',
+         p_tsid       => l_lrts_ts_id_old,
+         p_start_time => l_start_time,
+         p_end_time   => l_end_time,
+         p_timezone   => 'UTC',
+         p_office_id  => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_pool.get_elev_offsets(
+         p_bottom_offsets => l_ts_data_out,
+         p_top_offsets    => l_ts_data_out2,
+         p_project_id     => l_location_id,
+         p_pool_name      => 'Normal',
+         p_unit           => 'ft',
+         p_tsid           => l_lrts_ts_id_old,
+         p_start_time     => l_start_time,
+         p_end_time       => l_end_time,
+         p_timezone       => 'UTC',
+         p_office_id      => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_pool.get_pool_limit_elevs(
+         p_limit_elevs => l_ts_data_out,
+         p_project_id  => l_location_id,
+         p_pool_name   => 'Normal',
+         p_limit       => 'Top',
+         p_unit        => 'ft',
+         p_tsid        => l_lrts_ts_id_old,
+         p_start_time  => l_start_time,
+         p_end_time    => l_end_time,
+         p_timezone    => 'UTC',
+         p_office_id   => c_office_id);
+      ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
+   begin
+      cwms_pool.get_pool_limit_elevs(
+         p_bottom_elevs => l_ts_data_out,
+         p_top_elevs    => l_ts_data_out2,
+         p_project_id   => l_location_id,
+         p_pool_name    => 'Normal',
+         p_unit         => 'ft',
+         p_tsid         => l_lrts_ts_id_old,
+         p_start_time   => l_start_time,
+         p_end_time     => l_end_time,
+         p_timezone     => 'UTC',
+         p_office_id    => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
    --.... other packages
    begin
       cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_old, 'F', 'T', c_office_id);
@@ -8054,14 +8889,25 @@ begin
    exception
       when no_data_found then null;
    end;
+   cwms_shef.store_shef_spec (
+      p_cwms_ts_id          => l_lrts_ts_id_old, -- doesn't fail; created as PRTS
+      p_data_stream_id      => 'Test_Data_Stream',
+      p_shef_loc_id         => 'SHEFO2',
+      p_shef_pe_code        => 'HP',
+      p_shef_tse_code       => 'RGZ',
+      p_shef_duration_code  => 'I',
+      p_shef_unit_id        => 'ft',
+      p_time_zone_id        => 'UTC',
+      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
+                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
+                                  1440),
+      p_db_office_id        => c_office_id);
+   cwms_shef.delete_shef_spec (
+      p_cwms_ts_id     => l_lrts_ts_id_old,
+      p_data_stream_id => 'Test_Data_Stream',
+      p_db_office_id   => c_office_id);
    --.... delete, undelete
-   begin
-      cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
-      cwms_err.raise('ERROR', 'Expected exception not raised');
-   exception
-      when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
-   end;
+   cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id); -- doesn't fail, created by store_shef_spec
    -- should succeed
    --.... create, update, store ts
    cwms_ts.create_ts(
@@ -8085,6 +8931,13 @@ begin
       p_cwms_ts_id      => l_lrts_ts_id_new_copy,
       p_units           => 'ft',
       p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'T');
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => replace(l_lrts_ts_id_new, 'Elev', 'Stor'),
+      p_units           => 'ac-ft',
+      p_timeseries_data => l_ts_data2,
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'T');
@@ -8298,7 +9151,6 @@ begin
       p_end_time         => l_end_time,
       p_time_zone        => 'UTC',
       p_office_id        => c_office_id);
-   dbms_output.put_line(l_lrts_ts_id_new);
    l_count := 0;
    loop
       fetch l_crsr
@@ -8343,7 +9195,6 @@ begin
       p_end_time         => l_end_time,
       p_time_zone        => 'UTC',
       p_office_id        => c_office_id);
-   dbms_output.put_line(replace(l_lrts_ts_id_new, 'Elev', 'Text'));
    l_count := 0;
    loop
       fetch l_crsr
@@ -8684,6 +9535,137 @@ begin
    close l_crsr;
    ut.expect(l_count).to_equal(l_ts_data.count * 3);
    cwms_ts.delete_ts(replace(l_lrts_ts_id_new, 'Elev', 'Binary'), cwms_util.delete_all, c_office_id);
+   --.... cwms_pool package
+   cwms_pool.get_elev_offsets(
+      p_offsets    => l_ts_data_out,
+      p_project_id => l_location_id,
+      p_pool_name  => 'Normal',
+      p_limit      => 'Top',
+      p_unit       => 'ft',
+      p_tsid       => l_lrts_ts_id_new,
+      p_start_time => l_start_time,
+      p_end_time   => l_end_time,
+      p_timezone   => 'UTC',
+      p_office_id  => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_elev_offsets(
+      p_bottom_offsets => l_ts_data_out,
+      p_top_offsets    => l_ts_data_out2,
+      p_project_id     => l_location_id,
+      p_pool_name      => 'Normal',
+      p_unit           => 'ft',
+      p_tsid           => l_lrts_ts_id_new,
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_timezone       => 'UTC',
+      p_office_id      => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_pool_limit_elevs(
+      p_limit_elevs => l_ts_data_out,
+      p_project_id  => l_location_id,
+      p_pool_name   => 'Normal',
+      p_limit       => 'Top',
+      p_unit        => 'ft',
+      p_tsid        => l_lrts_ts_id_new,
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_timezone    => 'UTC',
+      p_office_id   => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_pool_limit_elevs(
+      p_bottom_elevs => l_ts_data_out,
+      p_top_elevs    => l_ts_data_out2,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_unit         => 'ft',
+      p_tsid         => l_lrts_ts_id_new,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_stor_offsets(
+      p_offsets     => l_ts_data_out,
+      p_project_id  => l_location_id,
+      p_pool_name   => 'Normal',
+      p_limit       => 'Top',
+      p_unit        => 'ac-ft',
+      p_tsid        => replace(l_lrts_ts_id_new, 'Elev', 'Stor'),
+      p_start_time  => l_start_time,
+      p_end_time    => l_end_time,
+      p_timezone    => 'UTC',
+      p_rating_spec => l_rating_spec,
+      p_office_id   => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_stor_offsets(
+      p_bottom_offsets => l_ts_data_out,
+      p_top_offsets    => l_ts_data_out2,
+      p_project_id     => l_location_id,
+      p_pool_name      => 'Normal',
+      p_unit           => 'ac-ft',
+      p_tsid           => replace(l_lrts_ts_id_new, 'Elev', 'Stor'),
+      p_start_time     => l_start_time,
+      p_end_time       => l_end_time,
+      p_timezone       => 'UTC',
+      p_rating_spec => l_rating_spec,
+      p_office_id      => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_pool_limit_stors(
+      p_limit_stors  => l_ts_data_out,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_limit        => 'Top',
+      p_unit         => 'ac-ft',
+      p_tsid         => l_lrts_ts_id_new,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   cwms_pool.get_pool_limit_stors(
+      p_bottom_stors => l_ts_data_out,
+      p_top_stors    => l_ts_data_out2,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_unit         => 'ac-ft',
+      p_tsid         => l_lrts_ts_id_new,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   ut.expect(l_ts_data_out2.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||to_number(l_ts_data_out(i).value)||chr(9)||to_number(l_ts_data_out2(i).value));
+   -- end loop;
+   cwms_pool.get_percent_full(
+      p_percent_full => l_ts_data_out,
+      p_project_id   => l_location_id,
+      p_pool_name    => 'Normal',
+      p_tsid         => l_lrts_ts_id_new,
+      p_start_time   => l_start_time,
+      p_end_time     => l_end_time,
+      p_timezone     => 'UTC',
+      p_rating_spec  => l_rating_spec,
+      p_office_id    => c_office_id);
+   ut.expect(l_ts_data_out.count).to_equal(l_ts_data.count);
+   -- for i in 1..l_ts_data_out.count loop
+   --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||round(to_number(l_ts_data_out(i).value), 4));
+   -- end loop;
    --.... cwms_alarm package
    cwms_alarm.notify_loc_lvl_ind_state (
       p_ts_id              => l_lrts_ts_id_new,
@@ -8710,6 +9692,23 @@ begin
       p_screening_id        => 'Elev Range 1',
       p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_new)),
       p_db_office_id        => c_office_id);
+   cwms_shef.store_shef_spec (
+      p_cwms_ts_id          => l_lrts_ts_id_new,
+      p_data_stream_id      => 'Test_Data_Stream',
+      p_shef_loc_id         => 'SHEFO2',
+      p_shef_pe_code        => 'HP',
+      p_shef_tse_code       => 'RGZ',
+      p_shef_duration_code  => 'I',
+      p_shef_unit_id        => 'ft',
+      p_time_zone_id        => 'UTC',
+      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
+                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
+                                  1440),
+      p_db_office_id        => c_office_id);
+   cwms_shef.delete_shef_spec (
+      p_cwms_ts_id     => l_lrts_ts_id_new,
+      p_data_stream_id => 'Test_Data_Stream',
+      p_db_office_id   => c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_key, c_office_id);
    cwms_ts.set_use_new_lrts_format_on_output('T');
@@ -8729,6 +9728,7 @@ begin
    cwms_ts.undelete_ts(l_lrts_ts_id_new, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_all, c_office_id);
    cwms_ts.delete_ts(l_lrts_ts_id_new_copy, cwms_util.delete_all, c_office_id);
+   cwms_ts.delete_ts(replace(l_lrts_ts_id_new, 'Elev', 'Stor'), cwms_util.delete_all, c_office_id);
 
    cwms_ts.set_allow_new_lrts_format_on_input('F');
    cwms_ts.set_use_new_lrts_format_on_output('F');
