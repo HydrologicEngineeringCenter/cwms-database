@@ -5216,13 +5216,17 @@ begin
       end loop;
 
    end loop;
-   cwms_vt.delete_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_parameter_id        => 'Elev',
-      p_parameter_type_id   => null,
-      p_duration_id         => null,
-      p_cascade             => 'T',
-      p_db_office_id        => 'SWT');
+   begin
+      cwms_vt.delete_screening_id (
+         p_screening_id        => 'Elev Range 1',
+         p_parameter_id        => 'Elev',
+         p_parameter_type_id   => null,
+         p_duration_id         => null,
+         p_cascade             => 'T',
+         p_db_office_id        => 'SWT');
+   exception
+      when others then null;
+   end;
    cwms_shef.delete_data_stream (
       p_data_stream_id  => 'Test_Data_Stream',
       p_cascade_all     => 'T',
@@ -5422,11 +5426,20 @@ begin
    ---------------------------
    -- create a screening id --
    ---------------------------
-   cwms_vt.create_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_screening_id_desc   => 'Test Screening',
-      p_parameter_id        => 'Elev',
-      p_db_office_id        => c_office_id);
+   begin
+      cwms_vt.create_screening_id (
+         p_screening_id        => 'Elev Range 1',
+         p_screening_id_desc   => 'Test Screening',
+         p_parameter_id        => 'Elev',
+         p_db_office_id        => c_office_id);
+   exception
+      when others then
+         if regexp_like(dbms_utility.format_error_stack, '.+ITEM_ALREDY_EXISTS.+', 'mn') then
+            null;
+         else
+            raise;
+         end if;
+   end;
    ----------------------------------
    -- create some data stream info --
    ----------------------------------
