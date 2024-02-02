@@ -28,22 +28,7 @@ create or replace force view av_loc_lvl_ts_map as
                   ind.level_indicator_code
              from (select o.office_id,
                           ts.ts_code,
-                          bl.base_location_id
-                          || substr('-', 1, length(pl.sub_location_id))
-                          || pl.sub_location_id
-                          || '.'
-                          || bp.base_parameter_id
-                          || substr('-', 1, length(p.sub_parameter_id))
-                          || p.sub_parameter_id
-                          || '.'
-                          || pt.parameter_type_id
-                          || '.'
-                          || i.interval_id
-                          || '.'
-                          || d.duration_id
-                          || '.'
-                          || ts.version
-                             as cwms_ts_id,
+                          ts2.cwms_ts_id,
                           i.interval,
                           bl.base_location_id
                           || substr('-', 1, length(pl.sub_location_id))
@@ -70,6 +55,7 @@ create or replace force view av_loc_lvl_ts_map as
                           null as attribute_parameter_type_code,
                           null as attribute_duration_code
                      from at_cwms_ts_spec ts,
+                          av_cwms_ts_id ts2,
                           at_physical_location pl,
                           at_base_location bl,
                           at_parameter p,
@@ -80,7 +66,8 @@ create or replace force view av_loc_lvl_ts_map as
                           at_location_level ll,
                           at_specified_level sl,
                           cwms_office o
-                    where bl.db_office_code = o.office_code
+                    where ts2.ts_code = ts.ts_code
+                      and bl.db_office_code = o.office_code
                       and pl.base_location_code = bl.base_location_code
                       and ts.location_code = pl.location_code
                       and p.parameter_code = ts.parameter_code
@@ -105,22 +92,7 @@ create or replace force view av_loc_lvl_ts_map as
                    --
                    select o.office_id,
                           ts.ts_code,
-                          bl.base_location_id
-                          || substr('-', 1, length(pl.sub_location_id))
-                          || pl.sub_location_id
-                          || '.'
-                          || bp.base_parameter_id
-                          || substr('-', 1, length(p.sub_parameter_id))
-                          || p.sub_parameter_id
-                          || '.'
-                          || pt.parameter_type_id
-                          || '.'
-                          || i.interval_id
-                          || '.'
-                          || d.duration_id
-                          || '.'
-                          || ts.version
-                             as cwms_ts_id,
+                          ts2.cwms_ts_id,
                           i.interval,
                           bl.base_location_id
                           || substr('-', 1, length(pl.sub_location_id))
@@ -154,6 +126,7 @@ create or replace force view av_loc_lvl_ts_map as
                           ll.attribute_parameter_type_code,
                           ll.attribute_duration_code
                      from at_cwms_ts_spec ts,
+                          av_cwms_ts_id ts2,
                           at_physical_location pl,
                           at_base_location bl,
                           at_parameter p,
@@ -168,7 +141,8 @@ create or replace force view av_loc_lvl_ts_map as
                           cwms_base_parameter bp2,
                           cwms_parameter_type pt2,
                           cwms_duration d2
-                    where bl.db_office_code = o.office_code
+                    where ts2.ts_code = ts.ts_code
+                      and bl.db_office_code = o.office_code
                       and pl.base_location_code = bl.base_location_code
                       and ts.location_code = pl.location_code
                       and p.parameter_code = ts.parameter_code

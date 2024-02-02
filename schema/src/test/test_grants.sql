@@ -4,6 +4,7 @@ define cwms_schema = &6
 GRANT EXECUTE ON &cwms_schema..test_lrts_updates to &1;
 grant execute on &cwms_schema..test_probability_parameter to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_util to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_err to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_loc to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_ts to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_rating to &1;

@@ -2561,6 +2561,7 @@ is
    l_units           varchar2(16) := null;
    l_time_zone       number       := null;
    l_tz_usage        number       := null;
+   l_mapping_rec     at_xchg_dss_ts_mappings%rowtype;
 begin
    begin
       select mapping_code,
@@ -2649,6 +2650,10 @@ begin
       return mapping_code
         into l_mapping_code;
    else
+      select *
+        into l_mapping_rec
+        from at_xchg_dss_ts_mappings
+       where mapping_code = l_mapping_code;
       select dss_parameter_type_code
         into l_parameter_type
         from cwms_dss_parameter_type
@@ -2666,10 +2671,10 @@ begin
          l_c_pathname_part != p_c_pathname_part or
          l_e_pathname_part != p_e_pathname_part or
          nvl(l_f_pathname_part, '@') != nvl(p_f_pathname_part, '@') or
-         l_parameter_type != p_parameter_type or
+         l_parameter_type != l_mapping_rec.dss_parameter_type_code or
          l_units != p_units or
-         l_time_zone != p_time_zone or
-         l_tz_usage != p_tz_usage
+         l_time_zone != l_mapping_rec.time_zone_code or
+         l_tz_usage != l_mapping_rec.tz_usage_code
       then
          update at_xchg_dss_ts_mappings
             set a_pathname_part = p_a_pathname_part,

@@ -26,7 +26,7 @@ create or replace force view av_ts_msg_archive (cwms_ts_id,
   	FROM (SELECT * FROM at_ts_msg_archive_1
         	UNION
         	SELECT * FROM at_ts_msg_archive_2) m,
-       		at_cwms_ts_id  c
+       		av_cwms_ts_id  c
  		WHERE c.ts_code = m.TS_CODE;
 
 begin
