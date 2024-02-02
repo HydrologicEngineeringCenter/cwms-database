@@ -9746,13 +9746,17 @@ begin
    cwms_ts.set_allow_new_lrts_format_on_input('F');
    cwms_ts.set_use_new_lrts_format_on_output('F');
 
-   cwms_vt.delete_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_parameter_id        => 'Elev',
-      p_parameter_type_id   => null,
-      p_duration_id         => null,
-      p_cascade             => 'T',
-      p_db_office_id        => 'SWT');
+   begin
+      cwms_vt.delete_screening_id (
+         p_screening_id        => 'Elev Range 1',
+         p_parameter_id        => 'Elev',
+         p_parameter_type_id   => null,
+         p_duration_id         => null,
+         p_cascade             => 'T',
+         p_db_office_id        => 'SWT');
+   exception
+      when others then null;
+   end;
    cwms_loc.delete_location(l_location_id, cwms_util.delete_all, c_office_id);
 
 end test_lrts_id_input_formatting;
