@@ -5434,7 +5434,7 @@ begin
          p_db_office_id        => c_office_id);
    exception
       when others then
-         if regexp_like(dbms_utility.format_error_stack, '.+ITEM_ALREDY_EXISTS.+', 'mn') then
+         if regexp_like(dbms_utility.format_error_stack, '.+ITEM_ALREADY_EXISTS.+', 'mn') then
             null;
          else
             raise;
