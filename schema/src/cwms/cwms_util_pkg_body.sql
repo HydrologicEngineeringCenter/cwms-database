@@ -23,6 +23,19 @@ end;
 /
 CREATE OR REPLACE PACKAGE BODY cwms_util
 as
+   procedure clear_all_caches
+   is
+   begin
+      cwms_cache.clear(g_timezone_cache);
+      cwms_cache.clear(g_time_zone_name_cache);
+      cwms_cache.clear(g_time_zone_code_cache);
+      cwms_cache.clear(g_parameter_id_cache);
+      cwms_cache.clear(g_base_parameter_code_cache);
+      cwms_cache.clear(g_unit_conversion_info_cache);
+      cwms_cache.clear(g_office_id_cache);
+      cwms_cache.clear(g_office_code_cache);
+   end;
+
    function get_expression_constants return str_tab_t is begin return expression_constants; end get_expression_constants;
    function get_expression_operators return str_tab_t is begin return expression_operators; end get_expression_operators;
    function get_expression_functions return str_tab_t is begin return expression_functions; end get_expression_functions;
@@ -2951,23 +2964,41 @@ as
       l_factor    cwms_unit_conversion.factor%type;
       l_offset    cwms_unit_conversion.offset%type;
       l_function  cwms_unit_conversion.function%type;
+      l_parts     str_tab_t;
+      l_cache_key varchar2(65);
+      l_cache_val varchar2(115);
       l_converted binary_double;
    begin
       if p_value is not null then
-         select factor,
-                offset,
-                function
-           into l_factor,
-                l_offset,
-                l_function
-           from cwms_unit_conversion
-          where from_unit_id = cwms_util.get_unit_id(p_from_unit_id)
-            and to_unit_id = cwms_util.get_unit_id(p_to_unit_id);
-
-         if l_factor is null then
-            l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
+         if p_to_unit_id = p_from_unit_id then
+            l_converted := p_value;
          else
-            l_converted := p_value * l_factor + l_offset;
+            l_cache_key := p_from_unit_id||chr(9)||p_to_unit_id;
+            l_cache_val := cwms_cache.get(cwms_util.g_unit_conversion_info_cache, l_cache_key);
+            if l_cache_val is null then
+               select factor,
+                      offset,
+                      function
+                 into l_factor,
+                      l_offset,
+                      l_function
+                 from cwms_unit_conversion
+                where from_unit_id = cwms_util.get_unit_id(p_from_unit_id)
+                  and to_unit_id = cwms_util.get_unit_id(p_to_unit_id);
+               l_cache_val := l_factor||chr(9)||l_offset||chr(9)||l_function;
+               cwms_cache.put(cwms_util.g_unit_conversion_info_cache, l_cache_key, l_cache_val);
+            else
+               l_parts := cwms_util.split_text(l_cache_val, chr(9));
+               l_factor   := l_parts(1);
+               l_offset   := l_parts(2);
+               l_function := l_parts(3);
+            end if;
+
+            if l_factor is null then
+               l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
+            else
+               l_converted := p_value * l_factor + l_offset;
+            end if;
          end if;
       end if;
       return l_converted;
@@ -6727,6 +6758,7 @@ begin
    g_time_zone_code_cache.name      := 'cwms_util.g_time_zone_code_cache';
    g_parameter_id_cache.name        := 'cwms_util.g_parameter_id_cache';
    g_base_parameter_code_cache.name := 'cwms_util.g_base_parameter_code_cache';
+   g_unit_conversion_info_cache.name := 'cwms_util.g_unit_conversion_info_cache';
    g_office_id_cache.name           := 'cwms_util.g_office_id_cache';
    g_office_code_cache.name         := 'cwms_util.g_office_code_cache';
 

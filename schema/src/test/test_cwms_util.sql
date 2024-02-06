@@ -36,6 +36,8 @@ procedure test_math_expressions;
 procedure test_comparison_expressions;
 --%test(Test logic expressions)
 procedure test_logic_expressions;
+--%test(Test CWDB-255 Cache unit conversion factors and formulas in convert_units)
+procedure cwdb_255_cache_unit_conversion_factors_and_formulas_in_convert_units;
 
 procedure setup;
 procedure teardown;
@@ -703,6 +705,60 @@ begin
      from cwms_db_change_log;
    ut.expect(sysdate - l_apply_date).to_be_less_than(1);
 end test_cwms_db_change_log;
+---------------------------------------------------------------------------------
+-- procedure cwdb_255_cache_unit_conversion_factors_and_formulas_in_convert_units
+---------------------------------------------------------------------------------
+procedure cwdb_255_cache_unit_conversion_factors_and_formulas_in_convert_units
+is
+   l_from_unit_ids cwms_t_str_tab := cwms_t_str_tab('B',  'B',  'B',    'F', 'Hz', 'K', 'MHz', 'ft', 'ft', 'ft',   'ft', 'ft', 'ft', 'ft', 'ft', 'kHz');
+   l_to_unit_ids   cwms_t_str_tab := cwms_t_str_tab('Hz', 'MHz', 'kHz', 'K', 'B',  'F', 'B',   'cm', 'ft', 'ftUS', 'in', 'km', 'm',  'mi', 'mm', 'B');
+   l_results       cwms_t_double_tab;
+   l_val_count     binary_integer := l_from_unit_ids.count;
+   l_loop_count    binary_integer := 100;
+   l_converted     binary_double;
+   l_ts            timestamp;
+   l_elapsed_1     interval day to second;
+   l_elapsed_2     interval day to second;
+begin
+   ----------------------------------------------------------------------------
+   -- reset the cache and convert units, forcing record retrieval from table --
+   ----------------------------------------------------------------------------
+   l_results := cwms_t_double_tab();
+   l_results.extend(l_from_unit_ids.count);
+   cwms_cache.clear(cwms_util.g_unit_conversion_info_cache);
+   for i in 1..l_val_count loop
+      l_results(i) := cwms_util.convert_units(1.0, l_from_unit_ids(i), l_to_unit_ids(i));
+   end loop;
+   ----------------------------------------------------------------------------------------------
+   -- all conversions are now cached, so verify conversions and get the cached conversion time --
+   ----------------------------------------------------------------------------------------------
+   for i in 1..l_val_count loop
+      l_converted := cwms_util.convert_units(1.0, l_from_unit_ids(i), l_to_unit_ids(i));
+      ut.expect(l_converted).to_equal(l_results(i));
+   end loop;
+   l_ts := systimestamp;
+   for i in 1..l_loop_count loop
+      for j in 1..l_val_count loop
+         l_converted := cwms_util.convert_units(1.0, l_from_unit_ids(j), l_to_unit_ids(j));
+      end loop;
+   end loop;
+   l_elapsed_1 := systimestamp - l_ts;
+   ------------------------------------------
+   -- now get the uncached conversion time --
+   ------------------------------------------
+   cwms_cache.disable(cwms_util.g_unit_conversion_info_cache);
+   l_ts := systimestamp;
+   for i in 1..l_loop_count loop
+      for j in 1..l_val_count loop
+         l_converted := cwms_util.convert_units(1.0, l_from_unit_ids(j), l_to_unit_ids(j));
+      end loop;
+   end loop;
+   l_elapsed_2 := systimestamp - l_ts;
+   cwms_cache.enable(cwms_util.g_unit_conversion_info_cache);
+
+   ut.expect(l_elapsed_2).to_be_greater_than(l_elapsed_1);
+
+end cwdb_255_cache_unit_conversion_factors_and_formulas_in_convert_units;
 
 end test_cwms_util;
 /
