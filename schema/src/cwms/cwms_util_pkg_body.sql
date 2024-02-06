@@ -23,6 +23,19 @@ end;
 /
 CREATE OR REPLACE PACKAGE BODY cwms_util
 as
+   procedure clear_all_caches
+   is
+   begin
+      cwms_cache.clear(g_timezone_cache);
+      cwms_cache.clear(g_time_zone_name_cache);
+      cwms_cache.clear(g_time_zone_code_cache);
+      cwms_cache.clear(g_parameter_id_cache);
+      cwms_cache.clear(g_base_parameter_code_cache);
+      cwms_cache.clear(g_unit_conversion_info_cache);
+      cwms_cache.clear(g_office_id_cache);
+      cwms_cache.clear(g_office_code_cache);
+   end;
+
    function get_expression_constants return str_tab_t is begin return expression_constants; end get_expression_constants;
    function get_expression_operators return str_tab_t is begin return expression_operators; end get_expression_operators;
    function get_expression_functions return str_tab_t is begin return expression_functions; end get_expression_functions;

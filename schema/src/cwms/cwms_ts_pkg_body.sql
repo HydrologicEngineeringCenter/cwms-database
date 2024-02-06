@@ -5046,7 +5046,7 @@ AS
 
       rollback;
       return FALSE;
-
+      
    end update_ts_extents;
 
    procedure update_ts_extents(
@@ -6827,8 +6827,9 @@ AS
                    )
             bulk collect
             into l_timeseries_data
-            from av_tsv
+            from av_tsv_dqu
             where ts_code = l_ts_code
+               and unit_id = l_units
                and start_date <= l_end_date
                and end_date > l_start_date
                and version_date = l_version_date
@@ -6836,7 +6837,6 @@ AS
                order by date_time;
          end;
       end if;
-
       if l_count > 0  then
          ------------------------------------
          -- update the time series extents --
@@ -11847,124 +11847,20 @@ end retrieve_existing_item_counts;
       p_time_zone in  varchar2 default null,
       p_office_id in  varchar2 default null)
    is
-      l_min_value      binary_double;
-      l_max_value      binary_double;
-      l_temp_min       binary_double;
-      l_temp_max       binary_double;
-      l_office_id      varchar2 (16);
-      l_unit           varchar2 (16);
-      l_time_zone      varchar2 (28);
-      l_min_date       date;
-      l_max_date       date;
-      l_ts_code        number (14);
-      l_parts          str_tab_t;
-      l_location_id    varchar2 (57);
-      l_parameter_id   varchar2 (49);
-      l_ts_extents     ts_extents_tab_t;
+      l_min_value_date date;
+      l_max_value_date date;
    begin
-      if l_min_date is null and l_max_date is null then
-         ----------------------------------------
-         -- short ciruit through AT_TS_EXTENTS --
-         ----------------------------------------
-         get_ts_extents(
-            p_ts_extents   => l_ts_extents,
-            p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_ts_id, p_db_office_id => p_office_id),
-            p_time_zone    => p_time_zone,
-            p_unit         => p_unit);
-         for i in 1..l_ts_extents.count loop
-            if l_min_value is null or l_min_value > l_ts_extents(i).least_value then
-               l_min_value := l_ts_extents(i).least_value;
-            end if;
-            if l_max_value is null or l_min_value < l_ts_extents(i).greatest_value then
-               l_max_value := l_ts_extents(i).greatest_value;
-            end if;
-         end loop;
-         p_min_value := l_min_value;
-         p_max_value := l_max_value;
-      else
-         ----------------------------
-         -- set values from inputs --
-         ----------------------------
-         l_office_id := cwms_util.get_db_office_id (p_office_id);
-         l_ts_code := cwms_ts.get_ts_code (p_ts_id, l_office_id);
-         l_parts := cwms_util.split_text (p_ts_id, '.');
-         l_location_id := l_parts (1);
-         l_parameter_id := l_parts (2);
-         l_unit := cwms_util.get_default_units (l_parameter_id);
-         l_time_zone :=
-            case p_time_zone is null
-               when true
-               then
-                  cwms_loc.get_local_timezone (l_location_id, l_office_id)
-               when false
-               then
-                  p_time_zone
-            end;
-         l_min_date :=
-            case p_min_date is null
-               when true
-               then
-                  date '1700-01-01'
-               when false
-               then
-                  cwms_util.change_timezone (p_min_date, l_time_zone, 'UTC')
-            end;
-         l_max_date :=
-            case p_max_date is null
-               when true
-               then
-                  date '2100-01-01'
-               when false
-               then
-                  cwms_util.change_timezone (p_max_date, l_time_zone, 'UTC')
-            end;
-
-         -----------------------
-         -- perform the query --
-         -----------------------
-         for rec in (  select table_name, start_date, end_date
-                         from at_ts_table_properties
-                     order by start_date)
-         loop
-            continue when    rec.start_date > l_max_date
-                          or rec.end_date < l_min_date;
-
-            begin
-               execute immediate
-                  'select min(value),
-                          max(value)
-                     from '||rec.table_name||'
-                    where ts_code = :1
-                      and date_time between :2 and :3'
-                  into l_temp_min, l_temp_max
-                  using l_ts_code, l_min_date, l_max_date;
-
-               if l_min_value is null or l_temp_min < l_min_value
-               then
-                  l_min_value := l_temp_min;
-               end if;
-
-               if l_max_value is null or l_temp_max > l_max_value
-               then
-                  l_max_value := l_temp_max;
-               end if;
-            exception
-               when no_data_found
-               then
-                  null;
-            end;
-         end loop;
-
-         if l_min_value is not null
-         then
-            p_min_value := cwms_util.convert_units (l_min_value, l_unit, p_unit);
-         end if;
-
-         if l_max_value is not null
-         then
-            p_max_value := cwms_util.convert_units (l_max_value, l_unit, p_unit);
-         end if;
-      end if;
+      get_value_extents (
+         p_min_value      => p_min_value,
+         p_max_value      => p_max_value,
+         p_min_value_date => l_min_value_date,
+         p_max_value_date => l_max_value_date,
+         p_ts_id          => p_ts_id,
+         p_unit           => p_unit,
+         p_min_date       => p_min_date,
+         p_max_date       => p_max_date,
+         p_time_zone      => p_time_zone,
+         p_office_id      => p_office_id);
    end get_value_extents;
 
    procedure get_value_extents (
@@ -12066,8 +11962,8 @@ end retrieve_existing_item_counts;
                          from at_ts_table_properties
                      order by start_date)
          loop
-            continue when    rec.start_date > l_max_date
-                          or rec.end_date < l_min_date;
+            exit when rec.start_date > l_max_date;
+            continue when rec.end_date <= l_min_date;
 
             begin
                execute immediate
