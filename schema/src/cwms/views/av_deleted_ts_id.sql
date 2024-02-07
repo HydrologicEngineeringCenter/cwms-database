@@ -155,7 +155,7 @@ select co.office_id as db_office_id,
           -- use old LRTS ID format --
           ----------------------------
           i.interval_id
-       end as cwms_ts_id,
+       end as interval_id,
        d.duration_id,
        ts.version as version_id,
        i.interval,
