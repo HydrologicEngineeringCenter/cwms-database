@@ -94,8 +94,7 @@ AS
       --
       SELECT COUNT (*)
         INTO l_cnt
-        FROM TABLE (cwms_sec.get_assigned_priv_groups_tab)
-       WHERE db_office_id = l_office_id;
+        FROM TABLE (cwms_sec.get_assigned_priv_groups_tab(l_office_id));
 
       IF l_cnt > 0
       THEN
