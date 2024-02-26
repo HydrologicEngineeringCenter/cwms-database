@@ -72,7 +72,7 @@ AS
       l_office_code cwms_office.office_code%type;
       --
       l_cnt         NUMBER;
-      l_username    VARCHAR2 (31);
+      l_username    VARCHAR2 (31) := CWMS_UTIL.get_user_id();
    BEGIN
       BEGIN
          pause_office_caching;
@@ -97,7 +97,8 @@ AS
       SELECT COUNT (*)
         INTO l_cnt
         FROM at_sec_users
-        WHERE db_office_code = l_office_code;
+        WHERE db_office_code = l_office_code
+          AND username = l_username;
 
       IF l_cnt > 0
       THEN
@@ -105,7 +106,6 @@ AS
          SET_CWMS_ENV (l_office_code_attr, l_office_code);
          SET_SESSION_PRIVILEGES;
       ELSE
-         l_username := cwms_util.get_user_id;
          resume_office_caching;
          cwms_err.raise (
             'ERROR',
