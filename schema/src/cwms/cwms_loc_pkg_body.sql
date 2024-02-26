@@ -2702,7 +2702,7 @@ AS
       l_ts_code              NUMBER;
       --
       l_location_codes        number_tab_t;
-      l_location_ids         str_tab_t;
+      l_location_ids          str_tab_t;
       l_location_id           varchar2(57);
       l_location_id_cache_val varchar2(256);
       l_clob_codes            number_tab_t;
@@ -3078,6 +3078,22 @@ AS
          ---------------
          -- forecasts --
          ---------------
+         -- AT_FCST_xxx
+         for i in 1..l_location_codes.count loop
+            for rec in (select fcst_spec_id
+                          from at_fcst_spec
+                         where office_code = l_db_office_code
+                           and location_code = l_location_codes(i)
+                       )
+            loop
+               cwms_fcst.delete_fcst_spec(
+                  p_fcst_spec_id   => rec.fcst_spec_id,
+                  p_location_id    => cwms_util.get_location_id(l_location_codes(i)),
+                  p_delete_action  => cwms_util.delete_all,
+                  p_office_id      => l_db_office_id);
+            end loop;
+         end loop;
+         -- AT_FORECAST_xxx
          select clob_code
            bulk collect
            into l_clob_codes

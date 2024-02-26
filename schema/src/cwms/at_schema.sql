@@ -6303,5 +6303,10 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_ts_profile_parser_param
 @@./cwms/tables/at_virtual_location_level
 @@./cwms/tables/at_vloc_lvl_constituent
+@@./cwms/tables/at_fcst_spec
+@@./cwms/tables/at_fcst_inst
+@@./cwms/tables/at_fcst_time_series
+@@./cwms/tables/at_fcst_file
+@@./cwms/tables/at_fcst_info
 
 

@@ -184,7 +184,8 @@ end;
 @@cwms/types/ts_prof_data_tab_t
 @@cwms/types/ts_prof_data_t
 @@cwms/types/ts_profile_t
-
+@@cwms/types/fcst_file_t
+@@cwms/types/fcst_file_tab_t
 -- HOST pwd
 @@rowcps_types
 @@cwms_types_rating
