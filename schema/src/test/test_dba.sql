@@ -15,6 +15,8 @@ create or replace package test_dba as
     procedure test_store_upass_id_property;
     -- %test (test locking and unlocking of user)
     procedure test_lock_unlock_user;
+    -- %test (test all_identifiers compiled for CWMS_20 schema)
+    procedure check_cwms_all_identifiers_are_not_empty;
 
     procedure teardown;
 end;
@@ -105,6 +107,20 @@ AS
      cwms_properties.set_property ('CWMSDB','sec.upass.id','TEST_VAL','NO COMMENT','CWMS');
      l_prop_value := cwms_properties.get_property('CWMSDB','sec.upass.id','DEFAULT','CWMS');
      ut.expect ('TEST_VAL').to_equal(l_prop_value);
+    END;
+
+    PROCEDURE check_cwms_all_identifiers_are_not_empty IS
+        l_cnt NUMBER;
+    BEGIN
+        SELECT COUNT(*)
+        INTO l_cnt
+        FROM ALL_IDENTIFIERS
+        WHERE OWNER = 'CWMS_20';
+
+        ut.expect(l_cnt).to_be_greater_than(0, 'Query returned no rows!');
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            ut.fail('Query returned no rows!');
     END;
 
 END;
