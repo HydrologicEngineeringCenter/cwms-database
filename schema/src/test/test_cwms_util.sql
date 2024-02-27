@@ -38,6 +38,8 @@ procedure test_comparison_expressions;
 procedure test_logic_expressions;
 --%test(Test CWDB-255 Cache unit conversion factors and formulas in convert_units)
 procedure cwdb_255_cache_unit_conversion_factors_and_formulas_in_convert_units;
+--%test(Test passing a null timestamp to to_timestamp returns null)
+procedure test_to_timestamp_null_timestamp;
 
 procedure setup;
 procedure teardown;
@@ -759,6 +761,14 @@ begin
    ut.expect(l_elapsed_2).to_be_greater_than(l_elapsed_1);
 
 end cwdb_255_cache_unit_conversion_factors_and_formulas_in_convert_units;
+
+procedure test_to_timestamp_null_timestamp
+is
+    l_null_timestamp timestamp;
+begin
+    l_null_timestamp := cwms_util.to_timestamp(p_millis => null);
+    ut.expect(l_null_timestamp).to_be_null();
+end test_to_timestamp_null_timestamp;
 
 end test_cwms_util;
 /
