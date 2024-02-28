@@ -10,6 +10,9 @@ CREATE OR REPLACE PACKAGE cwms_loc
  */
 AS
 
+   g_location_code_cache cwms_cache.str_str_cache_t;
+   g_location_id_cache   cwms_cache.str_str_cache_t;
+
    c_str_site            constant varchar2 ( 4) := 'SITE';
    c_str_stream_location constant varchar2 (15) := 'STREAM_LOCATION';
    c_str_embankment      constant varchar2 (10) := 'EMBANKMENT';
@@ -47,6 +50,10 @@ AS
       p_vertical_datum_id in varchar2)
       return varchar2 deterministic;
 
+   /**
+    * Clears all session-level caches associated with this package
+    */
+   procedure clear_all_caches;
    /**
     * Sets text value of package logging property
     *
@@ -105,8 +112,7 @@ AS
 	FUNCTION get_location_code (p_db_office_id	IN VARCHAR2,
 										 p_location_id 	IN VARCHAR2
 										)
-		RETURN NUMBER
-		RESULT_CACHE;
+		RETURN NUMBER;
    /**
     * Retrieves a location's unique numeric code. Retrieves the location code if p_location_id is a location identifier or location alias.
     *
@@ -118,8 +124,7 @@ AS
 	FUNCTION get_location_code (p_db_office_code   IN NUMBER,
 										 p_location_id 	  IN VARCHAR2
 										)
-		RETURN NUMBER
-		RESULT_CACHE;
+		RETURN NUMBER;
    /**
     * Retrieves a location's unique numeric code
     *
@@ -133,8 +138,7 @@ AS
                                p_location_id      IN VARCHAR2,
                                p_check_aliases    IN VARCHAR2
                               )
-      RETURN NUMBER
-      RESULT_CACHE;
+      RETURN NUMBER;
    /**
     * Retrieves a location's unique numeric code
     *
@@ -148,8 +152,7 @@ AS
                                p_location_id    IN VARCHAR2,
                                p_check_aliases  IN VARCHAR2
                               )
-      RETURN NUMBER
-      RESULT_CACHE;
+      RETURN NUMBER;
    /**
     * Retrieves a state's unique numeric code given its two letter state abbreviation
     *
@@ -2111,7 +2114,8 @@ AS
       p_location_code   in  number,
       p_unit            in  varchar2);
    /**
-    * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location or locations
+    * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location or locations.
+    * The in and out parmeters are limited to 4000 characters since they are of type varchar2.
     *
     * @since CWMS 2.2
     *
@@ -2170,6 +2174,65 @@ AS
       p_location_id     in  varchar2,
       p_unit            in  varchar2,
       p_office_id       in  varchar2 default null);
+   /**
+    * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location or locations
+    * The in and out parmeters (except p_unit) are not limited in length.
+    *
+    * @param p_vert_datum_info The XML-encoded vertical datum information string. If p_location_id is a recordset the XML root element will be
+    * <code><big>&lt;vertical-datum-info-set&gt;</big></code> and will contain one <code><big>&lt;vertical-datum-info&gt;</big></code> element for each location:
+    * <pre><big>&lt;vertical-datum-info-set&gt;
+    *   &lt;vertical-datum-info office="SWT" unit="ft"&gt;
+    *     &lt;location&gt;PENS&lt;/location&gt;
+    *     &lt;native-datum&gt;LOCAL&lt;/native-datum&gt;
+    *     &lt;elevation/&gt;
+    *     &lt;offset estimate="true"&gt;
+    *       &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *       &lt;value&gt;1.457&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *     &lt;offset estimate="false"&gt;
+    *       &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *       &lt;value&gt;1.07&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *   &lt;/vertical-datum-info&gt;
+    *   &lt;vertical-datum-info office="SWT" unit="ft"&gt;
+    *     &lt;location&gt;KEYS&lt;/location&gt;
+    *     &lt;native-datum&gt;NGVD29&lt;/native-datum&gt;
+    *     &lt;elevation/&gt;
+    *     &lt;offset estimate="true"&gt;
+    *       &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *       &lt;value&gt;.362&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *   &lt;/vertical-datum-info&gt;
+    * &lt;/vertical-datum-info-set&gt;</big></pre>
+    * If p_location_id is a single location, the XML root element will be <code><big>&lt;vertical-datum-info&gt;</big></code> and will not contain an <code><big>office</big></code>
+    * attribute or a <code><big>&lt;location&gt;</big></code> child element:
+    * <pre><big>&lt;vertical-datum-info unit="ft"&gt;
+    *   &lt;native-datum&gt;LOCAL&lt;/native-datum&gt;
+    *   &lt;elevation/&gt;
+    *   &lt;offset estimate="true"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.457&lt;/value&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.07&lt;/value&gt;
+    *   &lt;/offset&gt;
+    * &lt;/vertical-datum-info&gt;</big></pre>
+    * @param p_location_id     The text name the location or a recordset of location names. If a recordset is used, it may be a single record with
+    *                          multiple fields, multiple records each with a single field, or multiple records with multiple fields.
+    * @param p_unit            The unit to return the elevation and elevation offsets in
+    * @param p_office_id       The office that owns the location. If not specified or NULL, the session user's default office is used. If p_location_id
+    *                          is a recordset, this parameter may be, but is not required to be, a recordset. If this parameter is not a recordset then
+    *                          the one (specified or implied) office applies to all locations.  If this parameter is a recordset, it must have the same
+    *                          number of records as p_location_id. Each record may have a single office, which applies to every location on the same record
+    *                          in p_location_id, or it may have one field for each field in the same record of p_location_id.
+    * @see cwms_util.parse_string_recordset
+    */
+   procedure get_vertical_datum_info2(
+      p_vert_datum_info out clob,
+      p_location_id     in  clob,
+      p_unit            in  varchar2,
+      p_office_id       in  clob default null);
    /**
     * Returns a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
     *
@@ -2911,6 +2974,5 @@ AS
       p_datums      in  varchar2 default null,
       p_office_id   in  varchar2 default null)
       return clob;
-
 END cwms_loc;
 /

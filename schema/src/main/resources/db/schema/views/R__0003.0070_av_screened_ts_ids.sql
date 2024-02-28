@@ -50,7 +50,7 @@ AS
                 mcti.cwms_ts_id, mcti.base_location_id, mcti.sub_location_id,
                 mcti.location_id, mcti.base_parameter_id, mcti.sub_parameter_id,
                 mcti.parameter_id, mcti.parameter_type_id, mcti.duration_id
-      FROM    mv_cwms_ts_id mcti, at_screening_id atsi, at_screening ats
+      FROM    av_cwms_ts_id mcti, at_screening_id atsi, at_screening ats
      WHERE    ats.screening_code = atsi.screening_code
                 AND ats.ts_code = mcti.ts_code
 /

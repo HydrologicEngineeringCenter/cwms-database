@@ -2,30 +2,28 @@
 -- for code coverage.
 set define on
 define cwms_schema = &6
-GRANT EXECUTE ON &&cwms_schema..test_lrts_updates to &1;
-grant execute on &&cwms_schema..test_probability_parameter to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_util to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_loc to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_ts to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_rating to &1;
-GRANT EXECUTE ON &&cwms_schema..test_clean_all to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_prop to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_msg to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_pool to &1;
-GRANT EXECUTE ON &&cwms_schema..test_versioned_time_series to &1;
-GRANT EXECUTE ON &&cwms_schema..test_update_ts_extents to &1;
-GRANT EXECUTE ON &&cwms_schema..test_timeseries_snapping to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_cat to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_level to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_display to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_stream to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_data_dissem to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_forecast to &1;
-GRANT EXECUTE ON &&cwms_schema..test_update_ts_extents to &1;
-GRANT EXECUTE ON &&cwms_schema..test_timeseries_snapping to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_cat to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_level to &1;
-GRANT EXECUTE ON &&cwms_schema..test_cwms_display to &1;
+GRANT EXECUTE ON &cwms_schema..test_lrts_updates to &1;
+grant execute on &cwms_schema..test_probability_parameter to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_util to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_err to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_loc to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_ts to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_rating to &1;
+GRANT EXECUTE ON &cwms_schema..test_clean_all to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_prop to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_msg to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_pool to &1;
+GRANT EXECUTE ON &cwms_schema..test_versioned_time_series to &1;
+GRANT EXECUTE ON &cwms_schema..test_update_ts_extents to &1;
+GRANT EXECUTE ON &cwms_schema..test_timeseries_snapping to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_cat to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_level to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_display to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_stream to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_data_dissem to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_forecast to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_xchg to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_cache to &1;
 --GRANT EXECUTE any procedure to &1;
 --GRANT CREATE any procedure to &1;
 

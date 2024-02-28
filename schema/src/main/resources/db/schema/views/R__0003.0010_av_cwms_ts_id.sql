@@ -1,5 +1,5 @@
 /**
- * Displays CWMS Time Series Identifiers
+ * Displays CWMS Time Series Identifiers with LRTS as new LRTS IDs
  *
  * @since CWMS 2.0
  *
@@ -64,14 +64,100 @@ CREATE OR REPLACE FORCE VIEW av_cwms_ts_id
     time_zone_id
 )
 AS
-    SELECT    db_office_id, cwms_ts_id, unit_id, abstract_param_id,
-                base_location_id, sub_location_id, location_id, base_parameter_id,
-                sub_parameter_id, parameter_id, parameter_type_id, interval_id,
-                duration_id, version_id, interval, interval_utc_offset,base_loc_active_flag,
-                loc_active_flag, ts_active_flag, net_ts_active_flag, version_flag,
-                ts_code, db_office_code, base_location_code, location_code,
-                parameter_code, historic_flag, time_zone_id
-      FROM    at_cwms_ts_id
+    SELECT db_office_id,
+           case
+           when 'T' = (select 'T'
+                         from dual
+                        where exists(select str_value
+                                       from at_session_info
+                                      where item_name = 'USE_NEW_LRTS_ID_FORMAT'
+                                        and bitand(num_value, 4) = 4
+                                    )
+                      )
+           then
+              ----------------------------
+              -- use new LRTS ID format --
+              ----------------------------
+              case
+              when substr(interval_id, 1, 1) = '~' and interval_utc_offset != -2147483648 then
+                 ----------------
+                 -- TS is LRTS --
+                 ----------------
+                 location_id
+                 ||'.'||parameter_id
+                 ||'.'||parameter_type_id
+                 ||'.'||regexp_replace(interval_id, '^~(.+)$', '\1Local')
+                 ||'.'||duration_id
+                 ||'.'||version_id
+              else
+                 --------------------
+                 -- TS is not LRTS --
+                 --------------------
+                 cwms_ts_id
+              end
+           else
+              ----------------------------
+              -- use old LRTS ID format --
+              ----------------------------
+              cwms_ts_id
+           end as cwms_ts_id,
+           unit_id,
+           abstract_param_id,
+           base_location_id,
+           sub_location_id,
+           location_id,
+           base_parameter_id,
+           sub_parameter_id,
+           parameter_id,
+           parameter_type_id,
+           case
+           when 'T' = (select 'T'
+                         from dual
+                        where exists(select str_value
+                                       from at_session_info
+                                      where item_name = 'USE_NEW_LRTS_ID_FORMAT'
+                                        and bitand(num_value, 4) = 4
+                                    )
+                      )
+           then
+              ----------------------------
+              -- use new LRTS ID format --
+              ----------------------------
+              case
+              when substr(interval_id, 1, 1) = '~' and interval_utc_offset != -2147483648 then
+                 ----------------
+                 -- TS is LRTS --
+                 ----------------
+                 regexp_replace(interval_id, '^~(.+)$', '\1Local')
+              else
+                 --------------------
+                 -- TS is not LRTS --
+                 --------------------
+                 interval_id
+              end
+           else
+              ----------------------------
+              -- use old LRTS ID format --
+              ----------------------------
+              interval_id
+           end as interval_id,
+           duration_id,
+           version_id,
+           interval,
+           interval_utc_offset,
+           base_loc_active_flag,
+           loc_active_flag,
+           ts_active_flag,
+           net_ts_active_flag,
+           version_flag,
+           ts_code,
+           db_office_code,
+           base_location_code,
+           location_code,
+           parameter_code,
+           historic_flag,
+           time_zone_id
+      FROM at_cwms_ts_id
 /
 
 begin

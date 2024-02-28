@@ -8,7 +8,13 @@ create or replace package cwms_rating
  * @author Mike Perryman
  */
 as
-
+/*
+ * Cache variables for rating item codes
+ */
+g_template_code_cache cwms_cache.str_str_cache_t;
+g_spec_code_cache cwms_cache.str_str_cache_t;
+g_rating_code_cache cwms_cache.str_str_cache_t;
+g_method_code_cache cwms_cache.str_str_cache_t;
 /*
  * Not documented. Package-specific and session-specific logging properties
  */
@@ -47,7 +53,7 @@ separator3 constant varchar2(1) := ',';
 -- not documented
 function get_rating_method_code(
    p_rating_method_id in varchar2)
-   return number result_cache;
+   return number;
 /**
  * Stores rating templates to the database.
  *

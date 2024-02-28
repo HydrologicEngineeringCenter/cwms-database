@@ -1444,6 +1444,13 @@ as
          l_time_zone := nvl(p_time_zone, 'UTC');
       else
          l_time_zone := nvl(p_time_zone, cwms_loc.get_local_timezone(substr(l_tsid, 1, instr(l_tsid, '.') - 1), l_office_id));
+         if cwms_ts.require_new_lrts_format_on_input = 'T' then
+            if cwms_ts.is_lrts(l_tsid, l_office_id) = 'T' then
+               if cwms_ts.is_new_lrts_format(l_tsid) = 'F' then
+                  l_tsid := cwms_ts.format_lrts_output(l_tsid, true);
+               end if;
+            end if;
+         end if;
       end if;
 
       l_start_time_utc := cwms_util.change_timezone(p_start_time, l_time_zone, 'UTC');
@@ -1653,6 +1660,13 @@ as
          l_time_zone := nvl(p_time_zone, 'UTC');
       else
          l_time_zone := nvl(p_time_zone, cwms_loc.get_local_timezone(substr(l_tsid, 1, instr(l_tsid, '.') - 1), l_office_id));
+         if cwms_ts.require_new_lrts_format_on_input = 'T' then
+            if cwms_ts.is_lrts(l_tsid, l_office_id) = 'T' then
+               if cwms_ts.is_new_lrts_format(l_tsid) = 'F' then
+                  l_tsid := cwms_ts.format_lrts_output(l_tsid, true);
+               end if;
+            end if;
+         end if;
       end if;
 
       l_std_text_id := trim(upper(p_std_text_id));
@@ -2152,6 +2166,7 @@ as
       l_off_interval_count   integer;
       l_store_date           timestamp := sys_extract_utc(systimestamp);
       l_office_id            varchar2(16);
+      l_ts                   timestamp := systimestamp;
    begin
       select db_office_id
         into l_office_id
@@ -2294,6 +2309,7 @@ as
          -----------------------------------------
          -- valid dates/times already retrieved --
          -----------------------------------------
+
          for i in 1 .. p_date_times_utc.count loop
             ---------------------------------------
             -- delete existing text if necessary --
@@ -3075,6 +3091,9 @@ as
       ----------------------------
       l_office_id      := cwms_util.get_db_office_id(p_office_id);
       l_tsid           := cwms_ts.get_ts_id(p_tsid, l_office_id);
+      if l_tsid is null then
+          cwms_err.raise ('TS_ID_NOT_FOUND', trim (p_tsid), l_office_id);
+      end if;
       l_ts_code        := cwms_ts.get_ts_code(l_tsid, l_office_id);
       l_text_mask      := cwms_util.normalize_wildcards(p_text_mask);
       l_time_zone      := nvl(p_time_zone, cwms_loc.get_local_timezone(substr(l_tsid, 1, instr(l_tsid, '.') - 1), l_office_id));
@@ -4364,6 +4383,9 @@ as
       l_office_code          number(14);
       l_cursor               sys_refcursor;
       l_date_time_versions   date2_tab_t;
+      l_media_type_codes     number_tab_t;
+      l_use_file_ext         varchar2(1) := 'F';
+      l_match_file_ext       varchar2(1) := 'F';
    begin
       -------------------
       -- sanity checks --
@@ -4414,6 +4436,37 @@ as
                         p_version_date_utc => l_version_date_utc,
                         p_max_version      => cwms_util.return_true_or_false(p_max_version)));
 
+      ---------------------------------
+      -- get the media type codes(s) --
+      ---------------------------------
+      select media_type_code
+        bulk collect
+        into l_media_type_codes
+        from at_file_extension
+       where office_code in (l_office_code, cwms_util.db_office_code_all)
+         and upper(file_ext) = upper(l_binary_type_mask);
+      if l_media_type_codes.count = 1 then
+         -- use single file extension
+         l_use_file_ext := 'T';
+      else
+         select media_type_code
+           bulk collect
+           into l_media_type_codes
+           from at_file_extension
+          where office_code in (l_office_code, cwms_util.db_office_code_all)
+            and upper(file_ext) like upper(l_binary_type_mask) escape '\';
+         if l_media_type_codes.count > 0 then
+            -- match file extensions
+            l_match_file_ext := 'T';
+         else
+            -- match media types
+            select media_type_code
+              bulk collect
+              into l_media_type_codes
+              from cwms_media_type
+             where upper(media_type_id) like upper(l_binary_type_mask) escape '\';
+         end if;
+      end if;
       ------------------
       -- get the data --
       ------------------
@@ -4442,19 +4495,18 @@ as
                  and ((p_min_attribute is null and p_max_attribute is null and t.attribute is null)
                    or t.attribute between nvl(p_min_attribute, t.attribute) and nvl(p_max_attribute, t.attribute))
                  and b.media_type_code = m.media_type_code
-                 and m.media_type_code in
-                        (select media_type_code
-                           from cwms_media_type
-                          where upper(media_type_id) like upper(l_binary_type_mask) escape '\'
-                         union
-                         select media_type_code
-                           from at_file_extension
-                          where office_code in (l_office_code, cwms_util.db_office_code_all)
-                            and upper(file_ext) like upper(l_binary_type_mask) escape '\')
+                 and e.media_type_code = m.media_type_code
+                 and m.media_type_code in (select * from table(l_media_type_codes))
+                 and (l_use_file_ext = 'F' or upper(e.file_ext) = upper(l_binary_type_mask))
+                 and ((l_use_file_ext = 'T' and upper(e.file_ext) = upper(l_binary_type_mask))
+                      or (l_match_file_ext = 'T' and upper(e.file_ext) like upper(l_binary_type_mask))
+                      or (l_use_file_ext = 'F' and l_match_file_ext = 'F')
+                     )
             order by d.date_1,
                      d.date_2,
                      t.attribute,
-                     t.data_entry_date;
+                     t.data_entry_date,
+                     e.file_ext;
       else
          ----------------------
          -- without the blob --
@@ -4479,19 +4531,17 @@ as
                  and ((p_min_attribute is null and p_max_attribute is null and t.attribute is null)
                    or t.attribute between nvl(p_min_attribute, t.attribute) and nvl(p_max_attribute, t.attribute))
                  and b.media_type_code = m.media_type_code
-                 and m.media_type_code in
-                        (select media_type_code
-                           from cwms_media_type
-                          where upper(media_type_id) like upper(l_binary_type_mask) escape '\'
-                         union
-                         select media_type_code
-                           from at_file_extension
-                          where office_code in (l_office_code, cwms_util.db_office_code_all)
-                            and upper(file_ext) like upper(l_binary_type_mask) escape '\')
+                 and e.media_type_code = m.media_type_code
+                 and m.media_type_code in (select * from table(l_media_type_codes))
+                 and ((l_use_file_ext = 'T' and upper(e.file_ext) = upper(l_binary_type_mask))
+                      or (l_match_file_ext = 'T' and upper(e.file_ext) like upper(l_binary_type_mask))
+                      or (l_use_file_ext = 'F' and l_match_file_ext = 'F')
+                     )
             order by d.date_1,
                      d.date_2,
                      t.attribute,
-                     t.data_entry_date;
+                     t.data_entry_date,
+                     e.file_ext;
       end if;
 
       return l_cursor;
@@ -4524,6 +4574,9 @@ as
       l_ts_code            number(14);
       l_times_utc          date2_tab_t;
       l_count              pls_integer;
+      l_media_type_codes   number_tab_t;
+      l_use_file_ext       varchar2(1) := 'F';
+      l_match_file_ext     varchar2(1) := 'F';
    begin
       -------------------
       -- sanity checks --
@@ -4594,6 +4647,38 @@ as
                         l_max_version,
                         cwms_util.ts_binary));
 
+      ---------------------------------
+      -- get the media type codes(s) --
+      ---------------------------------
+      select media_type_code
+        bulk collect
+        into l_media_type_codes
+        from at_file_extension
+       where office_code in (l_office_code, cwms_util.db_office_code_all)
+         and upper(file_ext) = upper(l_binary_type_mask);
+      if l_media_type_codes.count = 1 then
+         -- use single file extension
+         l_use_file_ext := 'T';
+      else
+         select media_type_code
+           bulk collect
+           into l_media_type_codes
+           from at_file_extension
+          where office_code in (l_office_code, cwms_util.db_office_code_all)
+            and upper(file_ext) like upper(l_binary_type_mask) escape '\';
+         if l_media_type_codes.count > 0 then
+            -- match file extensions
+            l_match_file_ext := 'T';
+         else
+            -- match media types
+            select media_type_code
+              bulk collect
+              into l_media_type_codes
+              from cwms_media_type
+             where upper(media_type_id) like upper(l_binary_type_mask) escape '\';
+         end if;
+      end if;
+
       select count(*)
         into l_count
         from table(l_times_utc) d,
@@ -4608,15 +4693,12 @@ as
          and ((p_min_attribute is null and p_max_attribute is null and t.attribute is null)
            or t.attribute between nvl(p_min_attribute, t.attribute) and nvl(p_max_attribute, t.attribute))
          and b.media_type_code = m.media_type_code
-         and m.media_type_code in
-                (select media_type_code
-                   from cwms_media_type
-                  where upper(media_type_id) like upper(l_binary_type_mask) escape '\'
-                 union
-                 select media_type_code
-                   from at_file_extension
-                  where office_code in (l_office_code, cwms_util.db_office_code_all)
-                    and upper(file_ext) like upper(l_binary_type_mask) escape '\');
+         and e.media_type_code = m.media_type_code
+         and m.media_type_code in (select * from table(l_media_type_codes))
+         and ((l_use_file_ext = 'T' and upper(e.file_ext) = upper(l_binary_type_mask))
+              or (l_match_file_ext = 'T' and upper(e.file_ext) like upper(l_binary_type_mask))
+              or (l_use_file_ext = 'F' and l_match_file_ext = 'F')
+             );
 
       l_times_utc.delete;
       return l_count;

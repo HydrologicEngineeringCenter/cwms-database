@@ -38,7 +38,9 @@ prompt probabilty parameter
 @test_probability_parameter.sql;
 prompt cwms_util
 @test_cwms_util.sql;
-prompt cwms loc
+prompt cwms_err
+@test_cwms_err.sql;
+prompt cwms_loc
 @test_cwms_loc.sql;
 prompt cwms_ts
 @test_cwms_ts.sql;
@@ -58,6 +60,8 @@ prompt display
 @test_cwms_display.sql;
 @test_cwms_data_dissem.sql;
 @test_cwms_forecast.sql;
+@test_cwms_xchg.sql;
+@test_cwms_cache.sql;
 @test_aq_user.sql;
 @test_webuser_abilities.sql;
 show errors;

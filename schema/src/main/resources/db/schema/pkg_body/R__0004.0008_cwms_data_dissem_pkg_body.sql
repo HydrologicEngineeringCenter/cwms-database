@@ -368,7 +368,7 @@ AS
                    ts_code,
                    db_office_code,
                    nvl(destination, 'CorpsNet') DESTINATION
-              FROM at_cwms_ts_id a
+              FROM av_cwms_ts_id a
                    JOIN at_physical_location b
                       USING (location_code)
                    LEFT OUTER JOIN (SELECT UNIQUE ts_code, 'CorpsNet' DESTINATION
@@ -414,7 +414,7 @@ AS
                    ts_code,
                    db_office_code,
                    destination
-              FROM at_cwms_ts_id a
+              FROM av_cwms_ts_id a
                    JOIN at_physical_location b
                       USING (location_code)
                    JOIN (SELECT UNIQUE ts_code, 'CorpsNet' DESTINATION
@@ -480,7 +480,7 @@ AS
                    ts_code,
                    db_office_code,
                    'DMZ'
-              FROM    at_cwms_ts_id a
+              FROM    av_cwms_ts_id a
                    JOIN
                       at_physical_location b
                    USING (location_code)

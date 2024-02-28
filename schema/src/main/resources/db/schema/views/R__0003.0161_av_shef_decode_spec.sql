@@ -212,7 +212,7 @@ AS
              FROM at_shef_decode a
                   LEFT JOIN at_data_stream_id c
                      USING (data_stream_code)
-                  JOIN at_cwms_ts_id b
+                  JOIN av_cwms_ts_id b
                      USING (ts_code)
                   JOIN at_cwms_ts_spec h
                      USING (ts_code)

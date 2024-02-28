@@ -480,7 +480,7 @@ as
       p_parameters_id in varchar2,
       p_version       in varchar2,
       p_office_id     in varchar2 default null)
-   return number result_cache
+   return number
    is
    begin
       return get_template_code(
@@ -493,16 +493,22 @@ as
       p_parameters_id in varchar2,
       p_version       in varchar2,
       p_office_code   in number)
-   return number result_cache
+   return number
    is
       l_template_code number(14);
+      l_cache_key     varchar2(32767) := p_office_code||'/'||upper(p_parameters_id)||'.'||upper(p_version);
    begin
-      select template_code
-        into l_template_code
-        from at_rating_template
-       where office_code = p_office_code
-         and upper(parameters_id) = upper(p_parameters_id)
-         and upper(version) = upper(p_version);
+      l_template_code := cwms_cache.get(cwms_rating.g_template_code_cache, l_cache_key);
+      if l_template_code is null then
+         select template_code
+           into l_template_code
+           from at_rating_template
+          where office_code = p_office_code
+            and upper(parameters_id) = upper(p_parameters_id)
+            and upper(version) = upper(p_version);
+
+         cwms_cache.put(cwms_rating.g_template_code_cache, l_cache_key, l_template_code);
+      end if;
 
       return l_template_code;
    exception
@@ -529,7 +535,7 @@ as
    static function get_template_code(
       p_template_id in varchar2,
       p_office_code in number)
-   return number result_cache
+   return number
    is
       l_parts str_tab_t;
    begin

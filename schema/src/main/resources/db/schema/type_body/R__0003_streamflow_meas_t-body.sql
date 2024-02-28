@@ -297,6 +297,7 @@ as
             'CWMS streamflow measurement',
             self.location.office_id||'/'||self.location.get_location_id||' measurement number '||l_rec.meas_number);
       end if;
+      l_rec.date_time      := cwms_util.change_timezone(self.date_time, nvl(self.time_zone, 'UTC'), 'UTC');
       l_rec.used           := self.used;
       l_rec.party          := self.party;
       l_rec.agency_code    := get_entity_code(self.agency_id);

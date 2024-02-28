@@ -757,7 +757,7 @@ as
       return sys_refcursor;
 
    /**
-    * Retrieves the number of times a time series has standard text that matches specified criteria
+    * Retrieves the number of standard text items in a time window that matches specified criteria
     * The text can be:
     * <ul>
     *   <li>associated with a "normal" time series with numeric values and quality codes</li>
@@ -797,7 +797,7 @@ as
     * @param p_max_attribute    The maximum attribute value to include in the count. If not specified or NULL, no maximum value is used.
     * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
     *
-    * @return The number of times in the time window that have standard text that matches the specified criteria
+    * @return The number of standard text items in the time window that matche the specified criteria. This may be more than the number of times in the time window.
     */
    function get_ts_std_text_count(
       p_tsid             in varchar2,
@@ -1566,15 +1566,15 @@ as
     *   </tr>
     *   <tr>
     *     <td class="descr-center">6</td>
-    *     <td class="descr">media_type</td>
-    *     <td class="descr">varchar2(84)</td>
-    *     <td class="descr">The internet media type of the binary data</td>
-    *   </tr>
-    *   <tr>
-    *     <td class="descr-center">7</td>
     *     <td class="descr">file_extension</td>
     *     <td class="descr">varchar2(16)</td>
     *     <td class="descr">The file extension of the binary data</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">7</td>
+    *     <td class="descr">media_type</td>
+    *     <td class="descr">varchar2(84)</td>
+    *     <td class="descr">The internet media type of the binary data</td>
     *   </tr>
     *   <tr>
     *     <td class="descr-center">8</td>
@@ -1584,7 +1584,11 @@ as
     *   </tr>
     * </table>
     * @param p_tsid             The time series identifier
-    * @param p_binary_type_mask The data type pattern expressed as either an internet media type (e.g. 'image/&asterisk;') or a file extension (e.g. '.*'). Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
+    * @param p_binary_type_mask The data type pattern expressed as either an internet media type (e.g. 'image/*') or a file extension (e.g. '.*').
+    *                           Since a media type may be associated with multiple file extensions, if the pattern matches one or more file extensions,
+    *                           p_cursor will only contain items that match the matched file extension(s). If the pattern does not match any
+    *                           file extension, p_cursor will include all file extensions associated with the matched media type.
+    *                           Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
     * @param p_start_time       The start of the time window
     * @param p_end_time         The end of the time window. If specified the binary data associated with all times from p_start_time to p_end_time (inclusive) is retrieved.
     * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
@@ -1638,7 +1642,11 @@ as
     * </table>
     *
     * @param p_tsid             The time series identifier
-    * @param p_binary_type_mask The data type pattern expressed as either an internet media type (e.g. 'image/&asterisk;') or a file extension (e.g. '.*'). Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
+    * @param p_binary_type_mask The data type pattern expressed as either an internet media type (e.g. 'image/*') or a file extension (e.g. '.*').
+    *                           Since a media type may be associated with multiple file extensions, if the pattern matches one or more file extensions,
+    *                           the returned cursor will only contain items that match the matched file extension(s). If the pattern does not match any
+    *                           file extension, the returned cursor will include all file extensions associated with the matched media type.
+    *                           Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
     * @param p_start_time       The start of the time window
     * @param p_end_time         The end of the time window. If specified the binary data associated with all times from p_start_time to p_end_time (inclusive) is retrieved.
     * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
@@ -1690,15 +1698,15 @@ as
     *   </tr>
     *   <tr>
     *     <td class="descr-center">6</td>
-    *     <td class="descr">media_type</td>
-    *     <td class="descr">varchar2(84)</td>
-    *     <td class="descr">The internet media type of the binary data</td>
-    *   </tr>
-    *   <tr>
-    *     <td class="descr-center">7</td>
     *     <td class="descr">file_extension</td>
     *     <td class="descr">varchar2(16)</td>
     *     <td class="descr">The file extension of the binary data</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">7</td>
+    *     <td class="descr">media_type</td>
+    *     <td class="descr">varchar2(84)</td>
+    *     <td class="descr">The internet media type of the binary data</td>
     *   </tr>
     *   <tr>
     *     <td class="descr-center">8</td>
@@ -1752,7 +1760,11 @@ as
     * </table>
     *
     * @param p_tsid             The time series identifier
-    * @param p_binary_type_mask The data type pattern expressed as either an internet media type (e.g. 'image/&asterisk;') or a file extension (e.g. '.*'). Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
+    * @param p_binary_type_mask The data type pattern expressed as either an internet media type (e.g. 'image/*') or a file extension (e.g. '.*').
+    *                           Since a media type may be associated with multiple file extensions, if the pattern matches one or more file extensions,
+    *                           the returned count will only include items that match the matched file extension(s). If the pattern does not match any
+    *                           file extension, the returned count will include all file extensions associated with the matched media type.
+    *                           Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
     * @param p_start_time       The start of the time window
     * @param p_end_time         The end of the time window. If not specified or NULL the time window contains only p_start_time.
     * @param p_date_times       The specific times to use instead of a time window.

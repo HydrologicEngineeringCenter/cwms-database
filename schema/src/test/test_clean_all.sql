@@ -31,7 +31,8 @@ AS
         test_cwms_loc.teardown; 
         test_cwms_rating.teardown; 
         test_cwms_ts.teardown; 
-        test_cwms_util.teardown; 
+        test_cwms_util.teardown;
+        test_cwms_err.teardown;
         test_lrts_updates.teardown; 
         test_ro.teardown;
         test_dba.teardown;
@@ -42,6 +43,8 @@ AS
         test_cwms_stream.teardown;
         test_cwms_data_dissem.teardown;
         test_cwms_forecast.teardown;
+        test_cwms_xchg.teardown;
+        test_cwms_cache.teardown;
     END teardown_all;
 
 END test_clean_all;

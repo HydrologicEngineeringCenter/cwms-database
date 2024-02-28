@@ -127,7 +127,7 @@ select tsx.ts_code,
        tsx.last_update,
        tsx.has_non_zero_quality
   from at_ts_extents tsx,
-       at_cwms_ts_id tid,
+       av_cwms_ts_id tid,
        at_physical_location pl,
        cwms_time_zone tz
  where tid.ts_code = tsx.ts_code

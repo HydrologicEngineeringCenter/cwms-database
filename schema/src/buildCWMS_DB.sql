@@ -135,9 +135,7 @@ order by object_name, object_type asc;
 
 prompt Recompiling all invalid objects...
 begin
-   $if dbms_db_version.version < 12 $then
-      execute immediate 'alter session set plscope_settings=''IDENTIFIERS:ALL''';
-   $end
+   execute immediate 'alter session set plscope_settings=''IDENTIFIERS:ALL''';
    dbms_utility.compile_schema('&cwms_schema');
 end;
 /
@@ -360,9 +358,7 @@ end;
 @@cwms/at_dd_flag_trig
 prompt Recompiling all invalid objects...
 begin
-   $if dbms_db_version.version < 12 $then
-      execute immediate 'alter session set plscope_settings=''IDENTIFIERS:ALL''';
-   $end
+   execute immediate 'alter session set plscope_settings=''IDENTIFIERS:ALL''';
    dbms_utility.compile_schema('&cwms_schema');
 end;
 /

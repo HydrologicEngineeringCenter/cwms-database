@@ -14,25 +14,6 @@ CREATE OR REPLACE PACKAGE cwms_cat
  */
 IS
    -- not documented
-   TYPE cat_ts_rec_t IS RECORD (
-      office_id             VARCHAR2 (16),
-      cwms_ts_id            VARCHAR2(191),
-      interval_utc_offset   NUMBER
-   );
-   -- not documented
-   TYPE cat_ts_tab_t IS TABLE OF cat_ts_rec_t;
-   -- not documented
-   TYPE cat_ts_cwms_20_rec_t IS RECORD (
-      office_id             VARCHAR2 (16),
-      cwms_ts_id            VARCHAR2(191),
-      interval_utc_offset   NUMBER (14),
-      user_privileges       NUMBER,
-      inactive              NUMBER,
-      lrts_timezone         VARCHAR2 (28)
-   );
-   -- not documented
-   TYPE cat_ts_cwms_20_tab_t IS TABLE OF cat_ts_cwms_20_rec_t;
-   -- not documented
    TYPE cat_ts_id_rec_t IS RECORD (
       db_office_id          VARCHAR2 (16),
       base_location_id      VARCHAR2 (24),
@@ -323,32 +304,6 @@ IS
    );
    -- not documented
    TYPE cat_property_tab_t IS TABLE OF cat_property_rec_t;
--- cat_ts...
-   -- not documented
-   FUNCTION cat_ts_rec2obj (r IN cat_ts_rec_t)
-      RETURN cat_ts_obj_t;
-   -- not documented
-   FUNCTION cat_ts_tab2obj (t IN cat_ts_tab_t)
-      RETURN cat_ts_otab_t;
-   -- not documented
-   FUNCTION cat_ts_obj2rec (o IN cat_ts_obj_t)
-      RETURN cat_ts_rec_t;
-   -- not documented
-   FUNCTION cat_ts_obj2tab (o IN cat_ts_otab_t)
-      RETURN cat_ts_tab_t;
--- cat_ts_cwms_20...
-   -- not documented
-   FUNCTION cat_ts_cwms_20_rec2obj (r IN cat_ts_cwms_20_rec_t)
-      RETURN cat_ts_cwms_20_obj_t;
-   -- not documented
-   FUNCTION cat_ts_cwms_20_tab2obj (t IN cat_ts_cwms_20_tab_t)
-      RETURN cat_ts_cwms_20_otab_t;
-   -- not documented
-   FUNCTION cat_ts_cwms_20_obj2rec (o IN cat_ts_cwms_20_obj_t)
-      RETURN cat_ts_cwms_20_rec_t;
-   -- not documented
-   FUNCTION cat_ts_cwms_20_obj2tab (o IN cat_ts_cwms_20_otab_t)
-      RETURN cat_ts_cwms_20_tab_t;
 -- cat_loc...
    -- not documented
    FUNCTION cat_loc_rec2obj (r IN cat_loc_rec_t)
@@ -505,75 +460,6 @@ IS
    -- not documented
    FUNCTION cat_dss_xchg_ts_map_obj2tab (o IN cat_dss_xchg_tsmap_otab_t)
       RETURN cat_dss_xchg_ts_map_tab_t;
--------------------------------------------------------------------------------
--- CAT_TS
---
--- These procedures and functions catalog time series identifiers in the
--- database.
---
--- Function returns may be used as source of SELECT statements.
---
--- The returned records or cursors contain the following columns:
---
---    Name                Datatype      Description
---    ------------------- ------------- ----------------------------
---    office_id           varchar2(16)  Name of owning office
---    cwms_ts_id          varchar2(191) Time series identifier
---    interval_utc_offset number(14)    Offset into the UTC interval
---    lrts_timezone*      varchar2(28)  Name of LRTS time zone or null
---
--- *The lrts_timezone column is returned only for cat_ts_cwms_20
---
--- If the p_office_id parameter is not null, only records with matching office
--- ids are returned.  Otherwise, records for all offices are returned.
---
--- If the p_ts_subselect_string is not null, it is used in a LIKE clause to
--- match the cwms_ts_id field.  This parameter may use filename-type wildcards
--- (*, ?) and/or SQL-type wildcards (%, _).
---
--- The records are returned sorted first by office_id (ascending) and then by
--- cwms_ts_id (ascending, non-case-sensitive).
---
--------------------------------------------------------------------------------
--- function cat_ts_tab(...)
---
-   -- not documented
-   FUNCTION cat_ts_tab (
-      p_office_id             IN   VARCHAR2 DEFAULT NULL,
-      p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL
-   )
-      RETURN cat_ts_tab_t PIPELINED;
--------------------------------------------------------------------------------
--- procedure cat_ts(...)
---
---
-   -- not documented
-   PROCEDURE cat_ts (
-      p_cwms_cat              OUT      sys_refcursor,
-      p_office_id             IN       VARCHAR2 DEFAULT NULL,
-      p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL
-   );
-   -- not documented
--------------------------------------------------------------------------------
--- function cat_ts_cwms_20_tab(...)
---
---
-   -- not documented
-   FUNCTION cat_ts_cwms_20_tab (
-      p_office_id             IN   VARCHAR2 DEFAULT NULL,
-      p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL
-   )
-      RETURN cat_ts_cwms_20_tab_t PIPELINED;
--------------------------------------------------------------------------------
--- procedure cat_ts_cwms_20(...)
---
---
-   -- not documented
-   PROCEDURE cat_ts_cwms_20 (
-      p_cwms_cat              OUT      sys_refcursor,
-      p_office_id             IN       VARCHAR2 DEFAULT NULL,
-      p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL
-   );
    /**
     * Catalogs time series in the database that match specified parameter. Matching is
     * accomplished with glob-style wildcards, as shown below. SQL-style wildcards

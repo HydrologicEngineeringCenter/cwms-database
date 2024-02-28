@@ -11,10 +11,22 @@ AS
         FROM av_data_streams_current
        WHERE data_stream_code = p_data_stream_code;
 
-      OPEN p_shef_crit_lines FOR
-         SELECT a.shef_crit_line
-           FROM at_shef_decode_spec a
-          WHERE a.crit_file_code = l_crit_file_code;
+      if cwms_ts.use_new_lrts_format_on_output = 'T' then
+         open p_shef_crit_lines for
+            select case when b.interval_id like '~%' and b.interval_utc_offset != -2147483648 then
+                      regexp_replace(a.shef_crit_line, '\.~(\d+\w+)\.', '.\1Local.')
+                   else
+                      a.shef_crit_line
+                   end as shef_crit_line
+              from at_shef_decode_spec a,
+                   at_cwms_ts_id b
+             where b.ts_code = a.ts_code;
+      else
+         OPEN p_shef_crit_lines FOR
+            SELECT a.shef_crit_line
+              FROM at_shef_decode_spec a
+             WHERE a.crit_file_code = l_crit_file_code;
+      end if;
    END cat_shef_crit_lines;
 
    FUNCTION get_update_crit_file_flag (p_data_stream_id   IN VARCHAR2,
@@ -561,6 +573,9 @@ AS
       l_shef_spec_alias_entry      at_properties.prop_value%TYPE;
       l_prop_comment               at_properties.prop_comment%TYPE;
       l_build_shef_id_table        BOOLEAN;
+      
+      x_ts_id_not_found           exception;
+      pragma exception_init(x_ts_id_not_found, -20001);
 
       --
       --
@@ -730,9 +745,14 @@ AS
             l_ts_code :=
                cwms_ts.get_ts_code (p_cwms_ts_id       => p_cwms_ts_id,
                                     p_db_office_code   => l_db_office_code);
+            if cwms_ts.require_new_lrts_format_on_input = 'T' and
+               cwms_ts.is_lrts(l_ts_code) = 'T' and
+               cwms_ts.is_new_lrts_format(p_cwms_ts_id) = 'F'
+            then
+               cwms_ts.new_lrts_id_required_error(p_cwms_ts_id);
+            end if;
          EXCEPTION
-            WHEN OTHERS
-            THEN
+            when x_ts_id_not_found then
                cwms_ts.create_ts_code (
                   p_ts_code             => l_ts_code,
                   p_cwms_ts_id          => p_cwms_ts_id,
@@ -3870,7 +3890,7 @@ AS
             p_reported    => SYSTIMESTAMP AT TIME ZONE 'UTC',
             p_message     => l_message,
             p_msg_level   => cwms_msg.msg_level_normal,
-            p_publish     => TRUE,
+            p_publish     => FALSE,
             p_immediate   => FALSE); -- commit required to actually enqueue message
    END notify_data_stream_state;
 

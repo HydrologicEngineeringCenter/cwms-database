@@ -66,7 +66,6 @@ object Build : BuildType({
         schema/build/resources => resources.zip
         schema/build/resources.jar =>
         schema/build/docs.zip =>
-        codegen/cwms-db-jooq-codegen/*.jar =>
     """.trimIndent()
 
 
@@ -96,6 +95,7 @@ object Build : BuildType({
             }
             targets = "docker.prepdb"
             antArguments = "-Dteamcity.branch=%teamcity.build.branch%_%teamcity.agent.name%"
+            jdkHome ="%env.JDK_1_8_x64%"
         }
         ant {
             name = "Install CWMS Database"
@@ -105,6 +105,7 @@ object Build : BuildType({
             }
             targets = "docker.install"
             antArguments = "-Dteamcity.branch=%teamcity.build.branch%_%teamcity.agent.name%"
+            jdkHome ="%env.JDK_1_8_x64%"
         }
         ant {
             name = "Run Tests"
@@ -114,14 +115,7 @@ object Build : BuildType({
             }
             targets = "test"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
-        }
-        maven {
-            name = "jOOQ Codegen"
-            pomLocation = "schema/pom.xml"
-            userSettingsSelection = "cwms-maven-settings"
-            goals = "package"
-            jdkHome = "%env.JDK_11_x64%"
-            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
+            jdkHome ="%env.JDK_1_8_x64%"
         }
         ant {
             workingDir = "./schema"
@@ -131,6 +125,7 @@ object Build : BuildType({
             name = "Generate Bundle (will include generated artifacts)"
             targets = "bundle"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
+            jdkHome ="%env.JDK_1_8_x64%"
         }
         ant {
             name = "Cleanup Generated Files"
@@ -143,6 +138,7 @@ object Build : BuildType({
             conditions {
                 matches("teamcity.build.branch", "(master|release/.*)")
             }
+            jdkHome ="%env.JDK_1_8_x64%"
         }
         maven {
             name = "Push to Nexus"
@@ -163,6 +159,7 @@ object Build : BuildType({
             }
             targets = "docker.push"
             antArguments = "-Dteamcity.branch=%teamcity.build.branch% -Ddocker.registry=%cwms.docker.registry.repositoryUrl%"
+            jdkHome ="%env.JDK_1_8_x64%"
             conditions {
                 matches("teamcity.build.branch", "(master|release/.*)")
             }
@@ -175,7 +172,8 @@ object Build : BuildType({
             }
             targets = "docker.stopdb"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            antArguments = "-Dteamcity.branch=%teamcity.build.branch%_%teamcity.agent.name%"            
+            antArguments = "-Dteamcity.branch=%teamcity.build.branch%_%teamcity.agent.name%"
+            jdkHome ="%env.JDK_1_8_x64%"
         }
     }
 

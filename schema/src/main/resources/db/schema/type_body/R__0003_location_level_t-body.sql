@@ -186,11 +186,10 @@ as
         from at_specified_level sl
        where upper(sl.specified_level_id) = upper(l_specified_level_id);
 
-      select level_value * factor + offset
-        into l_location_level_value
-        from cwms_unit_conversion cuc
-       where from_unit_id = l_clone.level_units_id
-         and to_unit_id = cwms_util.get_unit_id2(cwms_util.get_db_unit_code(l_clone.parameter_id));
+      l_location_level_value := cwms_util.convert_units(
+         level_value,
+         l_clone.level_units_id,
+         cwms_util.get_unit_id2(cwms_util.get_db_unit_code(l_clone.parameter_id)));
 
       if l_clone.attribute_parameter_id is not null then
          select p.parameter_code

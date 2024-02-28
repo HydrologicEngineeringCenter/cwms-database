@@ -75,7 +75,42 @@ CREATE OR REPLACE FORCE VIEW av_cwms_ts_id2
 )
 AS
    select db_office_id,
-          cwms_ts_id,
+          case
+           when 'T' = (select 'T'
+                         from dual
+                        where exists(select str_value
+                                       from at_session_info
+                                      where item_name = 'USE_NEW_LRTS_ID_FORMAT'
+                                        and bitand(num_value, 4) = 4
+                                    )
+                      )
+           then
+             ----------------------------
+             -- use new LRTS ID format --
+             ----------------------------
+             case
+             when substr(interval_id, 1, 1) = '~' and interval_utc_offset != -2147483648 then
+                ----------------
+                -- TS is LRTS --
+                ----------------
+                location_id
+                ||'.'||parameter_id
+                ||'.'||parameter_type_id
+                ||'.'||regexp_replace(interval_id, '^~(.+)$', '\1Local')
+                ||'.'||duration_id
+                ||'.'||version_id
+             else
+                --------------------
+                -- TS is not LRTS --
+                --------------------
+                cwms_ts_id
+             end
+          else
+             ----------------------------
+             -- use old LRTS ID format --
+             ----------------------------
+             cwms_ts_id
+          end as cwms_ts_id,
           unit_id,
           abstract_param_id,
           base_location_id,
@@ -85,7 +120,37 @@ AS
           sub_parameter_id,
           parameter_id,
           parameter_type_id,
-          interval_id,
+          case
+           when 'T' = (select 'T'
+                         from dual
+                        where exists(select str_value
+                                       from at_session_info
+                                      where item_name = 'USE_NEW_LRTS_ID_FORMAT'
+                                        and bitand(num_value, 4) = 4
+                                    )
+                      )
+           then
+             ----------------------------
+             -- use new LRTS ID format --
+             ----------------------------
+             case
+             when substr(interval_id, 1, 1) = '~' and interval_utc_offset != -2147483648 then
+                ----------------
+                -- TS is LRTS --
+                ----------------
+                regexp_replace(interval_id, '^~(.+)$', '\1Local')
+             else
+                --------------------
+                -- TS is not LRTS --
+                --------------------
+                interval_id
+             end
+          else
+             ----------------------------
+             -- use old LRTS ID format --
+             ----------------------------
+             interval_id
+          end as interval_id,
           duration_id,
           version_id,
           interval,

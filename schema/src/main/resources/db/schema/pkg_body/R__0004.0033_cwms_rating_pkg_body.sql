@@ -3,14 +3,21 @@ as
 
 function get_rating_method_code(
    p_rating_method_id in varchar2)
-   return number result_cache
+   return number
 is
    l_code number(14);
+   l_cache_key cwms_rating_method.rating_method_id%type;
 begin
-   select rating_method_code
-     into l_code
-     from cwms_rating_method
-    where rating_method_id = upper(p_rating_method_id);
+   l_cache_key := upper(p_rating_method_id);
+   l_code := cwms_cache.get(g_method_code_cache, l_cache_key);
+   if l_code is null then
+      select rating_method_code
+        into l_code
+        from cwms_rating_method
+       where rating_method_id = l_cache_key;
+
+       cwms_cache.put(g_method_code_cache, l_cache_key, l_code);
+   end if;
 
    return l_code;
 end get_rating_method_code;
@@ -135,6 +142,10 @@ begin
 
    delete from at_virtual_rating
     where virtual_rating_code = p_rating_code;
+   -----------------------
+   -- remove from cache --
+   -----------------------
+   cwms_cache.remove_by_value(g_rating_code_cache, p_rating_code);
 
 end delete_rating;
 
@@ -188,6 +199,10 @@ begin
       delete
         from at_rating_spec
        where rating_spec_code = p_rating_spec_code;
+      -----------------------
+      -- remove from cache --
+      -----------------------
+      cwms_cache.remove_by_value(g_spec_code_cache, p_rating_spec_code);
    end if;
 end delete_rating_spec;
 
@@ -213,6 +228,10 @@ begin
       delete
         from at_rating_template
        where template_code = p_rating_template_code;
+      -----------------------
+      -- remove from cache --
+      -----------------------
+      cwms_cache.remove_by_value(g_template_code_cache, p_rating_template_code);
    end if;
 
 end delete_rating_template;

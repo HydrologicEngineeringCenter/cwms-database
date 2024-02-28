@@ -203,17 +203,17 @@ begin
       when i = 1 then
          cwms_cat.cat_ts_id(
             p_cwms_cat            => l_crsr,
-            p_ts_subselect_string => '*',
+            p_ts_subselect_string => 'CwmsCatTestLoc*',
             p_db_office_id        => c_office_id);
       when i = 2 then
          cwms_cat.cat_ts_id(
             p_cwms_cat            => l_crsr,
-            p_ts_subselect_string => '*',
+            p_ts_subselect_string => 'CwmsCatTestLoc*',
             p_db_office_id        => null);
       when i = 3 then
          cwms_cat.cat_ts_id(
             p_cwms_cat            => l_crsr,
-            p_ts_subselect_string => '*');
+            p_ts_subselect_string => 'CwmsCatTestLoc*');
       end case;
       fetch l_crsr
       bulk collect

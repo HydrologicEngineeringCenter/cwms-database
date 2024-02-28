@@ -118,7 +118,7 @@ select q1.office_id,
                        st.clob_code
                   from at_tsv_std_text tt,
                        at_std_text st,
-                       at_cwms_ts_id ts
+                       av_cwms_ts_id ts
                  where ts.ts_code = tt.ts_code
                    and st.std_text_code = tt.std_text_code
                ) q111
@@ -162,7 +162,7 @@ select q1.office_id,
                        tt.ts_code,
                        tt.clob_code
                   from at_tsv_text tt,
-                       at_cwms_ts_id ts
+                       av_cwms_ts_id ts
                  where ts.ts_code = tt.ts_code
                ) q121
                left outer join
@@ -242,7 +242,7 @@ select q2.office_id,
                        st.clob_code
                   from at_tsv_std_text tt,
                        at_std_text st,
-                       at_cwms_ts_id ts
+                       av_cwms_ts_id ts
                  where ts.ts_code = tt.ts_code
                    and st.std_text_code = tt.std_text_code
                ) q211
@@ -286,7 +286,7 @@ select q2.office_id,
                        tt.ts_code,
                        tt.clob_code
                   from at_tsv_text tt,
-                       at_cwms_ts_id ts
+                       av_cwms_ts_id ts
                  where ts.ts_code = tt.ts_code
                ) q221
                left outer join

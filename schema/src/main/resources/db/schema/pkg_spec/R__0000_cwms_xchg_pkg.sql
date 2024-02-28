@@ -185,7 +185,9 @@ procedure update_dss_xchg_set_time(
  *
  * @param p_dss_xchg_set_id Data exchange set identifier pattern to match. Only data exchage sets whose identifier match this pattern (case insensitive) are returned. If not specified, or NULL, no matching is performed on the data exchange set identifier.
  *
- * @param p_office_id  The office pattern to match.  If not specified, or NULL, the session user's default office is used.
+ * @param p_office_id       The office pattern to match.  If not specified, or NULL, the session user's default office is used.
+ *
+ * @param p_del_unused_info A flag ('T'/'F') specifying whether to delete unused portions of the configuration before retrieval.
  *
  * @return The matching data exchange sets in XML format
  */
@@ -193,7 +195,8 @@ function get_dss_xchg_sets(
    p_dss_filemgr_url in varchar2 default null,
    p_dss_file_name   in varchar2 default null,
    p_dss_xchg_set_id in varchar2 default null,
-   p_office_id       in varchar2 default null)
+   p_office_id       in varchar2 default null,
+   p_del_unused_info in  varchar2 default 'F')
    return clob;
 /**
  * Store a data exchange configuration
@@ -205,6 +208,7 @@ function get_dss_xchg_sets(
  * @param p_mappings_deleted  The number of time series mappings that were deleted
  * @param p_dx_config         The data exchange configuration in XML format
  * @param p_store_rule        The store rule to use ('MERGE', 'INSERT', 'UPDATE', 'REPLACE').  If not specified or NULL, MERGE is used
+ * @param p_del_unused_info   A flag ('T'/'F') specifying whether to delete unused portions of the configuration when storing
  */
 procedure store_dataexchange_conf(
    p_sets_inserted     out number,
@@ -213,7 +217,8 @@ procedure store_dataexchange_conf(
    p_mappings_updated  out number,
    p_mappings_deleted  out number,
    p_dx_config         in  clob,
-   p_store_rule        in  varchar2 default 'MERGE');
+   p_store_rule        in  varchar2 default 'MERGE',
+   p_del_unused_info   in  varchar2 default 'F');
 /**
  * Deletes un-referenced data exchange information from the database
  */

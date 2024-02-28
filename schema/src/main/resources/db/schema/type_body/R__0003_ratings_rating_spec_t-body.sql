@@ -731,23 +731,29 @@ as
    is
       l_office_id        varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
       l_office_code      number(14) := cwms_util.get_office_code(l_office_id);
+      l_cache_key        varchar2(32767) := upper(l_office_code||'/'||p_location_id||'.'||p_template_id||'.'||p_version);
       l_rating_spec_code number(14);
       l_parts            str_tab_t;
    begin
-      l_parts := cwms_util.split_text(p_template_id, cwms_rating.separator1);
-      if l_parts.count != 2 then
-         cwms_err.raise(
-            'INVALID_ITEM',
-            p_template_id,
-            'Rating template identifier');
-      end if;
+      l_rating_spec_code := cwms_cache.get(cwms_rating.g_spec_code_cache, l_cache_key);
+      if l_rating_spec_code is null then
+         l_parts := cwms_util.split_text(p_template_id, cwms_rating.separator1);
+         if l_parts.count != 2 then
+            cwms_err.raise(
+               'INVALID_ITEM',
+               p_template_id,
+               'Rating template identifier');
+         end if;
 
-      select rating_spec_code
-        into l_rating_spec_code
-        from at_rating_spec
-       where template_code = rating_template_t.get_template_code(p_template_id, l_office_code)
-         and location_code = cwms_loc.get_location_code(l_office_id, p_location_id)
-         and upper(version) = upper(p_version);
+         select rating_spec_code
+           into l_rating_spec_code
+           from at_rating_spec
+          where template_code = rating_template_t.get_template_code(p_template_id, l_office_code)
+            and location_code = cwms_loc.get_location_code(l_office_id, p_location_id)
+            and upper(version) = upper(p_version);
+
+         cwms_cache.put(cwms_rating.g_spec_code_cache, l_cache_key, l_rating_spec_code);
+      end if;
 
       return l_rating_spec_code;
    exception

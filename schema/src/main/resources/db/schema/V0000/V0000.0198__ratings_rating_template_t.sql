@@ -77,7 +77,7 @@ as object(
     */
    constructor function rating_template_t(
       p_xml in xmltype)
-   return self as result,      
+   return self as result,
    -- not documented
    member procedure init(
       p_template_code in number),
@@ -111,31 +111,31 @@ as object(
     * @return the rating template as an XML instance in an XMLTYPE object
     */
    member function to_xml
-   return xmltype,      
+   return xmltype,
    /**
     * Retrieves the rating template as an XML instance in a CLOB object
     *
     * @return the rating template as an XML instance in a CLOB object
     */
    member function to_clob
-   return clob,      
+   return clob,
    -- not documented
    static function get_template_code(
       p_parameters_id in varchar2,
       p_version       in varchar2,
       p_office_id     in varchar2 default null)
-   return number result_cache,      
+   return number,
    -- not documented
    static function get_template_code(
       p_parameters_id in varchar2,
       p_version       in varchar2,
       p_office_code   in number)
-   return number result_cache,      
+   return number,
    -- not documented
    static function get_template_code(
       p_template_id in varchar2,
       p_office_code in number)
-   return number result_cache      
+   return number
 );
 /
 
