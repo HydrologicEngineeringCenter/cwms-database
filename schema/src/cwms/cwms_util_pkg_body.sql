@@ -2175,6 +2175,10 @@ as
       l_negative   BOOLEAN := p_millis < 0;
       l_interval   INTERVAL DAY (9) TO SECOND (9);
    BEGIN
+      if p_millis is null
+      THEN
+        RETURN NULL;
+      end if;
       l_day := TRUNC (l_millis / 86400000);
       l_millis := l_millis - (l_day * 86400000);
       l_hour := TRUNC (l_millis / 3600000);
