@@ -8,7 +8,7 @@ create table at_fcst_info (
 create unique index at_fcst_info_pk on at_fcst_info (fcst_inst_code, key, value);
 create index at_fcst_info_idx1 on at_fcst_info(key, value);
 
-comment on table at_fcst_info is 'Holds element values from forecast_info.xml files with attributes of index="true"';
+comment on table at_fcst_info is 'Holds (key, value) pairs from forecast_info.xml files. Top-level elements in the file with attributes of ''key="true"'' are the keys, with the element data being the values';
 comment on column at_fcst_info.fcst_inst_code is 'References forecast instance';
-comment on column at_fcst_info.key            is 'Name of element with attribute of index="true"';
-comment on column at_fcst_info.value          is 'Value of element with attribute of index="true"';
+comment on column at_fcst_info.key            is 'Name of top-level element with attribute of key="true"';
+comment on column at_fcst_info.value          is 'Value of top-level element with attribute of key="true"';

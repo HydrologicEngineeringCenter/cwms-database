@@ -8,6 +8,7 @@ create table at_fcst_inst (
    max_age           number(6),
    time_series_count number(4),
    file_count        number(2),
+   key_count         number(3),
    notes             varchar2(256),
    constraint at_fcst_inst_pk  primary key (fcst_inst_code),
    constraint at_fcst_inst_fk1 foreign key (fcst_spec_code) references at_fcst_spec (fcst_spec_code)
@@ -26,4 +27,5 @@ comment on column at_fcst_inst.last_date_time    is 'End of the time window for 
 comment on column at_fcst_inst.max_age           is 'The number of hours from the issue date/time that the forecast is considered valid';
 comment on column at_fcst_inst.time_series_count is 'The number of time series stored with this forecast.';
 comment on column at_fcst_inst.file_count        is 'The number of files stored with this forecast';
+comment on column at_fcst_inst.file_count        is 'The number of (key, value) pairs stored with this forecast';
 comment on column at_fcst_inst.notes             is 'Notes about this forecast';

@@ -15,6 +15,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_FCST_INST', null
  * @field valid               A flag (''T''/''F'') specifying whether the forecast is currently valid
  * @field time_series_count   The number of time series stored for the forecast
  * @field file_count          The number of files stored for the forecast
+ * @field key_count           The number of (key, value) pairs stored for  the forecast
  * @field notes               Notes about the forecast
  */
 ');
@@ -30,6 +31,7 @@ create or replace view av_fcst_inst (
    valid,
    time_series_count,
    file_count,
+   key_count,
    notes)
 as
 select o.office_id,
@@ -43,6 +45,7 @@ select o.office_id,
        case when max_age is null then null when (sysdate - fi.issue_date_time) * 24 <= max_age then 'T' else 'F' end as valid,
        fi.time_series_count,
        fi.file_count,
+       fi.key_count,
        fi.notes
   from at_fcst_inst fi,
        at_fcst_spec fs,

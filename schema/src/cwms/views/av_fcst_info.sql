@@ -1,3 +1,17 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_FCST_INFO', null,
+'
+/**
+ * (key, value) pairs from forecast_info.xml files. Top-level elements in the file with attributes of ''key="true"'' are the keys, with the element data being the values
+ *
+ * @field office_id           The office that owns the forecast
+ * @field fcst_spec_id        The specification ID of the forecast
+ * @field location_id         The location that the forecast is for
+ * @field fcst_date_time_utc  The date/time the forecast is for
+ * @field valid               A flag (''T''/''F'') specifying whether the forecast is currently valid
+ * @field key                 The key
+ * @field value               The associated value
+ */
+');
 create or replace view av_fcst_info
 as
    select o.office_id,

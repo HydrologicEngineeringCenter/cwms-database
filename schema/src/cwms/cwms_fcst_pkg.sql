@@ -3,6 +3,7 @@ create or replace package cwms_fcst
  * Routines for storing and retrieving forecast information. Replaces package cwms_forecast.
  */
 as
+c_forecast_info_filename constant varchar2(17) := 'forecast_info.xml';
 /**
  * Stores (inserts or updates) a forecast specification
  *
@@ -373,17 +374,45 @@ procedure store_fcst(
  *           <td class="descr-center">1</td>
  *           <td class="descr">file_name</td>
  *           <td class="descr">varchar2(64)</td>
- *           <td class="descr">The time series identifier</td>
+ *           <td class="descr">The base name (no directories) of the file</td>
  *         </tr>
  *         <tr>
  *           <td class="descr-center">2</td>
  *           <td class="descr">description</td>
  *           <td class="descr">varchar2(64)</td>
- *           <td class="descr">The time series identifier</td>
+ *           <td class="descr">A desription of the file contents</td>
  *         </tr>
  *       </table>
  *     </td>
  *     <td class="descr">The file names in the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">key_value_pairs</td>
+ *     <td class="descr">sys_refcursor containing the following columns
+ *       <p>
+ *       <table class="descr">
+ *         <tr>
+ *           <th class="descr">Column No.</th>
+ *           <th class="descr">Column Name</th>
+ *           <th class="descr">Data Type</th>
+ *           <th class="descr">Contents</th>
+ *         </tr>
+ *         <tr>
+ *           <td class="descr-center">1</td>
+ *           <td class="descr">key</td>
+ *           <td class="descr">varchar2(32)</td>
+ *           <td class="descr">The key</td>
+ *         </tr>
+ *         <tr>
+ *           <td class="descr-center">2</td>
+ *           <td class="descr">value</td>
+ *           <td class="descr">varchar2(64)</td>
+ *           <td class="descr">The value associated with the key</td>
+ *         </tr>
+ *       </table>
+ *     </td>
+ *     <td class="descr">The matched (key, value) pairs for the forecast (null if p_key_mask is null)</td>
  *   </tr>
  * </table>
  * @param p_fcst_spec_id_mask      The wildcard pattern to retrieve forecast specifications identifieres for. If unspecified all forecast_specification identifiers will be matched.
@@ -395,6 +424,8 @@ procedure store_fcst(
  * @param p_time_zone              The time zone of the min and max date/times and date/times returned in the cursor.
  *                                 If unspecified or NULL, any specified date/times will be interpreted as 'UTC' and returned date/times will be in the location's local time zone.
  * @param p_valid_forecasts_only   A flag ('T'/'F') specifying whether to catalog only valid or all forecasts. Valid forecasts have issue date/times since the current date/time minus max_age hours.
+ * @param p_key_mask               The wildcard pattern that the key field in returned records must match. If unspecified, no matching is performed and no (key, value) records are returned, otherwise matching (key, value) records will be returned.
+ * @param p_value_mask             The wildcard pattern that the value field in returned records must match. If unspecified (and p_key_mask is non-NULL) all value fields will be matched.
  * @param p_office_id_mask         The wildcard pattern to retrieve offices for. If unspecified or NULL the session user's current office will be used.
  */
 procedure cat_fcst(
@@ -407,6 +438,8 @@ procedure cat_fcst(
    p_max_issue_date_time    in date     default null,
    p_time_zone              in varchar2 default null,
    p_valid_forecasts_only   in varchar2 default 'F',
+   p_key_mask               in varchar2 default null,
+   p_value_mask             in varchar2 default '*',
    p_office_id_mask         in varchar2 default null);
 /**
  * Catalogs forecasts that match the specified parameters. Matching is
@@ -436,6 +469,8 @@ procedure cat_fcst(
  * @param p_max_issue_date_time    The latest issue date/time to match. If unspecified or NULL, no maximum will be used.
  * @param p_time_zone              The time zone of the min and max date/times and date/times returned in the cursor.
  *                                 If unspecified or NULL, any specified date/times will be interpreted as 'UTC' and returned date/times will be in the location's local time zone.
+ * @param p_key_mask               The wildcard pattern that the key field in returned records must match. If unspecified, no matching is performed and no (key, value) records are returned, otherwise matching (key, value) records will be returned.
+ * @param p_value_mask             The wildcard pattern that the value field in returned records must match. If unspecified (and p_key_mask is non-NULL) all value fields will be matched.
  * @param p_valid_forecasts_only   A flag ('T'/'F') specifying whether to catalog only valid or all forecasts. Valid forecasts have issue date/times since the current date/time minus max_age hours.
  * @param p_office_id_mask         The wildcard pattern to retrieve offices for. If unspecified or NULL the session user's current office will be used.
  *
@@ -551,17 +586,45 @@ procedure cat_fcst(
  *           <td class="descr-center">1</td>
  *           <td class="descr">file_name</td>
  *           <td class="descr">varchar2(64)</td>
- *           <td class="descr">The time series identifier</td>
+ *           <td class="descr">The base name (no directories) of the file</td>
  *         </tr>
  *         <tr>
  *           <td class="descr-center">2</td>
  *           <td class="descr">description</td>
  *           <td class="descr">varchar2(64)</td>
- *           <td class="descr">The time series identifier</td>
+ *           <td class="descr">A desription of the file contents</td>
  *         </tr>
  *       </table>
  *     </td>
  *     <td class="descr">The file names in the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">key_value_pairs</td>
+ *     <td class="descr">sys_refcursor containing the following columns
+ *       <p>
+ *       <table class="descr">
+ *         <tr>
+ *           <th class="descr">Column No.</th>
+ *           <th class="descr">Column Name</th>
+ *           <th class="descr">Data Type</th>
+ *           <th class="descr">Contents</th>
+ *         </tr>
+ *         <tr>
+ *           <td class="descr-center">1</td>
+ *           <td class="descr">key</td>
+ *           <td class="descr">varchar2(32)</td>
+ *           <td class="descr">The key</td>
+ *         </tr>
+ *         <tr>
+ *           <td class="descr-center">2</td>
+ *           <td class="descr">value</td>
+ *           <td class="descr">varchar2(64)</td>
+ *           <td class="descr">The value associated with the key</td>
+ *         </tr>
+ *       </table>
+ *     </td>
+ *     <td class="descr">The matched (key, value) pairs for the forecast (null if p_key_mask is null)</td>
  *   </tr>
  * </table>
  */
@@ -574,6 +637,8 @@ function cat_fcst_f(
    p_max_issue_date_time    in date     default null,
    p_time_zone              in varchar2 default null,
    p_valid_forecasts_only   in varchar2 default 'F',
+   p_key_mask               in varchar2 default null,
+   p_value_mask             in varchar2 default '*',
    p_office_id_mask         in varchar2 default null)
    return sys_refcursor;
 /**
