@@ -117,7 +117,7 @@ AS
         FROM ALL_IDENTIFIERS
         WHERE OWNER = 'CWMS_20';
 
-        ut.expect(l_cnt).to_be_greater_than(0, 'Query returned no rows!');
+        ut.expect(l_cnt, 'Query returned no rows!').to_be_greater_than(0);
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             ut.fail('Query returned no rows!');
