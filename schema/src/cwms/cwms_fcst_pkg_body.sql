@@ -373,7 +373,7 @@ begin
       select *
         into l_fcst_inst_rec
         from at_fcst_inst
-       where fcst_spec_code = l_fcst_inst_rec.fcst_inst_code
+       where fcst_spec_code = l_fcst_spec_code
          and fcst_date_time = l_fcst_time_utc
          and issue_date_time = l_issue_time_utc;
       if l_fail_if_exists then
@@ -395,35 +395,39 @@ begin
    -------------------------------------
    l_fcst_inst_rec.max_age := nvl(p_max_age, l_fcst_inst_rec.max_age);
    l_fcst_inst_rec.notes   := nvl(p_notes, l_fcst_inst_rec.notes);
+   if l_fcst_inst_rec.fcst_inst_code is not null then
+      ---------------------------
+      -- collect existing info --
+      ---------------------------
+      for rec in (select cwms_ts_id,
+                         ts_code
+                    from at_cwms_ts_id
+                   where ts_code in (select ts_code
+                                       from at_fcst_time_series
+                                      where fcst_inst_code = l_fcst_inst_rec.fcst_inst_code
+                                    )
+                 )
+      loop
+         select date2_t(min(date_time),max(date_time))
+           into l_ts_time_windows(rec.cwms_ts_id)
+           from av_tsv
+          where ts_code = rec.ts_code
+            and version_date = l_issue_time_utc
+            and start_date <= l_fcst_inst_rec.first_date_time
+            and end_date > l_fcst_inst_rec.first_date_time;
+      end loop;
+      for rec in (select file_name
+                    from at_fcst_file
+                   where fcst_inst_code = l_fcst_inst_rec.fcst_inst_code
+                 )
+      loop
+         l_file_names(rec.file_name) := true;
+      end loop;
+   end if;
    if p_time_series is not null and p_time_series.count > 0 then
-      -------------------------------
-      -- populate time series info --
-      -------------------------------
-      if l_fcst_inst_rec.fcst_inst_code is not null then
-         ---------------------------
-         -- collect existing info --
-         ---------------------------
-         for rec in (select cwms_ts_id,
-                            ts_code
-                       from at_cwms_ts_id
-                      where ts_code in (select ts_code
-                                          from at_fcst_time_series
-                                         where fcst_inst_code = l_fcst_inst_rec.fcst_inst_code
-                                       )
-                    )
-         loop
-            select date2_t(min(date_time),max(date_time))
-              into l_ts_time_windows(rec.cwms_ts_id)
-              from av_tsv
-             where ts_code = rec.ts_code
-               and version_date = l_issue_time_utc
-               and start_date <= l_fcst_inst_rec.first_date_time
-               and end_date > l_fcst_inst_rec.first_date_time;
-         end loop;
-      end if;
-      -----------------------
-      -- merge in new info --
-      -----------------------
+      -----------------------------------
+      -- merge in new time seires info --
+      -----------------------------------
       for i in 1..p_time_series.count loop
          l_ts_time_windows(p_time_series(i).tsid) := date2_t(
             p_time_series(i).data(1).date_time,
@@ -442,27 +446,9 @@ begin
    end if;
    l_fcst_inst_rec.time_series_count := l_ts_time_windows.count;
    if p_files is not null and p_files.count > 0 then
-      -------------------------
-      -- populate files info --
-      -------------------------
-      if l_fcst_inst_rec.fcst_inst_code is not null then
-         ---------------------------
-         -- collect existing info --
-         ---------------------------
-         for rec in (select id
-                       from at_blob
-                      where blob_code in (select blob_code
-                                            from at_fcst_file
-                                           where fcst_inst_code = l_fcst_inst_rec.fcst_inst_code
-                                         )
-                    )
-         loop
-            l_file_names(substr(rec.id, instr(rec.id, '/', -1) + 1)) := true;
-         end loop;
-      end if;
-      -----------------------
-      -- merge in new info --
-      -----------------------
+      -----------------------------
+      -- merge in new files info --
+      -----------------------------
       for i in 1..p_files.count loop
          l_file_names(p_files(i).file_name) := true;
 
@@ -475,11 +461,11 @@ begin
             for j in 1..l_nodes.count loop
                if cwms_util.get_xml_text(l_nodes(j), '/*/@key') = 'true' then
                   l_key := l_nodes(j).getrootelement;
-                  l_value := cwms_util.get_xml_text(l_nodes(j), '/*'); 
+                  l_value := cwms_util.get_xml_text(l_nodes(j), '/*');
                   l_key_value_pairs(l_key) := l_value;
                   l_fcst_inst_rec.key_count := l_fcst_inst_rec.key_count + 1;
                end if;
-            end loop;   
+            end loop;
          end if;
       end loop;
    end if;
@@ -491,9 +477,7 @@ begin
       l_fcst_inst_rec.fcst_inst_code := cwms_seq.nextval;
       insert
         into at_fcst_inst
-      values l_fcst_inst_rec
-      return fcst_inst_code
-        into l_fcst_inst_rec.fcst_inst_code;
+      values l_fcst_inst_rec;
    else
       update at_fcst_inst
          set row = l_fcst_inst_rec
@@ -502,78 +486,84 @@ begin
    ---------------------------
    -- store the time series --
    ---------------------------
-   for i in 1..p_time_series.count loop
-      cwms_ts.zstore_ts(
-         p_cwms_ts_id      => p_time_series(i).tsid,
-         p_units           => p_time_series(i).unit,
-         p_timeseries_data => p_time_series(i).data,
-         p_store_rule      => cwms_util.replace_all,
-         p_version_date    => l_issue_time_utc,
-         p_office_id       => l_office_id);
+   if p_time_series is not null then
+      for i in 1..p_time_series.count loop
+         cwms_ts.zstore_ts(
+            p_cwms_ts_id      => p_time_series(i).tsid,
+            p_units           => p_time_series(i).unit,
+            p_timeseries_data => p_time_series(i).data,
+            p_store_rule      => cwms_util.replace_all,
+            p_version_date    => l_issue_time_utc,
+            p_office_id       => l_office_id);
 
-      select ts_code
-        into l_code
-        from at_cwms_ts_id
-       where db_office_code = l_office_code
-         and cwms_ts_id = p_time_series(i).tsid;
+         select ts_code
+           into l_code
+           from at_cwms_ts_id
+          where db_office_code = l_office_code
+            and cwms_ts_id = p_time_series(i).tsid;
 
-      begin
-         insert
-           into at_fcst_time_series
-         values (l_fcst_inst_rec.fcst_inst_code, l_code);
-      exception
-         when others then
-            if sqlcode = -1 then
-               null; -- alredy existed
-            else
-               raise;
-            end if;
-      end;
-   end loop;
+         begin
+            insert
+              into at_fcst_time_series
+            values (l_fcst_inst_rec.fcst_inst_code, l_code);
+         exception
+            when others then
+               if sqlcode = -1 then
+                  null; -- alredy existed
+               else
+                  raise;
+               end if;
+         end;
+      end loop;
+   end if;
    ---------------------
    -- store the files --
    ---------------------
-   for i in 1..p_files.count loop
-      l_blob_id := make_blob_id_for_file(
-         l_office_id,
-         l_fcst_spec_id,
-         l_location_id,
-         l_fcst_time_utc,
-         l_issue_time_utc,
-         p_files(i).file_name);
+   if p_files is not null then
+      for i in 1..p_files.count loop
+         l_blob_id := make_blob_id_for_file(
+            l_office_id,
+            l_fcst_spec_id,
+            l_location_id,
+            l_fcst_time_utc,
+            l_issue_time_utc,
+            p_files(i).file_name);
 
-      cwms_text.store_binary(
-         p_binary_code       => l_code,
-         p_binary            => p_files(i).file_data,
-         p_id                => l_blob_id,
-         p_media_type_or_ext => get_file_name_ext(p_files(i).file_name),
-         p_description       => p_files(i).description,
-         p_fail_if_exists    => 'F',
-         p_office_id         => l_office_id);
+         cwms_text.store_binary(
+            p_binary_code       => l_code,
+            p_binary            => p_files(i).file_data,
+            p_id                => l_blob_id,
+            p_media_type_or_ext => get_file_name_ext(p_files(i).file_name),
+            p_description       => p_files(i).description,
+            p_fail_if_exists    => 'F',
+            p_office_id         => l_office_id);
 
-      begin
-         insert
-           into at_fcst_file
-         values (l_fcst_inst_rec.fcst_inst_code, l_code, p_files(i).file_name, p_files(i).description);
-      exception
-         when others then
-            if sqlcode = -1 then
-               null; -- alredy existed
-            else
-               raise;
-            end if;
-      end;
-   end loop;
+         begin
+            insert
+              into at_fcst_file
+            values (l_fcst_inst_rec.fcst_inst_code, l_code, p_files(i).file_name, p_files(i).description);
+         exception
+            when others then
+               if sqlcode = -1 then
+                  null; -- alredy existed
+               else
+                  raise;
+               end if;
+         end;
+      end loop;
+   end if;
    ---------------------------------------------------------------
    -- update at_fcst_info table and key_count for this instance --
    ---------------------------------------------------------------
    l_key := l_key_value_pairs.first;
    while l_key is not null loop
-      insert
-         into at_fcst_info
-       values (l_fcst_inst_rec.fcst_inst_code,
-               l_key,
-               l_key_value_pairs(l_key));
+      merge into at_fcst_info t
+      using (select l_fcst_inst_rec.fcst_inst_code as fcst_inst_code, l_key as key from dual) d
+         on (t.fcst_inst_code = d.fcst_inst_code and t.key = d.key)
+      when matched then
+           update set value = l_key_value_pairs(l_key)
+      when not matched then
+           insert values (l_fcst_inst_rec.fcst_inst_code, l_key, l_key_value_pairs(l_key));
       l_key := l_key_value_pairs.next(l_key);
    end loop;
 end store_fcst;
@@ -590,7 +580,7 @@ procedure cat_fcst(
    p_max_issue_date_time    in date     default null,
    p_time_zone              in varchar2 default null,
    p_valid_forecasts_only   in varchar2 default 'F',
-   p_key_mask               in varchar2 default null,
+   p_key_mask               in varchar2 default '*',
    p_value_mask             in varchar2 default '*',
    p_office_id_mask         in varchar2 default null)
 is
@@ -605,11 +595,10 @@ begin
    -------------------
    if p_fcst_spec_id_mask is null then cwms_err.raise('NULL_ARGUMENT', 'P_Fcst_Spec_Id_Mask'); end if;
    if p_location_id_mask  is null then cwms_err.raise('NULL_ARGUMENT', 'P_Location_Id_Mask' ); end if;
+   if p_key_mask          is null then cwms_err.raise('NULL_ARGUMENT', 'P_Key_Mask' );         end if;
+   if p_value_mask        is null then cwms_err.raise('NULL_ARGUMENT', 'P_Value_Mask' );       end if;
    if p_valid_forecasts_only not in ('T', 'F') then
       cwms_err.raise('INVALID_T_F_FLAG', p_valid_forecasts_only);
-   end if;
-   if p_value_mask is null and p_key_mask is not null then
-      cwms_err.raise('ERROR', 'P_Value_Mask must not be null if P_Key_Mask is not null');
    end if;
    -----------------
    -- do the work --
@@ -640,201 +629,102 @@ begin
    --                                     13.2 description varchar2(64)
    -- 14 key_value_pairs  sys_refcursor   14.1 key varchar2(32)
    --                                     14.2 value varchar2(64)
-   if p_key_mask is null then
-      ---------------------------
-      -- no (key, value) pairs --
-      ---------------------------
-      open p_cursor for
-         select
-            o.office_id,
-            fs.fcst_spec_id,
-            bl.base_location_id||substr('-',1,length(pl.sub_location_id))||pl.sub_location_id as location_id,
-            case
-            when l_time_zone is null then
-               tz.time_zone_name
-            else
-               l_time_zone
-            end as time_zone,
-            case
-            when l_time_zone is null then
-               cwms_util.change_timezone(fi.fcst_date_time, 'UTC', tz.time_zone_name)
-            when l_time_zone in ('UTC', 'GMT') then
-               fi.fcst_date_time
-            else
-               cwms_util.change_timezone(fi.fcst_date_time, 'UTC', l_time_zone)
-            end as fcst_date_time,
-            case
-            when l_time_zone is null then
-               cwms_util.change_timezone(fi.issue_date_time, 'UTC', tz.time_zone_name)
-            when l_time_zone in ('UTC', 'GMT') then
-               fi.issue_date_time
-            else
-               cwms_util.change_timezone(fi.issue_date_time, 'UTC', l_time_zone)
-            end as issue_date_time,
-            case
-            when l_time_zone is null then
-               cwms_util.change_timezone(fi.first_date_time, 'UTC', tz.time_zone_name)
-            when l_time_zone in ('UTC', 'GMT') then
-               fi.first_date_time
-            else
-               cwms_util.change_timezone(fi.first_date_time, 'UTC', l_time_zone)
-            end as first_date_time,
-            case
-            when l_time_zone is null then
-               cwms_util.change_timezone(fi.last_date_time, 'UTC', tz.time_zone_name)
-            when l_time_zone in ('UTC', 'GMT') then
-               fi.last_date_time
-            else
-               cwms_util.change_timezone(fi.last_date_time, 'UTC', l_time_zone)
-            end as last_date_time,
-            fi.max_age,
-            case
-               when (sysdate - fi.issue_date_time) * 24 > fi.max_age then 'F'
-               else 'T'
-            end as valid,
-            fi.notes,
-            cursor (select tsid.cwms_ts_id
-                      from at_cwms_ts_id tsid,
-                           at_fcst_time_series fts
-                     where fts.fcst_inst_code = fi.fcst_inst_code
-                       and tsid.ts_code = fts.ts_code
-                     order by 1
-                   ) as time_sereies_ids,
-            cursor (select file_name,
-                           description
-                      from at_fcst_file ff
-                     where ff.fcst_inst_code = fi.fcst_inst_code
-                     order by 1
-                   ) as file_names,
-            l_null_crsr as key_value_pairs
-         from
-            at_fcst_spec fs,
-            at_physical_location pl,
-            at_base_location bl,
-            cwms_office o,
-            at_fcst_inst fi,
-            cwms_time_zone tz
-         where
-            o.office_code = fs.office_code
-            and pl.location_code = fs.location_code
-            and bl.base_location_code = pl.base_location_code
-            and fs.fcst_spec_id like l_fcst_spec_id_mask escape '\'
-            and bl.base_location_id||substr('-',1,length(pl.sub_location_id))||pl.sub_location_id like l_location_id_mask escape '\'
-            and o.office_id like l_office_id_mask escape '\'
-            and tz.time_zone_code = pl.time_zone_code
-            and fi.fcst_spec_code = fs.fcst_spec_code
-            and (p_min_forecast_date_time is null or fi.fcst_date_time >= cwms_util.change_timezone(p_min_forecast_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
-            and (p_max_forecast_date_time is null or fi.fcst_date_time <= cwms_util.change_timezone(p_max_forecast_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
-            and (p_min_issue_date_time is null or fi.issue_date_time >= cwms_util.change_timezone(p_min_issue_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
-            and (p_max_issue_date_time is null or fi.issue_date_time <= cwms_util.change_timezone(p_max_issue_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
-            and (p_valid_forecasts_only = 'F' or (sysdate - fi.issue_date_time) * 24 <= fi.max_age)
-         order by
-            o.office_id,
-            fs.fcst_spec_id,
-            bl.base_location_id||substr('-',1,length(pl.sub_location_id))||pl.sub_location_id,
-            fi.fcst_date_time,
-            fi.issue_date_time;
-   else
-      ------------------------
-      -- (key, value) pairs --
-      ------------------------
-      open p_cursor for
-         select
-            o.office_id,
-            fs.fcst_spec_id,
-            bl.base_location_id||substr('-',1,length(pl.sub_location_id))||pl.sub_location_id as location_id,
-            case
-            when l_time_zone is null then
-               tz.time_zone_name
-            else
-               l_time_zone
-            end as time_zone,
-            case
-            when l_time_zone is null then
-               cwms_util.change_timezone(fi.fcst_date_time, 'UTC', tz.time_zone_name)
-            when l_time_zone in ('UTC', 'GMT') then
-               fi.fcst_date_time
-            else
-               cwms_util.change_timezone(fi.fcst_date_time, 'UTC', l_time_zone)
-            end as fcst_date_time,
-            case
-            when l_time_zone is null then
-               cwms_util.change_timezone(fi.issue_date_time, 'UTC', tz.time_zone_name)
-            when l_time_zone in ('UTC', 'GMT') then
-               fi.issue_date_time
-            else
-               cwms_util.change_timezone(fi.issue_date_time, 'UTC', l_time_zone)
-            end as issue_date_time,
-            case
-            when l_time_zone is null then
-               cwms_util.change_timezone(fi.first_date_time, 'UTC', tz.time_zone_name)
-            when l_time_zone in ('UTC', 'GMT') then
-               fi.first_date_time
-            else
-               cwms_util.change_timezone(fi.first_date_time, 'UTC', l_time_zone)
-            end as first_date_time,
-            case
-            when l_time_zone is null then
-               cwms_util.change_timezone(fi.last_date_time, 'UTC', tz.time_zone_name)
-            when l_time_zone in ('UTC', 'GMT') then
-               fi.last_date_time
-            else
-               cwms_util.change_timezone(fi.last_date_time, 'UTC', l_time_zone)
-            end as last_date_time,
-            fi.max_age,
-            case
-               when (sysdate - fi.issue_date_time) * 24 > fi.max_age then 'F'
-               else 'T'
-            end as valid,
-            fi.notes,
-            cursor (select tsid.cwms_ts_id
-                      from at_cwms_ts_id tsid,
-                           at_fcst_time_series fts
-                     where fts.fcst_inst_code = fi.fcst_inst_code
-                       and tsid.ts_code = fts.ts_code
-                     order by 1
-                   ) as time_sereies_ids,
-            cursor (select file_name,
-                           description
-                      from at_fcst_file ff
-                     where ff.fcst_inst_code = fi.fcst_inst_code
-                     order by 1
-                   ) as file_names,
-            cursor (select key,
-                           value
-                      from at_fcst_info info
-                     where info.fcst_inst_code = fi.fcst_inst_code
-                       and key like cwms_util.normalize_wildcards(p_key_mask) escape '\'
-                       and value like cwms_util.normalize_wildcards(p_value_mask) escape '\'
-                   )as key_value_pairs
-         from
-            at_fcst_spec fs,
-            at_physical_location pl,
-            at_base_location bl,
-            cwms_office o,
-            at_fcst_inst fi,
-            cwms_time_zone tz
-         where
-            o.office_code = fs.office_code
-            and pl.location_code = fs.location_code
-            and bl.base_location_code = pl.base_location_code
-            and fs.fcst_spec_id like l_fcst_spec_id_mask escape '\'
-            and bl.base_location_id||substr('-',1,length(pl.sub_location_id))||pl.sub_location_id like l_location_id_mask escape '\'
-            and o.office_id like l_office_id_mask escape '\'
-            and tz.time_zone_code = pl.time_zone_code
-            and fi.fcst_spec_code = fs.fcst_spec_code
-            and (p_min_forecast_date_time is null or fi.fcst_date_time >= cwms_util.change_timezone(p_min_forecast_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
-            and (p_max_forecast_date_time is null or fi.fcst_date_time <= cwms_util.change_timezone(p_max_forecast_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
-            and (p_min_issue_date_time is null or fi.issue_date_time >= cwms_util.change_timezone(p_min_issue_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
-            and (p_max_issue_date_time is null or fi.issue_date_time <= cwms_util.change_timezone(p_max_issue_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
-            and (p_valid_forecasts_only = 'F' or (sysdate - fi.issue_date_time) * 24 <= fi.max_age)
-         order by
-            o.office_id,
-            fs.fcst_spec_id,
-            bl.base_location_id||substr('-',1,length(pl.sub_location_id))||pl.sub_location_id,
-            fi.fcst_date_time,
-            fi.issue_date_time;
-   end if;
+   open p_cursor for
+      select
+         o.office_id,
+         fs.fcst_spec_id,
+         bl.base_location_id||substr('-',1,length(pl.sub_location_id))||pl.sub_location_id as location_id,
+         case
+         when l_time_zone is null then
+            tz.time_zone_name
+         else
+            l_time_zone
+         end as time_zone,
+         case
+         when l_time_zone is null then
+            cwms_util.change_timezone(fi.fcst_date_time, 'UTC', tz.time_zone_name)
+         when l_time_zone in ('UTC', 'GMT') then
+            fi.fcst_date_time
+         else
+            cwms_util.change_timezone(fi.fcst_date_time, 'UTC', l_time_zone)
+         end as fcst_date_time,
+         case
+         when l_time_zone is null then
+            cwms_util.change_timezone(fi.issue_date_time, 'UTC', tz.time_zone_name)
+         when l_time_zone in ('UTC', 'GMT') then
+            fi.issue_date_time
+         else
+            cwms_util.change_timezone(fi.issue_date_time, 'UTC', l_time_zone)
+         end as issue_date_time,
+         case
+         when l_time_zone is null then
+            cwms_util.change_timezone(fi.first_date_time, 'UTC', tz.time_zone_name)
+         when l_time_zone in ('UTC', 'GMT') then
+            fi.first_date_time
+         else
+            cwms_util.change_timezone(fi.first_date_time, 'UTC', l_time_zone)
+         end as first_date_time,
+         case
+         when l_time_zone is null then
+            cwms_util.change_timezone(fi.last_date_time, 'UTC', tz.time_zone_name)
+         when l_time_zone in ('UTC', 'GMT') then
+            fi.last_date_time
+         else
+            cwms_util.change_timezone(fi.last_date_time, 'UTC', l_time_zone)
+         end as last_date_time,
+         fi.max_age,
+         case
+            when (sysdate - fi.issue_date_time) * 24 > fi.max_age then 'F'
+            else 'T'
+         end as valid,
+         fi.notes,
+         cursor (select tsid.cwms_ts_id
+                   from at_cwms_ts_id tsid,
+                        at_fcst_time_series fts
+                  where fts.fcst_inst_code = fi.fcst_inst_code
+                    and tsid.ts_code = fts.ts_code
+                  order by 1
+                ) as time_sereies_ids,
+         cursor (select file_name,
+                        description
+                   from at_fcst_file ff
+                  where ff.fcst_inst_code = fi.fcst_inst_code
+                  order by 1
+                ) as file_names,
+         cursor (select key,
+                        value
+                   from at_fcst_info info
+                  where info.fcst_inst_code = fi.fcst_inst_code
+                    and key like cwms_util.normalize_wildcards(p_key_mask) escape '\'
+                    and value like cwms_util.normalize_wildcards(p_value_mask) escape '\'
+                ) as key_value_pairs
+      from
+         at_fcst_spec fs,
+         at_physical_location pl,
+         at_base_location bl,
+         cwms_office o,
+         at_fcst_inst fi,
+         cwms_time_zone tz
+      where
+         o.office_code = fs.office_code
+         and pl.location_code = fs.location_code
+         and bl.base_location_code = pl.base_location_code
+         and fs.fcst_spec_id like l_fcst_spec_id_mask escape '\'
+         and bl.base_location_id||substr('-',1,length(pl.sub_location_id))||pl.sub_location_id like l_location_id_mask escape '\'
+         and o.office_id like l_office_id_mask escape '\'
+         and tz.time_zone_code = pl.time_zone_code
+         and fi.fcst_spec_code = fs.fcst_spec_code
+         and (p_min_forecast_date_time is null or fi.fcst_date_time >= cwms_util.change_timezone(p_min_forecast_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
+         and (p_max_forecast_date_time is null or fi.fcst_date_time <= cwms_util.change_timezone(p_max_forecast_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
+         and (p_min_issue_date_time is null or fi.issue_date_time >= cwms_util.change_timezone(p_min_issue_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
+         and (p_max_issue_date_time is null or fi.issue_date_time <= cwms_util.change_timezone(p_max_issue_date_time, nvl(l_time_zone, 'UTC'), 'UTC'))
+         and (p_valid_forecasts_only = 'F' or (sysdate - fi.issue_date_time) * 24 <= fi.max_age)
+      order by
+         o.office_id,
+         fs.fcst_spec_id,
+         bl.base_location_id||substr('-',1,length(pl.sub_location_id))||pl.sub_location_id,
+         fi.fcst_date_time,
+         fi.issue_date_time;
 end cat_fcst;
 --------------------------------------------------------------------------------
 -- function cat_fcst_f
@@ -848,7 +738,7 @@ function cat_fcst_f(
    p_max_issue_date_time    in date     default null,
    p_time_zone              in varchar2 default null,
    p_valid_forecasts_only   in varchar2 default 'F',
-   p_key_mask               in varchar2 default null,
+   p_key_mask               in varchar2 default '*',
    p_value_mask             in varchar2 default '*',
    p_office_id_mask         in varchar2 default null)
    return sys_refcursor
@@ -1001,7 +891,7 @@ begin
          cwms_ts.retrieve_ts(
             p_at_tsv_rc    => l_crsr,
             p_cwms_ts_id   => rec.cwms_ts_id,
-            p_units        => l_time_series_out(l_time_series_out.count).unit,
+            p_units        => cwms_util.get_default_units(rec.parameter_id, p_unit_system),
             p_start_time   => cwms_util.change_timezone(l_fcst_inst_rec.first_date_time, 'UTC', l_time_zone_id),
             p_end_time     => cwms_util.change_timezone(l_fcst_inst_rec.last_date_time, 'UTC', l_time_zone_id),
             p_time_zone    => l_time_zone_id,
@@ -1015,9 +905,7 @@ begin
                l_quality_codes;
          close l_crsr;
          l_time_series_out.extend;
-         l_time_series_out(l_time_series_out.count).tsid := rec.cwms_ts_id;
-         l_time_series_out(l_time_series_out.count).unit := cwms_util.get_default_units(rec.parameter_id, p_unit_system);
-         l_time_series_out(l_time_series_out.count).data := ztsv_array();
+         l_time_series_out(l_time_series_out.count) := ztimeseries_type(rec.cwms_ts_id, cwms_util.get_default_units(rec.parameter_id, p_unit_system), ztsv_array());
          l_time_series_out(l_time_series_out.count).data.extend(l_date_times.count);
          for i in 1..l_time_series_out(l_time_series_out.count).data.count loop
             l_time_series_out(l_time_series_out.count).data(i) := ztsv_type(
@@ -1042,8 +930,7 @@ begin
                  )
       loop
          l_files_out.extend;
-         l_files_out(l_files_out.count).file_name := rec.file_name;
-         l_files_out(l_files_out.count).description := rec.description;
+         l_files_out(l_files_out.count) := fcst_file_t(rec.file_name, rec.description, null);
          select value
            into l_files_out(l_files_out.count).file_data
            from at_blob
@@ -1235,6 +1122,10 @@ begin
    end loop;
    l_fcst_inst_rec.first_date_time := l_min_date_time;
    l_fcst_inst_rec.last_date_time := l_max_date_time;
+   select count(*)
+     into l_fcst_inst_rec.time_series_count
+     from at_fcst_time_series
+    where fcst_inst_code = l_fcst_inst_rec.fcst_inst_code;
    ---------------------------
    -- update the file count --
    ---------------------------
@@ -1248,6 +1139,13 @@ begin
       -- delete empty instance --
       ---------------------------
       delete from at_fcst_inst where fcst_inst_code = l_fcst_inst_rec.fcst_inst_code;
+   else
+      -----------------
+      -- update info --
+      -----------------
+      update at_fcst_inst
+         set row = l_fcst_inst_rec
+       where fcst_inst_code = l_fcst_inst_rec.fcst_inst_code;
    end if;
 end delete_fcst;
 

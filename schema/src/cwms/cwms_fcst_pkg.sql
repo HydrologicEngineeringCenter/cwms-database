@@ -412,7 +412,7 @@ procedure store_fcst(
  *         </tr>
  *       </table>
  *     </td>
- *     <td class="descr">The matched (key, value) pairs for the forecast (null if p_key_mask is null)</td>
+ *     <td class="descr">The matched (key, value) pairs for the forecast</td>
  *   </tr>
  * </table>
  * @param p_fcst_spec_id_mask      The wildcard pattern to retrieve forecast specifications identifieres for. If unspecified all forecast_specification identifiers will be matched.
@@ -424,9 +424,9 @@ procedure store_fcst(
  * @param p_time_zone              The time zone of the min and max date/times and date/times returned in the cursor.
  *                                 If unspecified or NULL, any specified date/times will be interpreted as 'UTC' and returned date/times will be in the location's local time zone.
  * @param p_valid_forecasts_only   A flag ('T'/'F') specifying whether to catalog only valid or all forecasts. Valid forecasts have issue date/times since the current date/time minus max_age hours.
- * @param p_key_mask               The wildcard pattern that the key field in returned records must match. If unspecified, no matching is performed and no (key, value) records are returned, otherwise matching (key, value) records will be returned.
- * @param p_value_mask             The wildcard pattern that the value field in returned records must match. If unspecified (and p_key_mask is non-NULL) all value fields will be matched.
- * @param p_office_id_mask         The wildcard pattern to retrieve offices for. If unspecified or NULL the session user's current office will be used.
+ * @param p_key_mask               The wildcard pattern that the key field in returned records must match. If unspecified, all key fields will be matched
+ * @param p_value_mask             The wildcard pattern that the value field in returned records must match. If unspecified, all value fields will be matched.
+ * @param p_office_id_mask         The wildcard pattern to retrieve offices for. If unspecified or NULL, the session user's current office will be used.
  */
 procedure cat_fcst(
    p_cursor                 out sys_refcursor,
@@ -438,7 +438,7 @@ procedure cat_fcst(
    p_max_issue_date_time    in date     default null,
    p_time_zone              in varchar2 default null,
    p_valid_forecasts_only   in varchar2 default 'F',
-   p_key_mask               in varchar2 default null,
+   p_key_mask               in varchar2 default '*',
    p_value_mask             in varchar2 default '*',
    p_office_id_mask         in varchar2 default null);
 /**
@@ -469,8 +469,8 @@ procedure cat_fcst(
  * @param p_max_issue_date_time    The latest issue date/time to match. If unspecified or NULL, no maximum will be used.
  * @param p_time_zone              The time zone of the min and max date/times and date/times returned in the cursor.
  *                                 If unspecified or NULL, any specified date/times will be interpreted as 'UTC' and returned date/times will be in the location's local time zone.
- * @param p_key_mask               The wildcard pattern that the key field in returned records must match. If unspecified, no matching is performed and no (key, value) records are returned, otherwise matching (key, value) records will be returned.
- * @param p_value_mask             The wildcard pattern that the value field in returned records must match. If unspecified (and p_key_mask is non-NULL) all value fields will be matched.
+ * @param p_key_mask               The wildcard pattern that the key field in returned records must match. If unspecified, all key fields will be matched.
+ * @param p_value_mask             The wildcard pattern that the value field in returned records must match. If unspecified, all value fields will be matched.
  * @param p_valid_forecasts_only   A flag ('T'/'F') specifying whether to catalog only valid or all forecasts. Valid forecasts have issue date/times since the current date/time minus max_age hours.
  * @param p_office_id_mask         The wildcard pattern to retrieve offices for. If unspecified or NULL the session user's current office will be used.
  *
@@ -624,7 +624,7 @@ procedure cat_fcst(
  *         </tr>
  *       </table>
  *     </td>
- *     <td class="descr">The matched (key, value) pairs for the forecast (null if p_key_mask is null)</td>
+ *     <td class="descr">The matched (key, value) pairs for the forecast</td>
  *   </tr>
  * </table>
  */
@@ -637,7 +637,7 @@ function cat_fcst_f(
    p_max_issue_date_time    in date     default null,
    p_time_zone              in varchar2 default null,
    p_valid_forecasts_only   in varchar2 default 'F',
-   p_key_mask               in varchar2 default null,
+   p_key_mask               in varchar2 default '*',
    p_value_mask             in varchar2 default '*',
    p_office_id_mask         in varchar2 default null)
    return sys_refcursor;

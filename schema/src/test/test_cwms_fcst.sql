@@ -6,10 +6,10 @@ create or replace package test_cwms_fcst as
 --%afterall(teardown)
 --%rollback(manual)
 
---%test(Test store, catalog, and delete forecast_specification)
-procedure simple_store_cat_delete_spec;
---%test(Test store, catalog, and delete forecast_instance)
-procedure simple_store_cat_delete_inst;
+--%test(Test store, catalog, retrieve, and delete operations for new style forecast specifications)
+procedure test_fcst_spec_ops;
+--%test(Test store, catalog, retrieve, and delete operations for new style forecasts)
+procedure test_fcst_inst_ops;
 
 procedure setup;
 procedure teardown;
@@ -24,11 +24,11 @@ c_issue_date_count constant binary_integer := 5;
 c_value_count      constant binary_integer := 48;
 c_base_date_time   constant date := trunc(sysdate - c_issue_date_count/24*6, 'dd');
 c_xml_content      constant varchar2(32767) := '<forecast_info>
-  <forecast-spec key="false">:fcst_spec</forecast-spec>
+  <forecast-spec>:fcst_spec</forecast-spec>
   <forecast-time>:fcst_time</forecast-time>
   <issue-time>:issue_time</issue-time>
   <user-id key="true">:user_id</user-id>
-  <host-id>:host_id</host-id>
+  <host-id key="false">:host_id</host-id>
   <foo><bar key="true">baz</bar></foo>
 </forecast_info>
 ';
@@ -88,9 +88,9 @@ begin
    return l_issue_dates;
 end make_issue_dates;
 ---------------------------------------------------------------------------------
--- procedure simple_store_cat_delete_spec
+-- procedure test_fcst_spec_ops
 ---------------------------------------------------------------------------------
-procedure simple_store_cat_delete_spec
+procedure test_fcst_spec_ops
 is
    l_count        binary_integer;
    l_crsr         sys_refcursor;
@@ -196,11 +196,11 @@ begin
    end loop;
    close l_crsr;
    ut.expect(l_count).to_equal(0);
-end simple_store_cat_delete_spec;
+end test_fcst_spec_ops;
 ---------------------------------------------------------------------------------
--- procedure simple_store_cat_delete_inst
+-- procedure test_fcst_inst_ops
 ---------------------------------------------------------------------------------
-procedure simple_store_cat_delete_inst
+procedure test_fcst_inst_ops
 is
    l_count            binary_integer;
    l_crsr             sys_refcursor;
@@ -310,7 +310,6 @@ begin
       p_files              => l_file_data,
       p_fail_if_exists     => 'T',
       p_office_id          => c_office_id);
-   commit;   
    ---------------------
    -- check the views --
    ---------------------
@@ -345,12 +344,11 @@ begin
       ut.expect(rec.value).to_equal(user);
    end loop;
    ut.expect(l_count).to_equal(1);
-   -----------------------
-   -- check the catalog --
-   -----------------------
+   ----------------------------------------------
+   -- check the catalog with default time zone --
+   ----------------------------------------------
    cwms_fcst.cat_fcst(
       p_cursor         => l_crsr,
-      p_key_mask       => '*',
       p_office_id_mask => c_office_id);
    l_count := 0;
    loop
@@ -369,7 +367,7 @@ begin
             l_ts_crsr,
             l_files_crsr,
             l_keys_crsr;
-      exit when l_crsr%notfound;      
+      exit when l_crsr%notfound;
       ut.expect(l_office_id).to_equal(c_office_id);
       ut.expect(l_fcst_spec_id).to_equal(c_fcst_spec_id);
       ut.expect(l_location_id).to_equal(c_location_id);
@@ -381,13 +379,194 @@ begin
       ut.expect(l_max_age).to_equal(24);
       ut.expect(l_valid).to_equal(case when (sysdate - l_issue_date_time) * 24 > l_max_age then 'F' else 'T' end);
       ut.expect(l_notes).to_be_not_null;
-      ut.expect(l_ts_crsr).to_be_not_null;
-      ut.expect(l_files_crsr).to_be_not_null;
-      ut.expect(l_keys_crsr).to_be_null;
+      fetch l_ts_crsr bulk collect into l_time_series_ids;
+      ut.expect(l_time_series_ids.count).to_equal(l_ts_data.count);
+      fetch l_files_crsr bulk collect into l_file_names, l_descriptions;
+      ut.expect(l_file_names.count).to_equal(l_file_data.count);
+      fetch l_keys_crsr bulk collect into l_keys, l_values;
+      ut.expect(l_keys.count).to_equal(1);
+      ut.expect(l_keys(1)).to_equal('user-id');
+      ut.expect(l_values(1)).to_equal(user);
       l_count := l_count + 1;
    end loop;
    close l_crsr;
-end simple_store_cat_delete_inst;
+   ------------------------------------------------
+   -- check the catalog with specified time zone --
+   ------------------------------------------------
+   cwms_fcst.cat_fcst(
+      p_cursor         => l_crsr,
+      p_time_zone      => 'UTC',
+      p_office_id_mask => c_office_id);
+   l_count := 0;
+   loop
+      fetch l_crsr
+       into l_office_id,
+            l_fcst_spec_id,
+            l_location_id,
+            l_time_zone_id,
+            l_fcst_date_time,
+            l_issue_date_time2,
+            l_first_date_time,
+            l_last_date_time,
+            l_max_age,
+            l_valid,
+            l_notes,
+            l_ts_crsr,
+            l_files_crsr,
+            l_keys_crsr;
+      exit when l_crsr%notfound;
+      ut.expect(l_office_id).to_equal(c_office_id);
+      ut.expect(l_fcst_spec_id).to_equal(c_fcst_spec_id);
+      ut.expect(l_location_id).to_equal(c_location_id);
+      ut.expect(l_time_zone_id).to_equal('UTC');
+      ut.expect(l_fcst_date_time).to_equal(c_base_date_time);
+      ut.expect(l_issue_date_time2).to_equal(l_issue_date_time);
+      ut.expect(l_first_date_time).to_equal(l_precip_data(1).date_time);
+      ut.expect(l_last_date_time).to_equal(l_precip_data(l_precip_data.count).date_time);
+      ut.expect(l_max_age).to_equal(24);
+      ut.expect(l_valid).to_equal(case when (sysdate - l_issue_date_time) * 24 > l_max_age then 'F' else 'T' end);
+      ut.expect(l_notes).to_be_not_null;
+      fetch l_ts_crsr bulk collect into l_time_series_ids;
+      ut.expect(l_time_series_ids.count).to_equal(l_ts_data.count);
+      fetch l_files_crsr bulk collect into l_file_names, l_descriptions;
+      ut.expect(l_file_names.count).to_equal(l_file_data.count);
+      fetch l_keys_crsr bulk collect into l_keys, l_values;
+      ut.expect(l_keys.count).to_equal(1);
+      ut.expect(l_keys(1)).to_equal('user-id');
+      ut.expect(l_values(1)).to_equal(user);
+      l_count := l_count + 1;
+   end loop;
+   close l_crsr;
+   -----------------------------------------------------------------------
+   -- replace a file in the forecast (will also add a (key, value) pair --
+   -----------------------------------------------------------------------
+   l_xml_content := replace(l_xml_content, '"false"', '"true"');
+   cwms_fcst.store_fcst(
+      p_fcst_spec_id       => c_fcst_spec_id,
+      p_location_id        => c_location_id,
+      p_forecast_date_time => c_base_date_time,
+      p_issue_date_time    => l_issue_date_time,
+      p_time_zone          => 'UTC',
+      p_files              => cwms_t_fcst_file_tab(
+                                 cwms_t_fcst_file(
+                                    'forecast_info.xml',
+                                    'forecast info in xml format',
+                                    utl_raw.cast_to_raw(l_xml_content))),
+      p_fail_if_exists     => 'F',
+      p_office_id          => c_office_id);
+   -------------------------------------------------------
+   -- delete a time series and a file from the forecast --
+   -------------------------------------------------------
+   cwms_fcst.delete_fcst(
+      p_fcst_spec_id       => c_fcst_spec_id,
+      p_location_id        => c_location_id,
+      p_forecast_date_time => c_base_date_time,
+      p_issue_date_time    => l_issue_date_time,
+      p_time_zone          => 'UTC',
+      p_ts_id_mask         => '*.Precip.*',
+      p_file_name_mask     => 'forecast_info.txt',
+      p_office_id          => c_office_id);
+   ---------------------
+   -- check the views --
+   ---------------------
+   l_count := 0;
+   for rec in (select * from cwms_v_fcst_inst) loop
+      l_count := l_count + 1;
+      ut.expect(rec.office_id).to_equal(c_office_id);
+      ut.expect(rec.fcst_spec_id).to_equal(c_fcst_spec_id);
+      ut.expect(rec.location_id).to_equal(c_location_id);
+      ut.expect(rec.fcst_date_time_utc).to_equal(c_base_date_time);
+      ut.expect(rec.issue_date_time_utc).to_equal(l_issue_date_time);
+      ut.expect(rec.first_date_time_utc).to_equal(l_precip_data(1).date_time);
+      ut.expect(rec.last_date_time_utc).to_equal(l_precip_data(l_precip_data.count).date_time);
+      ut.expect(rec.valid_hours).to_equal(24);
+      ut.expect(rec.valid).to_equal(case when (sysdate - rec.issue_date_time_utc) * 24 > rec.valid_hours then 'F' else 'T' end);
+      ut.expect(rec.time_series_count).to_equal(l_ts_data.count-1);
+      ut.expect(rec.file_count).to_equal(l_file_data.count-1);
+      ut.expect(rec.key_count).to_equal(2);
+      ut.expect(rec.notes).to_equal('Testing');
+   end loop;
+   ut.expect(l_count).to_equal(1);
+   l_count := 0;
+   for rec in (select * from cwms_v_fcst_info) loop
+      l_count := l_count + 1;
+      ut.expect(rec.office_id).to_equal(c_office_id);
+      ut.expect(rec.fcst_spec_id).to_equal(c_fcst_spec_id);
+      ut.expect(rec.location_id).to_equal(c_location_id);
+      ut.expect(rec.fcst_date_time_utc).to_equal(c_base_date_time);
+      ut.expect(rec.issue_date_time_utc).to_equal(l_issue_date_time);
+      ut.expect(rec.valid).to_equal(case when (sysdate - rec.issue_date_time_utc) * 24 > 24 then 'F' else 'T' end);
+      ut.expect(rec.key in ('user-id', 'host-id')).to_be_true;
+      ut.expect(rec.value).to_equal(case when rec.key = 'user-id' then user else cwms_util.get_db_host end);
+   end loop;
+   ut.expect(l_count).to_equal(2);
+   ---------------------------
+   -- retrieve the forecast --
+   ---------------------------
+   cwms_fcst.retrieve_fcst(
+      p_time_series_out    => l_ts_data,
+      p_files_out          => l_file_data,
+      p_fcst_spec_id       => c_fcst_spec_id,
+      p_location_id        => c_location_id,
+      p_forecast_date_time => c_base_date_time,
+      p_issue_date_time    => l_issue_date_time,
+      p_time_zone          => 'UTC',
+      p_unit_system        => 'EN',
+      p_office_id          => c_office_id);
+   ------------------------------------
+   -- check the returned time series --
+   ------------------------------------
+   ut.expect(l_ts_data.count).to_equal(2);
+   for i in 1..l_ts_data.count loop
+      ut.expect(l_ts_data(i).data.count).to_equal(c_value_count);
+      case l_ts_data(i).tsid
+      when c_location_id||'.Stage.Inst.1Hour.0.Fcst' then
+         ut.expect(l_ts_data(i).unit).to_equal('ft');
+         for j in 1..c_value_count loop
+            ut.expect(l_ts_data(i).data(j).date_time).to_equal(l_stage_data(j).date_time);
+            ut.expect(round(to_number(l_ts_data(i).data(j).value), 5)).to_equal(round(to_number(l_stage_data(j).value), 5));
+            ut.expect(l_ts_data(i).data(j).quality_code).to_equal(l_stage_data(j).quality_code);
+         end loop;
+      when c_location_id||'.Flow.Inst.1Hour.0.Fcst' then
+         ut.expect(l_ts_data(i).unit).to_equal('cfs');
+         for j in 1..c_value_count loop
+            ut.expect(l_ts_data(i).data(j).date_time).to_equal(l_flow_data(j).date_time);
+            ut.expect(round(to_number(l_ts_data(i).data(j).value), 5)).to_equal(round(to_number(l_flow_data(j).value), 5));
+            ut.expect(l_ts_data(i).data(j).quality_code).to_equal(l_flow_data(j).quality_code);
+         end loop;
+      else
+         cwms_err.raise('ERROR', 'Unexpected time series ID: '||l_ts_data(i).tsid);
+      end case;
+   end loop;
+   ------------------------------
+   -- check the returned files --
+   ------------------------------
+   ut.expect(l_file_data.count).to_equal(1);
+   ut.expect(l_file_data(1).file_name).to_equal('forecast_info.xml');
+   ut.expect(l_file_data(1).description).to_equal('forecast info in xml format');
+   ut.expect(utl_raw.cast_to_varchar2(l_file_data(1).file_data)).to_equal(l_xml_content);
+   --------------------------------------
+   -- delete the forecast via the spec --
+   --------------------------------------
+   cwms_fcst.delete_fcst_spec(
+      p_fcst_spec_id  => c_fcst_spec_id,
+      p_location_id   => c_location_id,
+      p_delete_action => cwms_util.delete_data,
+      p_office_id     => c_office_id);
+   ---------------------
+   -- check the views --
+   ---------------------
+   l_count := 0;
+   for rec in (select * from cwms_v_fcst_inst) loop
+      l_count := l_count + 1;
+   end loop;
+   ut.expect(l_count).to_equal(0);
+   l_count := 0;
+   for rec in (select * from cwms_v_fcst_info) loop
+      l_count := l_count + 1;
+   end loop;
+   ut.expect(l_count).to_equal(0);
+end test_fcst_inst_ops;
 end test_cwms_fcst;
 /
 show errors

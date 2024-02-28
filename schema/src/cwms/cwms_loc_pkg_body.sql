@@ -3044,6 +3044,12 @@ AS
                      or source_location_code in (select * from table (l_location_codes)))
                );
          delete
+           from at_forecast_ts
+          where ts_code in (select ts_code
+                              from at_cwms_ts_spec
+                             where location_code in (select * from table (l_location_codes))
+                           );
+         delete
            from at_forecast_text
           where forecast_spec_code in
                 (select forecast_spec_code
