@@ -7,17 +7,17 @@ CREATE OR REPLACE PACKAGE cwms_util
  * @since CWMS 2.0
  */
 AS
-   /*
-    * Session level cache global variables
-    */
-   g_timezone_alias_cache        cwms_cache.str_str_cache_t;
+   g_timezone_cache              cwms_cache.str_str_cache_t;
    g_time_zone_name_cache        cwms_cache.str_str_cache_t;
    g_time_zone_code_cache        cwms_cache.str_str_cache_t;
+   g_parameter_id_cache          cwms_cache.str_str_cache_t;
+   g_base_parameter_code_cache   cwms_cache.str_str_cache_t;
+   g_unit_conversion_info_cache  cwms_cache.str_str_cache_t;
    g_time_zone_dst_offset_cache  cwms_cache.str_str_cache_t;
    g_time_zone_dst_overlap_cache cwms_cache.str_str_cache_t;
    g_time_zone_dst_skip_cache    cwms_cache.str_str_cache_t;
-   g_parameter_id_cache          cwms_cache.str_str_cache_t;
-   g_base_parameter_code_cache   cwms_cache.str_str_cache_t;
+   g_office_id_cache             cwms_cache.str_str_cache_t;
+   g_office_code_cache           cwms_cache.str_str_cache_t;
    /*
     * Not documented. Package-specific and session-specific logging properties
     */
@@ -32,6 +32,10 @@ AS
    procedure set_package_log_property_text(
       p_text in varchar2 default null);
 
+   /**
+    * Clears all session-level caches associated with this package
+    */
+   procedure clear_all_caches;
    /**
     * Beginning of Unix epoch (01Jan1970 00:00:00 UTC) as a <code><big>DATE</big></code>.
     */

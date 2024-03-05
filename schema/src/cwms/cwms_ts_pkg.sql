@@ -10,14 +10,48 @@ CREATE OR REPLACE PACKAGE cwms_ts
  * @since CWMS 2.0
  */
 AS
-   g_interval_cache cwms_cache.str_str_cache_t;
-
+   g_ts_code_cache     cwms_cache.str_str_cache_t;
+   g_ts_id_cache       cwms_cache.str_str_cache_t;
+   g_ts_id_alias_cache cwms_cache.str_str_cache_t;
+   g_is_lrts_cache     cwms_cache.str_str_cache_t;
+   g_interval_cache    cwms_cache.str_str_cache_t;
    /*
     * Not documented. Package-specific and session-specific logging properties
     */
    v_package_log_prop_text varchar2(30);
    function package_log_property_text return varchar2;
 
+   /**
+    * Constant specifing to always use the old LRTS ID format in routines and views.
+    * New LRTS IDs on input will be invalid and no new LRTS IDs will be output.
+    * Input flag to store time series as LRTS is required in routintes that create time series.
+    */
+   g_use_old_lrts_ids_always       constant integer := 0;
+   /**
+    * Constant specifing to allow use of the new LRTS ID format on input in routines.
+    * Old and new LRTS IDs can both be used on input.
+    * Input flag to store time series as LRTS is required only for old LRTS IDs in routintes that create time series.
+    * May be ORed with g_use_new_lrts_ids_on_output.
+    */
+   g_allow_new_lrts_ids_on_input   constant integer := 1;
+   /**
+    * Constant specifing to require use of the new LRTS ID format on input in routines.
+    * Old LRTS IDs will be interpreted strictly as PRTS.
+    * Input flag to store time series as LRTS is ignored in routintes that create time series.
+    * May be ORed with g_use_new_lrts_ids_on_output.
+    */
+   g_require_new_lrts_ids_on_input constant integer := 2;
+   /**
+    * Constant specifing to use the new LRTS ID format on output in routines and views.
+    * LRTS IDs output from routines and views will be in new LRTS format.
+    * May be ORed with g_allow_new_lrts_ids_on_input or g_require_new_lrts_ids_on_input.
+    */
+   g_use_new_lrts_ids_on_output     constant integer := 4;
+   g_not_use_new_lrts_ids_on_output constant integer := 3; -- bit mask to turn off
+   /**
+    * Clears all session-level caches associated with this package
+    */
+   procedure clear_all_caches;
    /**
     * Sets text value of package logging property
     *
@@ -376,6 +410,38 @@ AS
       p_interval_forward  in varchar2 default null,
       p_interval_backward in varchar2 default null)
       return date;
+
+   /**
+    * Retrieve the beginning time of the next interval a specified time, interval, and offset
+    *
+    * @param p_datetime    The UTC time to retrieve the start of the next interval for
+    * @param p_ts_offset   The data offset into the UTC interval, in minutes
+    * @param p_ts_interval The data interval length in minutes
+    *
+    * @return The beginning time of the next interval
+    * @deprecated Use top_of_interval_plus_offset_utc
+    * @see cwms_ts.top_of_interval_plus_offset_utc
+    */
+   FUNCTION get_time_on_after_interval (p_datetime      IN DATE,
+                                        p_ts_offset     IN NUMBER,
+                                        p_ts_interval   IN NUMBER)
+      RETURN DATE;
+
+   /**
+    * Retrieve the beginning time of the current interval a specified time, interval, and offset
+    *
+    * @param p_datetime    The UTC time to retrieve the start of the next interval for
+    * @param p_ts_offset   The data offset into the UTC interval, in minutes
+    * @param p_ts_interval The data interval length in minutes
+    *
+    * @return The beginning time of the current interval
+    * @deprecated Use top_of_interval_plus_offset_utc
+    * @see cwms_ts.top_of_interval_plus_offset_utc
+    */
+   FUNCTION get_time_on_before_interval (p_datetime      IN DATE,
+                                         p_ts_offset     IN NUMBER,
+                                         p_ts_interval   IN NUMBER)
+      RETURN DATE;
 
    /**
     * Retrieves the unique numeric code identifying a specified parameter
@@ -1003,6 +1069,177 @@ AS
       p_interval        in number,
       p_local_time_zone in varchar2)
       return date_table_type deterministic;
+
+   /**
+    * Returns whether a time series id references an LRTS
+    *
+    * @param p_cwms_ts_id The time series identifier to test
+    * @param p_office_id  The office that owns the time series identifier to test. If not specified or NULL, the session user's default office is used.
+    * @return 'T' if the time series is an LRTS, otherwise 'F'
+    */
+   function is_lrts(
+      p_cwms_ts_id in varchar,
+      p_office_id  in varchar2 default null)
+      return varchar2;
+   /**
+    * Returns whether a time series code references an LRTS
+    *
+    * @param p_ts_code The time series code to test
+    * @return 'T' if the time series is an LRTS, otherwise 'F'
+    */
+   function is_lrts(
+      p_ts_code in number)
+      return varchar2;
+   /**
+    * Returns whether a time series or interval identifier is in the new LRTS ID format
+    *
+    * @param p_id The time series or interval identifier
+    * @return 'T' if the identifier is in the new LRTS format, otherwise 'F'
+    */
+   function is_new_lrts_format(
+      p_id in varchar2)
+      return varchar;
+   /**
+    * Normalizes an interval id to the old LRTS format base on specified format
+    *
+    * @param p_interval_id   The interval identiier to normalize
+    * @param p_revert_format A flag specifying whether to revert the interval from the new (1DayLocal) to old (~1Day) format
+    * @return The normalized interval identifier
+    */
+   function format_lrts_interval_input(
+      p_interval_id   in varchar2,
+      p_revert_format in boolean)
+      return varchar2;
+   /**
+    * Normalizes an interval id to the old LRTS format base on session setting
+    *
+    * @param p_interval_id   The interval identiier to normalize
+    * @return The normalized interval identifier
+    */
+   function format_lrts_interval_input(
+      p_interval_id in varchar2)
+      return varchar2;
+   /**
+    * Normalizes an time series id to the old LRTS format base on specified format
+    *
+    * @param p_cwms_ts_id    The time series identiier to normalize
+    * @param p_revert_format A flag specifying whether to revert the interval from the new (1DayLocal) to old (~1Day) format
+    * @return The normalized interval identifier
+    */
+   function format_lrts_input(
+      p_cwms_ts_id    in varchar2,
+      p_revert_format in boolean)
+      return varchar2;
+   /**
+    * Normalizes an time series id to the old LRTS format base on session setting
+    *
+    * @param p_cwms_ts_id    The time series identiier to normalize
+    * @return The normalized interval identifier
+    */
+   function format_lrts_input(
+      p_cwms_ts_id in varchar2)
+      return varchar2;
+   /**
+    * Returns an interval formatted in either the old (~1Day) or new (1DayLocal) format based on specified format
+    *
+    * @param p_interval_id    The LRTS interval to format
+    * @param p_use_new_format A flag specifying whether to use the new LRTS format
+    * @return The formatted LRTS interval
+    */
+   function format_lrts_interval_output(
+      p_interval_id    in varchar2,
+      p_use_new_format in boolean)
+      return varchar2;
+   /**
+    * Returns an interval formatted in either the old (~1Day) or new (1DayLocal) format based on session setting
+    *
+    * @param p_interval_id  The LRTS interval to format
+    * @return The formatted LRTS interval
+    */
+   function format_lrts_interval_output(
+      p_interval_id in varchar2)
+      return varchar2;
+   /**
+    * Returns an LRTS ID formatted in either the old (~1Day) or new (1DayLocal) format based on specified format
+    *
+    * @param p_tsid           The LRTS ID to format
+    * @param p_use_new_format A flag specifying whether to use the new LRTS format
+    * @return The formatted LRTS ID
+    */
+   function format_lrts_output(
+      p_ts_id          in varchar2,
+      p_use_new_format in boolean)
+      return varchar2;
+   /**
+    * Returns an LRTS ID formatted in either the old (~1Day) or new (1DayLocal) format based on session setting
+    *
+    * @param p_tsid      The time series ID to format. If the time series is not an LRTS the ID is return unchanged.
+    * @param p_office_id The office that owns the time series ID to format.
+    * @return The formatted LRTS ID
+    */
+   function format_lrts_output(
+      p_ts_id     in varchar2,
+      p_office_id in varchar2)
+      return varchar2;
+   /**
+    * Sets a session setting specifying whether to use the new LRTS ID format in output from routines and views.
+    *
+    * @param p_use_new_format A flag ('T'/'F') specifying whether to use the new format
+    */
+   procedure set_use_new_lrts_format_on_output(
+      p_use_new_format in varchar2);
+   /**
+    * Returns the session setting of whether to use the new LRTS ID format in output from routines and views.
+    *
+    * @return The session setting of whether to use the new LRTS ID format as a flag ('T'/'F').
+    */
+   function use_new_lrts_format_on_output
+      return varchar2;
+   /**
+    * Sets a session setting specifying whether to allow (not require) the new LRTS ID format in input parameters to routines.
+    *
+    * @param p_allow_new_format A flag ('T'/'F') specifying whether to allow the new format.
+    *                           <ul>
+    *                           <li>If 'T', LRTS ID input parameters may be in old or new format (implicitly sets requiring the new format to 'F').
+    *                               Routines that take a flag specifying whether to create an LRTS (vs PRTS) will continue to require the flag only
+    *                               if the old format is used. New format IDs will created as LRTS regardless of the flag value.
+    *                           <li>If 'F', new LRTS ID input parameters will not be recognized (implicitly sets requiring the new format to 'F').</li>
+    *                           </ul>
+    */
+   procedure set_allow_new_lrts_format_on_input(
+      p_allow_new_format in varchar2);
+   /**
+    * Returns the session setting of whether to allow (not require) the new LRTS ID format in input parameters to routines.
+    *
+    * @return The session setting of whether to allow the new format as a flag ('T'/'F').
+    */
+   function allow_new_lrts_format_on_input
+      return varchar2;
+   /**
+    * Sets a session setting specifying whether to require the new LRTS ID format in input parameters to routines
+    *
+    * @param p_require_new_format A flag ('T'/'F') specifying whether to require the new format.
+    *                             <ul>
+    *                             <li>If 'T', LRTS ID input parameters must be in the new format (old format IDs will be interpreted as PRTS).
+    *                                 Routines that take a flag specifying whether to create an LRTS (vs PRTS) ignore the flag and create the
+    *                                 time series based on the ID.
+    *                             <li>If 'F', new LRTS ID input parameters will not be recognized (implicitly sets allowing the new format to 'F').</li>
+    *                             </ul>
+    */
+   procedure set_require_new_lrts_format_on_input(
+      p_require_new_format in varchar2);
+   /**
+    * Returns the session setting of whether to require the new LRTS ID format in input parameters to routines.
+    *
+    * @return The session setting of whether to require the new format as a flag ('T'/'F').
+    */
+   function require_new_lrts_format_on_input
+      return varchar2;
+   /*
+    * Undocumented
+    */
+    procedure new_lrts_id_required_error(
+      p_cwms_ts_id in varchar2);
 
    /**
     * Retrieves time series data for a specified time series and time window, including LRTS time zone

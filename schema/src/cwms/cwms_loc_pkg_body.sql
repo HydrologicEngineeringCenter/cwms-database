@@ -1,5 +1,11 @@
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
+   procedure clear_all_caches
+   is
+   begin
+      cwms_cache.clear(g_location_code_cache);
+      cwms_cache.clear(g_location_id_cache);
+   end;
    --
    -- num_group_assigned_to_shef return the number of groups -
    -- currently assigned in the at_shef_decode table.
@@ -63,13 +69,17 @@ AS
    BEGIN
       IF p_location_code IS NOT NULL
       THEN
-         SELECT      bl.base_location_id
-                  || SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
-                  || pl.sub_location_id
-           INTO   l_location_id
-           FROM   at_physical_location pl, at_base_location bl
-          WHERE   pl.location_code = p_location_code
-                  AND bl.base_location_code = pl.base_location_code;
+         l_location_id := cwms_cache.get(g_location_id_cache, p_location_code);
+         if l_location_id is null then
+            SELECT      bl.base_location_id
+                     || SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
+                     || pl.sub_location_id
+              INTO   l_location_id
+              FROM   at_physical_location pl, at_base_location bl
+             WHERE   pl.location_code = p_location_code
+                     AND bl.base_location_code = pl.base_location_code;
+            cwms_cache.put(g_location_id_cache, p_location_code, l_location_id);
+         end if;
       END IF;
 
       RETURN l_location_id;
@@ -2695,6 +2705,7 @@ AS
       l_location_ids         str_tab_t;
       l_location_id           varchar2(57);
       l_location_id_cache_val varchar2(256);
+      l_clob_codes            number_tab_t;
    --
    BEGIN
       -------------------
@@ -2776,7 +2787,6 @@ AS
               FROM   at_cwms_ts_id
              WHERE   location_code = l_location_code;
       END IF;
-
       LOOP
          FETCH l_cursor
          INTO l_cwms_ts_id;
@@ -3068,6 +3078,28 @@ AS
          ---------------
          -- forecasts --
          ---------------
+         select clob_code
+           bulk collect
+           into l_clob_codes
+           from at_clob
+          where clob_code in
+               (select clob_code
+                 from at_forecast_text
+                where forecast_spec_code in
+                (select forecast_spec_code
+                   from at_forecast_spec
+                  where target_location_code in (select * from table (l_location_codes))
+                     or source_location_code in (select * from table (l_location_codes)))
+               );
+         delete
+           from at_forecast_text
+          where forecast_spec_code in
+                (select forecast_spec_code
+                   from at_forecast_spec
+                  where target_location_code in (select * from table (l_location_codes))
+                     or source_location_code in (select * from table (l_location_codes))
+                );
+         delete from at_clob where clob_code in (select * from table (l_clob_codes));
          delete
            from at_forecast_spec
           where target_location_code in (select * from table (l_location_codes))
@@ -3167,14 +3199,14 @@ AS
                                where apl.base_location_code = l_base_location_code
                              )
                   loop
-                     delete from at_physical_location where location_code = rec.location_code;
+                     cwms_cache.remove_by_value(g_location_id_cache, get_location_id(rec.location_code));
                      cwms_cache.remove_by_value(g_location_code_cache, rec.location_code);
+                     delete from at_physical_location where location_code = rec.location_code;
                   end loop;
 
                   delete
                     from at_base_location abl
                    where abl.base_location_code = l_base_location_code;
-                  cwms_cache.remove_by_value(g_location_code_cache, l_base_location_code);
                else -- Deleting a single Sub Location --------------------------------
                   delete
                     from at_physical_location apl

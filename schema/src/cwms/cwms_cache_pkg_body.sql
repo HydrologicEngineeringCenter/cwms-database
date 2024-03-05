@@ -101,9 +101,9 @@ begin
    end if;
    p_cache.get_count := p_cache.get_count + 1;
    if p_key is null then
-      if p_cache.dbms_output then
+      if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
          dbms_output.put_line('Cache '||p_cache.name||': miss (<NULL>, ???)');
-         if p_cache.output_call_stack then
+         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
             output_call_stack;
          end if;
       end if;
@@ -116,18 +116,18 @@ begin
       when no_data_found then null;
    end;
    if l_payload.value is not null then
-      if p_cache.dbms_output then
+      if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
          dbms_output.put_line('Cache '||p_cache.name||': hit ('||p_key||', '||l_payload.value||')');
-         if p_cache.output_call_stack then
+         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
             output_call_stack;
          end if;
       end if;
       l_payload.access_time := cwms_util.current_micros;
       p_cache.hit_count := p_cache.hit_count + 1;
    else
-      if p_cache.dbms_output then
+      if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
          dbms_output.put_line('Cache '||p_cache.name||': miss ('||p_key||', ???)');
-         if p_cache.output_call_stack then
+         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
             output_call_stack;
          end if;
       end if;
@@ -150,9 +150,9 @@ begin
          cwms_err.raise('ERROR', 'Cache '||p_cache.name||': Attempt to store a NULL key');
       end if;
       l_time := cwms_util.current_micros;
-      if p_cache.dbms_output then
+      if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
          dbms_output.put_line('Cache '||p_cache.name||': putting ('||p_key||', '||p_val||')');
-         if p_cache.output_call_stack then
+         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
             output_call_stack;
          end if;
       end if;
@@ -185,9 +185,9 @@ begin
          p_cache.key_by_time.delete(l_time);
       end if;
       if p_cache.payload_by_key.exists(p_key) then
-         if p_cache.dbms_output then
+         if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
             dbms_output.put_line('Cache '||p_cache.name||': removing ('||p_key||', '||p_cache.payload_by_key(p_key).value||')');
-         if p_cache.output_call_stack then
+         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
             output_call_stack;
          end if;
          end if;
@@ -233,9 +233,9 @@ procedure clear(
 is
 begin
    if p_cache.enabled then
-      if p_cache.dbms_output then
+      if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
          dbms_output.put_line('Cache '||p_cache.name||': clearing cache');
-         if p_cache.output_call_stack then
+         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
             output_call_stack;
          end if;
       end if;

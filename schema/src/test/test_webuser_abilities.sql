@@ -31,6 +31,8 @@ AS
     procedure setup_users_webuser is
     begin
         dbms_output.put_line('Setup:-');
+        cwms_cache.clear(cwms_util.g_office_id_cache);
+        cwms_cache.clear(cwms_util.g_office_code_cache);
         /*
         Need to review permissions check and environment
            until there is time for that I've moved the user creation to the test

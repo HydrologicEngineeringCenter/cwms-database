@@ -51,6 +51,10 @@ AS
       return varchar2 deterministic;
 
    /**
+    * Clears all session-level caches associated with this package
+    */
+   procedure clear_all_caches;
+   /**
     * Sets text value of package logging property
     *
     * @param p_text The text of the package logging property. If unspecified or NULL, the current session identifier is used.
