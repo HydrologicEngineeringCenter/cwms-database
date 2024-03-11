@@ -41,17 +41,7 @@
  * @field attribute_duration_id       The duration of the attribute, if any
  * @field default_label               The label assoicated with the location level and the ''GENERAL/OTHER'' configuration, if any
  * @field source                      The source entity for the location level values
- *
- * AV_LOCATION_LEVEL_XXXX5h3
- * 
- * XXXX5h3      MATERIALIZE the UNITS sub-select
- *              calls CWMS_20 RETRIEVE_USER_UNIT_F with 4 parameters (no defaults)
- *              This requires NULL parameter filtering for the attribute parameter
- *              Tried using filtering WITH function (later permissions issue found)
- *              Appears to be an Oracle bug: WITH function references resolved at run time
- *              CASE expression filtering works
- * Dash was moved to be an independent function.
-*/
+ */
 create or replace force view av_location_level
 ( OFFICE_ID,
   LOCATION_LEVEL_ID,
@@ -285,8 +275,6 @@ order  by q1.office_id,
           q1.attribute_value,
           q1.interval_origin + q1.calendar_offset_ + q1.time_offset_
 ;
-/
-
 
 begin
 	execute immediate 'grant select on av_location_level to cwms_user';
