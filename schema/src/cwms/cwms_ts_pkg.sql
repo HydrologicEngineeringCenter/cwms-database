@@ -1240,7 +1240,15 @@ AS
     */
     procedure new_lrts_id_required_error(
       p_cwms_ts_id in varchar2);
-
+   /*
+    * Undocumented
+    */
+   procedure retrieve_ts_utc_sparse(
+      p_ts_retrieved   in out nocopy ztsv_array,
+      p_ts_code        in av_tsv.ts_code%type,
+      p_date_range     in date_range_t,
+      p_version_date   in date default null,
+      p_max_version    in varchar2 default 'T');
    /**
     * Retrieves time series data for a specified time series and time window, including LRTS time zone
     *

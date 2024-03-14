@@ -3374,6 +3374,110 @@ AS
              else 'F'
              end;
    end require_new_lrts_format_on_input;
+   --------------------------------------------------------------------------------
+   -- function retrieve_ts_utc_sparse
+   --------------------------------------------------------------------------------
+   procedure retrieve_ts_utc_sparse(
+      p_ts_retrieved   in out nocopy ztsv_array,
+      p_ts_code        in av_tsv.ts_code%type,
+      p_date_range     in date_range_t,
+      p_version_date   in date default null,
+      p_max_version    in varchar2 default 'T')
+   is
+      l_crsr              sys_refcursor;
+      l_trim              boolean;
+      l_max_version       boolean;
+      l_plsql_block       varchar2(32767) := '
+      declare
+         l_crsr                sys_refcursor := :l_crsr;
+         l_ts_code             integer := :ts_code;
+         l_start_date_time_str varchar2(19) := :start_date_time;
+         l_end_date_time_str   varchar2(19) := :end_date_time;
+         l_vers_date_str       varchar2(19) := :vers_date;
+         l_start_date_time     date;
+         l_end_date_time       date;
+         l_vers_date           date;
+      begin
+         l_start_date_time := to_date(l_start_date_time_str, ''yyyy-mm-dd hh24:mi:ss'');
+         l_end_date_time   := to_date(l_end_date_time_str, ''yyyy-mm-dd hh24:mi:ss'');
+         l_vers_date       := to_date(l_vers_date_str, ''yyyy-mm-dd hh24:mi:ss'');
+      open l_crsr for
+         select
+            ztsv_type(date_time, value, quality_code)
+         from
+            av_tsv
+         where
+            ts_code = l_ts_code
+            and date_time between l_start_date_time and l_end_date_time
+            and start_date <= l_end_date_time
+            and end_date > l_start_date_time
+            :version_date_clause
+         order by date_time;
+      end;';
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_ts_code     is null then cwms_err.raise('NULL_ARGUMENT', 'P_Max_Version'); end if;
+      if p_date_range  is null then cwms_err.raise('NULL_ARGUMENT', 'P_Ts_Code'    ); end if;
+      if p_max_version is null then cwms_err.raise('NULL_ARGUMENT', 'P_Date_Range' ); end if;
+      l_max_version := cwms_util.return_true_or_false(p_max_version);
+      -------------------------
+      -- handle version date --
+      -------------------------
+      if p_version_date is null then
+         -- min or max version date
+         l_plsql_block := replace(
+            l_plsql_block,
+            ':version_date_clause',
+            'and (date_time, version_date) in (
+                 select date_time,
+                       :func(version_date) as version_date
+                   from av_tsv
+                  where ts_code = l_ts_code
+                    and date_time between l_start_date_time and l_end_date_time
+                    and start_date <= l_end_date_time
+                    and end_date >= l_start_date_time
+                  group by date_time)');
+         l_plsql_block := replace(
+            l_plsql_block,
+            ':func',
+            case when l_max_version then 'max' else 'min' end);
+      else
+         -- specified version date
+         l_plsql_block := replace(
+            l_plsql_block,
+            ':version_date_clause',
+            'and version_date = l_vers_date');
+      end if;
+      -- --------------------------------------------------------------------
+      -- -- output an executable version of the plsql block to dbms_output --
+      -- --------------------------------------------------------------------
+      -- declare
+      --    ll_plsql_block varchar2(32767) := l_plsql_block;
+      -- begin
+      --    ll_plsql_block := replace(ll_plsql_block, ':ts_code', p_ts_code);
+      --    ll_plsql_block := replace(ll_plsql_block, ':start_date_time', ''''||p_date_range.start_time('UTC')||'''');
+      --    ll_plsql_block := replace(ll_plsql_block, ':end_date_time', ''''||p_date_range.end_time('UTC')||'''');
+      --    ll_plsql_block := replace(ll_plsql_block, ':vers_date', ''''||p_version_date||'''');
+      --    dbms_output.put_line(ll_plsql_block);
+      -- end;
+      ------------------------------
+      -- execute the pl/sql block --
+      ------------------------------
+      execute immediate
+         l_plsql_block
+      using
+         l_crsr,
+         p_ts_code,
+         p_date_range.start_time('UTC'),
+         p_date_range.end_time('UTC'),
+         p_version_date;
+
+      fetch l_crsr bulk collect into p_ts_retrieved;
+      close l_crsr;
+
+   end retrieve_ts_utc_sparse;
    --
    --*******************************************************************   --
    --*******************************************************************   --
@@ -5364,7 +5468,7 @@ AS
 
       rollback;
       return FALSE;
-      
+
    end update_ts_extents;
 
    procedure update_ts_extents(
@@ -6264,8 +6368,9 @@ AS
                exception
                   when too_many_rows then
                      dbms_output.enable;
+                     dbms_output.put_line('time series id  = '||l_cwms_ts_id);
+                     dbms_output.put_line('interval        = '||l_irr_interval);
                      dbms_output.put_line('local time zone = '||l_loc_tz);
-                     dbms_output.put_line('interval = '||l_irr_interval);
                      for i in 1..l_timeseries_data.count loop
                         dbms_output.put(i||chr(9)||l_timeseries_data(i).date_time);
                         dbms_output.put(chr(9)||from_tz(cwms_util.change_timezone(cast(l_timeseries_data(i).date_time as timestamp), extract(timezone_region from l_timeseries_data(i).date_time), l_loc_tz), l_loc_tz));

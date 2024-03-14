@@ -101,6 +101,9 @@ procedure test_top_of_interval_utc;
 --%test (Test GET_REG_TS_TIMES)
 procedure test_get_reg_ts_times_utc;
 
+--%test (Test RETRIEVE_TS_UTC_SPARSE)
+procedure test_retrieve_ts_utc_sparse;
+
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
@@ -2668,6 +2671,78 @@ AS
          end loop;
       end if;
    end test_get_reg_ts_times_utc;
+   --------------------------------------------------------------------------------
+   -- procedure procedure test_retrieve_ts_utc_sparse
+   --------------------------------------------------------------------------------
+   procedure test_retrieve_ts_utc_sparse
+   is
+      type ztsv_array_tab is table of cwms_t_ztsv_array;
+      l_ts_data_in    ztsv_array_tab;
+      l_version_dates cwms_t_date_table;
+      l_ts_data_out   cwms_t_ztsv_array;
+      l_ts_id         cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Code.Inst.1Hour.0.Test';
+      l_unit_id       cwms_v_ts_id.unit_id%type := 'n/a';
+   begin
+      setup;
+      cwms_loc.store_location(
+         p_location_id  => test_base_location_id,
+         p_active       => 'T',
+         p_db_office_id => '&&office_id');
+      l_version_dates := cwms_t_date_table(cwms_util.non_versioned, date '2024-02-02', date '2024-02-03');
+      l_ts_data_in := ztsv_array_tab(null, null, null);
+      for i in 1..3 loop
+         l_ts_data_in(i) := cwms_t_ztsv_array();
+         for j in 0..24 loop
+            continue when mod(j, 3) = 0 or mod(j, 5) = 0;
+            l_ts_data_in(i).extend;
+            l_ts_data_in(i)(l_ts_data_in(i).count) := cwms_t_ztsv(date '2024-02-01' + j / 24, j + i - 1, 0);
+         end loop;
+
+         if i = 2 then
+            cwms_ts.set_tsid_versioned(l_ts_id, 'T', '&&office_id');
+         end if;
+
+         cwms_ts.zstore_ts(
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => l_unit_id,
+            p_timeseries_data => l_ts_data_in(i),
+            p_store_rule      => cwms_util.replace_all,
+            p_version_date    => l_version_dates(i),
+            p_office_id       => '&&office_id');
+         commit;
+      end loop;
+
+      for i in 1..4 loop
+         dbms_output.put_line('==> i = '||i);
+         dbms_output.put_line('==> version_date = '||case i when 1 then 'null' when 4 then 'null' else to_char(l_version_dates(i)) end);
+         dbms_output.put_line('==> max_version = '||case when i = 4 then 'F' else 'T' end);
+         cwms_ts.retrieve_ts_utc_sparse(
+            p_ts_retrieved => l_ts_data_out,
+            p_ts_code      => cwms_ts.get_ts_code(l_ts_id, '&&office_id'),
+            p_date_range   => cwms_t_date_range(l_ts_data_in(1)(1).date_time, l_ts_data_in(1)(l_ts_data_in(1).count).date_time, 'UTC'),
+            p_version_date => case i when 1 then null when 4 then null else l_version_dates(i) end,
+            p_max_version  => case when i = 4 then 'F' else 'T' end);
+
+         ut.expect(l_ts_data_out is null).to_be_false;
+         if l_ts_data_out is not null then
+            ut.expect(l_ts_data_out.count).to_equal(l_ts_data_in(1).count);
+            if l_ts_data_out.count = l_ts_data_in(1).count then
+               for j in 1..l_ts_data_out.count loop
+                  ut.expect(l_ts_data_out(j).date_time).to_equal(l_ts_data_in(1)(j).date_time);
+                  case i
+                  when 1 then
+                     ut.expect(l_ts_data_out(j).value).to_equal(l_ts_data_in(3)(j).value);
+                  when 4 then
+                     ut.expect(l_ts_data_out(j).value).to_equal(l_ts_data_in(1)(j).value);
+                  else
+                     ut.expect(l_ts_data_out(j).value).to_equal(l_ts_data_in(i)(j).value);
+                  end case;
+                  ut.expect(l_ts_data_out(j).quality_code).to_equal(l_ts_data_in(1)(j).quality_code);
+               end loop;
+            end if;
+         end if;
+      end loop;
+   end test_retrieve_ts_utc_sparse;
 
 END test_cwms_ts;
 /
