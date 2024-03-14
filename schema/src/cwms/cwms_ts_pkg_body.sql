@@ -6263,6 +6263,15 @@ AS
                     from table(l_timeseries_data);
                exception
                   when too_many_rows then
+                     dbms_output.enable;
+                     dbms_output.put_line('local time zone = '||l_loc_tz);
+                     dbms_output.put_line('interval = '||l_irr_interval);
+                     for i in 1..l_timeseries_data.count loop
+                        dbms_output.put(i||chr(9)||l_timeseries_data(i).date_time);
+                        dbms_output.put(chr(9)||from_tz(cwms_util.change_timezone(cast(l_timeseries_data(i).date_time as timestamp), extract(timezone_region from l_timeseries_data(i).date_time), l_loc_tz), l_loc_tz));
+                        dbms_output.put(chr(9)||get_utc_interval_offset(from_tz(cwms_util.change_timezone(cast(l_timeseries_data(i).date_time as timestamp), extract(timezone_region from l_timeseries_data(i).date_time), l_loc_tz), l_loc_tz), l_irr_interval));
+                        dbms_output.new_line;
+                     end loop;
                      raise_application_error (
                         -20110,
                         'ERROR: Incoming data set contains multiple interval offsets. Unable to store data for '
