@@ -125,21 +125,19 @@ is
    exc_location_id_not_found exception;
    pragma exception_init(exc_location_id_not_found, -20025);
 begin
+   begin
+      cwms_vt.delete_screening_id (
+         p_screening_id        => 'Elev Range 1',
+         p_parameter_id        => 'Elev',
+         p_parameter_type_id   => null,
+         p_duration_id         => null,
+         p_cascade             => 'T',
+         p_db_office_id        => 'SWT');
+   exception
+      when others then null;
+   end;
    clear_caches;
    for i in 1..c_location_ids.count loop
-      select ts_code
-        bulk collect
-        into l_ts_codes
-        from at_cwms_ts_id
-       where db_office_id = c_office_id
-         and location_id = c_location_ids(i);
-      for j in 1..l_ts_codes.count loop
-         for rec in (select table_name from at_ts_table_properties) loop
-            execute immediate 'delete from '||rec.table_name||' where ts_code = :ts_code' using l_ts_codes(j);
-         end loop;
-         delete from at_ts_extents where ts_code = l_ts_codes(j);
-         delete from at_cwms_ts_spec where ts_code = l_ts_codes(j);
-      end loop;
       begin
          cwms_loc.delete_location(
             p_location_id   => c_location_ids(i),
@@ -4038,7 +4036,8 @@ is
    l_lrts_ts_id_old    cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Elev-Lrts.Inst.~1Day.0.Test';
    l_lrts_ts_id_new    cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Elev-Lrts.Inst.1DayLocal.0.Test';
    l_prts_ts_id        cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Elev-Prts.Inst.~1Day.0.Test';
-   l_ts_data           cwms_t_ztsv_array;
+   l_ts_data_utc       cwms_t_ztsv_array;
+   l_ts_data_tz        cwms_t_ztsv_array;
    l_count             binary_integer := 10;
    l_rec_count         binary_integer;
    l_crsr              sys_refcursor;
@@ -4092,18 +4091,23 @@ begin
    ---------------------------------------
    -- create the ts and ts_profile data --
    --------------------------------------
-   l_ts_data := cwms_t_ztsv_array();
-   l_ts_data.extend(l_count);
+   l_ts_data_utc := cwms_t_ztsv_array();
+   l_ts_data_utc.extend(l_count);
+   l_ts_data_tz := cwms_t_ztsv_array();
+   l_ts_data_tz.extend(l_count);
+   l_data_time_zone := cwms_loc.get_local_timezone(l_location_id, c_office_id);
    for i in 1..l_count loop
-      l_ts_data(i) := cwms_t_ztsv(l_now-l_count+i, i, 0);
+      l_ts_data_tz(i) := cwms_t_ztsv(l_now-l_count+i, i, 0);
+      l_ts_data_utc(i) := l_ts_data_tz(i);
+      l_ts_data_utc(i).date_time := cwms_util.change_timezone(l_ts_data_tz(i).date_time, l_data_time_zone, 'UTC');
       l_ts_profile_data := l_ts_profile_data
-         ||to_char(l_ts_data(i).date_time, 'yyyy-mm-dd hh24:mi:ss') -- field 1 (Date_Time)
-         ||chr(9)||to_number(l_ts_data(i).value)                    -- field 2 (Depth)
-         ||chr(9)||to_number(l_ts_data(i).value)                    -- field 3 (Temp)
+         ||to_char(l_ts_data_utc(i).date_time, 'yyyy-mm-dd hh24:mi:ss') -- field 1 (Date_Time)
+         ||chr(9)||to_number(l_ts_data_utc(i).value)                    -- field 2 (Depth)
+         ||chr(9)||to_number(l_ts_data_utc(i).value)                    -- field 3 (Temp)
          ||chr(10);
    end loop;
-   l_start_time := l_ts_data(1).date_time;
-   l_end_time   := l_ts_data(l_count).date_time;
+   l_start_time := l_ts_data_utc(1).date_time;
+   l_end_time   := l_ts_data_utc(l_count).date_time;
    -------------------------------------------------
    -- delete the location and all ts if it exists --
    -------------------------------------------------
@@ -4127,7 +4131,7 @@ begin
    cwms_ts.zstore_ts(
       p_cwms_ts_id      => l_lrts_ts_id_old,
       p_units           => 'ft',
-      p_timeseries_data => l_ts_data,
+      p_timeseries_data => l_ts_data_utc,
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'T');
@@ -4153,7 +4157,7 @@ begin
    cwms_ts.zstore_ts(
       p_cwms_ts_id      => l_prts_ts_id,
       p_units           => 'ft',
-      p_timeseries_data => l_ts_data,
+      p_timeseries_data => l_ts_data_utc,
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id,
       p_create_as_lrts  => 'F');
@@ -4311,7 +4315,7 @@ begin
       p_office_id      => c_office_id);
    cwms_ts.create_ts(
       p_cwms_ts_id  => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
-      p_utc_offset  => cwms_ts.get_utc_interval_offset(l_ts_data(1).date_time, 1440),
+      p_utc_offset  => cwms_ts.get_utc_interval_offset(l_ts_data_tz(1).date_time, 1440),
       p_active_flag => 'T',
       p_office_id   => c_office_id);
    cwms_forecast.store_forecast(
@@ -4323,8 +4327,8 @@ begin
       p_fail_if_exists  => 'F',
       p_text            => 'This is a test',
       p_time_series     => cwms_t_ztimeseries_array(
-                              cwms_t_ztimeseries(replace(l_lrts_ts_id_old, '.Test', '.Forecast'), 'ft', l_ts_data),
-                              cwms_t_ztimeseries(replace(l_prts_ts_id, '.Test', '.Forecast'), 'ft', l_ts_data)),
+                              cwms_t_ztimeseries(replace(l_lrts_ts_id_old, '.Test', '.Forecast'), 'ft', l_ts_data_tz),
+                              cwms_t_ztimeseries(replace(l_prts_ts_id, '.Test', '.Forecast'), 'ft', l_ts_data_tz)),
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id);
    commit;
@@ -4335,7 +4339,6 @@ begin
    l_code := cwms_util.create_parameter_code('Temp-Lrts', 'F', c_office_id);
    l_code := cwms_util.create_parameter_code('Depth-Prts', 'F', c_office_id);
    l_code := cwms_util.create_parameter_code('Temp-Prts', 'F', c_office_id);
-   dbms_output.put_line(l_ts_profile_data);
    cwms_ts_profile.store_ts_profile(
       p_location_id      => l_location_id,
       p_key_parameter_id => 'Depth-Lrts',
@@ -4426,7 +4429,7 @@ begin
       p_shef_unit_id        => 'ft',
       p_time_zone_id        => 'UTC',
       p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
-                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
+                                  cwms_util.change_timezone(l_ts_data_utc(1).date_time, 'UTC', c_timezone_ids(1)),
                                   1440),
       p_db_office_id        => c_office_id);
    cwms_shef.store_shef_spec (

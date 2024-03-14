@@ -11387,8 +11387,6 @@ end retrieve_existing_item_counts;
    IS
       l_interval     number;
       l_interval_num number;
-      x_invalid_number exception;
-      pragma exception_init(x_invalid_number, -01722);
    begin
       l_interval := cwms_cache.get(g_interval_cache, p_interval_id);
       if l_interval is null then
@@ -11404,16 +11402,18 @@ end retrieve_existing_item_counts;
                   cwms_err.raise('INVALID_INTERVAL_ID', p_interval_id);
             end;
          exception
-            when x_invalid_number then
-               begin
-                  select interval
-                    into l_interval
-                    from cwms_interval
-                   where upper(interval_id) = upper(format_lrts_interval_input(p_interval_id));
-               exception
-                  when no_data_found then
-                     cwms_err.raise('INVALID_INTERVAL_ID', p_interval_id);
-               end;
+            when others then
+               if sqlerrm like '%character to number conversion error%' then
+                  begin
+                     select interval
+                       into l_interval
+                       from cwms_interval
+                      where upper(interval_id) = upper(format_lrts_interval_input(p_interval_id));
+                  exception
+                     when no_data_found then
+                        cwms_err.raise('INVALID_INTERVAL_ID', p_interval_id);
+                  end;
+               end if;
          end;
          cwms_cache.put(g_interval_cache, p_interval_id, l_interval);
       end if;
