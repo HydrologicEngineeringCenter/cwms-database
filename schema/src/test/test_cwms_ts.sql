@@ -101,8 +101,11 @@ procedure test_top_of_interval_utc;
 --%test (Test GET_REG_TS_TIMES)
 procedure test_get_reg_ts_times_utc;
 
---%test (Test RETRIEVE_TS_UTC_SPARSE)
-procedure test_retrieve_ts_utc_sparse;
+--%test (Test RETRIEVE_TS_RAW)
+procedure test_retrieve_ts_raw;
+
+--%test (Test RETRIEVE_TS_F)
+procedure test_retrieve_ts_f;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -2672,9 +2675,9 @@ AS
       end if;
    end test_get_reg_ts_times_utc;
    --------------------------------------------------------------------------------
-   -- procedure procedure test_retrieve_ts_utc_sparse
+   -- procedure procedure test_retrieve_ts_raw
    --------------------------------------------------------------------------------
-   procedure test_retrieve_ts_utc_sparse
+   procedure test_retrieve_ts_raw
    is
       type ztsv_array_tab is table of cwms_t_ztsv_array;
       l_ts_data_in    ztsv_array_tab;
@@ -2716,7 +2719,7 @@ AS
          dbms_output.put_line('==> i = '||i);
          dbms_output.put_line('==> version_date = '||case i when 1 then 'null' when 4 then 'null' else to_char(l_version_dates(i)) end);
          dbms_output.put_line('==> max_version = '||case when i = 4 then 'F' else 'T' end);
-         cwms_ts.retrieve_ts_utc_sparse(
+         cwms_ts.retrieve_ts_raw(
             p_ts_retrieved => l_ts_data_out,
             p_ts_code      => cwms_ts.get_ts_code(l_ts_id, '&&office_id'),
             p_date_range   => cwms_t_date_range(l_ts_data_in(1)(1).date_time, l_ts_data_in(1)(l_ts_data_in(1).count).date_time, 'UTC'),
@@ -2742,7 +2745,450 @@ AS
             end if;
          end if;
       end loop;
-   end test_retrieve_ts_utc_sparse;
+   end test_retrieve_ts_raw;
+   --------------------------------------------------------------------------------
+   -- procedure test_retrieve_ts_f
+   --------------------------------------------------------------------------------
+   procedure test_retrieve_ts_f
+   is
+      type ztsv_array_tab is table of cwms_t_ztsv_array;
+      l_lrts_data_local cwms_t_ztsv_array;
+      l_lrts_data_utc   cwms_t_ztsv_array;
+      l_lrts_id         cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Code.Inst.1DayLocal.0.Lrts';
+      l_its_id          cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Code.Inst.~1Day.0.Its';
+      l_unit_id         cwms_v_ts_id.unit_id%type := 'n/a';
+      l_time_zone       cwms_v_ts_id.time_zone_id%type := 'US/Central';
+      l_crsr            sys_refcursor;
+      l_ts_id_out       cwms_v_ts_id.cwms_ts_id%type;
+      l_unit_id_out     cwms_v_ts_id.unit_id%type;
+      l_time_zone_out   cwms_v_ts_id.time_zone_id%type;
+      l_dates           cwms_t_date_table;
+      l_timestamps      cwms_t_timestamp_tab;
+      l_tstzs           cwms_t_tstz_tab;
+      l_values          cwms_t_double_tab;
+      l_quality_codes   cwms_t_number_tab;
+      l_count           binary_integer;
+      ii                binary_integer;
+   begin
+      setup;
+      cwms_ts.set_require_new_lrts_format_on_input('T');
+      cwms_ts.set_use_new_lrts_format_on_output('T');
+      -----------------------------
+      -- build an LRTS with gaps --
+      -----------------------------
+      l_lrts_data_local := ztsv_array();
+      l_lrts_data_local.extend;
+      l_lrts_data_local(1) := cwms_t_ztsv(timestamp '2024-02-15 07:00:00', 215, 0);
+      for i in 1..31 loop
+         continue when mod(i,3) = 0 or mod(i,5) = 0; -- skips 3,5,6,9,10,12,15,18,20,21,24,25,27,30
+         l_lrts_data_local.extend;
+         l_lrts_data_local(l_lrts_data_local.count) := cwms_t_ztsv(date '2024-02-29' + i + 7/24, 300+i, 0);
+      end loop;
+      l_lrts_data_local.extend;
+      l_lrts_data_local(l_lrts_data_local.count) := cwms_t_ztsv(date '2024-04-15' + 7/24, 415, 0);
+      select cwms_t_ztsv(cwms_util.change_timezone(date_time, l_time_zone, 'UTC'), value, quality_code)
+        bulk collect
+        into l_lrts_data_utc
+        from table(l_lrts_data_local);
+      ------------------------
+      -- store the location --
+      ------------------------
+      cwms_loc.store_location(
+         p_location_id  => test_base_location_id,
+         p_active       => 'T',
+         p_time_zone_id => l_time_zone,
+         p_db_office_id => '&&office_id');
+      --------------------
+      -- store the LRTS --
+      --------------------
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_lrts_id,
+         p_units           => l_unit_id,
+         p_timeseries_data => l_lrts_data_utc,
+         p_store_rule      => cwms_util.replace_all,
+         p_office_id       => '&&office_id');
+      --------------------------------
+      -- store the LRTS data as ITS --
+      --------------------------------
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_its_id,
+         p_units           => l_unit_id,
+         p_timeseries_data => l_lrts_data_utc,
+         p_store_rule      => cwms_util.replace_all,
+         p_office_id       => '&&office_id');
+      ----------------------------
+      -- test getting prev/next --
+      ----------------------------
+      for pass in 1..2 loop
+         dbms_output.put_line('==> Testing previous/next with inclusive = '||substr('TF', pass, 1));
+         l_crsr := cwms_ts.retrieve_ts_f (
+            p_cwms_ts_id_out  => l_ts_id_out,
+            p_units_out       => l_unit_id_out,
+            p_time_zone_id    => l_time_zone_out,
+            p_cwms_ts_id      => upper(l_lrts_id),
+            p_start_time      => timestamp '2024-03-01 07:00:00',
+            p_end_time        => timestamp '2024-03-31 07:00:00',
+            p_time_zone       => null,
+            p_date_time_type  => 'DATE',
+            p_units           => upper(l_unit_id),
+            p_unit_system     => 'EN',
+            p_trim            => 'F',
+            p_start_inclusive => substr('TF', pass, 1), -- shouldn't matter if p_previous = 'T'
+            p_end_inclusive   => substr('TF', pass, 1), -- shouldn't matter if p_next = 'T'
+            p_previous        => 'T',
+            p_next            => 'T',
+            p_version_date    => null,
+            p_max_version     => 'T',
+            p_office_id       => '&&c_office_id');
+
+         fetch l_crsr
+          bulk collect
+          into l_dates,
+               l_values,
+               l_quality_codes;
+         close l_crsr;
+
+         ut.expect(l_ts_id_out).to_equal(l_lrts_id);
+         ut.expect(l_unit_id_out).to_equal(l_unit_id);
+         ut.expect(l_time_zone_out).to_equal(l_time_zone);
+         l_count := l_lrts_data_local(l_lrts_data_local.count).date_time - l_lrts_data_local(1).date_time + 1;
+         ut.expect(l_dates.count).to_equal(l_count);
+         if l_dates.count = l_count then
+            ut.expect(l_dates(1)).to_equal(date '2024-02-15' + 7/24);
+            ut.expect(l_values(1)).to_equal(215);
+            ut.expect(l_quality_codes(1)).to_equal(0);
+            for i in 2..l_count-1 loop
+               ut.expect(l_dates(i)).to_equal(l_dates(i-1) + 1);
+               if l_dates(i) between timestamp '2024-03-01 07:00:00' and timestamp '2024-03-31 07:00:00' then
+                  ii := l_dates(i) - date '2024-03-01' + 7/24;
+                  if mod(ii, 3) = 0 or mod(ii, 5) = 0 then
+                     ut.expect(l_values(i)).to_be_null;
+                  else
+                     ut.expect(l_values(i)).to_equal(300 + ii);
+                  end if;
+               else
+                  ut.expect(l_values(i)).to_be_null;
+               end if;
+               ut.expect(l_quality_codes(i)).to_equal(0);
+            end loop;
+            ut.expect(l_dates(l_count)).to_equal(date '2024-04-15' + 7/24);
+            ut.expect(l_values(l_count)).to_equal(415);
+            ut.expect(l_quality_codes(l_count)).to_equal(0);
+         end if;
+      end loop;
+      ------------------------------
+      -- test inclusive/exclusive --
+      ------------------------------
+      for pass in 1..2 loop
+         dbms_output.put_line('==> Testing start/end inclusive = '||substr('TF', pass, 1));
+         l_crsr := cwms_ts.retrieve_ts_f (
+            p_cwms_ts_id_out  => l_ts_id_out,
+            p_units_out       => l_unit_id_out,
+            p_time_zone_id    => l_time_zone_out,
+            p_cwms_ts_id      => upper(l_lrts_id),
+            p_start_time      => timestamp '2024-03-01 07:00:00',
+            p_end_time        => timestamp '2024-03-31 07:00:00',
+            p_time_zone       => null,
+            p_date_time_type  => 'DATE',
+            p_units           => upper(l_unit_id),
+            p_unit_system     => 'EN',
+            p_trim            => 'F',
+            p_start_inclusive => substr('TF', pass, 1), -- shouldn't matter if p_previous = 'T'
+            p_end_inclusive   => substr('TF', pass, 1), -- shouldn't matter if p_next = 'T'
+            p_previous        => 'F',
+            p_next            => 'F',
+            p_version_date    => null,
+            p_max_version     => 'T',
+            p_office_id       => '&&c_office_id');
+
+         fetch l_crsr
+          bulk collect
+          into l_dates,
+               l_values,
+               l_quality_codes;
+         close l_crsr;
+
+         ut.expect(l_ts_id_out).to_equal(l_lrts_id);
+         ut.expect(l_unit_id_out).to_equal(l_unit_id);
+         ut.expect(l_time_zone_out).to_equal(l_time_zone);
+         l_count := 31 - 2 * (pass-1);
+         ut.expect(l_dates.count).to_equal(l_count);
+         if l_dates.count = l_count then
+            for i in 1..l_count loop
+               if i = 1 then
+                  ut.expect(l_dates(i)).to_equal(date '2024-03-01' + 7/24 + (pass - 1));
+               else
+                  ut.expect(l_dates(i)).to_equal(l_dates(i-1)+1);
+               end if;
+               ii := i + pass - 1;
+               if mod(ii, 3) = 0 or mod(ii, 5) = 0 then
+                  ut.expect(l_values(i)).to_be_null;
+               else
+                  ut.expect(l_values(i)).to_equal(300 + ii);
+               end if;
+               ut.expect(l_quality_codes(i)).to_equal(0);
+            end loop;
+         end if;
+      end loop;
+      ---------------
+      -- test trim --
+      ---------------
+      dbms_output.put_line('==> Testing trim = T');
+      l_crsr := cwms_ts.retrieve_ts_f (
+         p_cwms_ts_id_out  => l_ts_id_out,
+         p_units_out       => l_unit_id_out,
+         p_time_zone_id    => l_time_zone_out,
+         p_cwms_ts_id      => upper(l_lrts_id),
+         p_start_time      => date '2024-02-16',
+         p_end_time        => date '2024-04-14',
+         p_time_zone       => null,
+         p_date_time_type  => 'DATE',
+         p_units           => upper(l_unit_id),
+         p_unit_system     => 'EN',
+         p_trim            => 'T',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => null,
+         p_max_version     => 'T',
+         p_office_id       => '&&c_office_id');
+
+      fetch l_crsr
+       bulk collect
+       into l_dates,
+            l_values,
+            l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_ts_id_out).to_equal(l_lrts_id);
+      ut.expect(l_unit_id_out).to_equal(l_unit_id);
+      ut.expect(l_time_zone_out).to_equal(l_time_zone);
+      l_count := 31;
+      ut.expect(l_dates.count).to_equal(l_count);
+      if l_dates.count = l_count then
+         for i in 1..l_count loop
+            if i = 1 then
+               ut.expect(l_dates(i)).to_equal(date '2024-03-01' + 7/24);
+            else
+               ut.expect(l_dates(i)).to_equal(l_dates(i-1)+1);
+            end if;
+            if mod(i, 3) = 0 or mod(i, 5) = 0 then
+               ut.expect(l_values(i)).to_be_null;
+            else
+               ut.expect(l_values(i)).to_equal(300 + i);
+            end if;
+            ut.expect(l_quality_codes(i)).to_equal(0);
+         end loop;
+      end if;
+      --------------
+      -- test ITS --
+      --------------
+      for pass in 1..2 loop
+         dbms_output.put_line('==> Testing irregular time series with prev/next = '||substr('TF', pass, 1));
+         l_crsr := cwms_ts.retrieve_ts_f (
+            p_cwms_ts_id_out  => l_ts_id_out,
+            p_units_out       => l_unit_id_out,
+            p_time_zone_id    => l_time_zone_out,
+            p_cwms_ts_id      => upper(l_its_id),
+            p_start_time      => date '2024-02-16',
+            p_end_time        => date '2024-04-14',
+            p_time_zone       => null,
+            p_date_time_type  => 'DATE',
+            p_units           => upper(l_unit_id),
+            p_unit_system     => 'EN',
+            p_trim            => 'T',
+            p_start_inclusive => 'T',
+            p_end_inclusive   => 'T',
+            p_previous        => substr('TF', pass, 1),
+            p_next            => substr('TF', pass, 1),
+            p_version_date    => null,
+            p_max_version     => 'T',
+            p_office_id       => '&&c_office_id');
+
+         fetch l_crsr
+          bulk collect
+          into l_dates,
+               l_values,
+               l_quality_codes;
+         close l_crsr;
+
+         ut.expect(l_ts_id_out).to_equal(l_its_id);
+         ut.expect(l_unit_id_out).to_equal(l_unit_id);
+         ut.expect(l_time_zone_out).to_equal(l_time_zone);
+         l_count := l_lrts_data_local.count - (pass-1) * 2;
+         ut.expect(l_dates.count).to_equal(l_count);
+         if l_dates.count = l_count then
+            for i in 1..l_count loop
+               ii := i + pass - 1;
+               ut.expect(l_dates(i)).to_equal(l_lrts_data_local(ii).date_time);
+               ut.expect(l_values(i)).to_equal(l_lrts_data_local(ii).value);
+               ut.expect(l_quality_codes(i)).to_equal(l_lrts_data_local(ii).quality_code);
+            end loop;
+         end if;
+      end loop;
+      -------------------------
+      -- test date/time type --
+      -------------------------
+      for pass in 1..2 loop
+         dbms_output.put_line('==> Testing date_time_type = '||case when pass = 1 then 'TIMESTAMP' else 'TIMESTAMP WITH TIME ZONE' end);
+         l_crsr := cwms_ts.retrieve_ts_f (
+            p_cwms_ts_id_out  => l_ts_id_out,
+            p_units_out       => l_unit_id_out,
+            p_time_zone_id    => l_time_zone_out,
+            p_cwms_ts_id      => upper(l_its_id),
+            p_start_time      => l_lrts_data_local(1).date_time,
+            p_end_time        => l_lrts_data_local(l_lrts_data_local.count).date_time,
+            p_time_zone       => null,
+            p_date_time_type  => case when pass = 1 then 'TIMESTAMP' else 'TIMESTAMP WITH TIME ZONE' end,
+            p_units           => upper(l_unit_id),
+            p_unit_system     => 'EN',
+            p_trim            => 'T',
+            p_start_inclusive => 'T',
+            p_end_inclusive   => 'T',
+            p_previous        => 'F',
+            p_next            => 'F',
+            p_version_date    => null,
+            p_max_version     => 'T',
+            p_office_id       => '&&c_office_id');
+
+         if pass = 1 then
+            fetch l_crsr
+             bulk collect
+             into l_timestamps,
+                  l_values,
+                  l_quality_codes;
+         else
+            fetch l_crsr
+             bulk collect
+             into l_tstzs,
+                  l_values,
+                  l_quality_codes;
+         end if;
+         close l_crsr;
+
+         ut.expect(l_ts_id_out).to_equal(l_its_id);
+         ut.expect(l_unit_id_out).to_equal(l_unit_id);
+         ut.expect(l_time_zone_out).to_equal(l_time_zone);
+         l_count := l_lrts_data_local.count;
+         if pass = 1 then
+            ut.expect(l_timestamps.count).to_equal(l_count);
+            if l_timestamps.count = l_count then
+               for i in 1..l_count loop
+                  ut.expect(l_timestamps(i)).to_equal(cast(l_lrts_data_local(i).date_time as timestamp));
+                  ut.expect(l_values(i)).to_equal(l_lrts_data_local(i).value);
+                  ut.expect(l_quality_codes(i)).to_equal(l_lrts_data_local(i).quality_code);
+               end loop;
+            end if;
+         else
+            ut.expect(l_tstzs.count).to_equal(l_count);
+            if l_tstzs.count = l_count then
+               for i in 1..l_count loop
+                  ut.expect(l_tstzs(i)).to_equal(from_tz(cast(l_lrts_data_local(i).date_time as timestamp), l_time_zone));
+                  ut.expect(l_values(i)).to_equal(l_lrts_data_local(i).value);
+                  ut.expect(l_quality_codes(i)).to_equal(l_lrts_data_local(i).quality_code);
+               end loop;
+            end if;
+         end if;
+      end loop;
+      --------------------
+      -- test time zone --
+      --------------------
+      for pass in 1..2 loop
+         dbms_output.put_line('==> Testing time zone = '||case when pass = 1 then 'UTC' else 'US/Pacific' end);
+         l_crsr := cwms_ts.retrieve_ts_f (
+            p_cwms_ts_id_out  => l_ts_id_out,
+            p_units_out       => l_unit_id_out,
+            p_time_zone_id    => l_time_zone_out,
+            p_cwms_ts_id      => upper(l_its_id),
+            p_start_time      => date '2024-02-01',
+            p_end_time        => date '2024-05-01',
+            p_time_zone       => case when pass = 1 then 'UTC' else 'US/Pacific' end,
+            p_date_time_type  => 'DATE',
+            p_units           => upper(l_unit_id),
+            p_unit_system     => 'EN',
+            p_trim            => 'T',
+            p_start_inclusive => 'T',
+            p_end_inclusive   => 'T',
+            p_previous        => 'F',
+            p_next            => 'F',
+            p_version_date    => null,
+            p_max_version     => 'T',
+            p_office_id       => '&&c_office_id');
+
+         fetch l_crsr
+          bulk collect
+          into l_dates,
+               l_values,
+               l_quality_codes;
+         close l_crsr;
+
+         ut.expect(l_ts_id_out).to_equal(l_its_id);
+         ut.expect(l_unit_id_out).to_equal(l_unit_id);
+         ut.expect(l_time_zone_out).to_equal(l_time_zone);
+         l_count := l_lrts_data_local.count;
+         ut.expect(l_dates.count).to_equal(l_count);
+         if l_dates.count = l_count then
+            for i in 1..l_count loop
+               if pass = 1 then
+                  ut.expect(l_dates(i)).to_equal(l_lrts_data_utc(i).date_time);
+               else
+                  ut.expect(l_dates(i)).to_equal(l_lrts_data_local(i).date_time - 2/24);
+               end if;
+               ut.expect(l_values(i)).to_equal(l_lrts_data_local(i).value);
+               ut.expect(l_quality_codes(i)).to_equal(l_lrts_data_local(i).quality_code);
+            end loop;
+         end if;
+      end loop;
+      ------------------------
+      -- test default units --
+      ------------------------
+      cwms_display.store_unit('Code', 'EN', '%', 'F', '&&office_id');
+      for pass in 1..2 loop
+         dbms_output.put_line('==> Testing default units for unit system = '||case when pass = 1 then 'SI' else 'EN' end);
+         l_crsr := cwms_ts.retrieve_ts_f (
+            p_cwms_ts_id_out  => l_ts_id_out,
+            p_units_out       => l_unit_id_out,
+            p_time_zone_id    => l_time_zone_out,
+            p_cwms_ts_id      => upper(l_its_id),
+            p_start_time      => date '2024-02-01',
+            p_end_time        => date '2024-05-01',
+            p_time_zone       => null,
+            p_date_time_type  => 'DATE',
+            p_units           => null,
+            p_unit_system     => case when pass = 1 then 'SI' else 'EN' end,
+            p_trim            => 'T',
+            p_start_inclusive => 'T',
+            p_end_inclusive   => 'T',
+            p_previous        => 'F',
+            p_next            => 'F',
+            p_version_date    => null,
+            p_max_version     => 'T',
+            p_office_id       => '&&c_office_id');
+
+         fetch l_crsr
+          bulk collect
+          into l_dates,
+               l_values,
+               l_quality_codes;
+         close l_crsr;
+
+         ut.expect(l_ts_id_out).to_equal(l_its_id);
+         ut.expect(l_unit_id_out).to_equal(case when pass = 1 then 'n/a' else '%' end);
+         ut.expect(l_time_zone_out).to_equal(l_time_zone);
+         l_count := l_lrts_data_local.count;
+         ut.expect(l_dates.count).to_equal(l_count);
+         if l_dates.count = l_count then
+            for i in 1..l_count loop
+               ut.expect(l_dates(i)).to_equal(l_lrts_data_local(i).date_time);
+               ut.expect(l_values(i)).to_equal(l_lrts_data_local(i).value * case when pass = 1 then 1 else 100 end);
+               ut.expect(l_quality_codes(i)).to_equal(l_lrts_data_local(i).quality_code);
+            end loop;
+         end if;
+      end loop;
+      cwms_display.delete_unit('Code', 'EN', '&&office_id');
+   end test_retrieve_ts_f;
+
 
 END test_cwms_ts;
 /
