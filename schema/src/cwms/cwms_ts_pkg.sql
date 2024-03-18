@@ -1243,12 +1243,35 @@ AS
    /*
     * Undocumented
     */
-   procedure retrieve_ts_utc_sparse(
+   procedure retrieve_ts_raw(
       p_ts_retrieved   in out nocopy ztsv_array,
       p_ts_code        in av_tsv.ts_code%type,
       p_date_range     in date_range_t,
       p_version_date   in date default null,
       p_max_version    in varchar2 default 'T');
+   /*
+    * Temporarily Undocumented
+    */
+   function retrieve_ts_f (
+      p_cwms_ts_id_out       out varchar2,
+      p_units_out            out varchar2,
+      p_time_zone_id         out varchar2,
+      p_cwms_ts_id        in     varchar2,
+      p_start_time        in     date,
+      p_end_time          in     date,
+      p_time_zone         in     varchar2 default null,
+      p_date_time_type    in     varchar2 default 'DATE',
+      p_units             in     varchar2 default null,
+      p_unit_system       in     varchar2 default 'SI',
+      p_trim              in     varchar2 default 'F',
+      p_start_inclusive   in     varchar2 default 'T',
+      p_end_inclusive     in     varchar2 default 'T',
+      p_previous          in     varchar2 default 'F',
+      p_next              in     varchar2 default 'F',
+      p_version_date      in     date     default null,
+      p_max_version       in     varchar2 default 'T',
+      p_office_id         in     varchar2 default null)
+      return sys_refcursor;
    /**
     * Retrieves time series data for a specified time series and time window, including LRTS time zone
     *
