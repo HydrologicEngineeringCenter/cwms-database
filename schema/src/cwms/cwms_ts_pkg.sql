@@ -1245,7 +1245,7 @@ AS
     */
    procedure retrieve_ts_raw(
       p_ts_retrieved   in out nocopy ztsv_array,
-      p_ts_code        in av_tsv.ts_code%type,
+      p_ts_code        in integer,
       p_date_range     in date_range_t,
       p_version_date   in date default null,
       p_max_version    in varchar2 default 'T');

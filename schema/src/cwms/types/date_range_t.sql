@@ -65,7 +65,12 @@ as object(
     */
    member function end_time(
       p_time_zone varchar2 default null)
-      return date
+      return date,
+   /**
+    * Returns a string representation of the object
+    */
+   member function to_string
+      return varchar2
 );
 /
 

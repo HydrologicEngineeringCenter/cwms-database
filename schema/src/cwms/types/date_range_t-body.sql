@@ -110,6 +110,20 @@ begin
           else cwms_util.change_timezone(l_end_time, self.time_zone, l_time_zone)
           end;
 end end_time;
-   
+--------------------------------------------------------------------------------
+-- member function to_string
+--------------------------------------------------------------------------------
+member function to_string
+   return varchar2
+is
+begin
+   return
+      to_char(self.start_date, 'yyyy-mm-dd hh24:mi:ss')
+      ||' ('||self.start_inclusive||') '
+      ||' -> '||to_char(self.end_date, 'yyyy-mm-dd hh24:mi:ss')
+      ||' ('||self.end_inclusive||') '
+      ||' '||self.time_zone;
+end to_string;
+
 end;
 /

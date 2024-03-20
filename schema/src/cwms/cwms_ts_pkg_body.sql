@@ -2693,7 +2693,7 @@ AS
    is
       type date_table_by_integer_t is table of date_table_type index by pls_integer;
       l_interval_minutes      binary_integer := get_interval(upper(p_interval));
-      l_offset_minutes        binary_integer := interval_offset_minutes(p_offset);
+      l_offset_minutes        binary_integer := abs(interval_offset_minutes(p_offset));
       l_time_window_start_utc date;
       l_time_window_end_utc   date;
       l_start_time            date;
@@ -2725,6 +2725,10 @@ AS
       end if;
       if l_interval_minutes is null then
          cwms_err.raise('INVALID_INTERVAL_ID', nvl(p_interval, '<NULL>'));
+      end if;
+      if l_interval_minutes = 0 then
+         l_interval_minutes := get_interval(regexp_replace(p_interval, '^~?(.+?)(Local)?$', '\1', 1, 1, 'i'));
+         l_interval_days    := l_interval_minutes / 1440D;
       end if;
       if l_offset_minutes between 0 and l_interval_minutes - 1 then
          null;
@@ -3378,21 +3382,20 @@ AS
    --------------------------------------------------------------------------------
    procedure retrieve_ts_raw(
       p_ts_retrieved   in out nocopy ztsv_array,
-      p_ts_code        in av_tsv.ts_code%type,
+      p_ts_code        in integer,
       p_date_range     in date_range_t,
       p_version_date   in date default null,
       p_max_version    in varchar2 default 'T')
    is
-      l_crsr              sys_refcursor;
-      l_trim              boolean;
-      l_max_version       boolean;
-      l_plsql_block       varchar2(32767) := '
+      l_ts_retrieved ztsv_array;
+      l_max_version  boolean;
+      l_plsql_block  varchar2(32767) := '
       declare
-         l_crsr                sys_refcursor := :l_crsr;
          l_ts_code             integer := :ts_code;
          l_start_date_time_str varchar2(19) := :start_date_time;
          l_end_date_time_str   varchar2(19) := :end_date_time;
          l_vers_date_str       varchar2(19) := :vers_date;
+         l_ts_retrieved        ztsv_array;
          l_start_date_time     date;
          l_end_date_time       date;
          l_vers_date           date;
@@ -3400,9 +3403,10 @@ AS
          l_start_date_time := to_date(l_start_date_time_str, ''yyyy-mm-dd hh24:mi:ss'');
          l_end_date_time   := to_date(l_end_date_time_str, ''yyyy-mm-dd hh24:mi:ss'');
          l_vers_date       := to_date(l_vers_date_str, ''yyyy-mm-dd hh24:mi:ss'');
-      open l_crsr for
          select
             ztsv_type(date_time, value, quality_code)
+         bulk collect into
+            l_ts_retrieved
          from
             av_tsv
          where
@@ -3411,7 +3415,9 @@ AS
             and start_date <= l_end_date_time
             and end_date > l_start_date_time
             :version_date_clause
-         order by date_time;
+         order by
+            date_time;
+         :p_ts_retrieved := l_ts_retrieved;
       end;';
    begin
       -------------------
@@ -3449,32 +3455,29 @@ AS
             ':version_date_clause',
             'and version_date = l_vers_date');
       end if;
-      -- --------------------------------------------------------------------
-      -- -- output an executable version of the plsql block to dbms_output --
-      -- --------------------------------------------------------------------
-      -- declare
-      --    ll_plsql_block varchar2(32767) := l_plsql_block;
-      -- begin
-      --    ll_plsql_block := replace(ll_plsql_block, ':ts_code', p_ts_code);
-      --    ll_plsql_block := replace(ll_plsql_block, ':start_date_time', ''''||p_date_range.start_time('UTC')||'''');
-      --    ll_plsql_block := replace(ll_plsql_block, ':end_date_time', ''''||p_date_range.end_time('UTC')||'''');
-      --    ll_plsql_block := replace(ll_plsql_block, ':vers_date', ''''||p_version_date||'''');
-      --    dbms_output.put_line(ll_plsql_block);
-      -- end;
+--       --------------------------------------------------------------------
+--       -- output an executable version of the plsql block to dbms_output --
+--       --------------------------------------------------------------------
+--       declare
+--          ll_plsql_block varchar2(32767) := l_plsql_block;
+--       begin
+--          ll_plsql_block := replace(ll_plsql_block, ':ts_code', p_ts_code);
+--          ll_plsql_block := replace(ll_plsql_block, ':start_date_time', ''''||to_char(p_date_range.start_time('UTC'), 'yyyy-mm-dd hh24:mi:ss')||'''');
+--          ll_plsql_block := replace(ll_plsql_block, ':end_date_time', ''''||to_char(p_date_range.end_time('UTC'), 'yyyy-mm-dd hh24:mi:ss')||'''');
+--          ll_plsql_block := replace(ll_plsql_block, ':vers_date', ''''||to_char(p_version_date, 'yyyy-mm-dd hh24:mi:ss')||'''');
+--          dbms_output.put_line(ll_plsql_block);
+--       end;
       ------------------------------
       -- execute the pl/sql block --
       ------------------------------
       execute immediate
          l_plsql_block
       using
-         l_crsr,
-         p_ts_code,
-         p_date_range.start_time('UTC'),
-         p_date_range.end_time('UTC'),
-         p_version_date;
-
-      fetch l_crsr bulk collect into p_ts_retrieved;
-      close l_crsr;
+         in  p_ts_code,
+         in  to_char(p_date_range.start_time('UTC'), 'yyyy-mm-dd hh24:mi:ss'),
+         in  to_char(p_date_range.end_time('UTC'), 'yyyy-mm-dd hh24:mi:ss'),
+         in  to_char(p_version_date, 'yyyy-mm-dd hh24:mi:ss'),
+         out p_ts_retrieved;
 
    end retrieve_ts_raw;
    --------------------------------------------------------------------------------
@@ -3524,6 +3527,7 @@ AS
       l_top_of_interval date;
       l_reg_ts_times    date_table_type := date_table_type();
    begin
+--      runstats.at_resume;
       -------------------
       -- sanity checks --
       -------------------
@@ -3600,6 +3604,7 @@ AS
          p_date_range     => l_date_range,
          p_version_date   => p_version_date,
          p_max_version    => p_max_version);
+      dbms_output.put_line('retrieve_ts_raw returned '||l_ts_retrieved.count||' values for '||l_date_range.start_date||' -> '||l_date_range.end_date||' '||l_date_range.time_zone);
       if l_ts_retrieved.count > 0 then
          -----------------------
          -- handle regular ts --
@@ -3702,7 +3707,12 @@ AS
                     from table(l_reg_ts_times)
                  ) q2 on q2.date_time = q1.date_time
          order by 1;
+--      runstats.at_pause;
       return l_crsr;
+   exception
+      when others then
+--         runstats.at_pause;
+         raise;
    end retrieve_ts_f;
    --
    --*******************************************************************   --
@@ -3781,6 +3791,7 @@ AS
          END IF;
       END;
    BEGIN
+--      runstats.at_resume;
       --------------------
       -- initialization --
       --------------------
@@ -4459,7 +4470,12 @@ AS
          END IF;
       END IF;
 
+--      runstats.at_pause;
       RETURN l_cursor;
+   EXCEPTION
+      WHEN OTHERS THEN
+--         runstats.at_pause;
+         raise;
    END build_retrieve_ts_query;
 
    --
@@ -11751,19 +11767,6 @@ end retrieve_existing_item_counts;
                        into l_interval
                        from cwms_interval
                       where upper(interval_id) = upper(l_interval_id);
-                     if l_interval = 0 then
-                        if substr(l_interval_id, 1, 1) = '~' then
-                           select interval
-                             into l_interval
-                             from cwms_interval
-                            where upper(interval_id) = upper(substr(l_interval_id, 2));
-                        elsif upper(substr(l_interval_id, -5)) = 'LOCAL' then
-                           select interval
-                             into l_interval
-                             from cwms_interval
-                            where upper(interval_id) = upper(substr(l_interval_id, 1, length(l_interval_id)-5));
-                        end if;
-                     end if;
                   exception
                      when no_data_found then
                         cwms_err.raise('INVALID_INTERVAL_ID', p_interval_id);

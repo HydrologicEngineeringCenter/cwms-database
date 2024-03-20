@@ -6,100 +6,100 @@ CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
 --%rollback(manual)
 
 --%test(Test setting active flag)
-procedure test_set_active_flag;
+ procedure test_set_active_flag;
 
 --%test(Test filter duplicates)
-procedure test_filter_duplicates;
+ procedure test_filter_duplicates;
 
 --%test(Test delete ts data for location without timezone)
-procedure delete_ts_with_location_without_timezone;
+ procedure delete_ts_with_location_without_timezone;
 
 --%test(Test retrieve TS with calendar-based times [JIRA Issue CWDB-157])
-procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
+ procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 
 --%test(Test creation various types of time series)
 --%disabled until new parameter types, intervals, and durations are unhidden
-procedure test_create_ts_parameter_types;
+ procedure test_create_ts_parameter_types;
 
 --%test(Test rename time series)
 --%disabled until new parameter types, intervals, and durations are unhidden
-procedure test_rename_ts;
+ procedure test_rename_ts;
 
 --%test(Test rename time series inst to median)
 --%throws(-20013)
 --%disabled until new parameter types, intervals, and durations are unhidden
-procedure test_rename_ts_inst_to_median;
+ procedure test_rename_ts_inst_to_median;
 
 --%test(create depth velocity time series)
-procedure test_create_depth_velocity;
+ procedure test_create_depth_velocity;
 
 --%test(test micrograms/l)
-procedure test_conc;
+ procedure test_conc;
 
 --%test(Incremental precip with non zero duration)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
-PROCEDURE inc_with_zero_duration;
+ PROCEDURE inc_with_zero_duration;
 
 --%test(Incremental cumulative precip with zero duration)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
-PROCEDURE cum_with_non_zero_duration;
+ PROCEDURE cum_with_non_zero_duration;
 
 --%test(regular interval with until changed duration)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
-PROCEDURE untilchanged_with_regular;
+ PROCEDURE untilchanged_with_regular;
 
 --%test(non-const parameter type with until changed duration)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
-PROCEDURE untilchanged_with_non_const;
+ PROCEDURE untilchanged_with_non_const;
 
 --%test(Variable duration with non instantaneous)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
-PROCEDURE variable_with_inst;
+ PROCEDURE variable_with_inst;
 
 --%test(Variable duration with const)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
-PROCEDURE variable_with_const;
+ PROCEDURE variable_with_const;
 
 --%test(Make sure quality on generated rts/lrts values is 0 (unscreened) and not 5 (missing) [JIRA Issue CWMSVIEW-212])
-procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
+ procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
 
 --%test(create a time series id with null timezone in location that has a  base location: CWDB-175)
-procedure create_ts_with_null_timezone;
+ procedure create_ts_with_null_timezone;
 
 --%test(Test flags p_start_inclusive, p_end_inclusive, p_previous, p_next, and ts with aliases: CWDB-180)
-procedure test_inclusion_options__JIRA_CWDB_180;
+ procedure test_inclusion_options__JIRA_CWDB_180;
 
 --%test(Test STORE_TS can create a versioned time series: CWDB-190)
-procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
+ procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
 --%test(Test UNDELETE_TS, CWMS_V_DELETED_TS, and CWMS_LOC.DELETE_LOCATION on location with deleted ts)
-procedure test_undelete_ts;
+ procedure test_undelete_ts;
 
 --%test (Test RETRIEVE_TS for regular time series that has undefined interval offset)
-procedure test_retrieve_ts_with_undefined_interval_offset;
+ procedure test_retrieve_ts_with_undefined_interval_offset;
 
 --%test(LRL 1Day at 6am EST stores correctly)
-procedure test_lrl_1day_CWDB_202;
+ procedure test_lrl_1day_CWDB_202;
 
 --%test(No silent failure on storing data with wrong offset [Jira issue CWDB-204])
-procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset;
+ procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset;
 
 --%test (CWDB-134 STORE_TS_MULTI doen't hide individual error messages)
-procedure cwdb_134_test_store_multi_does_not_hide_error_messages;
+ procedure cwdb_134_test_store_multi_does_not_hide_error_messages;
 
 --%test (CWDB-211 Update TSV DML counters to include streamed DML)
-procedure cwdb_211_update_tsv_dml_counters_to_include_streamed_dml;
+ procedure cwdb_211_update_tsv_dml_counters_to_include_streamed_dml;
 
 --%test (Test TOP_OF_INTERVAL_UTC)
-procedure test_top_of_interval_utc;
+ procedure test_top_of_interval_utc;
 
 --%test (Test GET_REG_TS_TIMES)
-procedure test_get_reg_ts_times_utc;
+ procedure test_get_reg_ts_times_utc;
 
 --%test (Test RETRIEVE_TS_RAW)
 procedure test_retrieve_ts_raw;
@@ -2422,6 +2422,7 @@ AS
       l_reg_times                          date_table_type;
       l_time_window                        date_range_t;
       l_time_zone                          varchar2(28) := 'US/Pacific';
+      l_offset                             varchar2(16);
    begin
       l_expected_times_1hour_spring_utc := date_table_type(
          timestamp '2023-03-12 07:15:00',
@@ -2482,9 +2483,10 @@ AS
       -----------------------------------------------
       -- 1Hour interval across Spring DST boundary --
       -----------------------------------------------
+      l_offset := '15';
       l_time_window := date_range_t(
          trunc(l_expected_times_1hour_spring_utc(1), 'HH'),
-         trunc(l_expected_times_1hour_spring_utc(l_expected_times_1hour_spring_utc.count), 'HH'));
+         trunc(l_expected_times_1hour_spring_utc(l_expected_times_1hour_spring_utc.count), 'HH') + cwms_ts.interval_offset_minutes(l_offset) / 1440);
       ---------------
       -- UTC times --
       ---------------
@@ -2492,7 +2494,7 @@ AS
       l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
          p_date_range         => l_time_window,
          p_interval           => '1Hour',
-         p_offset             => 15,
+         p_offset             => l_offset,
          p_interval_time_zone => 'UTC');
       ut.expect(l_reg_times.count).to_equal(l_expected_times_1hour_spring_utc.count);
       if l_reg_times.count = l_expected_times_1hour_spring_utc.count then
@@ -2512,7 +2514,7 @@ AS
       l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
          p_date_range         => l_time_window,
          p_interval           => '1Hour',
-         p_offset             => 15,
+         p_offset             => l_offset,
          p_interval_time_zone => l_time_zone);
       ut.expect(l_reg_times.count).to_equal(l_expected_times_1hour_spring_local.count);
       if l_reg_times.count = l_expected_times_1hour_spring_local.count then
@@ -2530,7 +2532,7 @@ AS
       ---------------------------------------------
       l_time_window := date_range_t(
          trunc(l_expected_times_1hour_fall_utc(1), 'HH'),
-         trunc(l_expected_times_1hour_fall_utc(l_expected_times_1hour_fall_utc.count), 'HH'));
+         trunc(l_expected_times_1hour_fall_utc(l_expected_times_1hour_fall_utc.count), 'HH') + cwms_ts.interval_offset_minutes(l_offset) / 1440);
       ---------------
       -- UTC times --
       ---------------
@@ -2538,7 +2540,7 @@ AS
       l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
          p_date_range         => l_time_window,
          p_interval           => '1Hour',
-         p_offset             => 15,
+         p_offset             => l_offset,
          p_interval_time_zone => 'UTC');
       ut.expect(l_reg_times.count).to_equal(l_expected_times_1hour_fall_utc.count);
       if l_reg_times.count = l_expected_times_1hour_fall_utc.count then
@@ -2558,7 +2560,7 @@ AS
       l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
          p_date_range         => l_time_window,
          p_interval           => '1Hour',
-         p_offset             => 15,
+         p_offset             => l_offset,
          p_interval_time_zone => l_time_zone);
       ut.expect(l_reg_times.count).to_equal(l_expected_times_1hour_fall_local.count);
       if l_reg_times.count = l_expected_times_1hour_fall_local.count then
@@ -2577,15 +2579,16 @@ AS
       ---------------
       -- UTC times --
       ---------------
+      l_offset := '12Hours';
       l_time_window := date_range_t(
          trunc(l_expected_times_1day_spring_utc(1), 'DD'),
-         trunc(l_expected_times_1day_spring_utc(l_expected_times_1day_spring_utc.count), 'DD'),
+         trunc(l_expected_times_1day_spring_utc(l_expected_times_1day_spring_utc.count), 'DD') + cwms_ts.interval_offset_minutes(l_offset) / 1440,
          'UTC');
       dbms_output.put_line('==> 1DAY SPRING UTC');
       l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
          p_date_range         => l_time_window,
          p_interval           => '1Day',
-         p_offset             => '12Hours',
+         p_offset             => l_offset,
          p_interval_time_zone => 'UTC');
       ut.expect(l_reg_times.count).to_equal(l_expected_times_1day_spring_utc.count);
       if l_reg_times.count = l_expected_times_1day_spring_utc.count then
@@ -2603,13 +2606,13 @@ AS
       -----------------
       l_time_window := date_range_t(
          trunc(l_expected_times_1day_spring_local(1), 'DD'),
-         trunc(l_expected_times_1day_spring_local(l_expected_times_1day_spring_local.count), 'DD'),
+         trunc(l_expected_times_1day_spring_local(l_expected_times_1day_spring_local.count), 'DD') + cwms_ts.interval_offset_minutes(l_offset) / 1440,
          l_time_zone);
       dbms_output.put_line('==> 1DAY SPRING '||upper(l_time_zone));
       l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
          p_date_range         => l_time_window,
          p_interval           => '1Day',
-         p_offset             => '12Hours',
+         p_offset             => l_offset,
          p_interval_time_zone => l_time_zone);
       ut.expect(l_reg_times.count).to_equal(l_expected_times_1day_spring_local.count);
       if l_reg_times.count = l_expected_times_1day_spring_local.count then
@@ -2630,13 +2633,13 @@ AS
       ---------------
       l_time_window := date_range_t(
          trunc(l_expected_times_1day_fall_utc(1), 'DD'),
-         trunc(l_expected_times_1day_fall_utc(l_expected_times_1day_fall_utc.count), 'DD'),
+         trunc(l_expected_times_1day_fall_utc(l_expected_times_1day_fall_utc.count), 'DD') + cwms_ts.interval_offset_minutes(l_offset) / 1440,
          'UTC');
       dbms_output.put_line('==> 1DAY FALL UTC');
       l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
          p_date_range         => l_time_window,
          p_interval           => '1Day',
-         p_offset             => '12Hours',
+         p_offset             => l_offset,
          p_interval_time_zone => 'UTC');
       ut.expect(l_reg_times.count).to_equal(l_expected_times_1day_fall_utc.count);
       if l_reg_times.count = l_expected_times_1day_fall_utc.count then
@@ -2654,13 +2657,13 @@ AS
       -----------------
       l_time_window := date_range_t(
          trunc(l_expected_times_1day_fall_local(1), 'DD'),
-         trunc(l_expected_times_1day_fall_local(l_expected_times_1day_fall_local.count), 'DD'),
+         trunc(l_expected_times_1day_fall_local(l_expected_times_1day_fall_local.count), 'DD') + cwms_ts.interval_offset_minutes(l_offset) / 1440,
          l_time_zone);
       dbms_output.put_line('==> 1DAY FALL '||upper(l_time_zone));
       l_reg_times := cwms_ts.get_reg_ts_times_utc_f(
          p_date_range         => l_time_window,
          p_interval           => '1Day',
-         p_offset             => '12Hours',
+         p_offset             => l_offset,
          p_interval_time_zone => l_time_zone);
       ut.expect(l_reg_times.count).to_equal(l_expected_times_1day_fall_local.count);
       if l_reg_times.count = l_expected_times_1day_fall_local.count then
@@ -2687,6 +2690,7 @@ AS
       l_unit_id       cwms_v_ts_id.unit_id%type := 'n/a';
    begin
       setup;
+--      dbms_output.enable;
       cwms_loc.store_location(
          p_location_id  => test_base_location_id,
          p_active       => 'T',
@@ -2705,6 +2709,7 @@ AS
             cwms_ts.set_tsid_versioned(l_ts_id, 'T', '&&office_id');
          end if;
 
+         dbms_output.put_line('Storing data with version date = '||to_char(l_version_dates(i), 'yyyy-mm-dd hh24:mi:ss'));
          cwms_ts.zstore_ts(
             p_cwms_ts_id      => l_ts_id,
             p_units           => l_unit_id,
@@ -2717,7 +2722,7 @@ AS
 
       for i in 1..4 loop
          dbms_output.put_line('==> i = '||i);
-         dbms_output.put_line('==> version_date = '||case i when 1 then 'null' when 4 then 'null' else to_char(l_version_dates(i)) end);
+         dbms_output.put_line('==> version_date = '||case i when 1 then 'null' when 4 then 'null' else to_char(l_version_dates(i), 'yyyy-mm-dd hh:mi:ss') end);
          dbms_output.put_line('==> max_version = '||case when i = 4 then 'F' else 'T' end);
          cwms_ts.retrieve_ts_raw(
             p_ts_retrieved => l_ts_data_out,
@@ -2725,6 +2730,7 @@ AS
             p_date_range   => cwms_t_date_range(l_ts_data_in(1)(1).date_time, l_ts_data_in(1)(l_ts_data_in(1).count).date_time, 'UTC'),
             p_version_date => case i when 1 then null when 4 then null else l_version_dates(i) end,
             p_max_version  => case when i = 4 then 'F' else 'T' end);
+         dbms_output.put_line('==> values returned = '||l_ts_data_out.count);
 
          ut.expect(l_ts_data_out is null).to_be_false;
          if l_ts_data_out is not null then
@@ -2773,19 +2779,21 @@ AS
       setup;
       cwms_ts.set_require_new_lrts_format_on_input('T');
       cwms_ts.set_use_new_lrts_format_on_output('T');
-      -----------------------------
-      -- build an LRTS with gaps --
-      -----------------------------
+      ---------------------------------------------------------
+      -- build an LRTS with gaps that crosses a DST boundary --
+      ---------------------------------------------------------
+      -- one copy in the local time zone
       l_lrts_data_local := ztsv_array();
       l_lrts_data_local.extend;
       l_lrts_data_local(1) := cwms_t_ztsv(timestamp '2024-02-15 07:00:00', 215, 0);
       for i in 1..31 loop
-         continue when mod(i,3) = 0 or mod(i,5) = 0; -- skips 3,5,6,9,10,12,15,18,20,21,24,25,27,30
+         continue when mod(i,3) = 0 or mod(i,5) = 0;
          l_lrts_data_local.extend;
          l_lrts_data_local(l_lrts_data_local.count) := cwms_t_ztsv(date '2024-02-29' + i + 7/24, 300+i, 0);
       end loop;
       l_lrts_data_local.extend;
       l_lrts_data_local(l_lrts_data_local.count) := cwms_t_ztsv(date '2024-04-15' + 7/24, 415, 0);
+      -- another copy in UTC
       select cwms_t_ztsv(cwms_util.change_timezone(date_time, l_time_zone, 'UTC'), value, quality_code)
         bulk collect
         into l_lrts_data_utc
@@ -2798,6 +2806,7 @@ AS
          p_active       => 'T',
          p_time_zone_id => l_time_zone,
          p_db_office_id => '&&office_id');
+      commit;
       --------------------
       -- store the LRTS --
       --------------------
@@ -2820,7 +2829,7 @@ AS
       -- test getting prev/next --
       ----------------------------
       for pass in 1..2 loop
-         dbms_output.put_line('==> Testing previous/next with inclusive = '||substr('TF', pass, 1));
+         dbms_output.put_line('==> Testing retrieve_ts_f LRTS previous/next with inclusive = '||substr('TF', pass, 1));
          l_crsr := cwms_ts.retrieve_ts_f (
             p_cwms_ts_id_out  => l_ts_id_out,
             p_units_out       => l_unit_id_out,
@@ -2839,7 +2848,7 @@ AS
             p_next            => 'T',
             p_version_date    => null,
             p_max_version     => 'T',
-            p_office_id       => '&&c_office_id');
+            p_office_id       => '&&office_id');
 
          fetch l_crsr
           bulk collect
@@ -2874,13 +2883,17 @@ AS
             ut.expect(l_dates(l_count)).to_equal(date '2024-04-15' + 7/24);
             ut.expect(l_values(l_count)).to_equal(415);
             ut.expect(l_quality_codes(l_count)).to_equal(0);
+         else
+            for ii in 1..l_dates.count loop
+               dbms_output.put_line(l_dates(ii));
+            end loop;
          end if;
       end loop;
       ------------------------------
       -- test inclusive/exclusive --
       ------------------------------
       for pass in 1..2 loop
-         dbms_output.put_line('==> Testing start/end inclusive = '||substr('TF', pass, 1));
+         dbms_output.put_line('==> Testing retrieve_ts_f LRTS start/end inclusive = '||substr('TF', pass, 1));
          l_crsr := cwms_ts.retrieve_ts_f (
             p_cwms_ts_id_out  => l_ts_id_out,
             p_units_out       => l_unit_id_out,
@@ -2899,7 +2912,7 @@ AS
             p_next            => 'F',
             p_version_date    => null,
             p_max_version     => 'T',
-            p_office_id       => '&&c_office_id');
+            p_office_id       => '&&office_id');
 
          fetch l_crsr
           bulk collect
@@ -2933,7 +2946,7 @@ AS
       ---------------
       -- test trim --
       ---------------
-      dbms_output.put_line('==> Testing trim = T');
+      dbms_output.put_line('==> Testing retrieve_ts_f LRTS trim = T');
       l_crsr := cwms_ts.retrieve_ts_f (
          p_cwms_ts_id_out  => l_ts_id_out,
          p_units_out       => l_unit_id_out,
@@ -2952,7 +2965,7 @@ AS
          p_next            => 'F',
          p_version_date    => null,
          p_max_version     => 'T',
-         p_office_id       => '&&c_office_id');
+         p_office_id       => '&&office_id');
 
       fetch l_crsr
        bulk collect
@@ -2985,7 +2998,7 @@ AS
       -- test ITS --
       --------------
       for pass in 1..2 loop
-         dbms_output.put_line('==> Testing irregular time series with prev/next = '||substr('TF', pass, 1));
+         dbms_output.put_line('==> Testing retrieve_ts_f ITS with prev/next = '||substr('TF', pass, 1));
          l_crsr := cwms_ts.retrieve_ts_f (
             p_cwms_ts_id_out  => l_ts_id_out,
             p_units_out       => l_unit_id_out,
@@ -3004,7 +3017,7 @@ AS
             p_next            => substr('TF', pass, 1),
             p_version_date    => null,
             p_max_version     => 'T',
-            p_office_id       => '&&c_office_id');
+            p_office_id       => '&&office_id');
 
          fetch l_crsr
           bulk collect
@@ -3031,7 +3044,7 @@ AS
       -- test date/time type --
       -------------------------
       for pass in 1..2 loop
-         dbms_output.put_line('==> Testing date_time_type = '||case when pass = 1 then 'TIMESTAMP' else 'TIMESTAMP WITH TIME ZONE' end);
+         dbms_output.put_line('==> Testing retrieve_ts_f ITS date_time_type = '||case when pass = 1 then 'TIMESTAMP' else 'TIMESTAMP WITH TIME ZONE' end);
          l_crsr := cwms_ts.retrieve_ts_f (
             p_cwms_ts_id_out  => l_ts_id_out,
             p_units_out       => l_unit_id_out,
@@ -3050,7 +3063,7 @@ AS
             p_next            => 'F',
             p_version_date    => null,
             p_max_version     => 'T',
-            p_office_id       => '&&c_office_id');
+            p_office_id       => '&&office_id');
 
          if pass = 1 then
             fetch l_crsr
@@ -3095,7 +3108,7 @@ AS
       -- test time zone --
       --------------------
       for pass in 1..2 loop
-         dbms_output.put_line('==> Testing time zone = '||case when pass = 1 then 'UTC' else 'US/Pacific' end);
+         dbms_output.put_line('==> Testing retrieve_ts_f ITS time zone = '||case when pass = 1 then 'UTC' else 'US/Pacific' end);
          l_crsr := cwms_ts.retrieve_ts_f (
             p_cwms_ts_id_out  => l_ts_id_out,
             p_units_out       => l_unit_id_out,
@@ -3114,7 +3127,7 @@ AS
             p_next            => 'F',
             p_version_date    => null,
             p_max_version     => 'T',
-            p_office_id       => '&&c_office_id');
+            p_office_id       => '&&office_id');
 
          fetch l_crsr
           bulk collect
@@ -3145,7 +3158,7 @@ AS
       ------------------------
       cwms_display.store_unit('Code', 'EN', '%', 'F', '&&office_id');
       for pass in 1..2 loop
-         dbms_output.put_line('==> Testing default units for unit system = '||case when pass = 1 then 'SI' else 'EN' end);
+         dbms_output.put_line('==> Testing retrieve_ts_f ITS default units for unit system = '||case when pass = 1 then 'SI' else 'EN' end);
          l_crsr := cwms_ts.retrieve_ts_f (
             p_cwms_ts_id_out  => l_ts_id_out,
             p_units_out       => l_unit_id_out,
@@ -3164,7 +3177,7 @@ AS
             p_next            => 'F',
             p_version_date    => null,
             p_max_version     => 'T',
-            p_office_id       => '&&c_office_id');
+            p_office_id       => '&&office_id');
 
          fetch l_crsr
           bulk collect
@@ -3187,6 +3200,8 @@ AS
          end if;
       end loop;
       cwms_display.delete_unit('Code', 'EN', '&&office_id');
+      cwms_ts.set_require_new_lrts_format_on_input('F');
+      cwms_ts.set_use_new_lrts_format_on_output('F');
    end test_retrieve_ts_f;
 
 

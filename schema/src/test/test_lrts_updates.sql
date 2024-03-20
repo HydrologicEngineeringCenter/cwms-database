@@ -125,6 +125,9 @@ is
    exc_location_id_not_found exception;
    pragma exception_init(exc_location_id_not_found, -20025);
 begin
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   cwms_ts.set_require_new_lrts_format_on_input('F');
+   cwms_ts.set_allow_new_lrts_format_on_input('F');
    begin
       cwms_vt.delete_screening_id (
          p_screening_id        => 'Elev Range 1',
