@@ -159,6 +159,9 @@
 @@cwms_ts_profile_pkg
 @@cwms_ts_profile_pkg_body
 
+@@runstats_pkg
+@@runstats_pkg_body
+
 @@cwms/functions/str2tbl.sql
 
 @@cwms/procedures/download_file
