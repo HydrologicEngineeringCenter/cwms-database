@@ -49,7 +49,7 @@ begin
             l_office_id
             ||'/'
             ||p_pool_name);
-      elsif l_rec.office_code != cwms_util.user_office_code and 
+      elsif l_rec.office_code != cwms_util.user_office_code and
             cwms_util.user_office_code != cwms_util.db_office_code_all
       then
          -----------------------------
@@ -65,8 +65,8 @@ begin
       ----------------------------------------------------
       -- update the existing record (only changes case) --
       ----------------------------------------------------
-      update at_pool_name 
-         set pool_name = p_pool_name 
+      update at_pool_name
+         set pool_name = p_pool_name
        where pool_name_code = l_rec.pool_name_code;
    else
       -------------------------
@@ -129,7 +129,7 @@ begin
       when no_data_found then
          cwms_err.raise('ITEM DOES NOT EXIST', 'Pool name', l_office_id||'/'||p_old_name);
    end;
-   if l_rec.office_code != cwms_util.user_office_code and 
+   if l_rec.office_code != cwms_util.user_office_code and
       cwms_util.user_office_code != cwms_util.db_office_code_all
    then
       -----------------------------
@@ -142,12 +142,12 @@ begin
          ||'-owned pool name from office '
          ||cwms_util.user_office_id);
    end if;
-   ---------------------   
+   ---------------------
    -- rename the pool --
    ---------------------
    update at_pool_name
       set pool_name = p_new_name
-    where pool_name_code = l_rec.pool_name_code;    
+    where pool_name_code = l_rec.pool_name_code;
 end rename_pool;
 --------------------------------------------------------------------------------
 -- procedure delete_pool_name
@@ -191,7 +191,7 @@ begin
       when no_data_found then
          cwms_err.raise('ITEM DOES NOT EXIST', 'Pool name', l_office_id||'/'||p_pool_name);
    end;
-   if l_rec.office_code != cwms_util.user_office_code and 
+   if l_rec.office_code != cwms_util.user_office_code and
       cwms_util.user_office_code != cwms_util.db_office_code_all
    then
       -----------------------------
@@ -238,9 +238,9 @@ begin
       l_office_id_regex := cwms_util.user_office_id;
       if l_office_id_regex = 'CWMS' then
          l_office_id_regex := '.+';
-      else 
+      else
          l_office_id_regex := l_office_id_regex||'|CWMS';
-      end if;   
+      end if;
    else
       l_office_id_regex := replace(replace(upper(p_office_id_mask), '*', '.*'), '?', '.?');
    end if;
@@ -267,8 +267,8 @@ begin
       l_cat_cursor,
       p_pool_name_mask,
       p_office_id_mask);
-      
-   return l_cat_cursor;      
+
+   return l_cat_cursor;
 end cat_pool_names_f;
 --------------------------------------------------------------------------------
 -- procedure store_pool
@@ -339,7 +339,7 @@ function store_pool2_f(
    p_fail_if_exists   in varchar2 default 'T',
    p_create_pool_name in varchar2 default 'F',
    p_office_id        in varchar2 default null)
-   return integer 
+   return integer
 is
    l_project          project_obj_t;
    l_location_id      varchar2(57);
@@ -394,31 +394,31 @@ begin
    -- validate bottom location level id --
    ---------------------------------------
    l_parts := cwms_util.split_text(p_bottom_level_id, '.');
-   select cast(multiset(select initcap(column_value) from table(l_parts)) as str_tab_t) 
-     into l_parts 
+   select cast(multiset(select initcap(column_value) from table(l_parts)) as str_tab_t)
+     into l_parts
      from dual;
-   case 
+   case
    when l_parts.count = 4 then
-      if l_parts(1) != 'Elev' or 
+      if l_parts(1) != 'Elev' or
          l_parts(2) != 'Inst' or
          l_parts(3) != '0'
       then
          cwms_err.raise(
-            'ERROR', 
+            'ERROR',
             'Bottom location level ID is not Elev.Inst.0.<specified_level>');
       end if;
       l_bottom_level_id := cwms_util.join_text(l_parts, '.');
    when l_parts.count = 5 then
-      if l_parts(2) != 'Elev' or 
+      if l_parts(2) != 'Elev' or
          l_parts(3) != 'Inst' or
          l_parts(4) != '0'
       then
          cwms_err.raise(
-            'ERROR', 
+            'ERROR',
             'Bottom location level ID is not <location>.Elev.Inst.0.<specified_level>');
       end if;
       l_bottom_level_id := cwms_util.join_text(cwms_util.sub_table(l_parts, 2), '.');
-   else 
+   else
       cwms_err.raise('INVALID_ITEM', p_bottom_level_id, 'location level ID');
    end case;
    l_location_level := cwms_level.retrieve_location_level(
@@ -428,7 +428,7 @@ begin
       p_office_id         => p_office_id);
    if l_location_level is null then
       cwms_err.raise(
-         'ITEM_DOES_NOT_EXIST', 
+         'ITEM_DOES_NOT_EXIST',
          'Location level',
          cwms_util.get_db_office_id_from_code(l_office_code)
          ||'/'
@@ -438,31 +438,31 @@ begin
    -- validate top location level id --
    ------------------------------------
    l_parts := cwms_util.split_text(p_top_level_id, '.');
-   select cast(multiset(select initcap(column_value) from table(l_parts)) as str_tab_t) 
-     into l_parts 
+   select cast(multiset(select initcap(column_value) from table(l_parts)) as str_tab_t)
+     into l_parts
      from dual;
-   case 
+   case
    when l_parts.count = 4 then
-      if l_parts(1) != 'Elev' or 
+      if l_parts(1) != 'Elev' or
          l_parts(2) != 'Inst' or
          l_parts(3) != '0'
       then
          cwms_err.raise(
-            'ERROR', 
+            'ERROR',
             'Top location level ID is not Elev.Inst.0.<specified_level>');
       end if;
       l_top_level_id := cwms_util.join_text(l_parts, '.');
    when l_parts.count = 5 then
-      if l_parts(2) != 'Elev' or 
+      if l_parts(2) != 'Elev' or
          l_parts(3) != 'Inst' or
          l_parts(4) != '0'
       then
          cwms_err.raise(
-            'ERROR', 
+            'ERROR',
             'Top location level ID is not <location>.Elev.Inst.0.<specified_level>');
       end if;
       l_top_level_id := cwms_util.join_text(cwms_util.sub_table(l_parts, 2), '.');
-   else 
+   else
       cwms_err.raise('INVALID_ITEM', p_top_level_id, 'location level ID');
    end case;
    l_location_level := cwms_level.retrieve_location_level(
@@ -472,7 +472,7 @@ begin
       p_office_id         => p_office_id);
    if l_location_level is null then
       cwms_err.raise(
-         'ITEM_DOES_NOT_EXIST', 
+         'ITEM_DOES_NOT_EXIST',
          'Location level',
          cwms_util.get_db_office_id_from_code(l_office_code)
          ||'/'
@@ -503,7 +503,7 @@ begin
             -- error out --
             ---------------
             cwms_err.raise(
-               'ITEM_DOES_NOT_EXIST', 
+               'ITEM_DOES_NOT_EXIST',
                'Pool name',
                cwms_util.get_db_office_id_from_code(l_office_code)
                ||'/'
@@ -519,7 +519,7 @@ begin
         from at_pool
        where pool_name_code = l_pool_name_code
          and project_code = l_location_code;
-      l_exists := true;         
+      l_exists := true;
    exception
       when no_data_found then l_exists := false;
    end;
@@ -528,7 +528,7 @@ begin
       -- error out --
       ---------------
       cwms_err.raise(
-         'ITEM_ALREADY_EXISTS', 
+         'ITEM_ALREADY_EXISTS',
          'Pool',
          cwms_util.get_db_office_id_from_code(l_office_code)
          ||'/'
@@ -606,8 +606,8 @@ begin
       p_project_id,
       p_pool_name,
       p_office_id);
-      
-   return str_tab_t(l_bottom_level, l_top_level);      
+
+   return str_tab_t(l_bottom_level, l_top_level);
 end retrieve_pool_f;
 --------------------------------------------------------------------------------
 -- procedure retrieve_pool2
@@ -637,7 +637,7 @@ begin
    if p_pool_name is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_POOL_NAME');
    end if;
-   begin   
+   begin
       ----------------------------
       -- look for explicit pool --
       ----------------------------
@@ -645,8 +645,8 @@ begin
         into l_rec
         from at_pool
        where project_code = cwms_loc.get_location_code(l_office_code, p_project_id)
-         and pool_name_code = (select pool_name_code 
-                                 from at_pool_name 
+         and pool_name_code = (select pool_name_code
+                                 from at_pool_name
                                 where upper(pool_name) = upper(p_pool_name)
                                   and at_pool_name.office_code in (l_office_code, cwms_util.db_office_code_all)
                               );
@@ -679,7 +679,7 @@ begin
                        and bl.base_location_id
                            ||substr('.', 1, length(pl.sub_location_id))
                            ||pl.sub_location_id = upper(p_project_id)
-                       and upper(trim(substr(specified_level_id, 8))) = upper(p_pool_name)    
+                       and upper(trim(substr(specified_level_id, 8))) = upper(p_pool_name)
                        and pr.project_location_code = ll.location_code
                        and pl.location_code = pr.project_location_code
                        and bl.base_location_code = pl.base_location_code
@@ -715,7 +715,7 @@ begin
                                       and sp2.specified_level_code = ll2.specified_level_code
                                       and sp2.specified_level_id = replace(sp.specified_level_id, 'Top of ', 'Bottom of ')
                                   )
-                     group by bp.base_parameter_id||'.'||pt.parameter_type_id||'.'||d.duration_id||'.'||sp.specified_level_id                     
+                     group by bp.base_parameter_id||'.'||pt.parameter_type_id||'.'||d.duration_id||'.'||sp.specified_level_id
                    );
          exception
             when no_data_found then
@@ -723,7 +723,7 @@ begin
                -- error out --
                ---------------
                cwms_err.raise(
-                  'ITEM_DOES_NOT_EXIST', 
+                  'ITEM_DOES_NOT_EXIST',
                   'Pool',
                   l_office_id
                   ||'/'
@@ -749,7 +749,7 @@ is
    l_rec       at_pool%rowtype;
    l_office_id varchar2(16);
 begin
-   begin   
+   begin
       select *
         into l_rec
         from at_pool
@@ -760,7 +760,7 @@ begin
          -- error out --
          ---------------
          cwms_err.raise(
-            'ITEM_DOES_NOT_EXIST', 
+            'ITEM_DOES_NOT_EXIST',
             'Pool',
             p_pool_code);
    end;
@@ -772,7 +772,7 @@ begin
     where pl.location_code = l_rec.project_code
       and bl.base_location_code = pl.base_location_code
       and o.office_code = bl.db_office_code;
-      
+
    if cwms_util.user_office_id not in (l_office_id, 'CWMS', 'SYS') then
       -----------------------------
       -- insufficient privileges --
@@ -787,7 +787,7 @@ begin
    ------------------------------------
    -- delete the record and children --
    ------------------------------------
-   delete from at_pool where pool_code = l_rec.pool_code; 
+   delete from at_pool where pool_code = l_rec.pool_code;
    if l_rec.clob_code is not null then
       delete from at_clob where clob_code = l_rec.clob_code;
    end if;
@@ -815,7 +815,7 @@ begin
    if p_pool_name is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_POOL_NAME');
    end if;
-   begin   
+   begin
       select pool_code
         into l_pool_code
         from at_pool
@@ -827,7 +827,7 @@ begin
          -- error out --
          ---------------
          cwms_err.raise(
-            'ITEM_DOES_NOT_EXIST', 
+            'ITEM_DOES_NOT_EXIST',
             'Pool',
             l_office_id
             ||'/'
@@ -1026,7 +1026,7 @@ begin
       p_include_explicit,
       p_include_implicit,
       p_office_id_mask);
-      
+
    return l_cat_cursor;
 end cat_pools_f;
 --------------------------------------------------------------------------------
@@ -1050,7 +1050,7 @@ begin
       p_datetime,
       p_timezone,
       p_office_id);
-end in_pool;   
+end in_pool;
 --------------------------------------------------------------------------------
 -- function in_pool_f
 --------------------------------------------------------------------------------
@@ -1076,12 +1076,12 @@ begin
       p_datetime    => p_datetime,
       p_timezone    => p_timezone,
       p_office_id   => p_office_id);
-      
-   return case 
+
+   return case
           when p_elevation > l_bot_elev and p_elevation <= l_top_elev then 'T'
           else 'F'
           end;
-end in_pool_f;   
+end in_pool_f;
 --------------------------------------------------------------------------------
 -- procedure cat_containing_pool_names
 --------------------------------------------------------------------------------
@@ -1120,7 +1120,7 @@ begin
    if p_unit is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_UNIT');
    end if;
-   
+
    l_matched := str_tab_t();
    cat_pools(
       p_cat_cursor        => c,
@@ -1146,7 +1146,7 @@ begin
       if p_elevation > l_bot_elev and p_elevation <= l_top_elev then
          l_matched.extend;
          l_matched(l_matched.count) := l_rec.pool_name;
-      end if;         
+      end if;
    end loop;
    close c;
    open p_pool_names for select column_value as pool_name from table(l_matched);
@@ -1173,8 +1173,8 @@ begin
       p_datetime,
       p_timezone,
       p_office_id);
-      
-   return l_pool_names;      
+
+   return l_pool_names;
 end cat_containing_pool_names_f;
 --------------------------------------------------------------------------------
 -- procedure get_pool_limit_elev
@@ -1216,7 +1216,7 @@ begin
    when instr('BOTTOM', upper(p_limit)) = 1 then l_limit_is_top := false;
    else cwms_err.raise('ERROR', 'P_LMIT must be ''TOP'' or ''BOTTOM'', or an initial substring of either');
    end case;
-   
+
    ---------------------------------
    -- set up info from parameters --
    ---------------------------------
@@ -1225,8 +1225,8 @@ begin
       l_datetime := sysdate;
    else
       l_datetime := cwms_util.change_timezone(
-         p_datetime, 
-         'UTC', 
+         p_datetime,
+         'UTC',
          nvl(p_timezone, cwms_loc.get_local_timezone(p_project_id, l_office_id)));
    end if;
    -----------------------
@@ -1249,9 +1249,9 @@ begin
    -----------------------------------------------------------------
    p_limit_elev := cwms_rounding.round_nn_f(
       cwms_level.retrieve_location_level_value (
-         p_location_level_id => l_level_id,              
-         p_level_units       => p_unit,              
-         p_date              => l_datetime,     
+         p_location_level_id => l_level_id,
+         p_level_units       => p_unit,
+         p_date              => l_datetime,
          p_office_id         => l_office_id),
       '7777777777');
 end get_pool_limit_elev;
@@ -1273,14 +1273,14 @@ begin
 	get_pool_limit_elev(
       p_limit_elev => l_limit_elev,
       p_project_id => p_project_id,
-      p_pool_name  => p_pool_name, 
-      p_limit      => p_limit,     
-      p_unit       => p_unit,      
-      p_datetime   => p_datetime,  
-      p_timezone   => p_timezone,  
+      p_pool_name  => p_pool_name,
+      p_limit      => p_limit,
+      p_unit       => p_unit,
+      p_datetime   => p_datetime,
+      p_timezone   => p_timezone,
       p_office_id  => p_office_id);
-      
-   return l_limit_elev;      
+
+   return l_limit_elev;
 end get_pool_limit_elev_f;
 --------------------------------------------------------------------------------
 -- procedure get_pool_limit_elevs
@@ -1320,8 +1320,8 @@ begin
       l_datetime := sysdate;
    else
       l_datetime := cwms_util.change_timezone(
-         p_datetime, 
-         'UTC', 
+         p_datetime,
+         'UTC',
          nvl(p_timezone, cwms_loc.get_local_timezone(p_project_id, l_office_id)));
    end if;
    -----------------------
@@ -1333,7 +1333,7 @@ begin
       p_project_id,
       p_pool_name,
       l_office_id);
-      
+
    l_bot_level_id := p_project_id||'.'||l_bot_level_id;
    l_top_level_id := p_project_id||'.'||l_top_level_id;
    ------------------------------------------------------------------
@@ -1341,17 +1341,17 @@ begin
    ------------------------------------------------------------------
    p_bottom_elev := cwms_rounding.round_nn_f(
       cwms_level.retrieve_location_level_value (
-         p_location_level_id => l_bot_level_id,              
-         p_level_units       => p_unit,              
-         p_date              => l_datetime,     
+         p_location_level_id => l_bot_level_id,
+         p_level_units       => p_unit,
+         p_date              => l_datetime,
          p_office_id         => l_office_id),
       '7777777777');
-      
+
    p_top_elev := cwms_rounding.round_nn_f(
       cwms_level.retrieve_location_level_value (
-         p_location_level_id => l_top_level_id,              
-         p_level_units       => p_unit,              
-         p_date              => l_datetime,     
+         p_location_level_id => l_top_level_id,
+         p_level_units       => p_unit,
+         p_date              => l_datetime,
          p_office_id         => l_office_id),
       '7777777777');
 end get_pool_limit_elevs;
@@ -1380,7 +1380,7 @@ begin
       p_timezone,
       p_office_id);
 
-   return number_tab_t(l_bottom_elev, l_top_elev);      
+   return number_tab_t(l_bottom_elev, l_top_elev);
 end get_pool_limit_elevs_f;
 --------------------------------------------------------------------------------
 -- procedure get_pool_limit_elevs
@@ -1451,9 +1451,9 @@ begin
    for i in 1..p_datetimes.count loop
       l_limit_elevs(i) := cwms_rounding.round_nn_f(
          cwms_level.retrieve_location_level_value (
-            p_location_level_id => l_level_id,              
-            p_level_units       => p_unit,              
-            p_date              => cwms_util.change_timezone(p_datetimes(i),'UTC', l_timezone),     
+            p_location_level_id => l_level_id,
+            p_level_units       => p_unit,
+            p_date              => cwms_util.change_timezone(p_datetimes(i),'UTC', l_timezone),
             p_office_id         => l_office_id),
          '7777777777');
    end loop;
@@ -1481,8 +1481,8 @@ begin
       p_limit       => p_limit,
       p_unit        => p_unit,
       p_datetimes   => p_datetimes,
-      p_timezone    => p_timezone,   
-      p_office_id   => p_office_id);  
+      p_timezone    => p_timezone,
+      p_office_id   => p_office_id);
 	return l_limit_elevs;
 end get_pool_limit_elevs_f;
 --------------------------------------------------------------------------------
@@ -1502,7 +1502,7 @@ is
    l_bot_level_id varchar2(256);
    l_top_level_id varchar2(256);
    l_timezone     varchar2(28);
-   l_datetime     date;   
+   l_datetime     date;
    l_bottom_elevs number_tab_t;
    l_top_elevs    number_tab_t;
 begin
@@ -1532,7 +1532,7 @@ begin
       p_project_id,
       p_pool_name,
       l_office_id);
-      
+
    l_bot_level_id := p_project_id||'.'||l_bot_level_id;
    l_top_level_id := p_project_id||'.'||l_top_level_id;
    ------------------------------------------------------------------
@@ -1546,17 +1546,17 @@ begin
       l_datetime := cwms_util.change_timezone(p_datetimes(i), 'UTC', l_timezone);
       l_bottom_elevs(i) := cwms_rounding.round_nn_f(
          cwms_level.retrieve_location_level_value (
-            p_location_level_id => l_bot_level_id,              
-            p_level_units       => p_unit,              
-            p_date              => l_datetime,     
+            p_location_level_id => l_bot_level_id,
+            p_level_units       => p_unit,
+            p_date              => l_datetime,
             p_office_id         => l_office_id),
          '7777777777');
-         
+
       l_top_elevs(i) := cwms_rounding.round_nn_f(
          cwms_level.retrieve_location_level_value (
-            p_location_level_id => l_top_level_id,              
-            p_level_units       => p_unit,              
-            p_date              => l_datetime,     
+            p_location_level_id => l_top_level_id,
+            p_level_units       => p_unit,
+            p_date              => l_datetime,
             p_office_id         => l_office_id),
          '7777777777');
    end loop;
@@ -1593,9 +1593,9 @@ begin
       p_pool_name    => p_pool_name,
       p_unit         => p_unit,
       p_datetimes    => p_datetimes,
-      p_timezone     => p_timezone,    
+      p_timezone     => p_timezone,
       p_office_id    => p_office_id);
-      
+
    if l_row_axis then
       l_results := number_tab_tab_t();
       l_results.extend(p_datetimes.count);
@@ -1603,7 +1603,7 @@ begin
          l_results(i) := number_tab_t(l_bottom_elevs(i), l_top_elevs(i));
       end loop;
    else
-      l_results := number_tab_tab_t(l_bottom_elevs, l_top_elevs);      
+      l_results := number_tab_tab_t(l_bottom_elevs, l_top_elevs);
    end if;
 	return l_results;
 end get_pool_limit_elevs_f;
@@ -1642,12 +1642,12 @@ begin
    if p_timeseries is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_TIMESERIES');
    end if;
-   
+
 	select date_time
 	  bulk collect
 	  into l_datetimes
 	  from table(p_timeseries);
-	  
+	
    get_pool_limit_elevs(
       p_limit_elevs => l_elevs,
       p_project_id  => p_project_id,
@@ -1655,14 +1655,14 @@ begin
       p_limit       => p_limit,
       p_unit        => p_unit,
       p_datetimes   => l_datetimes,
-      p_timezone    => p_timezone,   
+      p_timezone    => p_timezone,
       p_office_id   => p_office_id);
 
    l_limit_ts := ztsv_array();
    l_limit_ts.extend(p_timeseries.count);
    for i in 1..p_timeseries.count loop
       l_limit_ts(i) := ztsv_type(p_timeseries(i).date_time, l_elevs(i), 0);
-   end loop;   
+   end loop;
    p_limit_elevs := l_limit_ts;
 end get_pool_limit_elevs;
 --------------------------------------------------------------------------------
@@ -1689,7 +1689,7 @@ begin
       p_timeseries  => p_timeseries,
       p_timezone    => p_timezone,
       p_office_id   => p_office_id);
-      
+
 	return l_limit_elevs;
 end get_pool_limit_elevs_f;
 --------------------------------------------------------------------------------
@@ -1726,12 +1726,12 @@ begin
    if p_timeseries is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_TIMESERIES');
    end if;
-   
+
 	select date_time
 	  bulk collect
 	  into l_datetimes
 	  from table(p_timeseries);
-	  
+	
    get_pool_limit_elevs(
       p_bottom_elevs => l_bottom_elevs,
       p_top_elevs    => l_top_elevs,
@@ -1739,7 +1739,7 @@ begin
       p_pool_name    => p_pool_name,
       p_unit         => p_unit,
       p_datetimes    => l_datetimes,
-      p_timezone     => p_timezone,   
+      p_timezone     => p_timezone,
       p_office_id    => p_office_id);
 
    l_bottom_ts := ztsv_array();
@@ -1749,7 +1749,7 @@ begin
    for i in 1..p_timeseries.count loop
       l_bottom_ts(i) := ztsv_type(p_timeseries(i).date_time, l_bottom_elevs(i), 0);
       l_top_ts(i)    := ztsv_type(p_timeseries(i).date_time, l_top_elevs(i), 0);
-   end loop;   
+   end loop;
    p_bottom_elevs := l_bottom_ts;
    p_top_elevs    := l_top_ts;
 end get_pool_limit_elevs;
@@ -1785,7 +1785,7 @@ begin
       p_timeseries   => p_timeseries,
       p_timezone     => p_timezone,
       p_office_id    => p_office_id);
-   
+
    if l_row_axis then
       l_results := ztsv_array_tab();
       l_results.extend(l_bottom_ts.count);
@@ -1794,7 +1794,7 @@ begin
       end loop;
    else
       l_results := ztsv_array_tab(l_bottom_ts, l_top_ts);
-   end if;      
+   end if;
 	return l_results;
 end get_pool_limit_elevs_f;
 --------------------------------------------------------------------------------
@@ -1818,7 +1818,7 @@ is
    l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
-   l_sub_parameter_id  varchar2(32);                                    
+   l_sub_parameter_id  varchar2(32);
    l_parameter_type_id varchar2(16);
    l_interval_id       varchar2(16);
    l_duration_id       varchar2(16);
@@ -1857,34 +1857,34 @@ begin
       l_version_id);
    if upper(l_base_location_id) != upper(cwms_util.get_base_id(p_project_id)) then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
-         ||' is not for specified project ' 
+         ||' is not for specified project '
          ||p_project_id);
    elsif l_base_parameter_id != 'Elev' then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
          ||' is not an elevation time series');
    end if;
    cwms_ts.retrieve_ts(
       p_at_tsv_rc         =>  c_ts,
-      p_cwms_ts_id        =>  p_tsid,              
-      p_units             =>  p_unit,              
-      p_start_time        =>  p_start_time,                  
-      p_end_time          =>  p_end_time,                  
+      p_cwms_ts_id        =>  p_tsid,
+      p_units             =>  p_unit,
+      p_start_time        =>  p_start_time,
+      p_end_time          =>  p_end_time,
       p_time_zone         =>  p_timezone,
-      p_trim              =>  'T',  
-      p_start_inclusive   =>  'T',  
-      p_end_inclusive     =>  'T',  
-      p_previous          =>  'F',  
-      p_next              =>  'F',  
-      p_version_date      =>  null,     
-      p_max_version       =>  'T',  
+      p_trim              =>  'T',
+      p_start_inclusive   =>  'T',
+      p_end_inclusive     =>  'T',
+      p_previous          =>  'F',
+      p_next              =>  'F',
+      p_version_date      =>  null,
+      p_max_version       =>  'T',
       p_office_id         =>  p_office_id);
-      
+
    fetch c_ts bulk collect into l_ts1;
    close c_ts;
    l_ts2 := ztsv_array();
@@ -1892,7 +1892,7 @@ begin
    for i in 1..l_ts1.count loop
       l_ts2(i) := ztsv_type(l_ts1(i).date_time, l_ts1(i).value, 0);
    end loop;
-   
+
    get_pool_limit_elevs(
       p_limit_elevs => p_limit_elevs,
       p_project_id  => p_project_id,
@@ -1901,8 +1901,8 @@ begin
       p_unit        => p_unit,
       p_timeseries  => l_ts2,
       p_timezone    => p_timezone,
-      p_office_id   => p_office_id);  
-      
+      p_office_id   => p_office_id);
+
 end get_pool_limit_elevs;
 --------------------------------------------------------------------------------
 -- function get_pool_limit_elevs_f
@@ -1932,7 +1932,7 @@ begin
       p_end_time    => p_end_time,
       p_timezone    => p_timezone,
       p_office_id   => p_office_id);
-      
+
 	return l_limit_elevs;
 end get_pool_limit_elevs_f;
 --------------------------------------------------------------------------------
@@ -1956,7 +1956,7 @@ is
    l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
-   l_sub_parameter_id  varchar2(32);                                    
+   l_sub_parameter_id  varchar2(32);
    l_parameter_type_id varchar2(16);
    l_interval_id       varchar2(16);
    l_duration_id       varchar2(16);
@@ -1995,34 +1995,34 @@ begin
       l_version_id);
    if upper(l_base_location_id) != upper(cwms_util.get_base_id(p_project_id)) then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
-         ||' is not for specified project ' 
+         ||' is not for specified project '
          ||p_project_id);
    elsif l_base_parameter_id != 'Elev' then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
          ||' is not an elevation time series');
    end if;
    cwms_ts.retrieve_ts(
       p_at_tsv_rc         =>  c_ts,
-      p_cwms_ts_id        =>  p_tsid,              
-      p_units             =>  p_unit,              
-      p_start_time        =>  p_start_time,                  
-      p_end_time          =>  p_end_time,                  
+      p_cwms_ts_id        =>  p_tsid,
+      p_units             =>  p_unit,
+      p_start_time        =>  p_start_time,
+      p_end_time          =>  p_end_time,
       p_time_zone         =>  p_timezone,
-      p_trim              =>  'T',  
-      p_start_inclusive   =>  'T',  
-      p_end_inclusive     =>  'T',  
-      p_previous          =>  'F',  
-      p_next              =>  'F',  
-      p_version_date      =>  null,     
-      p_max_version       =>  'T',  
+      p_trim              =>  'T',
+      p_start_inclusive   =>  'T',
+      p_end_inclusive     =>  'T',
+      p_previous          =>  'F',
+      p_next              =>  'F',
+      p_version_date      =>  null,
+      p_max_version       =>  'T',
       p_office_id         =>  p_office_id);
-      
+
    fetch c_ts bulk collect into l_ts1;
    close c_ts;
    l_ts2 := ztsv_array();
@@ -2030,7 +2030,7 @@ begin
    for i in 1..l_ts1.count loop
       l_ts2(i) := ztsv_type(l_ts1(i).date_time, l_ts1(i).value, 0);
    end loop;
-   
+
    get_pool_limit_elevs(
       p_bottom_elevs => p_bottom_elevs,
       p_top_elevs    => p_top_elevs,
@@ -2040,7 +2040,7 @@ begin
       p_timeseries   => l_ts2,
       p_timezone     => p_timezone,
       p_office_id    => p_office_id);
-      
+
 end get_pool_limit_elevs;
 --------------------------------------------------------------------------------
 -- function get_pool_limit_elevs_f
@@ -2077,7 +2077,7 @@ begin
       p_start_time   => p_start_time,
       p_end_time     => p_end_time,
       p_timezone     => p_timezone,
-      p_office_id    => p_office_id);   
+      p_office_id    => p_office_id);
 
    if l_row_axis then
       l_results := ztsv_array_tab();
@@ -2087,7 +2087,7 @@ begin
       end loop;
    else
       l_results := ztsv_array_tab(l_bottom_elevs, l_top_elevs);
-   end if;      
+   end if;
 	return l_results;
 end get_pool_limit_elevs_f;
 --------------------------------------------------------------------------------
@@ -2111,7 +2111,7 @@ begin
           ||'.'||rt.parameters_id
           ||'.'||rt.version
           ||'.'||rs.version
-     into l_rating_id       
+     into l_rating_id
      from at_physical_location pl,
           at_base_location bl,
           cwms_office o,
@@ -2129,8 +2129,8 @@ begin
                ) = upper(p_project_id)
       and rt.version in ('Linear','Log','Custom','Standard')
       and rs.version in ('Step','Distributed','Custom','Production');
-      
-   return l_rating_id;      
+
+   return l_rating_id;
 exception
    when no_data_found or too_many_rows then
       cwms_err.raise(
@@ -2196,8 +2196,8 @@ begin
       l_datetime := sysdate;
    else
       l_datetime := cwms_util.change_timezone(
-         p_datetime, 
-         'UTC', 
+         p_datetime,
+         'UTC',
          nvl(p_timezone, cwms_loc.get_local_timezone(p_project_id, l_office_id)));
    end if;
    if not l_always_rate then
@@ -2223,9 +2223,9 @@ begin
       -----------------------------------------------------------------
       begin
          l_limit_stor := cwms_level.retrieve_location_level_value (
-            p_location_level_id => replace(l_level_id, '.Elev.', '.Stor.'),              
-            p_level_units       => p_unit,              
-            p_date              => l_datetime,     
+            p_location_level_id => replace(l_level_id, '.Elev.', '.Stor.'),
+            p_level_units       => p_unit,
+            p_date              => l_datetime,
             p_office_id         => l_office_id);
       exception
          when item_does_not_exist then null;
@@ -2248,7 +2248,7 @@ begin
          null,
          'UTC',
          l_office_id);
-   end if;      
+   end if;
    p_limit_stor := cwms_rounding.round_nn_f(l_limit_stor, '4444444564');
 end get_pool_limit_stor;
 --------------------------------------------------------------------------------
@@ -2278,7 +2278,7 @@ begin
       p_timezone    => p_timezone,
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
-      p_office_id   => p_office_id);  
+      p_office_id   => p_office_id);
 
 	return l_limit_stor;
 end get_pool_limit_stor_f;
@@ -2329,8 +2329,8 @@ begin
       l_datetime := sysdate;
    else
       l_datetime := cwms_util.change_timezone(
-         p_datetime, 
-         'UTC', 
+         p_datetime,
+         'UTC',
          nvl(p_timezone, cwms_loc.get_local_timezone(p_project_id, l_office_id)));
    end if;
    if not l_always_rate then
@@ -2346,22 +2346,22 @@ begin
          p_project_id,
          p_pool_name,
          l_office_id);
-         
-      l_bot_level_id := p_project_id||'.'||l_bot_level_id;         
-      l_top_level_id := p_project_id||'.'||l_top_level_id;         
+
+      l_bot_level_id := p_project_id||'.'||l_bot_level_id;
+      l_top_level_id := p_project_id||'.'||l_top_level_id;
       ------------------------------------------------------------------
       -- get the location level values at the specified time and unit --
       ------------------------------------------------------------------
       begin
          l_bottom_stor := cwms_level.retrieve_location_level_value (
-            p_location_level_id => replace(l_bot_level_id, '.Elev.', '.Stor.'),              
-            p_level_units       => p_unit,              
-            p_date              => l_datetime,     
+            p_location_level_id => replace(l_bot_level_id, '.Elev.', '.Stor.'),
+            p_level_units       => p_unit,
+            p_date              => l_datetime,
             p_office_id         => l_office_id);
          l_top_stor := cwms_level.retrieve_location_level_value (
-            p_location_level_id => replace(l_top_level_id, '.Elev.', '.Stor.'),              
-            p_level_units       => p_unit,              
-            p_date              => l_datetime,     
+            p_location_level_id => replace(l_top_level_id, '.Elev.', '.Stor.'),
+            p_level_units       => p_unit,
+            p_date              => l_datetime,
             p_office_id         => l_office_id);
       exception
          when item_does_not_exist then null;
@@ -2393,7 +2393,7 @@ begin
          null,
          'UTC',
          l_office_id);
-   end if;      
+   end if;
    p_bottom_stor := cwms_rounding.round_nn_f(l_bottom_stor, '4444444564');
    p_top_stor    := cwms_rounding.round_nn_f(l_top_stor,    '4444444564');
 end get_pool_limit_stors;
@@ -2425,8 +2425,8 @@ begin
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
       p_office_id   => p_office_id);
-      
-   return number_tab_t(l_bottom_stor, l_top_stor);      
+
+   return number_tab_t(l_bottom_stor, l_top_stor);
 end get_pool_limit_stors_f;
 --------------------------------------------------------------------------------
 -- procedure get_pool_limit_stors
@@ -2509,9 +2509,9 @@ begin
          l_limit_stors.extend(p_datetimes.count);
          for i in 1..p_datetimes.count loop
             l_limit_stors(i) := cwms_level.retrieve_location_level_value(
-               p_location_level_id => replace(l_level_id, '.Elev.', '.Stor.'),              
+               p_location_level_id => replace(l_level_id, '.Elev.', '.Stor.'),
                p_level_units       => p_unit,
-               p_date              => p_datetimes(i),     
+               p_date              => p_datetimes(i),
                p_timezone_id       => l_timezone,
                p_office_id         => l_office_id);
          end loop;
@@ -2539,10 +2539,10 @@ begin
                p_datetimes(i),
                null,
                l_timezone,
-               l_office_id), 
+               l_office_id),
             '4444444564');
-      end loop;      
-   end if;      
+      end loop;
+   end if;
    p_limit_stors := l_limit_stors;
 end get_pool_limit_stors;
 --------------------------------------------------------------------------------
@@ -2572,8 +2572,8 @@ begin
       p_timezone    => p_timezone,
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
-      p_office_id   => p_office_id);  
-   
+      p_office_id   => p_office_id);
+
 	return l_limit_stors;
 end get_pool_limit_stors_f;
 --------------------------------------------------------------------------------
@@ -2648,21 +2648,21 @@ begin
          l_top_stors.extend(p_datetimes.count);
          for i in 1..p_datetimes.count loop
             l_bottom_stors(i) := cwms_level.retrieve_location_level_value(
-               p_location_level_id => replace(l_bot_level_id, '.Elev.', '.Stor.'),              
+               p_location_level_id => replace(l_bot_level_id, '.Elev.', '.Stor.'),
                p_level_units       => p_unit,
-               p_date              => p_datetimes(i),     
+               p_date              => p_datetimes(i),
                p_timezone_id       => l_timezone,
                p_office_id         => l_office_id);
-               
+
             l_top_stors(i) := cwms_level.retrieve_location_level_value(
-               p_location_level_id => replace(l_top_level_id, '.Elev.', '.Stor.'),              
+               p_location_level_id => replace(l_top_level_id, '.Elev.', '.Stor.'),
                p_level_units       => p_unit,
-               p_date              => p_datetimes(i),     
+               p_date              => p_datetimes(i),
                p_timezone_id       => l_timezone,
                p_office_id         => l_office_id);
          end loop;
       exception
-         when item_does_not_exist then 
+         when item_does_not_exist then
             l_bottom_stors := null;
             l_top_stors := null;
       end;
@@ -2689,7 +2689,7 @@ begin
                p_datetimes(i),
                null,
                l_timezone,
-               l_office_id), 
+               l_office_id),
             '4444444564');
          l_top_stors(i) := cwms_rounding.round_nn_f(
             cwms_rating.rate_f(
@@ -2700,10 +2700,10 @@ begin
                p_datetimes(i),
                null,
                l_timezone,
-               l_office_id), 
+               l_office_id),
             '4444444564');
-      end loop;      
-   end if;      
+      end loop;
+   end if;
    p_bottom_stors := l_bottom_stors;
    p_top_stors    := l_top_stors;
 end get_pool_limit_stors;
@@ -2752,7 +2752,7 @@ begin
       end loop;
    else
       l_results := number_tab_tab_t(l_bottom_stors, l_top_stors);
-   end if;      
+   end if;
    return l_results;
 end get_pool_limit_stors_f;
 --------------------------------------------------------------------------------
@@ -2797,7 +2797,7 @@ begin
 	  bulk collect
 	  into l_datetimes
 	  from table(p_timeseries);
-	  
+	
    get_pool_limit_stors(
       p_limit_stors => l_limit_stors,
       p_project_id  => p_project_id,
@@ -2809,7 +2809,7 @@ begin
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
       p_office_id   => p_office_id);
-      
+
    l_limit_ts := ztsv_array();
    l_limit_ts.extend(p_timeseries.count);
    for i in 1..p_timeseries.count loop
@@ -2844,7 +2844,7 @@ begin
       p_timezone    => p_timezone,
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
-      p_office_id   => p_office_id);  
+      p_office_id   => p_office_id);
 
 	return l_limit_stors;
 end get_pool_limit_stors_f;
@@ -2889,7 +2889,7 @@ begin
 	  bulk collect
 	  into l_datetimes
 	  from table(p_timeseries);
-	  
+	
    get_pool_limit_stors(
       p_limit_stors => l_bottom_stors,
       p_project_id  => p_project_id,
@@ -2901,7 +2901,7 @@ begin
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
       p_office_id   => p_office_id);
-	  
+	
    get_pool_limit_stors(
       p_limit_stors => l_top_stors,
       p_project_id  => p_project_id,
@@ -2913,7 +2913,7 @@ begin
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
       p_office_id   => p_office_id);
-      
+
    l_bottom_ts := ztsv_array();
    l_bottom_ts.extend(p_timeseries.count);
    l_top_ts := ztsv_array();
@@ -2969,8 +2969,8 @@ begin
       l_results(i) := ztsv_array(l_bottom_stors(i), l_top_stors(i));
      end loop;
    else
-      l_results := ztsv_array_tab(l_bottom_stors, l_top_stors);      
-   end if;      
+      l_results := ztsv_array_tab(l_bottom_stors, l_top_stors);
+   end if;
 	return l_results;
 end get_pool_limit_stors_f;
 --------------------------------------------------------------------------------
@@ -2996,7 +2996,7 @@ is
    l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
-   l_sub_parameter_id  varchar2(32);                                    
+   l_sub_parameter_id  varchar2(32);
    l_parameter_type_id varchar2(16);
    l_interval_id       varchar2(16);
    l_duration_id       varchar2(16);
@@ -3035,34 +3035,34 @@ begin
       l_version_id);
    if upper(l_base_location_id) != upper(cwms_util.get_base_id(p_project_id)) then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
-         ||' is not for specified project ' 
+         ||' is not for specified project '
          ||p_project_id);
    elsif l_base_parameter_id != 'Elev' then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
          ||' is not an elevation time series');
    end if;
    cwms_ts.retrieve_ts(
       p_at_tsv_rc         =>  c_ts,
-      p_cwms_ts_id        =>  p_tsid,              
-      p_units             =>  p_unit,              
-      p_start_time        =>  p_start_time,                  
-      p_end_time          =>  p_end_time,                  
+      p_cwms_ts_id        =>  p_tsid,
+      p_units             =>  'm',
+      p_start_time        =>  p_start_time,
+      p_end_time          =>  p_end_time,
       p_time_zone         =>  p_timezone,
-      p_trim              =>  'T',  
-      p_start_inclusive   =>  'T',  
-      p_end_inclusive     =>  'T',  
-      p_previous          =>  'F',  
-      p_next              =>  'F',  
-      p_version_date      =>  null,     
-      p_max_version       =>  'T',  
+      p_trim              =>  'T',
+      p_start_inclusive   =>  'T',
+      p_end_inclusive     =>  'T',
+      p_previous          =>  'F',
+      p_next              =>  'F',
+      p_version_date      =>  null,
+      p_max_version       =>  'T',
       p_office_id         =>  p_office_id);
-      
+
    fetch c_ts bulk collect into l_ts1;
    close c_ts;
    l_ts2 := ztsv_array();
@@ -3070,7 +3070,7 @@ begin
    for i in 1..l_ts1.count loop
       l_ts2(i) := ztsv_type(l_ts1(i).date_time, l_ts1(i).value, 0);
    end loop;
-   
+
    get_pool_limit_stors(
       p_limit_stors => p_limit_stors,
       p_project_id  => p_project_id,
@@ -3079,8 +3079,8 @@ begin
       p_unit        => p_unit,
       p_timeseries  => l_ts2,
       p_timezone    => p_timezone,
-      p_office_id   => p_office_id);  
-      
+      p_office_id   => p_office_id);
+
 end get_pool_limit_stors;
 --------------------------------------------------------------------------------
 -- function get_pool_limit_stors_f
@@ -3113,7 +3113,7 @@ begin
       p_timezone    => p_timezone,
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
-      p_office_id   => p_office_id);  
+      p_office_id   => p_office_id);
 
 	return l_limit_stors;
 end get_pool_limit_stors_f;
@@ -3172,7 +3172,7 @@ begin
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
       p_office_id   => p_office_id);
-      
+
    get_pool_limit_stors(
       p_limit_stors => l_top_ts,
       p_project_id  => p_project_id,
@@ -3186,7 +3186,7 @@ begin
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
       p_office_id   => p_office_id);
-      
+
    p_bottom_stors := l_bottom_ts;
    p_top_stors    := l_top_ts;
 end get_pool_limit_stors;
@@ -3230,7 +3230,7 @@ begin
       p_always_rate  => p_always_rate,
       p_rating_spec  => p_rating_spec,
       p_office_id    => p_office_id);
-   
+
    if l_row_axis then
       l_results := ztsv_array_tab();
       l_results.extend(l_bottom_ts.count);
@@ -3238,7 +3238,7 @@ begin
          l_results(i) := ztsv_array(l_bottom_ts(i), l_top_ts(i));
       end loop;
    else
-      l_results := ztsv_array_tab(l_bottom_ts, l_top_ts);      
+      l_results := ztsv_array_tab(l_bottom_ts, l_top_ts);
    end if;
 	return l_results;
 end get_pool_limit_stors_f;
@@ -3273,7 +3273,7 @@ begin
    if p_unit is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_UNIT');
    end if;
-   
+
 	get_pool_limit_elev(
       p_limit_elev => l_limit_elev,
       p_project_id => p_project_id,
@@ -3282,9 +3282,9 @@ begin
       p_unit       => p_unit,
       p_datetime   => p_datetime,
       p_timezone   => p_timezone,
-      p_office_id  => p_office_id); 
+      p_office_id  => p_office_id);
 
-   p_offset := cwms_rounding.round_nn_f(p_elevation - l_limit_elev, '7777777777');      
+   p_offset := cwms_rounding.round_nn_f(p_elevation - l_limit_elev, '7777777777');
 end get_elev_offset;
 --------------------------------------------------------------------------------
 -- function get_elev_offset_f
@@ -3312,7 +3312,7 @@ begin
       p_datetime   => p_datetime,
       p_timezone   => p_timezone,
       p_office_id  => p_office_id);
-      
+
    return l_offset;
 end get_elev_offset_f;
 --------------------------------------------------------------------------------
@@ -3347,7 +3347,7 @@ begin
    if p_elevation is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_ELEVATION');
    end if;
-   
+
    get_elev_offset(
       p_offset     => l_bottom_offset,
       p_project_id => p_project_id,
@@ -3369,7 +3369,7 @@ begin
       p_datetime   => p_datetime,
       p_timezone   => p_timezone,
       p_office_id  => p_office_id);
-      
+
    p_bottom_offset := l_bottom_offset;
    p_top_offset    := l_top_offset;
 end get_elev_offsets;
@@ -3399,7 +3399,7 @@ begin
       p_datetime      => p_datetime,
       p_timezone      => p_timezone,
       p_office_id     => p_office_id);
-      
+
 	return number_tab_t(l_bottom_offset, l_top_offset);
 end get_elev_offsets_f;
 --------------------------------------------------------------------------------
@@ -3442,7 +3442,7 @@ begin
    if p_elevations.count != p_datetimes.count then
       cwms_err.raise('ERROR', 'P_ELEVATIONS and P_DATETIMES must be of same length');
    end if;
-   
+
    l_offsets := number_tab_t();
    l_offsets.extend(p_datetimes.count);
    for i in 1..p_datetimes.count loop
@@ -3455,7 +3455,7 @@ begin
          p_elevation  => p_elevations(i),
          p_datetime   => p_datetimes(i),
          p_timezone   => p_timezone,
-         p_office_id  => p_office_id); 
+         p_office_id  => p_office_id);
    end loop;
 	p_offsets := l_offsets;
 end get_elev_offsets;
@@ -3485,7 +3485,7 @@ begin
       p_datetimes  => p_datetimes,
       p_timezone   => p_timezone,
       p_office_id  => p_office_id);
-      
+
 	return l_offsets;
 end get_elev_offsets_f;
 --------------------------------------------------------------------------------
@@ -3526,12 +3526,12 @@ begin
    if p_elevations.count != p_datetimes.count then
       cwms_err.raise('ERROR', 'P_ELEVATIONS and P_DATETIMES must be of same length');
    end if;
-   
+
    l_bottom_offsets := number_tab_t();
    l_bottom_offsets.extend(p_elevations.count);
    l_top_offsets := number_tab_t();
    l_top_offsets.extend(p_elevations.count);
-   
+
    for i in 1..p_elevations.count loop
       get_elev_offsets(
          p_bottom_offset => l_bottom_offsets(i),
@@ -3542,9 +3542,9 @@ begin
          p_elevation     => p_elevations(i),
          p_datetime      => p_datetimes(i),
          p_timezone      => p_timezone,
-         p_office_id     => p_office_id);    
+         p_office_id     => p_office_id);
    end loop;
-      
+
    p_bottom_offsets := l_bottom_offsets;
    p_top_offsets    := l_top_offsets;
 end get_elev_offsets;
@@ -3598,7 +3598,7 @@ begin
    l_bottom_offsets.extend(p_elevations.count);
    l_top_offsets := number_tab_t();
    l_top_offsets.extend(p_elevations.count);
-   
+
    for i in 1..p_elevations.count loop
       get_elev_offsets(
          p_bottom_offset => l_bottom_offsets(i),
@@ -3609,9 +3609,9 @@ begin
          p_elevation     => p_elevations(i),
          p_datetime      => p_datetimes(i),
          p_timezone      => p_timezone,
-         p_office_id     => p_office_id);     
-   end loop;   
-   
+         p_office_id     => p_office_id);
+   end loop;
+
    if l_row_axis then
       l_results := number_tab_tab_t();
       l_results.extend(p_elevations.count);
@@ -3659,14 +3659,14 @@ begin
    if p_timeseries is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_TIMESERIES');
    end if;
-   
+
    select date_time,
           to_number(value)
      bulk collect
      into l_datetimes,
           l_elevations
      from table(p_timeseries);
-     
+
    get_elev_offsets(
       p_offsets    => l_offsets,
       p_project_id => p_project_id,
@@ -3677,14 +3677,14 @@ begin
       p_datetimes  => l_datetimes,
       p_timezone   => p_timezone,
       p_office_id  => p_office_id);
-      
+
    l_ts := ztsv_array();
    l_ts.extend(p_timeseries.count);
    for i in 1..p_timeseries.count loop
       l_ts(i) := ztsv_type(l_datetimes(i), l_offsets(i), 0);
    end loop;
    p_offsets := l_ts;
-   
+
 end get_elev_offsets;
 --------------------------------------------------------------------------------
 -- function get_elev_offsets_f
@@ -3709,7 +3709,7 @@ begin
       p_unit       => p_unit,
       p_timeseries => p_timeseries,
       p_timezone   => p_timezone,
-      p_office_id  => p_office_id); 
+      p_office_id  => p_office_id);
 	return l_offsets;
 end get_elev_offsets_f;
 --------------------------------------------------------------------------------
@@ -3747,14 +3747,14 @@ begin
    if p_timeseries is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_TIMESERIES');
    end if;
-   
+
    select date_time,
           to_number(value)
      bulk collect
      into l_datetimes,
           l_elevations
      from table(p_timeseries);
-     
+
    get_elev_offsets(
       p_bottom_offsets => l_bottom_offsets,
       p_top_offsets    => l_top_offsets,
@@ -3765,7 +3765,7 @@ begin
       p_datetimes      => l_datetimes,
       p_timezone       => p_timezone,
       p_office_id      => p_office_id);
-      
+
    l_bottom_ts := ztsv_array();
    l_bottom_ts.extend(p_timeseries.count);
    l_top_ts := ztsv_array();
@@ -3777,7 +3777,7 @@ begin
    end loop;
    p_bottom_offsets := l_bottom_ts;
    p_top_offsets    := l_top_ts;
-   
+
 end get_elev_offsets;
 --------------------------------------------------------------------------------
 -- function get_elev_offsets_f
@@ -3802,7 +3802,7 @@ begin
    when instr('COLUMN', upper(p_datetime_axis)) = 1 then l_row_axis := false;
    else cwms_err.raise('ERROR', 'P_DATETIME_AXIS must be either ''ROW'' or ''COLUMN''');
    end case;
-   
+
    get_elev_offsets(
       p_bottom_offsets => l_bottom_ts,
       p_top_offsets    => l_top_ts,
@@ -3811,8 +3811,8 @@ begin
       p_unit           => p_unit,
       p_timeseries     => p_timeseries,
       p_timezone       => p_timezone,
-      p_office_id      => p_office_id);     
-   
+      p_office_id      => p_office_id);
+
    if l_row_axis then
       l_results := ztsv_array_tab();
       l_results.extend(p_timeseries.count);
@@ -3847,7 +3847,7 @@ is
    l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
-   l_sub_parameter_id  varchar2(32);                                    
+   l_sub_parameter_id  varchar2(32);
    l_parameter_type_id varchar2(16);
    l_interval_id       varchar2(16);
    l_duration_id       varchar2(16);
@@ -3889,32 +3889,32 @@ begin
       l_version_id);
    if upper(l_base_location_id) != upper(cwms_util.get_base_id(p_project_id)) then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
-         ||' is not for specified project ' 
+         ||' is not for specified project '
          ||p_project_id);
    elsif l_base_parameter_id != 'Elev' then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
          ||' is not an elevation time series');
    end if;
    cwms_ts.retrieve_ts(
       p_at_tsv_rc         =>  c_ts,
-      p_cwms_ts_id        =>  p_tsid,              
-      p_units             =>  p_unit,              
-      p_start_time        =>  p_start_time,                  
-      p_end_time          =>  p_end_time,                  
+      p_cwms_ts_id        =>  p_tsid,
+      p_units             =>  p_unit,
+      p_start_time        =>  p_start_time,
+      p_end_time          =>  p_end_time,
       p_time_zone         =>  p_timezone,
-      p_trim              =>  'T',  
-      p_start_inclusive   =>  'T',  
-      p_end_inclusive     =>  'T',  
-      p_previous          =>  'F',  
-      p_next              =>  'F',  
-      p_version_date      =>  null,     
-      p_max_version       =>  'T',  
+      p_trim              =>  'T',
+      p_start_inclusive   =>  'T',
+      p_end_inclusive     =>  'T',
+      p_previous          =>  'F',
+      p_next              =>  'F',
+      p_version_date      =>  null,
+      p_max_version       =>  'T',
       p_office_id         =>  p_office_id);
 
    fetch c_ts bulk collect into l_ts1;
@@ -3924,7 +3924,7 @@ begin
    for i in 1..l_ts1.count loop
       l_ts2(i) := ztsv_type(l_ts1(i).date_time, l_ts1(i).value, 0);
    end loop;
-   
+
    get_pool_limit_elevs(
       p_limit_elevs => l_limit_elevs,
       p_project_id  => p_project_id,
@@ -3933,14 +3933,14 @@ begin
       p_unit        => p_unit,
       p_timeseries  => l_ts2,
       p_timezone    => p_timezone,
-      p_office_id   => p_office_id);  
+      p_office_id   => p_office_id);
 
    l_offsets := ztsv_array();
    l_offsets.extend(l_ts1.count);
    for i in 1..l_ts1.count loop
       l_offsets(i) := ztsv_type(
-         l_ts2(i).date_time, 
-         cwms_rounding.round_nn_f(l_ts2(i).value - l_limit_elevs(i).value, '7777777777'), 
+         l_ts2(i).date_time,
+         cwms_rounding.round_nn_f(l_ts2(i).value - l_limit_elevs(i).value, '7777777777'),
          0);
    end loop;
    p_offsets := l_offsets;
@@ -3973,7 +3973,7 @@ begin
       p_end_time   => p_end_time,
       p_timezone   => p_timezone,
       p_office_id  => p_office_id);
-      
+
 	return l_offsets;
 end get_elev_offsets_f;
 --------------------------------------------------------------------------------
@@ -4001,7 +4001,7 @@ is
    l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
-   l_sub_parameter_id  varchar2(32);                                    
+   l_sub_parameter_id  varchar2(32);
    l_parameter_type_id varchar2(16);
    l_interval_id       varchar2(16);
    l_duration_id       varchar2(16);
@@ -4041,32 +4041,32 @@ begin
       l_version_id);
    if upper(l_base_location_id) != upper(cwms_util.get_base_id(p_project_id)) then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
-         ||' is not for specified project ' 
+         ||' is not for specified project '
          ||p_project_id);
    elsif l_base_parameter_id != 'Elev' then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
          ||' is not an elevation time series');
    end if;
    cwms_ts.retrieve_ts(
       p_at_tsv_rc         =>  c_ts,
-      p_cwms_ts_id        =>  p_tsid,              
-      p_units             =>  p_unit,              
-      p_start_time        =>  p_start_time,                  
-      p_end_time          =>  p_end_time,                  
+      p_cwms_ts_id        =>  p_tsid,
+      p_units             =>  p_unit,
+      p_start_time        =>  p_start_time,
+      p_end_time          =>  p_end_time,
       p_time_zone         =>  p_timezone,
-      p_trim              =>  'T',  
-      p_start_inclusive   =>  'T',  
-      p_end_inclusive     =>  'T',  
-      p_previous          =>  'F',  
-      p_next              =>  'F',  
-      p_version_date      =>  null,     
-      p_max_version       =>  'T',  
+      p_trim              =>  'T',
+      p_start_inclusive   =>  'T',
+      p_end_inclusive     =>  'T',
+      p_previous          =>  'F',
+      p_next              =>  'F',
+      p_version_date      =>  null,
+      p_max_version       =>  'T',
       p_office_id         =>  p_office_id);
 
    fetch c_ts bulk collect into l_ts1;
@@ -4076,7 +4076,7 @@ begin
    for i in 1..l_ts1.count loop
       l_ts2(i) := ztsv_type(l_ts1(i).date_time, l_ts1(i).value, 0);
    end loop;
-   
+
    get_pool_limit_elevs(
       p_bottom_elevs => l_bottom_elevs,
       p_top_elevs    => l_top_elevs,
@@ -4085,7 +4085,7 @@ begin
       p_unit         => p_unit,
       p_timeseries   => l_ts2,
       p_timezone     => p_timezone,
-      p_office_id    => p_office_id);  
+      p_office_id    => p_office_id);
 
    l_bottom_offsets := ztsv_array();
    l_bottom_offsets.extend(l_ts1.count);
@@ -4094,12 +4094,12 @@ begin
    for i in 1..l_ts1.count loop
       l_value := cwms_rounding.round_nn_f(l_ts2(i).value, '7777777777');
       l_bottom_offsets(i) := ztsv_type(
-         l_ts2(i).date_time, 
-         l_value - cwms_rounding.round_nn_f(l_bottom_elevs(i).value, '7777777777'), 
+         l_ts2(i).date_time,
+         l_value - cwms_rounding.round_nn_f(l_bottom_elevs(i).value, '7777777777'),
          0);
       l_top_offsets(i) := ztsv_type(
-         l_ts2(i).date_time, 
-         l_value - cwms_rounding.round_nn_f(l_top_elevs(i).value, '7777777777'), 
+         l_ts2(i).date_time,
+         l_value - cwms_rounding.round_nn_f(l_top_elevs(i).value, '7777777777'),
          0);
    end loop;
    p_bottom_offsets := l_bottom_offsets;
@@ -4130,7 +4130,7 @@ begin
    when instr('COLUMN', upper(p_datetime_axis)) = 1 then l_row_axis := false;
    else cwms_err.raise('ERROR', 'P_DATETIME_AXIS must be either ''ROW'' or ''COLUMN''');
    end case;
-   
+
    get_elev_offsets(
       p_bottom_offsets => l_bottom_offsets,
       p_top_offsets    => l_top_offsets,
@@ -4141,8 +4141,8 @@ begin
       p_start_time     => p_start_time,
       p_end_time       => p_end_time,
       p_timezone       => p_timezone,
-      p_office_id      => p_office_id);     
-   
+      p_office_id      => p_office_id);
+
    if l_row_axis then
       l_results := ztsv_array_tab();
       l_results.extend(l_top_offsets.count);
@@ -4151,7 +4151,7 @@ begin
       end loop;
    else
       l_results := ztsv_array_tab(l_bottom_offsets, l_top_offsets);
-   end if;      
+   end if;
 	return l_results;
 end get_elev_offsets_f;
 --------------------------------------------------------------------------------
@@ -4187,7 +4187,7 @@ begin
    if p_unit is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_UNIT');
    end if;
-   
+
 	get_pool_limit_stor(
       p_limit_stor  => l_limit_stor,
       p_project_id  => p_project_id,
@@ -4198,9 +4198,9 @@ begin
       p_timezone    => p_timezone,
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
-      p_office_id   => p_office_id); 
+      p_office_id   => p_office_id);
 
-   p_offset := cwms_rounding.round_nn_f(p_storage - l_limit_stor, '4444444564');      
+   p_offset := cwms_rounding.round_nn_f(p_storage - l_limit_stor, '4444444564');
 end get_stor_offset;
 --------------------------------------------------------------------------------
 -- function get_stor_offset_f
@@ -4231,7 +4231,7 @@ begin
       p_timezone    => p_timezone,
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
-      p_office_id   => p_office_id);  
+      p_office_id   => p_office_id);
 	return l_offset;
 end get_stor_offset_f;
 --------------------------------------------------------------------------------
@@ -4268,7 +4268,7 @@ begin
    if p_storage is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_STORAGE');
    end if;
-   
+
    get_stor_offset(
       p_offset      => l_bottom_offset,
       p_project_id  => p_project_id,
@@ -4294,7 +4294,7 @@ begin
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
       p_office_id   => p_office_id);
-      
+
    p_bottom_offset := l_bottom_offset;
    p_top_offset    := l_top_offset;
 end get_stor_offsets;
@@ -4303,7 +4303,7 @@ end get_stor_offsets;
 --------------------------------------------------------------------------------
 function get_stor_offsets_f(
    p_project_id    in varchar2,
-   p_pool_name     in varchar2,             
+   p_pool_name     in varchar2,
    p_unit          in varchar2,
    p_storage       in number,
    p_datetime      in date default null,
@@ -4327,9 +4327,9 @@ begin
       p_timezone      => p_timezone,
       p_always_rate   => p_always_rate,
       p_rating_spec   => p_rating_spec,
-      p_office_id     => p_office_id);    
-   
-         
+      p_office_id     => p_office_id);
+
+
 	return number_tab_t(l_bottom_offset, l_top_offset);
 end get_stor_offsets_f;
 --------------------------------------------------------------------------------
@@ -4374,7 +4374,7 @@ begin
    if p_storages.count != p_datetimes.count then
       cwms_err.raise('ERROR', 'P_STORAGES and P_DATETIMES must be of same length');
    end if;
-   
+
    l_offsets := number_tab_t();
    l_offsets.extend(p_datetimes.count);
    for i in 1..p_datetimes.count loop
@@ -4389,7 +4389,7 @@ begin
          p_timezone    => p_timezone,
          p_always_rate => p_always_rate,
          p_rating_spec => p_rating_spec,
-         p_office_id   => p_office_id); 
+         p_office_id   => p_office_id);
    end loop;
 	p_offsets := l_offsets;
 end get_stor_offsets;
@@ -4422,7 +4422,7 @@ begin
       p_timezone    => p_timezone,
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
-      p_office_id   => p_office_id);  
+      p_office_id   => p_office_id);
 	return l_offsets;
 end get_stor_offsets_f;
 --------------------------------------------------------------------------------
@@ -4465,12 +4465,12 @@ begin
    if p_storages.count != p_datetimes.count then
       cwms_err.raise('ERROR', 'P_STORAGES and P_DATETIMES must be of same length');
    end if;
-   
+
    l_bottom_offsets := number_tab_t();
    l_bottom_offsets.extend(p_storages.count);
    l_top_offsets := number_tab_t();
    l_top_offsets.extend(p_storages.count);
-   
+
    for i in 1..p_storages.count loop
       get_stor_offsets(
          p_bottom_offset => l_bottom_offsets(i),
@@ -4483,9 +4483,9 @@ begin
          p_timezone      => p_timezone,
          p_always_rate   => p_always_rate,
          p_rating_spec   => p_rating_spec,
-         p_office_id     => p_office_id);    
+         p_office_id     => p_office_id);
    end loop;
-      
+
    p_bottom_offsets := l_bottom_offsets;
    p_top_offsets    := l_top_offsets;
 end get_stor_offsets;
@@ -4541,7 +4541,7 @@ begin
    l_bottom_offsets.extend(p_storages.count);
    l_top_offsets := number_tab_t();
    l_top_offsets.extend(p_storages.count);
-   
+
    for i in 1..p_storages.count loop
       get_stor_offsets(
          p_bottom_offset => l_bottom_offsets(i),
@@ -4554,9 +4554,9 @@ begin
          p_timezone      => p_timezone,
          p_always_rate   => p_always_rate,
          p_rating_spec   => p_rating_spec,
-         p_office_id     => p_office_id);     
-   end loop;   
-   
+         p_office_id     => p_office_id);
+   end loop;
+
    if l_row_axis then
       l_results := number_tab_tab_t();
       l_results.extend(p_storages.count);
@@ -4606,14 +4606,14 @@ begin
    if p_timeseries is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_TIMESERIES');
    end if;
-   
+
    select date_time,
           to_number(value)
      bulk collect
      into l_datetimes,
           l_storages
      from table(p_timeseries);
-     
+
    get_stor_offsets(
       p_offsets     => l_offsets,
       p_project_id  => p_project_id,
@@ -4626,14 +4626,14 @@ begin
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
       p_office_id   => p_office_id);
-      
+
    l_ts := ztsv_array();
    l_ts.extend(p_timeseries.count);
    for i in 1..p_timeseries.count loop
       l_ts(i) := ztsv_type(l_datetimes(i), l_offsets(i), 0);
    end loop;
    p_offsets := l_ts;
-   
+
 end get_stor_offsets;
 --------------------------------------------------------------------------------
 -- function get_stor_offsets_f
@@ -4662,7 +4662,7 @@ begin
       p_timezone    => p_timezone,
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
-      p_office_id   => p_office_id); 
+      p_office_id   => p_office_id);
 	return l_offsets;
 end get_stor_offsets_f;
 --------------------------------------------------------------------------------
@@ -4702,14 +4702,14 @@ begin
    if p_timeseries is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_TIMESERIES');
    end if;
-   
+
    select date_time,
           to_number(value)
      bulk collect
      into l_datetimes,
           l_storages
      from table(p_timeseries);
-     
+
    get_stor_offsets(
       p_bottom_offsets => l_bottom_offsets,
       p_top_offsets    => l_top_offsets,
@@ -4722,7 +4722,7 @@ begin
       p_always_rate    => p_always_rate,
       p_rating_spec    => p_rating_spec,
       p_office_id      => p_office_id);
-      
+
    l_bottom_ts := ztsv_array();
    l_bottom_ts.extend(p_timeseries.count);
    l_top_ts := ztsv_array();
@@ -4734,7 +4734,7 @@ begin
    end loop;
    p_bottom_offsets := l_bottom_ts;
    p_top_offsets    := l_top_ts;
-   
+
 end get_stor_offsets;
 --------------------------------------------------------------------------------
 -- function get_stor_offsets_f
@@ -4761,7 +4761,7 @@ begin
    when instr('COLUMN', upper(p_datetime_axis)) = 1 then l_row_axis := false;
    else cwms_err.raise('ERROR', 'P_DATETIME_AXIS must be either ''ROW'' or ''COLUMN''');
    end case;
-   
+
    get_stor_offsets(
       p_bottom_offsets => l_bottom_ts,
       p_top_offsets    => l_top_ts,
@@ -4772,8 +4772,8 @@ begin
       p_timezone       => p_timezone,
       p_always_rate    => p_always_rate,
       p_rating_spec    => p_rating_spec,
-      p_office_id      => p_office_id);     
-   
+      p_office_id      => p_office_id);
+
    if l_row_axis then
       l_results := ztsv_array_tab();
       l_results.extend(p_timeseries.count);
@@ -4810,7 +4810,7 @@ is
    l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
-   l_sub_parameter_id  varchar2(32);                                    
+   l_sub_parameter_id  varchar2(32);
    l_parameter_type_id varchar2(16);
    l_interval_id       varchar2(16);
    l_duration_id       varchar2(16);
@@ -4852,32 +4852,32 @@ begin
       l_version_id);
    if upper(l_base_location_id) != upper(cwms_util.get_base_id(p_project_id)) then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
-         ||' is not for specified project ' 
+         ||' is not for specified project '
          ||p_project_id);
    elsif l_base_parameter_id != 'Stor' then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
          ||' is not a storage time series');
    end if;
    cwms_ts.retrieve_ts(
       p_at_tsv_rc         =>  c_ts,
-      p_cwms_ts_id        =>  p_tsid,              
-      p_units             =>  p_unit,              
-      p_start_time        =>  p_start_time,                  
-      p_end_time          =>  p_end_time,                  
+      p_cwms_ts_id        =>  p_tsid,
+      p_units             =>  p_unit,
+      p_start_time        =>  p_start_time,
+      p_end_time          =>  p_end_time,
       p_time_zone         =>  p_timezone,
-      p_trim              =>  'T',  
-      p_start_inclusive   =>  'T',  
-      p_end_inclusive     =>  'T',  
-      p_previous          =>  'F',  
-      p_next              =>  'F',  
-      p_version_date      =>  null,     
-      p_max_version       =>  'T',  
+      p_trim              =>  'T',
+      p_start_inclusive   =>  'T',
+      p_end_inclusive     =>  'T',
+      p_previous          =>  'F',
+      p_next              =>  'F',
+      p_version_date      =>  null,
+      p_max_version       =>  'T',
       p_office_id         =>  p_office_id);
 
    fetch c_ts bulk collect into l_ts1;
@@ -4887,7 +4887,7 @@ begin
    for i in 1..l_ts1.count loop
       l_ts2(i) := ztsv_type(l_ts1(i).date_time, l_ts1(i).value, 0);
    end loop;
-   
+
    get_pool_limit_stors(
       p_limit_stors => l_limit_stors,
       p_project_id  => p_project_id,
@@ -4898,14 +4898,14 @@ begin
       p_timezone    => p_timezone,
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
-      p_office_id   => p_office_id);  
+      p_office_id   => p_office_id);
 
    l_offsets := ztsv_array();
    l_offsets.extend(l_ts1.count);
    for i in 1..l_ts1.count loop
       l_offsets(i) := ztsv_type(
-         l_ts2(i).date_time, 
-         cwms_rounding.round_nn_f(l_ts2(i).value - l_limit_stors(i).value, '4444444564'), 
+         l_ts2(i).date_time,
+         cwms_rounding.round_nn_f(l_ts2(i).value - l_limit_stors(i).value, '4444444564'),
          0);
    end loop;
    p_offsets := l_offsets;
@@ -4942,7 +4942,7 @@ begin
       p_always_rate => p_always_rate,
       p_rating_spec => p_rating_spec,
       p_office_id   => p_office_id);
-      
+
 	return l_offsets;
 end get_stor_offsets_f;
 --------------------------------------------------------------------------------
@@ -4972,7 +4972,7 @@ is
    l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
-   l_sub_parameter_id  varchar2(32);                                    
+   l_sub_parameter_id  varchar2(32);
    l_parameter_type_id varchar2(16);
    l_interval_id       varchar2(16);
    l_duration_id       varchar2(16);
@@ -5011,32 +5011,32 @@ begin
       l_version_id);
    if upper(l_base_location_id) != upper(cwms_util.get_base_id(p_project_id)) then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
-         ||' is not for specified project ' 
+         ||' is not for specified project '
          ||p_project_id);
    elsif l_base_parameter_id != 'Stor' then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
          ||' is not a storage time series');
    end if;
    cwms_ts.retrieve_ts(
       p_at_tsv_rc         =>  c_ts,
-      p_cwms_ts_id        =>  p_tsid,              
-      p_units             =>  p_unit,              
-      p_start_time        =>  p_start_time,                  
-      p_end_time          =>  p_end_time,                  
+      p_cwms_ts_id        =>  p_tsid,
+      p_units             =>  p_unit,
+      p_start_time        =>  p_start_time,
+      p_end_time          =>  p_end_time,
       p_time_zone         =>  p_timezone,
-      p_trim              =>  'T',  
-      p_start_inclusive   =>  'T',  
-      p_end_inclusive     =>  'T',  
-      p_previous          =>  'F',  
-      p_next              =>  'F',  
-      p_version_date      =>  null,     
-      p_max_version       =>  'T',  
+      p_trim              =>  'T',
+      p_start_inclusive   =>  'T',
+      p_end_inclusive     =>  'T',
+      p_previous          =>  'F',
+      p_next              =>  'F',
+      p_version_date      =>  null,
+      p_max_version       =>  'T',
       p_office_id         =>  p_office_id);
 
    fetch c_ts bulk collect into l_ts1;
@@ -5046,7 +5046,7 @@ begin
    for i in 1..l_ts1.count loop
       l_ts2(i) := ztsv_type(l_ts1(i).date_time, l_ts1(i).value, 0);
    end loop;
-   
+
    get_pool_limit_stors(
       p_bottom_stors => l_bottom_stors,
       p_top_stors    => l_top_stors,
@@ -5057,7 +5057,7 @@ begin
       p_timezone     => p_timezone,
       p_always_rate  => p_always_rate,
       p_rating_spec  => p_rating_spec,
-      p_office_id    => p_office_id);  
+      p_office_id    => p_office_id);
 
    l_bottom_offsets := ztsv_array();
    l_bottom_offsets.extend(l_ts1.count);
@@ -5065,12 +5065,12 @@ begin
    l_top_offsets.extend(l_ts1.count);
    for i in 1..l_ts1.count loop
       l_bottom_offsets(i) := ztsv_type(
-         l_ts2(i).date_time, 
-         cwms_rounding.round_nn_f(l_ts2(i).value - l_bottom_stors(i).value, '4444444564'), 
+         l_ts2(i).date_time,
+         cwms_rounding.round_nn_f(l_ts2(i).value - l_bottom_stors(i).value, '4444444564'),
          0);
       l_top_offsets(i) := ztsv_type(
-         l_ts2(i).date_time, 
-         cwms_rounding.round_nn_f(l_ts2(i).value - l_top_stors(i).value, '4444444564'), 
+         l_ts2(i).date_time,
+         cwms_rounding.round_nn_f(l_ts2(i).value - l_top_stors(i).value, '4444444564'),
          0);
    end loop;
    p_bottom_offsets := l_bottom_offsets;
@@ -5103,7 +5103,7 @@ begin
    when instr('COLUMN', upper(p_datetime_axis)) = 1 then l_row_axis := false;
    else cwms_err.raise('ERROR', 'P_DATETIME_AXIS must be either ''ROW'' or ''COLUMN''');
    end case;
-   
+
    get_stor_offsets(
       p_bottom_offsets => l_bottom_offsets,
       p_top_offsets    => l_top_offsets,
@@ -5114,8 +5114,8 @@ begin
       p_start_time     => p_start_time,
       p_end_time       => p_end_time,
       p_timezone       => p_timezone,
-      p_office_id      => p_office_id);     
-   
+      p_office_id      => p_office_id);
+
    if l_row_axis then
       l_results := ztsv_array_tab();
       l_results.extend(l_top_offsets.count);
@@ -5124,7 +5124,7 @@ begin
       end loop;
    else
       l_results := ztsv_array_tab(l_bottom_offsets, l_top_offsets);
-   end if;      
+   end if;
 	return l_results;
 end get_stor_offsets_f;
 --------------------------------------------------------------------------------
@@ -5169,17 +5169,17 @@ begin
    if p_value is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_UNIT');
    end if;
-   select count(*) 
-     into l_count 
-     from av_unit 
+   select count(*)
+     into l_count
+     from av_unit
     where upper(unit_id) = upper(p_unit)
       and abstract_param_id = 'Volume';
    if l_count > 0 then
       l_is_storage := true;
    else
-      select count(*) 
-        into l_count 
-        from av_unit 
+      select count(*)
+        into l_count
+        from av_unit
        where upper(unit_id) = upper(p_unit)
          and abstract_param_id = 'Length';
       if l_count > 0 then
@@ -5272,8 +5272,8 @@ begin
       p_0_to_100     => p_0_to_100,
       p_always_rate  => p_always_rate,
       p_rating_spec  => p_rating_spec,
-      p_office_id    => p_office_id);   
-      
+      p_office_id    => p_office_id);
+
    return l_percent_full;
 end get_percent_full_f;
 --------------------------------------------------------------------------------
@@ -5319,18 +5319,18 @@ begin
    if p_values is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_VALUES');
    end if;
-   select count(*) 
-     into l_count 
-     from av_unit 
+   select count(*)
+     into l_count
+     from av_unit
     where upper(unit_id) = upper(p_unit)
       and abstract_param_id = 'Volume';
    if l_count > 0 then
       l_is_storage := true;
    else
-      select count(*) 
-        into l_count 
-        from av_unit 
-       where upper(unit_id) = upper(p_unit)                          
+      select count(*)
+        into l_count
+        from av_unit
+       where upper(unit_id) = upper(p_unit)
          and abstract_param_id = 'Length';
       if l_count > 0 then
          l_is_storage := false;
@@ -5359,7 +5359,7 @@ begin
                        when p_rating_spec is not null then p_rating_spec
                        else get_elev_stor_rating(p_project_id, l_office_id)
                        end;
-      l_unit := 'ac-ft';    
+      l_unit := 'ac-ft';
       select to_binary_double(column_value) bulk collect into l_doubles from table(p_values);
       l_doubles := cwms_rating.rate_f(
          l_rating_spec,
@@ -5432,7 +5432,7 @@ begin
       p_always_rate  => p_always_rate,
       p_rating_spec  => p_rating_spec,
       p_office_id    => p_office_id);
-      
+
    return l_percent_full;
 end get_percent_full_f;
 --------------------------------------------------------------------------------
@@ -5471,14 +5471,14 @@ begin
    if p_timeseries is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_TIMESERIES');
    end if;
-   
+
    select date_time,
           value
      bulk collect
      into l_datetimes,
           l_values
      from table(p_timeseries);
-     
+
    get_percent_full(
       p_percent_full => l_values,
       p_project_id   => p_project_id,
@@ -5491,14 +5491,14 @@ begin
       p_always_rate  => p_always_rate,
       p_rating_spec  => p_rating_spec,
       p_office_id    => p_office_id);
-     
+
    l_percent_full := ztsv_array();
    l_percent_full.extend(l_values.count);
    for i in 1..l_values.count loop
       l_percent_full(i) := ztsv_type(l_datetimes(i), l_values(i), 0);
    end loop;
    p_percent_full := l_percent_full;
-   
+
 end get_percent_full;
 --------------------------------------------------------------------------------
 -- function get_percent_full_f
@@ -5528,7 +5528,7 @@ begin
       p_always_rate  => p_always_rate,
       p_rating_spec  => p_rating_spec,
       p_office_id    => p_office_id);
-      
+
 	return l_percent_full;
 end get_percent_full_f;
 --------------------------------------------------------------------------------
@@ -5553,7 +5553,7 @@ is
    l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
-   l_sub_parameter_id  varchar2(32);                                    
+   l_sub_parameter_id  varchar2(32);
    l_parameter_type_id varchar2(16);
    l_interval_id       varchar2(16);
    l_duration_id       varchar2(16);
@@ -5591,14 +5591,14 @@ begin
       l_version_id);
    if upper(l_base_location_id) != upper(cwms_util.get_base_id(p_project_id)) then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
-         ||' is not for specified project ' 
+         ||' is not for specified project '
          ||p_project_id);
    elsif l_base_parameter_id not in ('Elev', 'Stor') then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Time series '
          ||p_tsid
          ||' is not an elevation or storage time series');
@@ -5606,18 +5606,18 @@ begin
    l_unit := cwms_util.get_default_units(l_base_parameter_id);
    cwms_ts.retrieve_ts(
       p_at_tsv_rc         =>  c_ts,
-      p_cwms_ts_id        =>  p_tsid,              
-      p_units             =>  l_unit,              
-      p_start_time        =>  p_start_time,                  
-      p_end_time          =>  p_end_time,                  
+      p_cwms_ts_id        =>  p_tsid,
+      p_units             =>  l_unit,
+      p_start_time        =>  p_start_time,
+      p_end_time          =>  p_end_time,
       p_time_zone         =>  p_timezone,
-      p_trim              =>  'T',  
-      p_start_inclusive   =>  'T',  
-      p_end_inclusive     =>  'T',  
-      p_previous          =>  'F',  
-      p_next              =>  'F',  
-      p_version_date      =>  null,     
-      p_max_version       =>  'T',  
+      p_trim              =>  'T',
+      p_start_inclusive   =>  'T',
+      p_end_inclusive     =>  'T',
+      p_previous          =>  'F',
+      p_next              =>  'F',
+      p_version_date      =>  null,
+      p_max_version       =>  'T',
       p_office_id         =>  p_office_id);
 
    fetch c_ts bulk collect into l_ts1;
@@ -5627,7 +5627,7 @@ begin
    for i in 1..l_ts1.count loop
       l_ts2(i) := ztsv_type(l_ts1(i).date_time, l_ts1(i).value, 0);
    end loop;
-   
+
    get_percent_full(
       p_percent_full => p_percent_full,
       p_project_id   => p_project_id,
@@ -5639,7 +5639,7 @@ begin
       p_always_rate  => p_always_rate,
       p_rating_spec  => p_rating_spec,
       p_office_id    => p_office_id);
-   
+
 end get_percent_full;
 --------------------------------------------------------------------------------
 -- function get_percent_full_f
@@ -5670,8 +5670,8 @@ begin
       p_0_to_100     => p_0_to_100,
       p_always_rate  => p_always_rate,
       p_rating_spec  => p_rating_spec,
-      p_office_id    => p_office_id);  
-      
+      p_office_id    => p_office_id);
+
 	return l_percent_full;
 end get_percent_full_f;
 

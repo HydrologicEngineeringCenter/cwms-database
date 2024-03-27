@@ -294,7 +294,9 @@ as
       end loop;
    end at_adjust_rc;
 
-   procedure at_start ( p_n in number default 1) is
+   procedure at_start    ( p_n          in number default 1,
+                           p_paused     in varchar2 default 'F')
+   is
    begin
       -- Save current AUTOTRACE statistics
 
@@ -318,6 +320,7 @@ as
       at_adjust_rc;
 
       g_times(p_n) := to_number(to_char(systimestamp, 'sssss.ff'));  -- microsecond
+      g_at_resumes(p_n) := 0;
 
       select statistic#, name, 0
       bulk   collect into g_acc(p_n)
@@ -325,7 +328,7 @@ as
 
       g_times2(p_n) := 0;
 
-      g_at_status(p_n) := g_started;
+      g_at_status(p_n) := case when p_paused = 'T' then g_paused else g_started end;
 
    end at_start;
 
@@ -370,6 +373,7 @@ as
       case g_at_status(p_n)
       when g_waiting then
          dbms_output.put_line ( 'Statistics don''t exist for bucket '||p_n);
+         return;
       when g_started then
          dbms_output.put_line( 'Bucket '||p_n||' has not been paused');
          return;
@@ -387,6 +391,7 @@ as
       at_adjust_rc;
 
       g_times(p_n) := to_number(to_char(systimestamp, 'sssss.ff'));  -- microsecond
+      g_at_resumes(p_n) := g_at_resumes(p_n)  + 1;
 
       g_at_status(p_n) := g_resumed;
 
@@ -420,6 +425,9 @@ as
             dbms_output.put_line ( rpad(p_lbl,9)||to_char(g_acc(p_n)(i).value, '9999999999')||' '||g_acc(p_n)(i).name );
          end if;
       end loop;
+      if g_at_resumes(p_n) > 0 then
+         dbms_output.put_line(rpad(p_lbl, 9)||to_char(g_at_resumes(p_n), '9999999999')||' times resumed');
+      end if;
 
       g_at_status(p_n) := g_waiting;
 

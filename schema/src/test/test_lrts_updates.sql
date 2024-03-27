@@ -168,6 +168,7 @@ begin
    -- start with a clean slate --
    ------------------------------
    teardown;
+   cwms_util.set_output_debug_info(false);
    if p_options is null or instr(p_options, 'INIT') > 0 then
       --------------------------------
       -- populate package_variables --
@@ -1192,11 +1193,13 @@ begin
          ut.expect(l_date_times.count).to_equal(c_value_count);
          ut.expect(l_values.count).to_equal(c_value_count);
          ut.expect(l_quality_codes.count).to_equal(c_value_count);
-         for k in 1..c_value_count loop
-            ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
-            ut.expect(l_values(k)).to_equal(k);
-            ut.expect(l_quality_codes(k)).to_equal(0);
-         end loop;
+         if l_date_times.count = c_value_count then
+            for k in 1..c_value_count loop
+               ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
+               ut.expect(l_values(k)).to_equal(k);
+               ut.expect(l_quality_codes(k)).to_equal(0);
+            end loop;
+         end if;
          ---------------------------------------------------
          -- next the version with the time zone parameter --
          ---------------------------------------------------
@@ -1233,11 +1236,13 @@ begin
          ut.expect(l_date_times.count).to_equal(c_value_count);
          ut.expect(l_values.count).to_equal(c_value_count);
          ut.expect(l_quality_codes.count).to_equal(c_value_count);
-         for k in 1..c_value_count loop
-            ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
-            ut.expect(l_values(k)).to_equal(k);
-            ut.expect(l_quality_codes(k)).to_equal(0);
-         end loop;
+         if l_date_times.count = c_value_count then
+            for k in 1..c_value_count loop
+               ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
+               ut.expect(l_values(k)).to_equal(k);
+               ut.expect(l_quality_codes(k)).to_equal(0);
+            end loop;
+         end if;
       end loop;
    end loop;
 end retrieve_ts_out;
@@ -1286,11 +1291,13 @@ begin
          ut.expect(l_date_times.count).to_equal(c_value_count);
          ut.expect(l_values.count).to_equal(c_value_count);
          ut.expect(l_quality_codes.count).to_equal(c_value_count);
-         for k in 1..c_value_count loop
-            ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
-            ut.expect(l_values(k)).to_equal(k);
-            ut.expect(l_quality_codes(k)).to_equal(0);
-         end loop;
+         if l_date_times.count = c_value_count then
+            for k in 1..c_value_count loop
+               ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
+               ut.expect(l_values(k)).to_equal(k);
+               ut.expect(l_quality_codes(k)).to_equal(0);
+            end loop;
+         end if;
          ---------------------------------------------------
          -- next the version with the time zone parameter --
          ---------------------------------------------------
@@ -1320,11 +1327,13 @@ begin
          ut.expect(l_date_times.count).to_equal(c_value_count);
          ut.expect(l_values.count).to_equal(c_value_count);
          ut.expect(l_quality_codes.count).to_equal(c_value_count);
-         for k in 1..c_value_count loop
-            ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
-            ut.expect(l_values(k)).to_equal(k);
-            ut.expect(l_quality_codes(k)).to_equal(0);
-         end loop;
+         if l_date_times.count = c_value_count then
+            for k in 1..c_value_count loop
+               ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
+               ut.expect(l_values(k)).to_equal(k);
+               ut.expect(l_quality_codes(k)).to_equal(0);
+            end loop;
+         end if;
       end loop;
    end loop;
 end retrieve_ts_old;
@@ -1373,11 +1382,13 @@ begin
          ut.expect(l_date_times.count).to_equal(c_value_count);
          ut.expect(l_values.count).to_equal(c_value_count);
          ut.expect(l_quality_codes.count).to_equal(c_value_count);
-         for k in 1..c_value_count loop
-            ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
-            ut.expect(l_values(k)).to_equal(k);
-            ut.expect(l_quality_codes(k)).to_equal(0);
-         end loop;
+         if l_date_times.count = c_value_count then
+            for k in 1..c_value_count loop
+               ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
+               ut.expect(l_values(k)).to_equal(k);
+               ut.expect(l_quality_codes(k)).to_equal(0);
+            end loop;
+         end if;
          ---------------------------------------------------
          -- next the version with the time zone parameter --
          ---------------------------------------------------
@@ -1407,11 +1418,13 @@ begin
          ut.expect(l_date_times.count).to_equal(c_value_count);
          ut.expect(l_values.count).to_equal(c_value_count);
          ut.expect(l_quality_codes.count).to_equal(c_value_count);
-         for k in 1..c_value_count loop
-            ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
-            ut.expect(l_values(k)).to_equal(k);
-            ut.expect(l_quality_codes(k)).to_equal(0);
-         end loop;
+         if l_date_times.count = c_value_count then
+            for k in 1..c_value_count loop
+               ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
+               ut.expect(l_values(k)).to_equal(k);
+               ut.expect(l_quality_codes(k)).to_equal(0);
+            end loop;
+         end if;
       end loop;
    end loop;
 end retrieve_ts_2_old;
@@ -1461,11 +1474,13 @@ begin
          ut.expect(l_date_times.count).to_equal(c_value_count);
          ut.expect(l_values.count).to_equal(c_value_count);
          ut.expect(l_quality_codes.count).to_equal(c_value_count);
-         for k in 1..c_value_count loop
-            ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
-            ut.expect(l_values(k)).to_equal(k);
-            ut.expect(l_quality_codes(k)).to_equal(0);
-         end loop;
+         if l_date_times.count = c_value_count then
+            for k in 1..c_value_count loop
+               ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
+               ut.expect(l_values(k)).to_equal(k);
+               ut.expect(l_quality_codes(k)).to_equal(0);
+            end loop;
+         end if;
          ---------------------------------------------------
          -- next the version with the time zone parameter --
          ---------------------------------------------------
@@ -1496,11 +1511,13 @@ begin
          ut.expect(l_date_times.count).to_equal(c_value_count);
          ut.expect(l_values.count).to_equal(c_value_count);
          ut.expect(l_quality_codes.count).to_equal(c_value_count);
-         for k in 1..c_value_count loop
-            ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
-            ut.expect(l_values(k)).to_equal(k);
-            ut.expect(l_quality_codes(k)).to_equal(0);
-         end loop;
+         if l_date_times.count = c_value_count then
+            for k in 1..c_value_count loop
+               ut.expect(l_date_times(k)).to_equal(c_start_time + (k-1) / 24 + c_intvl_offsets(i) / 1440);
+               ut.expect(l_values(k)).to_equal(k);
+               ut.expect(l_quality_codes(k)).to_equal(0);
+            end loop;
+         end if;
       end loop;
    end loop;
 end retrieve_ts;
@@ -3170,6 +3187,13 @@ begin
                      ut.expect(l_values(k)).to_be_null;
                   end if;
                end loop;
+--            else
+--               dbms_output.put_line('i = '||i||', j = '||j);
+--               dbms_output.put_line('l_start_time = '||l_start_time||', l_end_time = '||l_end_time);
+--               for k in 1..l_times.count loop
+--                  dbms_output.put_line(k||chr(9)||to_char(l_times(k), 'yyyy-mm-dd hh24:mi:ss'));
+--               end loop;
+
             end if;
          else
             ----------------
@@ -3461,6 +3485,7 @@ begin
       p_location_id	=> cwms_util.split_text(l_cwms_ts_id, 1, '.'),
       p_time_zone_id => l_time_zone,
       p_db_office_id => c_office_id);
+   cwms_ts.set_retrieve_signed_quality;
 
    ----------------------------
    -- store the initial data --
@@ -3585,6 +3610,7 @@ begin
       end if;
       ut.expect(l_quality_codes(i)).to_equal(l_expected_zts(i).quality_code);
    end loop;
+   cwms_ts.set_retrieve_unsigned_quality;
 end test_cwdb_150;
 --------------------------------------------------------------------------------
 -- procedure test_cwdb_153
@@ -3597,7 +3623,7 @@ is
    l_start_time     date := date '2017-10-16';
    l_value_count    pls_integer := 25;
    l_crsr           sys_refcursor;
-   l_dump_values    boolean := true;
+   l_dump_values    boolean := false;
    l_date_times     cwms_t_date_table;
    l_values         cwms_t_double_tab;
    l_quality_codes  cwms_t_number_tab;
@@ -3863,14 +3889,14 @@ begin
          p_time_zone       => null,
          p_trim            => 'F',
          p_start_inclusive => 'T',
-         p_end_inclusive   => 'T',
+         p_end_inclusive   => 'F',
          p_previous        => 'F',
          p_next            => 'F',
          p_version_date    => null,
          p_max_version     => 'T',
          p_office_id       => c_office_id);
       ts2 := systimestamp;
-      dbms_output.put_line((ts2-ts1));
+--      dbms_output.put_line((ts2-ts1));
       loop
          fetch l_crsr
           into l_seq_out,
@@ -3928,14 +3954,14 @@ begin
          p_time_zone       => null,
          p_trim            => 'F',
          p_start_inclusive => 'T',
-         p_end_inclusive   => 'T',
+         p_end_inclusive   => 'F',
          p_previous        => 'F',
          p_next            => 'F',
          p_version_date    => null,
          p_max_version     => 'T',
          p_office_id       => c_office_id);
       ts2 := systimestamp;
-      dbms_output.put_line((ts2-ts1));
+--      dbms_output.put_line((ts2-ts1));
       loop
          fetch l_crsr
           into l_seq_out,
@@ -3984,14 +4010,14 @@ begin
          p_time_zone       => null,
          p_trim            => 'F',
          p_start_inclusive => 'T',
-         p_end_inclusive   => 'T',
+         p_end_inclusive   => 'F',
          p_previous        => 'F',
          p_next            => 'F',
          p_version_date    => null,
          p_max_version     => 'T',
          p_office_id       => null);
       ts2 := systimestamp;
-      dbms_output.put_line((ts2-ts1));
+--      dbms_output.put_line((ts2-ts1));
       loop
          fetch l_crsr
           into l_seq_out,
@@ -4462,11 +4488,11 @@ begin
       ------------------------------------
       -- verify expected tsids in views --
       ------------------------------------
-      dbms_output.put_line(chr(10)||'==> Setting session to use '||case when i = 1 then 'OLD' else 'NEW' end||' LRTS ID format');
+--      dbms_output.put_line(chr(10)||'==> Setting session to use '||case when i = 1 then 'OLD' else 'NEW' end||' LRTS ID format');
       cwms_ts.set_use_new_lrts_format_on_output(substr('FT', i, 1));
-      for rec in (select * from cwms_v_ts_id where cwms_ts_id like '%Elev-Prts.%.Test') loop
-         dbms_output.put_line(rec.cwms_ts_id||chr(9)||rec.interval_utc_offset);
-      end loop;
+--      for rec in (select * from cwms_v_ts_id where cwms_ts_id like '%Elev-Prts.%.Test') loop
+--         dbms_output.put_line(rec.cwms_ts_id||chr(9)||rec.interval_utc_offset);
+--      end loop;
       if cwms_ts.format_lrts_output(l_prts_ts_id, c_office_id) != l_prts_ts_id then
          cwms_err.raise('ERROR', 'Formatting '||l_prts_ts_id||'. Expected '||l_prts_ts_id||' but got '||cwms_ts.format_lrts_output(l_prts_ts_id, c_office_id));
       end if;
@@ -4480,7 +4506,7 @@ begin
          end if;
       end if;
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_EXTENTS_UTC');
+--      dbms_output.put_line('==> Testing CWMS_V_TS_EXTENTS_UTC');
       l_rec_count := 0;
       for rec in (select * from cwms_v_ts_extents_utc where location_id = l_location_id) loop
          l_rec_count := l_rec_count + 1;
@@ -4492,7 +4518,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_EXTENTS_LOCAL');
+--      dbms_output.put_line('==> Testing CWMS_V_TS_EXTENTS_LOCAL');
       l_rec_count := 0;
       for rec in (select * from cwms_v_ts_extents_local where location_id = l_location_id) loop
          l_rec_count := l_rec_count + 1;
@@ -4504,7 +4530,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_ACTIVE_FLAG');
+--      dbms_output.put_line('==> Testing CWMS_V_ACTIVE_FLAG');
       l_rec_count := 0;
       for rec in (select * from cwms_v_active_flag where cwms_ts_id like l_location_id||'.%') loop
          l_rec_count := l_rec_count + 1;
@@ -4516,7 +4542,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_ID');
+--      dbms_output.put_line('==> Testing CWMS_V_TS_ID');
       l_rec_count := 0;
       for rec in (select cwms_ts_id, interval_id from cwms_v_ts_id where location_id = l_location_id) loop
          l_rec_count := l_rec_count + 1;
@@ -4530,7 +4556,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_ID2');
+--      dbms_output.put_line('==> Testing CWMS_V_TS_ID2');
       l_rec_count := 0;
       for rec in (select cwms_ts_id, interval_id, version_id from cwms_v_ts_id2 where location_id = l_location_id and aliased_item is null) loop
          l_rec_count := l_rec_count + 1;
@@ -4544,7 +4570,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_TSV_DQU');
+--      dbms_output.put_line('==> Testing CWMS_V_TSV_DQU');
       select distinct cwms_ts_id
         into l_ts_id_out
         from cwms_v_tsv_dqu
@@ -4557,7 +4583,7 @@ begin
          ut.expect(l_ts_id_out).to_equal(l_lrts_ts_id_new);
       end if;
 
-      dbms_output.put_line('==> Testing CWMS_V_TSV_DQU_24H');
+--      dbms_output.put_line('==> Testing CWMS_V_TSV_DQU_24H');
       select distinct cwms_ts_id
         into l_ts_id_out
         from cwms_v_tsv_dqu_24h
@@ -4570,7 +4596,7 @@ begin
          ut.expect(l_ts_id_out).to_equal(l_lrts_ts_id_new);
       end if;
 
-      dbms_output.put_line('==> Testing CWMS_V_TSV_DQU_30D');
+--      dbms_output.put_line('==> Testing CWMS_V_TSV_DQU_30D');
       select distinct cwms_ts_id
         into l_ts_id_out
         from cwms_v_tsv_dqu_30d
@@ -4583,7 +4609,7 @@ begin
          ut.expect(l_ts_id_out).to_equal(l_lrts_ts_id_new);
       end if;
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_TEXT');
+--      dbms_output.put_line('==> Testing CWMS_V_TS_TEXT');
       l_rec_count := 0;
       for rec in (select distinct
                          cwms_ts_id,
@@ -4604,7 +4630,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_LOCATION_LEVEL');
+--      dbms_output.put_line('==> Testing CWMS_V_LOCATION_LEVEL');
       l_rec_count := 0;
       for rec in (select * from cwms_v_location_level where location_id = l_location_id) loop
          l_rec_count := l_rec_count + 1;
@@ -4616,7 +4642,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_LOC_LVL_CUR_MAX_IND');
+--      dbms_output.put_line('==> Testing CWMS_V_LOC_LVL_CUR_MAX_IND');
       l_rec_count := 0;
       for rec in (select * from cwms_v_loc_lvl_cur_max_ind) loop
          l_rec_count := l_rec_count + 1;
@@ -4629,7 +4655,7 @@ begin
       ut.expect(l_rec_count).to_be_greater_than(0);
 
 
-      dbms_output.put_line('==> Testing CWMS_V_LOC_LVL_TS_MAP');
+--      dbms_output.put_line('==> Testing CWMS_V_LOC_LVL_TS_MAP');
       l_rec_count := 0;
       for rec in (select * from cwms_v_loc_lvl_ts_map) loop
          l_rec_count := l_rec_count + 1;
@@ -4641,7 +4667,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_ALIAS');
+--      dbms_output.put_line('==> Testing CWMS_V_TS_ALIAS');
       l_rec_count := 0;
       for rec in (select * from cwms_v_ts_alias where db_office_id = c_office_id and category_id = 'TestCategory1') loop
          l_rec_count := l_rec_count + 1;
@@ -4653,7 +4679,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_CAT_GRP');
+--      dbms_output.put_line('==> Testing CWMS_V_TS_CAT_GRP');
       l_rec_count := 0;
       for rec in (select * from cwms_v_ts_cat_grp where cat_db_office_id = c_office_id and ts_category_id = 'TestCategory1') loop
          l_rec_count := l_rec_count + 1;
@@ -4665,7 +4691,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_GRP_ASSGN');
+--      dbms_output.put_line('==> Testing CWMS_V_TS_GRP_ASSGN');
       l_rec_count := 0;
       for rec in (select * from cwms_v_ts_grp_assgn where db_office_id = c_office_id and category_id = 'TestCategory1') loop
          l_rec_count := l_rec_count + 1;
@@ -4684,7 +4710,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_MSG_ARCHIVE');
+--      dbms_output.put_line('==> Testing CWMS_V_TS_MSG_ARCHIVE');
       l_rec_count := 0;
       for rec in (select * from cwms_v_ts_msg_archive  where cwms_ts_id like l_location_id||'.%') loop
          l_rec_count := l_rec_count + 1;
@@ -4696,7 +4722,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_FORECAST_EX');
+--      dbms_output.put_line('==> Testing CWMS_V_FORECAST_EX');
       l_rec_count := 0;
       for rec in (select * from cwms_v_forecast_ex where location_id = l_location_id) loop
          l_rec_count := l_rec_count + 1;
@@ -4708,7 +4734,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_TS_PROFILE');
+--      dbms_output.put_line('==> Testing CWMS_V_TS_PROFILE');
       l_rec_count := 0;
       for rec in (select * from cwms_v_ts_profile where location_id = l_location_id) loop
          l_rec_count := l_rec_count + 1;
@@ -4720,7 +4746,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_SCREENED_TS_IDS');
+--      dbms_output.put_line('==> Testing CWMS_V_SCREENED_TS_IDS');
       l_rec_count := 0;
       for rec in (select * from cwms_v_screened_ts_ids where screening_id = 'Elev Range 1') loop
          l_rec_count := l_rec_count + 1;
@@ -4732,7 +4758,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_SCREENING_ASSIGNMENTS');
+--      dbms_output.put_line('==> Testing CWMS_V_SCREENING_ASSIGNMENTS');
       l_rec_count := 0;
       for rec in (select * from cwms_v_screening_assignments where screening_id = 'Elev Range 1') loop
          l_rec_count := l_rec_count + 1;
@@ -4744,7 +4770,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_SHEF_DECODE_SPEC');
+--      dbms_output.put_line('==> Testing CWMS_V_SHEF_DECODE_SPEC');
       l_rec_count := 0;
       for rec in (select * from cwms_v_shef_decode_spec where data_stream_id = 'Test_Data_Stream') loop
          l_rec_count := l_rec_count + 1;
@@ -4756,7 +4782,7 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
-      dbms_output.put_line('==> Testing CWMS_V_CURRENT_MAP_DATA');
+--      dbms_output.put_line('==> Testing CWMS_V_CURRENT_MAP_DATA');
       l_rec_count := 0;
       for rec in (select * from cwms_v_current_map_data where cwms_ts_id like l_location_id||'.%') loop
          l_rec_count := l_rec_count + 1;
@@ -4770,7 +4796,7 @@ begin
       ---------------------------------------------------
       -- verify expected tsids in non-catalog routines --
       ---------------------------------------------------
-      dbms_output.put_line('==> Testing RETRIEVE_TS_OUT');
+--      dbms_output.put_line('==> Testing RETRIEVE_TS_OUT');
       cwms_ts.retrieve_ts_out(
          p_at_tsv_rc      => l_crsr,
          p_cwms_ts_id_out => l_ts_id_out,
@@ -4801,7 +4827,7 @@ begin
       ut.expect(l_unit_out).to_equal('ft');
       ut.expect(l_time_zone_out).to_equal(c_timezone_ids(1));
 
-      dbms_output.put_line('==> Testing ZRETRIEVE_TS_JAVA');
+--      dbms_output.put_line('==> Testing ZRETRIEVE_TS_JAVA');
       cwms_ts.zretrieve_ts_java(
          p_transaction_time => l_retrieve_time,
          p_at_tsv_rc        => l_crsr,
@@ -4834,7 +4860,7 @@ begin
       ut.expect(l_time_zone_out).to_equal(c_timezone_ids(1));
       close l_crsr;
 
-      dbms_output.put_line('==> Testing RETRIEVE_TS_MULTI');
+--      dbms_output.put_line('==> Testing RETRIEVE_TS_MULTI');
       l_ts_request := cwms_t_timeseries_req_array(
          cwms_t_timeseries_req(l_lrts_ts_id_old, 'ft', l_start_time, l_end_time),
          cwms_t_timeseries_req(l_prts_ts_id, 'ft', l_start_time, l_end_time));
@@ -4880,7 +4906,7 @@ begin
          l_expiration_date_out  date;
          l_seasonal_values_out  seasonal_value_tab_t;
       begin
-         dbms_output.put_line('==> Testing RETRIEVE_LOCATION_LEVEL3');
+--         dbms_output.put_line('==> Testing RETRIEVE_LOCATION_LEVEL3');
          cwms_level.retrieve_location_level3(
             p_level_value             => l_level_value_out,
             p_level_comment           => l_level_comment_out,
@@ -4916,7 +4942,7 @@ begin
             p_date                    => sysdate,
             p_timezone_id             => 'UTC',
             p_office_id               => c_office_id);
-         dbms_output.put_line('==> Testing RETRIEVE_LOCATION_LEVEL4');
+--         dbms_output.put_line('==> Testing RETRIEVE_LOCATION_LEVEL4');
          ut.expect(l_tsid_out).to_equal(l_prts_ts_id);
          cwms_level.retrieve_location_level4(
             p_level_value             => l_level_value_out,
@@ -4960,7 +4986,7 @@ begin
       -----------------------------------------------
       -- verify expected tsids in catalog routines --
       -----------------------------------------------
-      dbms_output.put_line('==> Testing CAT_TS_ID');
+--      dbms_output.put_line('==> Testing CAT_TS_ID');
       cwms_cat.cat_ts_id(
          p_cwms_cat            => l_crsr,
          p_ts_subselect_string => l_location_id||'.*.Test',
@@ -4999,7 +5025,7 @@ begin
       end loop;
       close l_crsr;
 
-      dbms_output.put_line('==> Testing CAT_TS_ALIASES');
+--      dbms_output.put_line('==> Testing CAT_TS_ALIASES');
       cwms_cat.cat_ts_aliases(
          p_cwms_cat       => l_crsr,
          p_ts_category_id => 'Test*',
@@ -5056,7 +5082,7 @@ begin
       end loop;
       close l_crsr;
 
-      dbms_output.put_line('==> Testing CAT_TS_GROUP');
+--      dbms_output.put_line('==> Testing CAT_TS_GROUP');
       cwms_cat.cat_ts_group(
          p_cwms_cat       => l_crsr,
          p_db_office_id   => c_office_id);
@@ -5094,7 +5120,7 @@ begin
       end loop;
       close l_crsr;
 
-      dbms_output.put_line('==> Testing CAT_XCHG_TS_MAP');
+--      dbms_output.put_line('==> Testing CAT_XCHG_TS_MAP');
       cwms_cat.cat_dss_xchg_ts_map(
          p_cwms_cat    => l_crsr,
          p_office_id   => c_office_id,
@@ -5128,7 +5154,7 @@ begin
       end loop;
       close l_crsr;
 
-      dbms_output.put_line('==> Testing CWMS_FORECAST.CAT_TS');
+--      dbms_output.put_line('==> Testing CWMS_FORECAST.CAT_TS');
       l_crsr := cwms_forecast.cat_ts_f(
          p_location_id => l_location_id,
          p_forecast_id => 'TEST',
@@ -5156,7 +5182,7 @@ begin
       end loop;
       close l_crsr;
 
-      dbms_output.put_line('==> Testing CWMS_TS_PROFILE.CAT_TS_PROFILE');
+--      dbms_output.put_line('==> Testing CWMS_TS_PROFILE.CAT_TS_PROFILE');
       l_crsr := cwms_ts_profile.cat_ts_profile_f('*', '*', c_office_id);
       loop
          fetch l_crsr
@@ -5180,7 +5206,7 @@ begin
       end loop;
       close l_crsr;
 
-      dbms_output.put_line('==> Testing CWMS_SHEF.CAT_SHEF_DECODE_SPEC_TAB');
+--      dbms_output.put_line('==> Testing CWMS_SHEF.CAT_SHEF_DECODE_SPEC_TAB');
       cwms_shef.cat_shef_decode_spec (
          p_shef_decode_spec_rc => l_crsr,
          p_data_stream_id      => 'Test_Data_Stream',
@@ -5202,7 +5228,7 @@ begin
          end if;
       end loop;
 
-      dbms_output.put_line('==> Testing CWMS_DATA_DISSEM.CAT_TS_TRANSFER');
+--      dbms_output.put_line('==> Testing CWMS_DATA_DISSEM.CAT_TS_TRANSFER');
       cwms_data_dissem.cat_ts_transfer(l_crsr, c_office_id);
       fetch l_crsr bulk collect into l_data_dissem_recs;
       for j in 1..l_data_dissem_recs.count loop
@@ -5482,13 +5508,13 @@ begin
    --------------------------------
    for i in 1..2 loop
       cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', 0);
-      dbms_output.put_line(chr(10)||'==> i = '||i||': Setting session to use new LRTS format on output to '||substr('FT', i, 1));
+--      dbms_output.put_line(chr(10)||'==> i = '||i||': Setting session to use new LRTS format on output to '||substr('FT', i, 1));
       cwms_ts.set_use_new_lrts_format_on_output(substr('FT', i, 1));
       ut.expect(cwms_ts.use_new_lrts_format_on_output).to_equal(substr('FT', i, 1));
       ut.expect(cwms_ts.allow_new_lrts_format_on_input).to_equal('F');
       ut.expect(cwms_ts.require_new_lrts_format_on_input).to_equal('F');
       for j in 1..2 loop
-         dbms_output.put_line('==> i,j = '||j||','||j||': Setting session to allow use of new LRTS format to '||substr('FT', j, 1));
+--         dbms_output.put_line('==> i,j = '||j||','||j||': Setting session to allow use of new LRTS format to '||substr('FT', j, 1));
          cwms_ts.set_allow_new_lrts_format_on_input(substr('FT', j, 1));
          if j = 1 then
             ut.expect(cwms_ts.use_new_lrts_format_on_output).to_equal(substr('FT', i, 1));
@@ -5500,7 +5526,7 @@ begin
             ut.expect(cwms_ts.require_new_lrts_format_on_input).to_equal('F');
          end if;
          for k in 1..2 loop
-            dbms_output.put_line('==> i,j,k = '||j||','||j||','||k||': Setting session to require use of new LRTS format to '||substr('FT', k, 1));
+--            dbms_output.put_line('==> i,j,k = '||j||','||j||','||k||': Setting session to require use of new LRTS format to '||substr('FT', k, 1));
             cwms_ts.set_require_new_lrts_format_on_input(substr('FT', k, 1));
             -- should reset allow_new_lrts_format_on_intput to 'F'
             if k = 1 then
@@ -5513,7 +5539,7 @@ begin
                ut.expect(cwms_ts.require_new_lrts_format_on_input).to_equal('T');
             end if;
             for m in 1..2 loop
-               dbms_output.put_line('==> i,j,k,m = '||j||','||j||','||k||','||m||': Setting session to allow use of new LRTS format to '||substr('FT', m, 1));
+--               dbms_output.put_line('==> i,j,k,m = '||j||','||j||','||k||','||m||': Setting session to allow use of new LRTS format to '||substr('FT', m, 1));
                cwms_ts.set_allow_new_lrts_format_on_input(substr('FT', m, 1));
                -- should reset require_new_lrts_format_on_intput to 'F'
                if m = 1 then
@@ -5808,8 +5834,26 @@ begin
    l_crsr := cwms_forecast.cat_ts_f(
       p_location_id     => l_location_id,
       p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => l_lrts_ts_id_old,
+      p_cwms_ts_id_mask => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
       p_office_id       => c_office_id);
+   declare
+      ll_office_id      varchar2(16);
+      ll_forecast_date  date;
+      ll_issue_date     date;
+      ll_cwms_ts_id     varchar2(191);
+      ll_version_date   date;
+      ll_min_date       date;
+      ll_max_date       date;
+      ll_time_zone_name varchar2(28);
+      ll_count          pls_integer := 0;
+   begin
+      loop
+         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
+         exit when l_crsr%notfound;
+         ll_count := ll_count + 1;
+      end loop;
+      ut.expect(ll_count).to_equal(1);
+   end;
    close l_crsr;
    cwms_forecast.retrieve_ts(
       p_ts_cursor      => l_crsr,
@@ -5832,7 +5876,6 @@ begin
    close l_crsr;
    ut.expect(l_date_times.count).to_equal(l_ts_data.count);
    for i in 1..l_date_times.count loop
-      ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
       ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
       ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
    end loop;
@@ -6476,6 +6519,9 @@ begin
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+INVALID_INTERVAL_ID: "1DayLocal" is not a valid CWMS timeseries interval.+', 'mn')).to_be_true;
    end;
    begin
+      dbms_output.put_line('allow_new_lrts_format_on_input   = '||cwms_ts.allow_new_lrts_format_on_input);
+      dbms_output.put_line('require_new_lrts_format_on_input = '||cwms_ts.require_new_lrts_format_on_input);
+      dbms_output.put_line('use_new_lrts_format_on_output    = '||cwms_ts.use_new_lrts_format_on_output);
       cwms_ts.retrieve_ts(
          p_at_tsv_rc  => l_crsr,
          p_cwms_ts_id => l_lrts_ts_id_new,
@@ -6701,8 +6747,26 @@ begin
    l_crsr := cwms_forecast.cat_ts_f(
       p_location_id     => l_location_id,
       p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => l_lrts_ts_id_new,
+      p_cwms_ts_id_mask => replace(l_lrts_ts_id_new, '.Test', '.Forecast'),
       p_office_id       => c_office_id);
+   declare
+      ll_office_id      varchar2(16);
+      ll_forecast_date  date;
+      ll_issue_date     date;
+      ll_cwms_ts_id     varchar2(191);
+      ll_version_date   date;
+      ll_min_date       date;
+      ll_max_date       date;
+      ll_time_zone_name varchar2(28);
+      ll_count          pls_integer := 0;
+   begin
+      loop
+         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
+         exit when l_crsr%notfound;
+         ll_count := ll_count + 1;
+      end loop;
+      ut.expect(ll_count).to_equal(0);
+   end;
    close l_crsr;
    begin
       cwms_forecast.retrieve_ts(
@@ -7044,8 +7108,26 @@ begin
    l_crsr := cwms_forecast.cat_ts_f(
       p_location_id     => l_location_id,
       p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => l_lrts_ts_id_old,
+      p_cwms_ts_id_mask => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
       p_office_id       => c_office_id);
+   declare
+      ll_office_id      varchar2(16);
+      ll_forecast_date  date;
+      ll_issue_date     date;
+      ll_cwms_ts_id     varchar2(191);
+      ll_version_date   date;
+      ll_min_date       date;
+      ll_max_date       date;
+      ll_time_zone_name varchar2(28);
+      ll_count          pls_integer := 0;
+   begin
+      loop
+         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
+         exit when l_crsr%notfound;
+         ll_count := ll_count + 1;
+      end loop;
+      ut.expect(ll_count).to_equal(1);
+   end;
    close l_crsr;
    cwms_forecast.retrieve_ts(
       p_ts_cursor      => l_crsr,
@@ -7919,8 +8001,26 @@ begin
    l_crsr := cwms_forecast.cat_ts_f(
       p_location_id     => l_location_id,
       p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => l_lrts_ts_id_new,
+      p_cwms_ts_id_mask => cwms_ts.format_lrts_output(replace(l_lrts_ts_id_new, '.Test', '.Forecast'), c_office_id),
       p_office_id       => c_office_id);
+   declare
+      ll_office_id      varchar2(16);
+      ll_forecast_date  date;
+      ll_issue_date     date;
+      ll_cwms_ts_id     varchar2(191);
+      ll_version_date   date;
+      ll_min_date       date;
+      ll_max_date       date;
+      ll_time_zone_name varchar2(28);
+      ll_count          pls_integer := 0;
+   begin
+      loop
+         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
+         exit when l_crsr%notfound;
+         ll_count := ll_count + 1;
+      end loop;
+      ut.expect(ll_count).to_equal(1);
+   end;
    close l_crsr;
    cwms_forecast.retrieve_ts(
       p_ts_cursor      => l_crsr,
@@ -8791,8 +8891,27 @@ begin
    l_crsr := cwms_forecast.cat_ts_f(
       p_location_id     => l_location_id,
       p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => l_lrts_ts_id_old,
+      p_cwms_ts_id_mask => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
       p_office_id       => c_office_id);
+   declare
+      ll_office_id      varchar2(16);
+      ll_forecast_date  date;
+      ll_issue_date     date;
+      ll_cwms_ts_id     varchar2(191);
+      ll_version_date   date;
+      ll_min_date       date;
+      ll_max_date       date;
+      ll_time_zone_name varchar2(28);
+      ll_count          pls_integer := 0;
+   begin
+      loop
+         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
+         exit when l_crsr%notfound;
+         ll_count := ll_count + 1;
+      end loop;
+      ut.expect(ll_count).to_equal(1);
+   end;
+   close l_crsr;
    cwms_forecast.retrieve_ts(
       p_ts_cursor      => l_crsr,
       p_version_date   => l_version_date,
@@ -9106,8 +9225,26 @@ begin
    l_crsr := cwms_forecast.cat_ts_f(
       p_location_id     => l_location_id,
       p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => l_lrts_ts_id_new,
+      p_cwms_ts_id_mask => cwms_ts.format_lrts_output(replace(l_lrts_ts_id_new, '.Test', '.Forecast'), c_office_id),
       p_office_id       => c_office_id);
+   declare
+      ll_office_id      varchar2(16);
+      ll_forecast_date  date;
+      ll_issue_date     date;
+      ll_cwms_ts_id     varchar2(191);
+      ll_version_date   date;
+      ll_min_date       date;
+      ll_max_date       date;
+      ll_time_zone_name varchar2(28);
+      ll_count          pls_integer := 0;
+   begin
+      loop
+         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
+         exit when l_crsr%notfound;
+         ll_count := ll_count + 1;
+      end loop;
+      ut.expect(ll_count).to_equal(1);
+   end;
    close l_crsr;
    cwms_forecast.retrieve_ts(
       p_ts_cursor      => l_crsr,

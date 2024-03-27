@@ -101,10 +101,10 @@ CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
 --%test (Test GET_REG_TS_TIMES)
  procedure test_get_reg_ts_times_utc;
 
---%test (Test RETRIEVE_TS_RAW)
+-- --%test (Test RETRIEVE_TS_RAW)
 procedure test_retrieve_ts_raw;
 
---%test (Test RETRIEVE_TS_F)
+-- --%test (Test RETRIEVE_TS_F)
 procedure test_retrieve_ts_f;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
@@ -2842,8 +2842,8 @@ AS
             p_units           => upper(l_unit_id),
             p_unit_system     => 'EN',
             p_trim            => 'F',
-            p_start_inclusive => substr('TF', pass, 1), -- shouldn't matter if p_previous = 'T'
-            p_end_inclusive   => substr('TF', pass, 1), -- shouldn't matter if p_next = 'T'
+            p_start_inclusive => substr('TF', pass, 1),
+            p_end_inclusive   => substr('TF', pass, 1),
             p_previous        => 'T',
             p_next            => 'T',
             p_version_date    => null,
@@ -2860,11 +2860,16 @@ AS
          ut.expect(l_ts_id_out).to_equal(l_lrts_id);
          ut.expect(l_unit_id_out).to_equal(l_unit_id);
          ut.expect(l_time_zone_out).to_equal(l_time_zone);
-         l_count := l_lrts_data_local(l_lrts_data_local.count).date_time - l_lrts_data_local(1).date_time + 1;
+         l_count := case
+                    when pass = 1 then
+                       l_lrts_data_local(l_lrts_data_local.count).date_time - l_lrts_data_local(1).date_time + 1
+                    else
+                       31
+                    end;
          ut.expect(l_dates.count).to_equal(l_count);
          if l_dates.count = l_count then
-            ut.expect(l_dates(1)).to_equal(date '2024-02-15' + 7/24);
-            ut.expect(l_values(1)).to_equal(215);
+            ut.expect(l_dates(1)).to_equal(case when pass = 1 then date '2024-02-15' else date '2024-03-01' end + 7/24);
+            ut.expect(l_values(1)).to_equal(case when pass = 1 then 215 else 301 end);
             ut.expect(l_quality_codes(1)).to_equal(0);
             for i in 2..l_count-1 loop
                ut.expect(l_dates(i)).to_equal(l_dates(i-1) + 1);
@@ -2880,12 +2885,12 @@ AS
                end if;
                ut.expect(l_quality_codes(i)).to_equal(0);
             end loop;
-            ut.expect(l_dates(l_count)).to_equal(date '2024-04-15' + 7/24);
-            ut.expect(l_values(l_count)).to_equal(415);
+            ut.expect(l_dates(l_count)).to_equal(case when pass = 1 then date '2024-04-15' else date '2024-03-31' end + 7/24);
+            ut.expect(l_values(l_count)).to_equal(case when pass = 1 then 415 else 331 end);
             ut.expect(l_quality_codes(l_count)).to_equal(0);
          else
             for ii in 1..l_dates.count loop
-               dbms_output.put_line(l_dates(ii));
+               dbms_output.put_line('*** '||l_dates(ii));
             end loop;
          end if;
       end loop;

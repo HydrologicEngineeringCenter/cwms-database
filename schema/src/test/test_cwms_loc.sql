@@ -984,6 +984,8 @@ AS
                 <formula>0.37*60*(i1-506)*sqrt(2*32.2*(i1-i2))</formula>
               </simple-rating>
             </ratings>','$location-id', l_location_id));
+      x_item_does_not_exist exception;
+      pragma exception_init(x_item_does_not_exist, -20034);
    begin
       teardown;
       -------------------------------------------------------------------------
@@ -1112,8 +1114,19 @@ AS
                p_offset              => l_offset_to_ngvd29,
                p_unit                => 'ft',
                p_office_id           => l_office_id);
-            commit;
+         else
+            begin
+               cwms_loc.delete_vertical_datum_offset(
+                  p_location_id          => l_location_id,
+                  p_vertical_datum_id_1  => 'Pensacola',
+                  p_vertical_datum_id_2  => 'NGVD29',
+                  p_match_effective_date => 'F',
+                  p_office_id            => l_office_id);
+            exception
+               when x_item_does_not_exist then null;
+            end;
          end if;
+         commit;
          ------------------------------------------------
          -- store the time series with a default datum --
          -- (should raise an exception if no offset)   --

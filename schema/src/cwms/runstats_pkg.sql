@@ -18,17 +18,19 @@ as
    g_paused  constant integer := 2;
    g_resumed constant integer := 3;
 
-   g_rec       rec_tab;   -- Statistics numbers, names and values
-   g_rec2      rec_tab_t; -- Table of start statistics values
-   g_rec3      rec_tab_t; -- Table of stop statistics values
-   g_acc       rec_tab_t; -- Table of accumulated statistics values
-   g_times     num_t;     -- Start times
-   g_times2    num_t;     -- accumulated times
-   g_at_status num_t;     -- statuses
+   g_rec        rec_tab;   -- Statistics numbers, names and values
+   g_rec2       rec_tab_t; -- Table of start statistics values
+   g_rec3       rec_tab_t; -- Table of stop statistics values
+   g_acc        rec_tab_t; -- Table of accumulated statistics values
+   g_times      num_t;     -- Start times
+   g_times2     num_t;     -- accumulated times
+   g_at_status  num_t;     -- statuses
+   g_at_resumes num_t;
 
    -- AUTOTRACE procedures
 
-   procedure at_start    ( p_n          in number default 1 );
+   procedure at_start    ( p_n          in number default 1,
+                           p_paused     in varchar2 default 'F');
 
    procedure at_pause    ( p_n          in number default 1 );
 
