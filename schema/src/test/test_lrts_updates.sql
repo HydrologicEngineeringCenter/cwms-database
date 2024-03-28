@@ -3,7 +3,8 @@ create or replace package test_lrts_updates as
 --%suite(Test schema for full LRTS compatibility)
 
 --%rollback(manual)
---%afterall(teardown)
+--%beforeall(setup$)
+--%afterall(teardown$)
 
 --%test(CREATE_TS_CODE with zero offset without time zone)
 procedure create_ts_code_no_tz1;
@@ -91,6 +92,8 @@ procedure test_lrts_id_output_formatting;
 procedure test_lrts_id_input_formatting;
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
+procedure setup$;
+procedure teardown$;
 c_office_id     constant varchar2(3)  := '&&office_id';
 c_location_ids  constant str_tab_t    := str_tab_t('TestLoc1', 'TestLoc1-WithSub', 'TestLoc2');
 c_timezone_ids  constant str_tab_t    := str_tab_t('US/Central', null, 'CST'); -- make sure tz(2) is null
@@ -117,11 +120,32 @@ begin
    cwms_loc.clear_all_caches;
 end clear_caches;
 --------------------------------------------------------------------------------
+-- procedure #setup
+--------------------------------------------------------------------------------
+procedure setup$
+is
+begin
+   runstats.at_start(1, 'T');
+   runstats.at_start(2, 'T');
+   runstats.at_start(3, 'T');
+end setup$;
+--------------------------------------------------------------------------------
+-- procedure #teardown
+--------------------------------------------------------------------------------
+procedure teardown$
+is
+begin
+   runstats.at_stop('1', 1);
+   runstats.at_stop('2', 2);
+   runstats.at_stop('3', 3);
+   teardown;
+end teardown$;
+--------------------------------------------------------------------------------
 -- procedure teardown
 --------------------------------------------------------------------------------
 procedure teardown
 is
-   l_ts_codes number_tab_t;
+   l_ts_codes   number_tab_t;
    exc_location_id_not_found exception;
    pragma exception_init(exc_location_id_not_found, -20025);
 begin
