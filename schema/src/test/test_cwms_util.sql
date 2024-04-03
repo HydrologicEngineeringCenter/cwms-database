@@ -38,6 +38,10 @@ procedure test_comparison_expressions;
 procedure test_logic_expressions;
 --%test(Test CWDB-255 Cache unit conversion factors and formulas in convert_units)
 procedure cwdb_255_cache_unit_conversion_factors_and_formulas_in_convert_units;
+--%test(Test passing a null timestamp to to_timestamp returns null)
+procedure test_to_timestamp_null_timestamp;
+--%test(Test RUNSTSTATS package)
+procedure test_runstats;
 
 procedure setup;
 procedure teardown;
@@ -760,6 +764,79 @@ begin
 
 end cwdb_255_cache_unit_conversion_factors_and_formulas_in_convert_units;
 
+procedure test_to_timestamp_null_timestamp
+is
+    l_null_timestamp timestamp;
+begin
+    l_null_timestamp := cwms_util.to_timestamp(p_millis => null);
+    ut.expect(l_null_timestamp).to_be_null();
+end test_to_timestamp_null_timestamp;
+---------------------------------------
+-- procedure test_runstats --
+---------------------------------------
+-- not really a part of CWMS_UTIL, but I didn't want to create another test package just for this
+procedure test_runstats
+is
+   type qcode_tab_t is table of cwms_data_quality%rowtype;
+   l_tab1           qcode_tab_t;
+   l_tab2           qcode_tab_t;
+   l_gets           cwms_t_number_tab := cwms_t_number_tab(null, null);
+   l_reads          cwms_t_number_tab := cwms_t_number_tab(null, null);
+   l_times          cwms_t_number_tab := cwms_t_number_tab(null, null);
+   l_names          cwms_t_str_tab;
+   l_expected_names cwms_t_str_tab := cwms_t_str_tab(
+      'recursive calls',
+      'db block gets',
+      'consistent gets',
+      'physical reads',
+      'redo size',
+      'SQL*Net roundtrips to/from client',
+      'sorts (memory)',
+      'sorts (disk)',
+      'sorts (rows)');
+begin
+   runstats.at_start(1);
+   runstats.at_pause(1);
+   runstats.at_start(2);
+   runstats.at_resume(1);
+   select * bulk collect into l_tab1 from cwms_data_quality;
+   runstats.at_pause(1);
+   runstats.at_stop('Trace 1/2', 2);
+
+   l_gets(2)  := runstats.at_get_value(2, 'consistent gets');
+   l_reads(2) := runstats.at_get_value(2, 'physical reads');
+   l_times(2) := runstats.at_get_value(2, 'elapsed time');
+
+   runstats.at_start(2);
+   runstats.at_resume(1);
+   select * bulk collect into l_tab2 from cwms_data_quality where protection_id = 'PROTECTED';
+   runstats.at_stop('Trace 2/2', 2);
+   runstats.at_stop('Resumed', 1);
+
+   l_gets(1)  := runstats.at_get_value(1, 'consistent gets');
+   l_reads(1) := runstats.at_get_value(1, 'physical reads');
+   l_times(1) := runstats.at_get_value(1, 'elapsed time');
+
+   l_gets(2)  := l_gets(2) + runstats.at_get_value(2, 'consistent gets');
+   l_reads(2) := l_reads(2) + runstats.at_get_value(2, 'physical reads');
+   l_times(2) := l_times(2) + runstats.at_get_value(2, 'elapsed time');
+
+   l_names := runstats.at_get_names(1);
+   ut.expect(l_names.count).to_equal(9);
+   if l_names.count = 9 then
+      for i in 1..l_names.count loop
+         ut.expect(l_names(i)).to_equal(l_expected_names(i));
+      end loop;
+   end if;
+
+   dbms_output.put_line('GETS  : 1='||l_gets(1)||chr(9) ||', 2='||l_gets(2)||chr(9) ||', Ratio='||round(l_gets(1)/l_gets(2), 2));
+   dbms_output.put_line('READS : 1='||l_reads(1)||chr(9)||', 2='||l_reads(2)||chr(9)||', Ratio='||round(l_reads(1)/l_reads(2), 2));
+   dbms_output.put_line('TIMES : 1='||l_times(1)||chr(9)||', 2='||l_times(2)||chr(9)||', Ratio='||round(l_times(1)/l_times(2), 2));
+
+   ut.expect(round(l_gets(1)/l_gets(2), 1)).to_equal(1);
+   ut.expect(round(l_reads(1)/l_reads(2), 1)).to_equal(1);
+   ut.expect(round(l_times(1)/l_times(2), 1)).to_equal(1);
+end test_runstats;
 end test_cwms_util;
 /
 
