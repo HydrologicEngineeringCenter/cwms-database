@@ -45,11 +45,15 @@ create or replace package body test_versioned_time_series as
 --------------------------------------------------------------------------------
 procedure teardown
 is
+   x_location_id_not_found exception;
+   pragma exception_init(x_location_id_not_found, -20025);
 begin
    cwms_loc.delete_location(
       p_location_id   => c_location_id,
       p_delete_action => cwms_util.delete_all,
       p_db_office_id  => c_office_id);
+exception
+   when x_location_id_not_found then null;
 end teardown;
 --------------------------------------------------------------------------------
 -- procedure setup
@@ -57,6 +61,7 @@ end teardown;
 procedure setup
 is
 begin
+   teardown;
    cwms_loc.store_location(
       p_location_id  => c_location_id,
       p_db_office_id => c_office_id);
@@ -91,6 +96,10 @@ is
             else
                ut.expect(l_values(i)).to_equal(p_expected_values(i));
             end if;
+         end loop;
+      else
+         for i in 1..l_date_times.count loop
+            dbms_output.put_line(chr(9)||i||chr(9)||l_date_times(i)||chr(9)||round(to_number(l_values(i)), 9)||chr(9)||l_qualities(i));
          end loop;
       end if;
    end verify_retrieved_data;

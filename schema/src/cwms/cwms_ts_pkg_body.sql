@@ -48,6 +48,7 @@ AS
       cwms_cache.clear(g_ts_id_cache);
       cwms_cache.clear(g_ts_id_alias_cache);
       cwms_cache.clear(g_is_lrts_cache);
+      cwms_cache.clear(g_interval_cache);
    end;
 
    function get_ts_code (
@@ -407,6 +408,101 @@ AS
    end interval_offset_minutes;
 
    --------------------------------------------------------------------------------
+   -- function top_of_interval_utc
+   --------------------------------------------------------------------------------
+   function top_of_interval_utc(
+      p_date_time_utc      in date,
+      p_interval           in varchar2,
+      p_interval_time_zone in varchar2 default 'UTC',
+      p_next               in varchar2 default 'F')
+      return date
+   is
+      l_date_time        date := cwms_util.change_timezone(p_date_time_utc, 'UTC', p_interval_time_zone);
+      l_interval_minutes binary_integer := get_interval(upper(p_interval));
+      l_epoch            date;
+      l_minutes          binary_double;
+      l_year             binary_integer;
+      l_timezone         cwms_time_zone.time_zone_name%type;
+      l_next             boolean := substr(upper(p_next), 1, 1) = 'T';
+      l_top_of_interval  date;
+      l_tmp_toi          date;
+   begin
+      case
+      when p_date_time_utc is null then
+         return null;
+      when p_interval = '0' then
+         return null;
+      when l_interval_minutes is null then
+         cwms_err.raise('INVALID_INTERVAL_ID', nvl(p_interval, '<NULL>'));
+      else null;
+      end case;
+      ------------------------
+      -- valid interval > 0 --
+      ------------------------
+      case
+      when l_interval_minutes < 43200 then
+         -----------------------------
+         -- minutes, hours, or days --
+         -----------------------------
+         l_epoch   := date '1970-01-01';
+         l_minutes := (l_date_time - l_epoch) * 1440;
+         l_minutes := l_minutes - mod(l_minutes, l_interval_minutes);
+         l_top_of_interval := l_epoch + l_minutes/1440;
+         while l_top_of_interval > l_date_time loop
+            l_top_of_interval := l_top_of_interval - l_interval_minutes / 1440;
+         end loop;
+         if l_next and l_top_of_interval < l_date_time then
+            l_top_of_interval := l_top_of_interval + l_interval_minutes / 1440;
+         end if;
+      when l_interval_minutes = 43200 then
+         ------------
+         -- 1Month --
+         ------------
+         l_top_of_interval := trunc(l_date_time, 'MM');
+         while l_top_of_interval > l_date_time loop
+            l_top_of_interval := add_months(l_top_of_interval, -1);
+         end loop;
+         if l_next and l_top_of_interval < l_date_time then
+            l_top_of_interval := add_months(l_top_of_interval, 1);
+         end if;
+      when l_interval_minutes = 525600 then
+         -----------
+         -- 1Year --
+         -----------
+         l_top_of_interval := trunc(l_date_time, 'YY');
+         while l_top_of_interval > l_date_time loop
+            l_top_of_interval := add_months(l_top_of_interval, -12);
+         end loop;
+         if l_next and l_top_of_interval < l_date_time then
+            l_top_of_interval := add_months(l_top_of_interval, 12);
+         end if;
+      when l_interval_minutes = 5256000 then
+         -------------
+         -- 1Decade --
+         -------------
+         l_year := extract(year from l_date_time);
+         l_year := l_year - mod(l_year, 10);
+         l_top_of_interval := to_date(l_year||'-01-01 00:00:0', 'yyyy-mm-dd hh24:mi:ss');
+         while l_top_of_interval > l_date_time loop
+            l_top_of_interval := add_months(l_top_of_interval, -120);
+         end loop;
+         if l_next and l_top_of_interval < l_date_time then
+            l_top_of_interval := add_months(l_top_of_interval, 120);
+         end if;
+      end case;
+      if p_interval_time_zone != 'UTC' then
+         l_tmp_toi := cwms_util.change_timezone(l_top_of_interval, p_interval_time_zone, 'UTC');
+         if l_tmp_toi is null then
+            l_top_of_interval := l_top_of_interval + cwms_util.get_time_zone_dst_offset_minutes(p_interval_time_zone) / 1440;
+            l_top_of_interval := cwms_util.change_timezone(l_top_of_interval, p_interval_time_zone, 'UTC');
+         else
+            l_top_of_interval := l_tmp_toi;
+         end if;
+      end if;
+      return l_top_of_interval;
+   end top_of_interval_utc;
+
+   --------------------------------------------------------------------------------
    -- function top_of_interval_plus_offset_utc
    --------------------------------------------------------------------------------
    function top_of_interval_plus_offset_utc(
@@ -507,9 +603,9 @@ AS
    end top_of_interval_plus_offset_utc;
 
    --------------------------------------------------------------------------------
-   -- function top_of_interval_tz
+   -- function top_of_interval_plus_offset_tz
    --------------------------------------------------------------------------------
-   function top_of_interval_tz(
+   function top_of_interval_plus_offset_tz(
       p_date_time        in date,
       p_interval         in varchar2,
       p_interval_offset  in varchar2,
@@ -575,7 +671,7 @@ AS
       -- next adjust time zone of result --
       -------------------------------------
       return l_top;
-   end top_of_interval_tz;
+   end top_of_interval_plus_offset_tz;
 
    --------------------------------------------------------------------------------
    -- function snap_to_interval_offset_utc
@@ -718,7 +814,7 @@ AS
       ------------------------------------------------------------------------------
       -- return top of current interval if p_date_time within its snapping window --
       ------------------------------------------------------------------------------
-      l_prev_top := top_of_interval_tz(
+      l_prev_top := top_of_interval_plus_offset_tz(
          p_date_time        => p_date_time,
          p_interval         => l_interval,
          p_interval_offset  => l_interval_offset,
@@ -755,7 +851,7 @@ AS
       ---------------------------------------------------------------------------
       -- return top of next interval if p_date_time within its snapping window --
       ---------------------------------------------------------------------------
-      l_next_top := top_of_interval_tz(
+      l_next_top := top_of_interval_plus_offset_tz(
          p_date_time        => p_date_time,
          p_interval         => p_interval,
          p_interval_offset  => p_interval_offset,
@@ -794,58 +890,6 @@ AS
       -------------------------------------------------
       return null;
    end snap_to_interval_offset_tz;
-
-
-   --
-   --*******************************************************************   --
-   --*******************************************************************   --
-   --
-   -- GET_TIME_ON_AFTER_INTERVAL - if p_datetime is on the interval, than
-   --      p_datetime is returned, if p_datetime is off of the interval, than
-   --      the first datetime after p_datetime is returned.
-   --
-   --      Function is usable down to 1 minute.
-   --
-   --      All offsets stored in the database are in minutes. --
-   --      p_ts_offset and p_ts_interval are passed in as minutes --
-   --      p_datetime is assumed to be in UTC --
-   --
-   --      Weekly intervals - the weekly interval starts with Sunday.
-   --
-   ----------------------------------------------------------------------------
-   --
-
-   FUNCTION get_time_on_after_interval (p_datetime      IN DATE,
-                                        p_ts_offset     IN NUMBER, -- in minutes.
-                                        p_ts_interval   IN NUMBER -- in minutes.
-                                                                 )
-      RETURN DATE
-   IS
-   BEGIN
-      return top_of_interval_plus_offset_utc(
-         p_date_time       => p_datetime,
-         p_interval        => p_ts_interval,
-         p_interval_offset => nvl(p_ts_offset, 0),
-         p_next            => 'T');
-   END get_time_on_after_interval;
-
-   --
-   --  See get_time_on_after_interval for description/comments/etc...
-   --
-   FUNCTION get_time_on_before_interval (p_datetime      IN DATE,
-                                         p_ts_offset     IN NUMBER,
-                                         p_ts_interval   IN NUMBER)
-      RETURN DATE
-   IS
-   BEGIN
-      return top_of_interval_plus_offset_utc(
-         p_date_time       => p_datetime,
-         p_interval        => p_ts_interval,
-         p_interval_offset => nvl(p_ts_offset, 0),
-         p_next            => 'F');
-   END get_time_on_before_interval;
-
-
 
    FUNCTION get_location_id (p_cwms_ts_id     IN VARCHAR2,
                              p_db_office_id   IN VARCHAR2)
@@ -1338,10 +1382,11 @@ AS
                   SELECT COUNT (*)
                     INTO l_tmp
                     FROM (SELECT local_time,
-                                 cwms_ts.get_time_on_before_interval(
-                                    local_time,
-                                    abs(p_interval_utc_offset),
-                                    l_irregular_interval) as interval_time
+                                 cwms_ts.top_of_interval_plus_offset_utc(
+                                    p_date_time       => local_time,
+                                    p_interval        => l_irregular_interval,
+                                    p_interval_offset => abs(p_interval_utc_offset),
+                                    p_next            => 'F') as interval_time
                             FROM (SELECT cwms_util.change_timezone(date_time, 'UTC', l_tz) AS local_time
                                     FROM av_tsv WHERE ts_code = p_ts_code
                                  )
@@ -2413,318 +2458,243 @@ AS
       RETURN p_date_time + tz_offset_at_gmt (p_date_time, p_tz_name) / 1440;
    END shift_for_localtime;
 
-   --
-   --*******************************************************************   --
-   --*******************************************************************   --
-   --
-   -- setup_retrieve
-   --
-   PROCEDURE setup_retrieve (p_start_time        IN OUT DATE,
-                             p_end_time          IN OUT DATE,
-                             p_reg_start_time       OUT DATE,
-                             p_reg_end_time         OUT DATE,
-                             p_version_date      IN     DATE,
-                             p_time_zone         IN     VARCHAR2,
-                             p_ts_code           IN     NUMBER,
-                             p_interval          IN     NUMBER,
-                             p_offset            IN     NUMBER,
-                             p_is_lrts           IN     BOOLEAN,
-                             p_start_inclusive   IN     BOOLEAN,
-                             p_end_inclusive     IN     BOOLEAN,
-                             p_previous          IN     BOOLEAN,
-                             p_next              IN     BOOLEAN,
-                             p_trim              IN     BOOLEAN)
-   IS
-      l_start_time    DATE := p_start_time;
-      l_end_time      DATE := p_end_time;
-      l_temp_time     DATE;
-      l_location_code INTEGER;
-      l_local_tz      VARCHAR2(28);
-   BEGIN
-      --
-      -- handle inclusive/exclusive by adjusting start/end times inward
-      --
-      IF NOT p_start_inclusive
-      THEN
-         l_start_time := l_start_time + 1 / 86400;
-      END IF;
-
-      IF NOT p_end_inclusive
-      THEN
-         l_end_time := l_end_time - 1 / 86400;
-      END IF;
-
-      --
-      -- handle previous/next by adjusting start/end times outward
-      --
-      IF p_previous
-      THEN
-         IF p_interval = 0 or p_is_lrts
-         THEN
-            SELECT MAX (date_time)
-              INTO l_temp_time
-              FROM av_tsv
-             WHERE     ts_code = p_ts_code
-                   AND date_time < l_start_time
-                   AND start_date <= l_end_time;
-
-            IF l_temp_time IS NOT NULL
-            THEN
-               l_start_time := l_temp_time;
-            END IF;
-         ELSIF mod(p_interval/1440, 30) = 0
-         THEN
-            l_start_time := add_months(l_start_time, -p_interval / 1440 / 30);
-         ELSIF mod(p_interval / 1440, 365) = 0
-         THEN
-            l_start_time := add_months(l_start_time, -p_interval / 1440 / 365 * 12);
-         ELSE
-            l_start_time := l_start_time - p_interval / 1440;
-         END IF;
-      END IF;
-
-      IF p_next
-      THEN
-         IF p_interval = 0 or p_is_lrts
-         THEN
-            SELECT MIN (date_time)
-              INTO l_temp_time
-              FROM av_tsv
-             WHERE     ts_code = p_ts_code
-                   AND date_time > l_end_time
-                   AND end_date > l_start_time;
-
-            IF l_temp_time IS NOT NULL
-            THEN
-               l_end_time := l_temp_time;
-            END IF;
-         ELSIF mod(p_interval / 1440, 30) = 0
-         THEN
-            l_end_time := add_months(l_end_time, p_interval / 1440 / 30);
-         ELSIF mod(p_interval / 1440, 365) = 0
-         THEN
-            l_end_time := add_months(l_end_time, p_interval / 1440 / 365 * 12);
-         ELSE
-            l_end_time := l_end_time + p_interval / 1440;
-         END IF;
-      END IF;
-
-      --
-      -- handle trim by adjusting start/end times inward to first/last
-      -- non-missing values
-      --
-      IF p_trim
-      THEN
-         SELECT MIN (date_time), MAX (date_time)
-           INTO l_start_time, l_end_time
-           FROM (SELECT date_time
-                   FROM av_tsv v, cwms_data_quality q
-                  WHERE     v.ts_code = p_ts_code
-                        AND v.date_time BETWEEN l_start_time AND l_end_time
-                        AND v.start_date <= l_end_time
-                        AND v.end_date > l_start_time
-                        AND v.quality_code = q.quality_code
-                        AND q.validity_id != 'MISSING'
-                        AND v.VALUE IS NOT NULL
-                        AND v.VERSION_DATE = CASE
-                                                WHEN p_version_date IS NULL THEN v.VERSION_DATE
-                                                ELSE p_version_date
-                                                END);
-      END IF;
-
-      --
-      -- set the out parameters
-      --
-      p_start_time := l_start_time;
-      p_end_time := l_end_time;
-      if l_start_time is not null then
-         if p_interval = 0 then
-            --
-            -- These parameters are used to generate a regular time series from which
-            -- to fill in the times of missing values.  In the case of irregular time
-            -- series, set them so that they will not generate a time series at all.
-            --
-            p_reg_start_time := NULL;
-            p_reg_end_time := NULL;
-         else
-            if p_is_lrts then
-               select location_code
-                 into l_location_code
-                 from at_cwms_ts_spec
-                where ts_code = p_ts_code;
-
-               l_local_tz := cwms_loc.get_local_timezone(l_location_code);
-               p_reg_start_time := top_of_interval_plus_offset_utc(
-                  p_date_time        => cwms_util.change_timezone(l_start_time, 'UTC', l_local_tz),
-                  p_interval         => p_interval,
-                  p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
-                  p_next             => 'T');
-
-               p_reg_end_time := top_of_interval_plus_offset_utc(
-                  p_date_time        => cwms_util.change_timezone(l_end_time, 'UTC', l_local_tz),
-                  p_interval         => p_interval,
-                  p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
-                  p_next             => 'F');
-
-               p_reg_start_time := cwms_util.change_timezone(p_reg_start_time, l_local_tz, 'UTC');
-               p_reg_end_time   := cwms_util.change_timezone(p_reg_end_time,   l_local_tz, 'UTC');
-            else
-               p_reg_start_time := top_of_interval_plus_offset_utc(
-                  p_date_time        => l_start_time,
-                  p_interval         => p_interval,
-                  p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
-                  p_next             => 'T');
-
-               p_reg_end_time := top_of_interval_plus_offset_utc(
-                  p_date_time        => l_end_time,
-                  p_interval         => p_interval,
-                  p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
-                  p_next             => 'F');
-            end if;
-         end if;
-      end if;
-   END setup_retrieve;
-
-   FUNCTION get_lrts_times_utc(
-      p_start_time_utc  in date,
-      p_end_time_utc    in date,
-      p_interval        in number,
-      p_local_time_zone in varchar2)
-      return date_table_type deterministic
+   --------------------------------------------------------------------------------
+   -- procedure get_reg_ts_times_utc
+   --------------------------------------------------------------------------------
+   procedure get_reg_ts_times_utc(
+      p_reg_times_utc      in out nocopy date_table_type,
+      p_date_range         in            date_range_t,
+      p_interval           in            varchar2,
+      p_offset             in            varchar2,
+      p_interval_time_zone in            varchar2)
    is
-      l_utc_times       date_table_type := date_table_type();
-      l_local_time      date;
-      l_local_time_prev date;
-      l_utc_time        date;
-      l_utc_time_tmp    date;
-      l_dst_offset      number;
-      l_fraction        number;
-      l_month_interval  integer;
-      l_first           boolean;
-      l_exists          char(1);
+      type date_table_by_integer_t is table of date_table_type index by pls_integer;
+      l_interval_minutes      binary_integer := get_interval(upper(p_interval));
+      l_offset_minutes        binary_integer := abs(interval_offset_minutes(p_offset));
+      l_time_window_start_utc date;
+      l_time_window_end_utc   date;
+      l_start_time            date;
+      l_end_time              date;
+      l_diff                  binary_integer;
+      l_count                 binary_integer;
+      l_last_utc              date;
+      l_reg_times             date_table_type;
+      l_non_null_times        date_table_type;
+      l_interval_tz           cwms_time_zone.time_zone_name%type := cwms_util.get_time_zone_name(p_interval_time_zone);
+      l_interval_days         binary_double := l_interval_minutes / 1440D;
+      l_offset_days           binary_double := l_offset_minutes / 1440D;
+      l_dst_offset_minutes    binary_integer;
+      l_dst_overlap_range_ts  timestamp_tab_t;
+      l_dst_overlap_ranges    date_table_by_integer_t;
+      l_dst_overlap_range     date_table_type;
    begin
       -------------------
       -- sanity checks --
       -------------------
-      if p_interval        is null then cwms_err.raise('NULL_ARGUMENT', 'P_Interval');        end if;
-      if p_local_time_zone is null then cwms_err.raise('NULL_ARGUMENT', 'P_Local_time_Zone'); end if;
-      ---------------------------------------
-      -- short circuit on null input times --
-      ---------------------------------------
-      if p_start_time_utc is null or p_end_time_utc is null then
-         return l_utc_times;
-      end if;
-      --------------------
-      -- get DST offset --
-      --------------------
-      select cwms_util.dsinterval_to_minutes(dst_offset) / 1440
-        into l_dst_offset
-        from cwms_time_zone
-       where time_zone_name = cwms_util.get_time_zone_name(p_local_time_zone);
-      ------------------------------------
-      -- get interval in days or months --
-      ------------------------------------
-      if mod(p_interval, 30) = 0 or mod(p_interval, 365) = 0 then
-         if mod(p_interval, 30) = 0 then
-            l_month_interval := p_interval / 30;
+      if p_date_range is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_Date_Range');
+      else
+         l_time_window_start_utc := p_date_range.start_time('UTC');
+         l_time_window_end_utc := p_date_range.end_time('UTC');
+         if l_time_window_end_utc >= l_time_window_start_utc then
+            null;
          else
-            l_month_interval := p_interval / 365 * 12;
+            cwms_err.raise('ERROR', 'Invalid time window: '||p_date_range.to_string);
          end if;
       end if;
-      l_utc_time := p_start_time_utc;
-      if l_month_interval is null then
-         ------------------------------------------------------------------
-         -- use date/time arithmetic                                     --
-         --                                                              --
-         -- here the interals can be on the same order as the DST offset --
-         -- so we have to worry about making sure we capture every valid --
-         -- UTC time in the area of the overlapped local time period     --
-         ------------------------------------------------------------------
-         l_first := true;
-         loop
-            l_local_time := cwms_util.change_timezone(l_utc_time, 'UTC', p_local_time_zone);
-            l_utc_time := cwms_util.change_timezone(l_local_time, p_local_time_zone, 'UTC');
-            if not l_first then
-               l_fraction := (l_local_time - l_local_time_prev) / p_interval;
-               if trunc(l_fraction) != l_fraction then
-                  ----------------------------------------------------------------
-                  -- adding the interval to the previous UTC time resulted in a --
-                  -- local time that isn't on the interval, so make the local   --
-                  -- time be on the interval and compute the UTC time from it   --
-                  ----------------------------------------------------------------
-                  l_local_time := l_local_time_prev + p_interval;
-                  l_utc_time := cwms_util.change_timezone(l_local_time, p_local_time_zone, 'UTC');
-                  l_utc_time_tmp := l_utc_time - l_dst_offset;
-                  if cwms_util.change_timezone(l_utc_time_tmp, 'UTC', p_local_time_zone) = l_local_time then
-                     l_utc_time := l_utc_time_tmp;
-                  end if;
-               else
-                  l_utc_time_tmp := l_utc_time - l_dst_offset;
-                  if cwms_util.change_timezone(l_utc_time_tmp, 'UTC', p_local_time_zone) = l_local_time then
-                     ----------------------------------------------------------------------------------------
-                     -- time is in the overlapped local time period (2 valid UTC times for the local time) --
-                     -- so choose the earlier UTC time unless it's already in the results                  --
-                     ----------------------------------------------------------------------------------------
-                     l_exists := 'F';
-                     begin
-                        select 'T'
-                          into l_exists
-                          from dual
-                         where exists (select column_value
-                                         from table(l_utc_times)
-                                        where column_value = l_utc_time_tmp
-                                      );
-                     exception
-                        when no_data_found then null;
-                     end;
-                     if l_exists = 'F' then
-                        l_utc_time := l_utc_time_tmp;
-                     end if;
-                  end if;
-               end if;
-            end if;
-            ----------------------------------------------------------------
-            -- delay exit until here because the test variable may be     --
-            -- recomputed between the top of the loop and here            --
-            ----------------------------------------------------------------
-            exit when l_utc_time > p_end_time_utc;
-            if l_utc_time is null then
-               ----------------------------------------------------------------------------
-               -- only happens when UTC time is computed from an invalid local time (any --
-               -- time in the missing local time hour of the spring DST transition)      --
-               ----------------------------------------------------------------------------
-               l_utc_time := cwms_util.change_timezone(l_local_time + p_interval, p_local_time_zone, 'UTC');
-            else
-               l_utc_times.extend;
-               l_utc_times(l_utc_times.count) := l_utc_time;
-               l_utc_time := l_utc_time + p_interval;
-            end if;
-            -------------------------------
-            -- set up for next iteration --
-            -------------------------------
-            l_local_time_prev := l_local_time;
-            l_first := false;
-         end loop;
-      else
-         --------------------------------------------------------------
-         -- use calendar math                                        --
-         --                                                          --
-         -- here the intervals are guaranteed to be so much greater  --
-         -- than the DST offset that we don't need to worry about it --
-         --------------------------------------------------------------
-         l_local_time := cwms_util.change_timezone(l_utc_time,   'UTC', p_local_time_zone);
-         loop
-            l_utc_time := cwms_util.change_timezone(l_local_time, p_local_time_zone, 'UTC');
-            exit when l_utc_time > p_end_time_utc;
-            if l_utc_time is not null then
-               l_utc_times.extend;
-               l_utc_times(l_utc_times.count) := l_utc_time;
-            end if;
-            l_local_time := add_months(l_local_time, l_month_interval);
-         end loop;
+      if l_interval_minutes is null then
+         cwms_err.raise('INVALID_INTERVAL_ID', nvl(p_interval, '<NULL>'));
       end if;
-      return l_utc_times;
-   end get_lrts_times_utc;
+      if l_interval_minutes = 0 then
+         l_interval_minutes := get_interval(regexp_replace(p_interval, '^~?(.+?)(Local)?$', '\1', 1, 1, 'i'));
+         l_interval_days    := l_interval_minutes / 1440D;
+      end if;
+      if l_offset_minutes between 0 and l_interval_minutes - 1 then
+         null;
+      else
+         cwms_err.raise('INVALID_UTC_OFFSET', nvl(to_char(l_offset_minutes), '<NULL>'), l_interval_minutes);
+      end if;
+      --------------------------------------------------
+      -- get the first top of interval in time window --
+      --------------------------------------------------
+      l_start_time := top_of_interval_utc(
+         p_date_time_utc      => l_time_window_start_utc - l_offset_days,
+         p_interval           => l_interval_minutes,
+         p_interval_time_zone => l_interval_tz,
+         p_next               => 'T') + l_offset_days;
+      if l_start_time not between l_time_window_start_utc and l_time_window_end_utc then
+         -----------------------------------------------
+         -- empty results: no interval in time window --
+         -----------------------------------------------
+         p_reg_times_utc := date_table_type();
+         return;
+      end if;
+      ------------------------------------------------------------------------
+      -- get the last top of interval in time window (can be same as first) --
+      ------------------------------------------------------------------------
+      l_end_time := top_of_interval_utc(
+         p_date_time_utc      => l_time_window_end_utc - l_offset_days,
+         p_interval           => l_interval_minutes,
+         p_interval_time_zone => l_interval_tz,
+         p_next               => 'F') + l_offset_days;
+      l_end_time := greatest(l_start_time, l_end_time);
+      if l_end_time = l_start_time then
+         --------------------------------------
+         -- only one interval in time window --
+         --------------------------------------
+         p_reg_times_utc := date_table_type(l_start_time);
+         return;
+      end if;
+
+      l_dst_offset_minutes := cwms_util.get_time_zone_dst_offset_minutes(l_interval_tz);
+      if l_dst_offset_minutes = 0 and l_interval_minutes < 43200                  -- UTC and interval < 1Month
+      or l_dst_offset_minutes > 0 and l_interval_minutes <= l_dst_offset_minutes  -- local but interval <= DST offset (30 or 60 minutes)
+      then
+         -----------------------------------------------
+         -- can directly iterate UTC times in minutes --
+         -----------------------------------------------
+         l_diff := (l_end_time - l_start_time) * 1440; -- minutes
+         l_count := trunc((l_diff - 1) / l_interval_minutes) + 1;
+         l_reg_times := date_table_type();
+         l_reg_times.extend(l_count + 1);
+         l_reg_times(1) := l_start_time;
+         for i in 2..l_reg_times.count loop
+            l_reg_times(i) := l_reg_times(i-1) + l_interval_days;
+         end loop;
+         if l_dst_offset_minutes > 0 then
+            -----------------------------------------
+            -- filter out any repeated local times --
+            -----------------------------------------
+            ---------------------------------------------------------------------------------------------------------------------------
+            -- get the time range in UTC for the local times that are repeated at the Fall DST boundary for each year in the results --
+            --                                                                                                                       --
+            -- local times during this range always convert to UTC as the 2nd occurrence                                             --
+            ---------------------------------------------------------------------------------------------------------------------------
+            for yr in extract(year from l_reg_times(1))..extract(year from l_reg_times(l_reg_times.count)) loop
+               l_dst_overlap_range_ts := cwms_util.get_time_zone_dst_overlap(l_interval_tz, yr);
+               l_dst_overlap_ranges(yr) := date_table_type(
+                  cast(cwms_util.change_timezone(l_dst_overlap_range_ts(1), l_interval_tz, 'UTC') as date) - l_dst_offset_minutes / 1440,
+                  cast(cwms_util.change_timezone(l_dst_overlap_range_ts(2), l_interval_tz, 'UTC') as date) - l_dst_offset_minutes / 1440);
+            end loop;
+            -----------------------------------------------------
+            -- set any result in a repeated time range to null --
+            -----------------------------------------------------
+            l_count := 0;
+            for i in 1..l_reg_times.count loop
+               l_dst_overlap_range := l_dst_overlap_ranges(extract(year from l_reg_times(i)));
+               if l_reg_times(i) >= l_dst_overlap_range(1) and l_reg_times(i) < l_dst_overlap_range(2) then
+                  l_reg_times(i) := null;
+                  l_count := l_count + 1;
+               end if;
+            end loop;
+            if l_count > 0 then
+               -------------------------------------------
+               -- collapse table to remove null results --
+               -------------------------------------------
+               l_non_null_times := date_table_type();
+               l_non_null_times.extend(l_reg_times.count - l_count);
+               l_count := 0;
+               for i in 1..l_reg_times.count loop
+                  if l_reg_times(i) is null then
+                     l_count := l_count + 1;
+                  else
+                     l_non_null_times(i-l_count) := l_reg_times(i);
+                  end if;
+               end loop;
+               l_reg_times := l_non_null_times;
+            end if;
+         end if;
+         p_reg_times_utc := l_reg_times;
+      else
+         ------------------------------------------
+         -- otherwise iterate UTC or local times --
+         ------------------------------------------
+         l_diff := (l_end_time - l_start_time) * 1440; -- minutes
+         l_count := trunc((l_diff - 1) / l_interval_minutes) + 1;
+         if l_dst_offset_minutes > 0 then
+            ------------------------------
+            -- will iterate local times --
+            ------------------------------
+            l_start_time := cwms_util.change_timezone(l_start_time, 'UTC', l_interval_tz);
+            l_end_time   := cwms_util.change_timezone(l_end_time, 'UTC', l_interval_tz);
+         end if;
+
+         if l_interval_minutes < 43200 then
+            ------------------------
+            -- iterate in minutes --
+            ------------------------
+            l_reg_times := date_table_type();
+            l_reg_times.extend(l_count + 1);
+            l_reg_times(1) := l_start_time;
+            for i in 2..l_reg_times.count loop
+               l_reg_times(i) := l_reg_times(i-1) + l_interval_days;
+            end loop;
+         else
+            -----------------------
+            -- iterate in months --
+            -----------------------
+            l_reg_times := date_table_type();
+            l_reg_times.extend(l_count + 1);
+            l_reg_times(1) := l_start_time;
+            for i in 2..l_reg_times.count loop
+               l_reg_times(i) := add_months(l_reg_times(i-1), case l_interval_minutes when 43200 then 1 when 525600 then 12 else 120 end);
+            end loop;
+            ---------------------------------------------------------------------------------
+            -- l_count may be too high when iterating many months, handle any overage here --
+            ---------------------------------------------------------------------------------
+            while l_reg_times(l_reg_times.count) > l_end_time loop
+               l_reg_times.trim;
+            end loop;
+         end if;
+         if l_dst_offset_minutes > 0 then
+            ---------------------------------------------------------------------------------
+            -- iterated local times, so set back to UTC, filtering out unconvertable times --
+            ---------------------------------------------------------------------------------
+            l_count := 0;
+            for i in 1..l_reg_times.count loop
+               l_reg_times(i-l_count) := cwms_util.change_timezone(l_reg_times(i), l_interval_tz, 'UTC');
+               if l_reg_times(i-l_count) is null then
+                  -----------------------------
+                  -- is unconvertable to UTC --
+                  -----------------------------
+                  l_count := l_count + 1;
+               end if;
+            end loop;
+            if l_count > 0 then
+               l_reg_times.trim(l_count);
+            end if;
+         end if;
+         ---------------------------------------------------------------------
+         -- depending on time zone, we can sometimes get one too many times --
+         ---------------------------------------------------------------------
+         if l_reg_times(l_reg_times.count) > l_time_window_end_utc then
+            l_reg_times.trim;
+         end if;
+         p_reg_times_utc := l_reg_times;
+      end if;
+   end get_reg_ts_times_utc;
+
+   --------------------------------------------------------------------------------
+   -- function get_reg_ts_times_utc_f
+   --------------------------------------------------------------------------------
+   function get_reg_ts_times_utc_f(
+      p_date_range         in date_range_t,
+      p_interval           in varchar2,
+      p_offset             in varchar2,
+      p_interval_time_zone in varchar2)
+      return date_table_type
+   is
+      l_reg_times_utc date_table_type;
+   begin
+      get_reg_ts_times_utc(
+         p_reg_times_utc      => l_reg_times_utc,
+         p_date_range         => p_date_range,
+         p_interval           => p_interval,
+         p_offset             => p_offset,
+         p_interval_time_zone => p_interval_time_zone);
+      return l_reg_times_utc;
+   end get_reg_ts_times_utc_f;
+
    --------------------------------------------------------------------------------
    -- function is_lrts
    --------------------------------------------------------------------------------
@@ -3056,763 +3026,381 @@ AS
              else 'F'
              end;
    end require_new_lrts_format_on_input;
-   --
-   --*******************************************************************   --
-   --*******************************************************************   --
-   --
-   -- BUILD_RETRIEVE_TS_QUERY - v2.0 -
-   --
-   FUNCTION build_retrieve_ts_query (
-      p_cwms_ts_id_out       OUT VARCHAR2,
-      p_units_out            OUT VARCHAR2,
-      p_time_zone_id         OUT VARCHAR2,
-      p_cwms_ts_id        IN     VARCHAR2,
-      p_units             IN     VARCHAR2,
-      p_start_time        IN     DATE,
-      p_end_time          IN     DATE,
-      p_date_time_type    IN     VARCHAR2,
-      p_time_zone         IN     VARCHAR2 DEFAULT 'UTC',
-      p_trim              IN     VARCHAR2 DEFAULT 'F',
-      p_start_inclusive   IN     VARCHAR2 DEFAULT 'T',
-      p_end_inclusive     IN     VARCHAR2 DEFAULT 'T',
-      p_previous          IN     VARCHAR2 DEFAULT 'F',
-      p_next              IN     VARCHAR2 DEFAULT 'F',
-      p_version_date      IN     DATE DEFAULT NULL,
-      p_max_version       IN     VARCHAR2 DEFAULT 'T',
-      p_office_id         IN     VARCHAR2 DEFAULT NULL)
-      RETURN SYS_REFCURSOR
-   IS
-      l_ts_code           NUMBER;
-      l_location_code     NUMBER;
-      l_interval          NUMBER;
-      l_interval2         NUMBER := 60 / 1440;
-      l_utc_offset        NUMBER;
-      l_office_id         VARCHAR2 (16);
-      l_cwms_ts_id        VARCHAR2(191);
-      l_units             VARCHAR2 (16);
-      l_time_zone         VARCHAR2 (28);
-      l_local_time_zone   VARCHAR2 (28);
-      l_base_parameter_id VARCHAR2(16);
-      l_trim              BOOLEAN;
-      l_start_inclusive   BOOLEAN;
-      l_end_inclusive     BOOLEAN;
-      l_previous          BOOLEAN;
-      l_next              BOOLEAN;
-      l_is_lrts           BOOLEAN;
-      l_start_time        DATE;
-      l_end_time          DATE;
-      l_version_date      DATE;
-      l_reg_start_time    DATE;
-      l_reg_end_time      DATE;
-      l_max_version       BOOLEAN;
-      l_query_str         VARCHAR2 (32767);
-      l_unscreened        NUMBER := 0;
-      l_cursor            SYS_REFCURSOR;
-      l_strict_times      BOOLEAN := FALSE;
-      l_value_offset      binary_double := 0;
-
-      PROCEDURE set_action (text IN VARCHAR2)
-      IS
-      BEGIN
-         DBMS_APPLICATION_INFO.set_action (text);
-         --DBMS_OUTPUT.put_line (text);
-      END;
-
-      PROCEDURE replace_strings
-      IS
-      BEGIN
-         l_query_str := REPLACE (l_query_str, ':tz', l_time_zone);
-         l_query_str :=
-            REPLACE (l_query_str, ':date_time_type', p_date_time_type);
-
-         IF l_max_version
-         THEN
-            l_query_str := REPLACE (l_query_str, ':first_or_last', 'last');
-         ELSE
-            l_query_str := REPLACE (l_query_str, ':first_or_last', 'first');
-         END IF;
-      END;
-   BEGIN
-      --------------------
-      -- initialization --
-      --------------------
-      l_office_id := NVL (p_office_id, cwms_util.user_office_id);
-      l_cwms_ts_id := get_cwms_ts_id (format_lrts_input(p_cwms_ts_id), l_office_id);
-      l_units := NVL (cwms_util.get_unit_id(p_units, l_Office_id), get_db_unit_id (l_cwms_ts_id));
-      l_time_zone := NVL (p_time_zone, 'UTC');
-
-      IF SUBSTR (l_time_zone, 1, 1) = '!'
-      THEN
-         l_strict_times := TRUE;
-         l_time_zone := SUBSTR (l_time_zone, 2);
-      END IF;
-
-      l_time_zone := cwms_util.get_time_zone_name (l_time_zone);
-      l_trim := cwms_util.return_true_or_false (NVL (p_trim, 'F'));
-      l_start_inclusive :=
-         cwms_util.return_true_or_false (NVL (p_start_inclusive, 'T'));
-      l_end_inclusive :=
-         cwms_util.return_true_or_false (NVL (p_end_inclusive, 'T'));
-      l_previous := cwms_util.return_true_or_false (NVL (p_previous, 'F'));
-      l_next := cwms_util.return_true_or_false (NVL (p_next, 'F'));
-      l_start_time :=
-         cwms_util.change_timezone (p_start_time, l_time_zone, 'UTC');
-      l_end_time := cwms_util.change_timezone (p_end_time, l_time_zone, 'UTC');
-      l_version_date :=
-         case
-         when p_version_date is null or p_version_date = cwms_util.non_versioned then p_version_date
-         else cwms_util.change_timezone (p_version_date, l_time_zone, 'UTC')
+   --------------------------------------------------------------------------------
+   -- function retrieve_ts_raw
+   --------------------------------------------------------------------------------
+   procedure retrieve_ts_raw(
+      p_ts_retrieved   in out nocopy ztsv_array,
+      p_ts_code        in integer,
+      p_date_range     in date_range_t,
+      p_version_date   in date default null,
+      p_max_version    in varchar2 default 'T')
+   is
+      type tsv_t is record (date_time date, value binary_double, quality_code integer);
+      type tsv_tab_t is table of tsv_t index by varchar2(16);
+      type tsv_tab_tab_t is table of tsv_tab_t index by varchar2(16);
+      c_fmt             constant varchar2(18) := 'yyyy-mm-dd hh24:mi';
+      l_ts_retrieved    ztsv_array;
+      l_max_version     boolean;
+      l_version_date    date := p_version_date;
+      l_start_date_time date;
+      l_end_date_time   date;
+      l_ts_data         tsv_tab_tab_t;
+      l_date_time_str   varchar2(16);
+      l_vers_date_str   varchar2(16);
+      i                 binary_integer;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_ts_code     is null then cwms_err.raise('NULL_ARGUMENT', 'P_Max_Version'); end if;
+      if p_date_range  is null then cwms_err.raise('NULL_ARGUMENT', 'P_Ts_Code'    ); end if;
+      if p_max_version is null then cwms_err.raise('NULL_ARGUMENT', 'P_Date_Range' ); end if;
+      -----------------
+      -- do the work --
+      -----------------
+      l_start_date_time := p_date_range.start_time('UTC');
+      l_end_date_time   := p_date_range.end_time('UTC');
+      l_max_version := cwms_util.return_true_or_false(p_max_version);
+      if p_version_date is null then
+         ---------------------------------------------
+         -- retrieve the data for all version dates --
+         ---------------------------------------------
+         for rec in (select
+                        date_time,
+                        version_date,
+                        value,
+                        quality_code
+                     from
+                        av_tsv
+                     where
+                        ts_code = p_ts_code
+                        and date_time between l_start_date_time and l_end_date_time
+                        and start_date <= l_end_date_time
+                        and end_date > l_start_date_time
+                    )
+         loop
+            l_date_time_str := to_char(rec.date_time, c_fmt);
+            l_vers_date_str := to_char(rec.version_date, c_fmt);
+            l_ts_data(l_date_time_str)(l_vers_date_str) := tsv_t(rec.date_time, rec.value, rec.quality_code);
+         end loop;
+         ---------------------------------------------------
+         -- build the output data from the retrieved data --
+         ---------------------------------------------------
+         p_ts_retrieved := ztsv_array();
+         p_ts_retrieved.extend(l_ts_data.count);
+         i := 1;
+         l_date_time_str := l_ts_data.first;
+         while l_date_time_str is not null loop
+            if l_max_version then
+               l_vers_date_str := l_ts_data(l_date_time_str).last;
+            else
+               l_vers_date_str := l_ts_data(l_date_time_str).first;
+            end if;
+            p_ts_retrieved(i) := ztsv_type(
+               l_ts_data(l_date_time_str)(l_vers_date_str).date_time,
+               l_ts_data(l_date_time_str)(l_vers_date_str).value,
+               l_ts_data(l_date_time_str)(l_vers_date_str).quality_code);
+            l_date_time_str := l_ts_data.next(l_date_time_str);
+            i := i + 1;
+         end loop;
+      else
+         ----------------------------
+         -- specified version date --
+         ----------------------------
+         if l_version_date != cwms_util.non_versioned and p_date_range.time_zone not in ('UTC', 'GMT') then
+            l_version_date := cwms_util.change_timezone(p_version_date, p_date_range.time_zone, 'UTC');
+         end if;
+         select
+            ztsv_type(date_time, value, quality_code)
+         bulk collect into
+            p_ts_retrieved
+         from
+            av_tsv
+         where
+            ts_code = p_ts_code
+            and date_time between l_start_date_time and l_end_date_time
+            and start_date <= l_end_date_time
+            and end_date > l_start_date_time
+            and version_date = l_version_date
+         order by
+            date_time;
+      end if;
+      ---------------------------------
+      -- normalize the quality codes --
+      ---------------------------------
+      for i in 1..p_ts_retrieved.count loop
+         p_ts_retrieved(i).quality_code := normalize_quality(p_ts_retrieved(i).quality_code);
+      end loop;
+   end retrieve_ts_raw;
+   --------------------------------------------------------------------------------
+   -- function retrieve_ts_f
+   --------------------------------------------------------------------------------
+   function retrieve_ts_f (
+      p_cwms_ts_id_out       out varchar2,
+      p_units_out            out varchar2,
+      p_time_zone_id         out varchar2,
+      p_cwms_ts_id        in     varchar2,
+      p_start_time        in     date,
+      p_end_time          in     date,
+      p_time_zone         in     varchar2 default null,
+      p_date_time_type    in     varchar2 default 'DATE',
+      p_units             in     varchar2 default null,
+      p_unit_system       in     varchar2 default 'SI',
+      p_trim              in     varchar2 default 'F',
+      p_start_inclusive   in     varchar2 default 'T',
+      p_end_inclusive     in     varchar2 default 'T',
+      p_previous          in     varchar2 default 'F',
+      p_next              in     varchar2 default 'F',
+      p_version_date      in     date     default null,
+      p_max_version       in     varchar2 default 'T',
+      p_office_id         in     varchar2 default null)
+      return sys_refcursor
+   is
+      l_crsr            sys_refcursor;
+      l_ts_code         at_cwms_ts_id.ts_code%type;
+      l_office_id       cwms_office.office_id%type;
+      l_cwms_ts_id      at_cwms_ts_id.cwms_ts_id%type;
+      l_location_id     av_loc.location_id%type;
+      l_location_code   at_physical_location.location_code%type;
+      l_parameter_id    at_cwms_ts_id.parameter_id%type;
+      l_unit_id         at_cwms_ts_id.unit_id%type;
+      l_time_zone_in    cwms_time_zone.time_zone_name%type;
+      l_time_zone_out   cwms_time_zone.time_zone_name%type;
+      l_date_range      date_range_t;
+      l_ext_time        date;
+      l_trim            boolean;
+      l_start_inclusive boolean;
+      l_end_inclusive   boolean;
+      l_prev            boolean;
+      l_next            boolean;
+      l_max_version     boolean;
+      l_ts_retrieved    ztsv_array;
+      l_default_unit    cwms_unit.unit_id%type;
+      l_interval        integer;
+      l_offset          integer;
+      l_top_of_interval date;
+      l_datum_offset    binary_double;
+      l_reg_ts_times    date_table_type := date_table_type();
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_cwms_ts_id     is null then cwms_err.raise('NULL_ARGUMENT', 'P_Cwms_Ts_Id'    ); end if;
+      if p_start_time     is null then cwms_err.raise('NULL_ARGUMENT', 'P_Start_Time'    ); end if;
+      if p_end_time       is null then cwms_err.raise('NULL_ARGUMENT', 'P_End_Time'      ); end if;
+      if p_date_time_type is null then cwms_err.raise('NULL_ARGUMENT', 'P_Date_Time_Type'); end if;
+      if upper(p_date_time_type) not in ('DATE', 'TIMESTAMP', 'TIMESTAMP WITH TIME ZONE') then
+         cwms_err.raise('INVALID_ITEM', p_date_time_type, 'date/time type');
+      end if;
+      l_trim            := cwms_util.return_true_or_false(p_trim);
+      l_prev            := cwms_util.return_true_or_false(p_previous);
+      l_next            := cwms_util.return_true_or_false(p_next);
+      l_start_inclusive := cwms_util.return_true_or_false(p_start_inclusive);
+      l_end_inclusive   := cwms_util.return_true_or_false(p_end_inclusive);
+      l_max_version     := cwms_util.return_true_or_false(p_max_version);
+      -----------------
+      -- do the work --
+      -----------------
+      l_office_id  := cwms_util.get_db_office_id(p_office_id);
+      l_cwms_ts_id := get_ts_id(p_cwms_ts_id, l_office_id);
+      if l_cwms_ts_id is null then
+         cwms_err.raise('TS_ID_NOT_FOUND', p_cwms_ts_id);
+      elsif use_new_lrts_format_on_output = 'T'
+         and substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 1, 1) = '~'
+         and upper(substr(cwms_util.split_text(l_cwms_ts_id, 4, '.'), -5)) = 'LOCAL'
+      then
+         ----------------------------------
+         -- convert back to input format --
+         ----------------------------------
+         l_cwms_ts_id := regexp_replace(l_cwms_ts_id, '\.([[:digit:]]+[[:alpha:]]+)Local\.', '.~\1.', 1, 1, 'i');
+      end if;
+      l_location_id   := cwms_util.split_text(l_cwms_ts_id, 1, '.');
+      l_location_code := cwms_loc.get_location_code(l_office_id, l_location_id);
+      l_parameter_id  := cwms_util.split_text(l_cwms_ts_id, 2, '.');
+      l_ts_code       := get_ts_code(l_cwms_ts_id, l_office_id);
+      l_location_code := cwms_loc.get_location_code(l_office_id, cwms_util.split_text(l_cwms_ts_id, 1, '.'));
+      l_time_zone_out := cwms_loc.get_local_timezone(substr(l_cwms_ts_id, 1, instr(l_cwms_ts_id, '.') - 1), l_office_id);
+      l_time_zone_in  := case when p_time_zone is null then l_time_zone_out else cwms_util.get_timezone(p_time_zone) end;
+      l_date_range    := date_range_t(
+                            p_start_time,
+                            p_end_time,
+                            l_time_zone_in,
+                            case when l_start_inclusive then 'T' else 'F' end,
+                            case when l_end_inclusive then 'T' else 'F' end);
+      if l_prev then
+         begin
+            select max(date_time)
+              into l_ext_time
+              from av_tsv
+             where ts_code = l_ts_code
+               and date_time < l_date_range.start_time('UTC')
+               and end_date > l_date_range.start_time('UTC');
+            if l_ext_time is not null then
+               l_date_range.start_date := cwms_util.change_timezone(l_ext_time, 'UTC', l_date_range.time_zone);
+               l_date_range.start_inclusive := 'T';
+            end if;
+         exception
+            when no_data_found then null;
          end;
-      l_max_version :=
-         cwms_util.return_true_or_false (NVL (p_max_version, 'F'));
-      --
-      -- set the out parameters
-      --
-      p_cwms_ts_id_out := format_lrts_output(l_cwms_ts_id, use_new_lrts_format_on_output = 'T' and is_lrts(l_cwms_ts_id, l_office_id) = 'T');
-      p_units_out      := l_units;
-
-      --
-      -- get ts code
-      --
-      DBMS_APPLICATION_INFO.set_module ('cwms_ts.build_retrieve_ts_query',
-                                        'Get TS Code');
-
-      BEGIN
-         select ts_code,
-                interval,
-                interval_utc_offset,
-                base_parameter_id,
-                location_code,
-                time_zone_id
-           into l_ts_code,
-                l_interval,
-                l_utc_offset,
-                l_base_parameter_id,
-                l_location_code,
-                p_time_zone_id
+      end if;
+      if l_next then
+         begin
+            select min(date_time)
+              into l_ext_time
+              from av_tsv
+             where ts_code = l_ts_code
+               and date_time > l_date_range.end_time('UTC')
+               and start_date <= l_date_range.end_time('UTC');
+            if l_ext_time is not null then
+               l_date_range.end_date := cwms_util.change_timezone(l_ext_time, 'UTC', l_date_range.time_zone);
+               l_date_range.end_inclusive := 'T';
+            end if;
+         exception
+            when no_data_found then null;
+         end;
+      end if;
+      if p_units is null then
+         cwms_display.retrieve_user_unit(
+            p_unit_id      => l_unit_id,
+            p_parameter_id => cwms_util.split_text(l_cwms_ts_id, 2, '.'),
+            p_unit_system  => upper(p_unit_system),
+            p_user_id      => cwms_util.get_user_id,
+            p_office_id    => l_office_id);
+      else
+         l_unit_id := cwms_util.get_unit_id(p_units, l_office_id);
+      end if;
+      ---------------------------
+      -- retrieve the raw data --
+      ---------------------------
+      retrieve_ts_raw(
+         p_ts_retrieved   => l_ts_retrieved,
+         p_ts_code        => l_ts_code,
+         p_date_range     => l_date_range,
+         p_version_date   => p_version_date,
+         p_max_version    => p_max_version);
+      if l_ts_retrieved.count > 0 or not l_trim then
+         -----------------------
+         -- handle regular ts --
+         -----------------------
+         select interval,
+                interval_utc_offset
+           into l_interval,
+                l_offset
            from at_cwms_ts_id
-          where upper(db_office_id) = upper(l_office_id)
-            and upper(cwms_ts_id) = upper(l_cwms_ts_id);
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            BEGIN
-               select ts_code,
-                      interval,
-                      interval_utc_offset,
-                      base_parameter_id,
-                      location_code,
-                      time_zone_id
-                 into l_ts_code,
-                      l_interval,
-                      l_utc_offset,
-                      l_base_parameter_id,
-                      l_location_code,
-                      p_time_zone_id
-                 from at_cwms_ts_id
-                where upper(db_office_id) = upper(l_office_id)
-                  and upper(cwms_ts_id) = upper(l_cwms_ts_id);
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN
-                  cwms_err.raise('TS_ID_NOT_FOUND', l_cwms_ts_id, l_office_id);
-            END;
-      END;
-
-      if l_base_parameter_id = 'Elev' then
-         l_value_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_units);
+          where ts_code = l_ts_code;
+         if l_interval != 0 or l_offset != cwms_util.utc_offset_irregular then
+            --------------------
+            -- is RTS or LRTS --
+            --------------------
+            if l_offset = cwms_util.utc_offset_undefined then
+               if l_ts_retrieved.count > 0 then
+                  ----------------------------------------------------
+                  -- determine interval offset from first data time --
+                  ----------------------------------------------------
+                  l_top_of_interval := top_of_interval_utc(
+                     p_date_time_utc      => l_ts_retrieved(1).date_time,
+                     p_interval           => l_interval,
+                     p_interval_time_zone => case
+                                             when is_lrts(l_ts_code) = 'T' then l_time_zone_out -- LRTS
+                                             else 'UTC'                                         -- RTS
+                                             end,
+                     p_next               => 'F');
+                  l_offset := (l_ts_retrieved(1).date_time - l_top_of_interval) * 1440;
+               else
+                  ---------------------------
+                  -- just assume no offset --
+                  ---------------------------
+                  l_offset := 0;
+               end if;
+            end if;
+            ---------------------------------------
+            -- get all expected RTS times in UTC --
+            ---------------------------------------
+            l_reg_ts_times := get_reg_ts_times_utc_f(
+               p_date_range         => case
+                                       when l_trim then date_range_t(
+                                                           l_ts_retrieved(1).date_time,                    -- Trim
+                                                           l_ts_retrieved(l_ts_retrieved.count).date_time)
+                                       else l_date_range                                                   -- No trim
+                                       end,
+               p_interval           => cwms_util.split_text(l_cwms_ts_id, 4, '.'),
+               p_offset             => l_offset,
+               p_interval_time_zone => case
+                                       when is_lrts(l_ts_code) = 'T' then l_time_zone_out -- LRTS
+                                       else 'UTC'                                         -- RTS
+                                       end);
+         end if;
       end if;
-
-      set_action ('Handle start and end times');
-      l_is_lrts :=  is_lrts(l_ts_code) = 'T';
-      if l_is_lrts then
-         select interval
-           into l_interval
-           from cwms_interval
-          where upper(interval_id) = substr(upper(cwms_util.split_text(l_cwms_ts_id, 4, '.')), 2);
+      ---------------------
+      -- handle the unit --
+      ---------------------
+      l_default_unit := cwms_util.get_default_units(l_parameter_id, upper(p_unit_system));
+      if l_unit_id != l_default_unit then
+         for i in 1..l_ts_retrieved.count loop
+            l_ts_retrieved(i).value := cwms_util.convert_units(l_ts_retrieved(i).value, l_default_unit, l_unit_id);
+         end loop;
       end if;
-      setup_retrieve (l_start_time,
-                      l_end_time,
-                      l_reg_start_time,
-                      l_reg_end_time,
-                      l_version_date,
-                      l_time_zone,
-                      l_ts_code,
-                      l_interval,
-                      l_utc_offset,
-                      l_is_lrts,
-                      l_start_inclusive,
-                      l_end_inclusive,
-                      l_previous,
-                      l_next,
-                      l_trim);
-      -- change interval from minutes to days
-      --
-      l_interval := l_interval / 1440;
-
-      --
-      -- build the query string - for some reason the time zone must be a
-      -- string literal and bind variables are problematic
-      --
-      IF l_version_date is null
-      THEN
-         --
-         -- min or max version date
-         --
-         IF l_interval > 0
-         THEN
-            --
-            -- regular (RTS) or local regular (LRTS) time series
-            --
-            IF l_is_lrts
-            THEN
-               --
-               -- local regular time series (LRTS)
-               --
-               l_local_time_zone := cwms_loc.get_local_timezone(l_location_code);
-               l_query_str :=
-                  'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                           case
-                              when value is nan then null
-                              else value + :value_offset
-                           end "VALUE",
-                           cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
-                     from (
-                           select date_time,
-                                 max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
-                                 max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
-                              from av_tsv_dqu
-                           where ts_code      =  :ts_code
-                             and unit_id      =  :units
-                             and start_date   <= :reg_end
-                             and end_date     >  :reg_start
-                             and aliased_item is null
-                           group by date_time
-                           ) v
-                           right outer join
-                           (select column_value as date_time
-                              from table(cwms_ts.get_lrts_times_utc(:reg_start, :reg_end, :interval, :local_timezone))
-                           ) t
-                           on v.date_time = t.date_time
-                     order by t.date_time asc';
-               replace_strings;
-
-               OPEN l_cursor FOR l_query_str
-                  USING l_value_offset,
-                        l_unscreened,
-                        l_ts_code,
-                        l_units,
-                        l_reg_end_time,
-                        l_reg_start_time,
-                        l_reg_start_time,
-                        l_reg_end_time,
-                        l_interval,
-                        l_local_time_zone;
-            ELSE
-               --
-               -- regular time series (RTS)
-               --
-               IF MOD (l_interval, 30) = 0 OR MOD (l_interval, 365) = 0
-               THEN
-                  --
-                  -- must use calendar math
-                  --
-                  -- change interval from days to months
-                  --
-                  IF MOD (l_interval, 30) = 0
-                  THEN
-                     l_interval := l_interval / 30;
-                  ELSE
-                     l_interval := l_interval / 365 * 12;
-                  END IF;
-                  l_query_str :=
-                     'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                         case
-                            when value is nan then null
-                            else value + :l_value_offset
-                         end "VALUE",
-                         cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
-                    from (
-                         select date_time,
-                                max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
-                                max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
-                           from av_tsv_dqu
-                          where ts_code      =  :ts_code
-                            and unit_id      =  :units
-                            and start_date   <= :reg_l_end
-                            and end_date     >  :l_reg_start_time
-                            and aliased_item is null
-                       group by date_time
-                         ) v
-                         right outer join
-                         (select date_time
-                           from (select add_months(:reg_start, (level-1) * :interval) date_time
-                                   from dual
-                                connect by level <= months_between(:reg_end,
-                                                                   :reg_start) / :interval + 1
-                                )
-                          where date_time is not null
-                         ) t
-                         on v.date_time = t.date_time
-                         order by t.date_time asc';
-                  replace_strings;
-                  cwms_util.check_dynamic_sql(l_query_str);
-
-                  OPEN l_cursor FOR l_query_str
-                     USING l_value_offset,
-                           l_unscreened,
-                           l_ts_code,
-                           l_units,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_reg_start_time,
-                           l_interval,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_interval;
-               ELSE
-                  --
-                  -- can use date arithmetic
-                  --
-                  l_query_str :=
-                     'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                             case
-                                when value is nan then null
-                                else value + :l_value_offset
-                             end "VALUE",
-                             cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
-                        from (
-                             select date_time,
-                                    max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
-                                    max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
-                               from av_tsv_dqu
-                              where ts_code      =  :ts_code
-                                and unit_id      =  :units
-                                and start_date   <= :l_reg_end_time
-                                and end_date     >  :l_reg_start_time
-                                and aliased_item is null
-                              group by date_time
-                             ) v
-                             right outer join
-                             (select :reg_start + (level-1) * :interval date_time
-                                from dual
-                             connect by level <= round((:reg_end
-                                                      - :reg_start) / :interval + 1)
-                             ) t
-                             on v.date_time = t.date_time
-                       order by t.date_time asc';
-                  replace_strings;
-
-                  OPEN l_cursor FOR l_query_str
-                     USING l_value_offset,
-                           l_unscreened,
-                           l_ts_code,
-                           l_units,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_reg_start_time,
-                           l_interval,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_interval;
-               END IF;
-            END IF;
-         ELSE
-            --
-            -- irregular (ITS) or pseudo-regular (PRTS) time series
-            --
-            IF l_strict_times
-            THEN
-               l_query_str :=
-                  'select cast(from_tz(cast(max(date_time) as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as date_time,
-                       max(value) keep(dense_rank last order by date_time) + :l_value_offset as value,
-                       cwms_ts.normalize_quality(max(quality_code) keep(dense_rank last order by date_time)) as quality_code
-                  from (select date_time,
-                               cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) as local_time,
-                               case
-                                  when max(value) keep(dense_rank :first_or_last order by version_date) is nan then null
-                                  else max(value) keep(dense_rank :first_or_last order by version_date)
-                               end as value,
-                               max(quality_code) keep(dense_rank :first_or_last order by version_date) as quality_code
-                          from av_tsv_dqu
-                         where ts_code      =  :ts_code
-                           and date_time    >= :l_start_time
-                           and date_time    <= :l_end_time
-                           and unit_id      =  :units
-                           and start_date   <= :l_end_time
-                           and end_date     >  :l_start_time
-                           and aliased_item is null
-                      group by date_time
-                      )
-                group by local_time
-                order by local_time';
-               replace_strings;
-               cwms_util.check_dynamic_sql(l_query_str);
-
-               OPEN l_cursor FOR l_query_str
-                  USING l_value_offset,
-                        l_time_zone,
-                        l_ts_code,
-                        l_start_time,
-                        l_end_time,
-                        l_units,
-                        l_end_time,
-                        l_start_time;
-            ELSE
-               l_query_str :=
-               'select local_time as date_time,
-                       case
-                         when value is nan then null
-                         else value + :l_value_offset
-                       end "VALUE",
-                       cwms_ts.normalize_quality(quality_code) as quality_code
-                  from (select date_time,
-                               cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as local_time,
-                               case
-                                  when max(value) keep(dense_rank :first_or_last order by version_date) is nan then null
-                                  else max(value) keep(dense_rank :first_or_last order by version_date)
-                               end as value,
-                               max(quality_code) keep(dense_rank :first_or_last order by version_date) as quality_code
-                          from av_tsv_dqu
-                         where ts_code      =  :ts_code
-                           and date_time    >= :l_start_time
-                           and date_time    <= :l_end_time
-                           and unit_id      =  :units
-                           and start_date   <= :l_end_time
-                           and end_date     >  :l_start_time
-                           and aliased_item is null
-                         group by date_time
-                       )
-                 order by date_time';
-               replace_strings;
-               cwms_util.check_dynamic_sql(l_query_str);
-
-               OPEN l_cursor FOR l_query_str
-                  USING l_value_offset,
-                        l_ts_code,
-                        l_start_time,
-                        l_end_time,
-                        l_units,
-                        l_end_time,
-                        l_start_time;
-            END IF;
-         END IF;
-      ELSE
-         --
-         -- specified version date
-         --
-         IF l_interval > 0
-         THEN
-            --
-            -- regular (RTS) or local regular (LRTS) time series
-            --
-            IF l_is_lrts
-            THEN
-               --
-               -- local regular time series (LRTS)
-               --
-               l_start_time     := cwms_util.change_timezone(l_start_time,     'UTC', l_time_zone);
-               l_end_time       := cwms_util.change_timezone(l_end_time,       'UTC', l_time_zone);
-               l_reg_start_time := cwms_util.change_timezone(l_reg_start_time, 'UTC', l_time_zone);
-               l_reg_end_time   := cwms_util.change_timezone(l_reg_end_time,   'UTC', l_time_zone);
-               IF MOD (l_interval, 30) = 0 OR MOD (l_interval, 365) = 0
-               THEN
-                  --
-                  -- must use calendar math
-                  --
-                  -- change interval from days to months
-                  --
-
-                  l_local_time_zone := cwms_loc.get_local_timezone(l_location_code);
-                  l_query_str :=
-                     'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                         case
-                            when value is nan then null
-                            else value + :l_value_offset
-                         end "VALUE",
-                         cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
-                    from (
-                         select date_time,
-                                value,
-                                quality_code
-                           from av_tsv_dqu
-                          where ts_code      =  :ts_code
-                            and unit_id      =  :units
-                            and start_date   <= :reg_l_end
-                            and end_date     >  :l_reg_start_time
-                            and version_date =  :version
-                            and aliased_item is null
-                         ) v
-                         right outer join
-                         (select column_value as date_time
-                            from table(cwms_ts.get_lrts_times_utc(:reg_start, :reg_end, :interval, :local_timezone))
-                         ) t
-                         on v.date_time = t.date_time
-                         order by t.date_time asc';
-                  replace_strings;
-                  cwms_util.check_dynamic_sql(l_query_str);
-
-                  OPEN l_cursor FOR l_query_str
-                     USING l_value_offset,
-                           l_unscreened,
-                           l_ts_code,
-                           l_units,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_version_date,
-                           l_reg_start_time,
-                           l_reg_end_time,
-                           l_interval,
-                           l_local_time_zone;
-               ELSE
-                  --
-                  -- can use date arithmetic
-                  --
-                  l_query_str :=
-                     'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                             case
-                                when value is nan then null
-                                else value + :l_value_offset
-                             end "VALUE",
-                             cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
-                        from (
-                             select date_time,
-                                    value,
-                                    quality_code
-                               from av_tsv_dqu
-                              where ts_code      =  :ts_code
-                                and unit_id      =  :units
-                                and start_date   <= :l_reg_end_time
-                                and end_date     >  :l_reg_start_time
-                                and version_date =  :version
-                                and aliased_item is null
-                             ) v
-                             right outer join
-                             (select date_time
-                                from (select local_time,
-                                             cwms_util.change_timezone(local_time, :l_time_zone, ''UTC'') date_time
-                                        from (select :reg_start + (level-1) * :interval local_time
-                                                from dual
-                                             connect by level <= round((:reg_end
-                                                                      - :reg_start) / :interval + 1)
-                                             )
-                                     )
-                               where date_time is not null
-                             ) t
-                             on v.date_time = t.date_time
-                       order by t.date_time asc';
-                  replace_strings;
-
-                  OPEN l_cursor FOR l_query_str
-                     USING l_value_offset,
-                           l_unscreened,
-                           l_ts_code,
-                           l_units,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_version_date,
-                           l_time_zone,
-                           l_reg_start_time,
-                           l_interval,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_interval;
-               END IF;
-            ELSE
-               --
-               -- regular time seires (RTS)
-               --
-               IF MOD (l_interval, 30) = 0 OR MOD (l_interval, 365) = 0
-               THEN
-                  --
-                  -- must use calendar math
-                  --
-                  -- change interval from days to months
-                  --
-                  IF MOD (l_interval, 30) = 0
-                  THEN
-                     l_interval := l_interval / 30;
-                  ELSE
-                     l_interval := l_interval / 365 * 12;
-                  END IF;
-
-                  l_query_str :=
-                     'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                         case
-                            when value is nan then null
-                            else value + :l_value_offset
-                         end "VALUE",
-                         cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
-                    from (
-                         select date_time,
-                                value,
-                                quality_code
-                           from av_tsv_dqu
-                          where ts_code      =  :ts_code
-                            and unit_id      =  :units
-                            and start_date   <= :reg_l_end
-                            and end_date     >  :l_reg_start_time
-                            and version_date =  :version
-                            and aliased_item is null
-                         ) v
-                         right outer join
-                         (select date_time
-                           from (select add_months(:reg_start, (level-1) * :interval) date_time
-                                   from dual
-                                connect by level <= months_between(:reg_end,
-                                                                   :reg_start) / :interval + 1
-                                )
-                          where date_time is not null
-                         ) t
-                         on v.date_time = t.date_time
-                         order by t.date_time asc';
-                  replace_strings;
-                  cwms_util.check_dynamic_sql(l_query_str);
-
-                  OPEN l_cursor FOR l_query_str
-                     USING l_value_offset,
-                           l_unscreened,
-                           l_ts_code,
-                           l_units,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_version_date,
-                           l_reg_start_time,
-                           l_interval,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_interval;
-               ELSE
-                  --
-                  -- can use date arithmetic
-                  --
-                  l_query_str :=
-                     'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                             case
-                                when value is nan then null
-                                else value + :l_value_offset
-                             end "VALUE",
-                             cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
-                        from (
-                             select date_time,
-                                    value,
-                                    quality_code
-                               from av_tsv_dqu
-                              where ts_code      =  :ts_code
-                                and unit_id      =  :units
-                                and start_date   <= :l_reg_end_time
-                                and end_date     >  :l_reg_start_time
-                                and version_date =  :version
-                                and aliased_item is null
-                             ) v
-                             right outer join
-                             (select :reg_start + (level-1) * :interval date_time
-                                from dual
-                             connect by level <= round((:reg_end
-                                                      - :reg_start) / :interval + 1)
-                             ) t
-                             on v.date_time = t.date_time
-                       order by t.date_time asc';
-                  replace_strings;
-
-                  OPEN l_cursor FOR l_query_str
-                     USING l_value_offset,
-                           l_unscreened,
-                           l_ts_code,
-                           l_units,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_version_date,
-                           l_reg_start_time,
-                           l_interval,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_interval;
-               END IF;
-            END IF;
-         ELSE
-            --
-            -- irregular (ITS) or pseudo-regular (PRTS) time series
-            --
-            IF l_strict_times
-            THEN
-               l_query_str :=
-                  'select cast(from_tz(cast(max(date_time) as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as date_time,
-                          case
-                             when value is nan then null
-                             else value + :l_value_offset
-                          end "VALUE",
-                          cwms_ts.normalize_quality(quality_code) as quality_code
-                  from (select date_time,
-                               cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) as local_time,
-                               value,
-                               quality_code
-                          from av_tsv_dqu
-                         where ts_code      =  :ts_code
-                           and date_time    >= :l_start_time
-                           and date_time    <= :l_end_time
-                           and unit_id      =  :units
-                           and start_date   <= :l_end_time
-                           and end_date     >  :l_start_time
-                           and version_date =  :version
-                           and aliased_item is null
-                      )
-                group by local_time
-                order by local_time';
-               replace_strings;
-               cwms_util.check_dynamic_sql(l_query_str);
-
-               OPEN l_cursor FOR l_query_str
-                  USING l_value_offset,
-                        l_time_zone,
-                        l_ts_code,
-                        l_start_time,
-                        l_end_time,
-                        l_units,
-                        l_end_time,
-                        l_start_time,
-                        l_version_date;
-            ELSE
-               l_query_str :=
-               'select local_time as date_time,
-                       case
-                         when value is nan then null
-                         else value + :l_value_offset
-                       end "VALUE",
-                       cwms_ts.normalize_quality(quality_code) as quality_code
-                  from (select date_time,
-                               cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as local_time,
-                               value,
-                               quality_code
-                          from av_tsv_dqu
-                         where ts_code      =  :ts_code
-                           and date_time    >= :l_start_time
-                           and date_time    <= :l_end_time
-                           and unit_id      =  :units
-                           and start_date   <= :l_end_time
-                           and end_date     >  :l_start_time
-                           and version_date =  :version
-                           and aliased_item is null
-                       )
-                 order by date_time';
-               replace_strings;
-               cwms_util.check_dynamic_sql(l_query_str);
-
-               OPEN l_cursor FOR l_query_str
-                  USING l_value_offset,
-                        l_ts_code,
-                        l_start_time,
-                        l_end_time,
-                        l_units,
-                        l_end_time,
-                        l_start_time,
-                        l_version_date;
-            END IF;
-         END IF;
-      END IF;
-
-      RETURN l_cursor;
-   END build_retrieve_ts_query;
+      ----------------------------------------------
+      -- handle the vertical datum for elevations --
+      ----------------------------------------------
+      if instr(cwms_util.split_text(l_cwms_ts_id, 2, '.'), 'Elev') = 1 then
+         l_datum_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_units);
+         if l_datum_offset != 0.D then
+            for i in 1..l_ts_retrieved.count loop
+               l_ts_retrieved(i).value := l_ts_retrieved(i).value + l_datum_offset;
+            end loop;
+         end if;
+      end if;
+      --------------------------
+      -- handle the time zone --
+      --------------------------
+      if l_date_range.time_zone not in ('UTC', 'GMT') then
+         for i in 1..l_ts_retrieved.count loop
+            l_ts_retrieved(i).date_time := cwms_util.change_timezone(
+               l_ts_retrieved(i).date_time,
+               'UTC',
+               l_date_range.time_zone);
+         end loop;
+         for i in 1..l_reg_ts_times.count loop
+            l_reg_ts_times(i) := cwms_util.change_timezone(
+               l_reg_ts_times(i),
+               'UTC',
+               l_date_range.time_zone);
+         end loop;
+      end if;
+      ----------------------------
+      -- set the out parameters --
+      ----------------------------
+      p_cwms_ts_id_out := format_lrts_output(l_cwms_ts_id, l_office_id); -- format might have been reverted
+      p_units_out      := l_unit_id;
+      p_time_zone_id   := l_time_zone_out;
+      ---------------------------------
+      -- build and return the cursor --
+      ---------------------------------
+      open l_crsr for
+         select case p_date_time_type
+                when 'DATE' then
+                   nvl(q1.date_time, q2.date_time)
+                when 'TIMESTAMP' then
+                   cast(nvl(q1.date_time, q2.date_time) as timestamp)
+                when 'TIMESTAMP WITH TIME ZONE' then
+                   from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone)
+                end as date_time,
+                value,
+                nvl(quality_code, 0) as quality_code
+            from (select date_time,
+                         value,
+                         quality_code
+                    from table(l_ts_retrieved)
+                 ) q1
+                 full outer join
+                 (select column_value as date_time
+                    from table(l_reg_ts_times)
+                 ) q2 on q2.date_time = q1.date_time
+         order by 1;
+      return l_crsr;
+   end retrieve_ts_f;
 
    --
    --*******************************************************************   --
@@ -3851,28 +3439,27 @@ AS
       --
       -- Get the query string
       --
-      DBMS_APPLICATION_INFO.set_module ('cwms_ts.retrieve_ts',
-                                        'Get query string');
+      DBMS_APPLICATION_INFO.set_module ('cwms_ts.retrieve_ts', NULL);
 
-      p_at_tsv_rc :=
-         build_retrieve_ts_query (p_cwms_ts_id_out,
-                                  p_units_out,
-                                  p_time_zone_id  ,
-                                  p_cwms_ts_id,
-                                  p_units,
-                                  p_start_time,
-                                  p_end_time,
-                                  'date',
-                                  p_time_zone,
-                                  p_trim,
-                                  p_start_inclusive,
-                                  p_end_inclusive,
-                                  p_previous,
-                                  p_next,
-                                  p_version_date,
-                                  p_max_version,
-                                  p_office_id);
-
+      p_at_tsv_rc := retrieve_ts_f (
+         p_cwms_ts_id_out  => p_cwms_ts_id_out,
+         p_units_out       => p_units_out,
+         p_time_zone_id    => p_time_zone_id,
+         p_cwms_ts_id      => p_cwms_ts_id,
+         p_start_time      => p_start_time,
+         p_end_time        => p_end_time,
+         p_time_zone       => nvl(p_time_zone, 'UTC'),
+         p_date_time_type  => 'DATE',
+         p_units           => p_units,
+         p_unit_system     => 'SI',
+         p_trim            => p_trim,
+         p_start_inclusive => p_start_inclusive,
+         p_end_inclusive   => p_end_inclusive,
+         p_previous        => p_previous,
+         p_next            => p_next,
+         p_version_date    => p_version_date,
+         p_max_version     => p_max_version,
+         p_office_id       => p_office_id);
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END retrieve_ts_out;
 
@@ -3999,7 +3586,6 @@ AS
    is
       l_trim          VARCHAR2 (1);
       l_max_version   VARCHAR2 (1);
-      l_query_str     VARCHAR2 (4000);
       l_tsid          VARCHAR2(191);
       l_unit          VARCHAR2 (16);
 
@@ -4013,8 +3599,7 @@ AS
       --
       -- handle input parameters
       --
-      DBMS_APPLICATION_INFO.set_module ('cwms_ts.retrieve_ts',
-                                        'Handle input parameters');
+      DBMS_APPLICATION_INFO.set_module ('cwms_ts.retrieve_ts 1.4', NULL);
 
       IF p_trim IS NULL OR p_trim = cwms_util.false_num
       THEN
@@ -4036,37 +3621,25 @@ AS
          cwms_err.raise ('INVALID_T_F_FLAG_OLD', p_max_version);
       END IF;
 
-      --
-      -- Get the query string
-      --
-      DBMS_APPLICATION_INFO.set_module ('cwms_ts.retrieve_ts',
-                                        'Get query string');
-
-      p_at_tsv_rc :=
-         build_retrieve_ts_query (l_tsid,                  -- p_cwms_ts_id_out
-                                  l_unit,                       -- p_units_out
-                                  p_time_zone_id  ,        -- p_time_zone_id
-                                  p_cwms_ts_id,                -- p_cwms_ts_id
-                                  p_units,                          -- p_units
-                                  p_start_time,                -- p_start_time
-                                  p_end_time,                    -- p_end_time
-                                  'timestamp with time zone', -- p_date_time_type
-                                  p_timezone,                   -- p_time_zone
-                                  l_trim,                            -- p_trim
-                                  'T',                    -- p_start_inclusive
-                                  'T',                      -- p_end_inclusive
-                                  'F',                           -- p_previous
-                                  'F',                               -- p_next
-                                  p_versiondate,             -- p_version_date
-                                  l_max_version,              -- p_max_version
-                                  p_officeid);                  -- p_office_id
-
-      --l_query_str := replace(l_query_str, ':date_time_type', 'timestamp with time zone');
-      --
-      -- open the cursor
-      --
-      --set_action('Open cursor');
-      --open p_at_tsv_rc for l_query_str;
+      p_at_tsv_rc := retrieve_ts_f (
+         p_cwms_ts_id_out  => l_tsid,
+         p_units_out       => l_unit,
+         p_time_zone_id    => p_time_zone_id,
+         p_cwms_ts_id      => p_cwms_ts_id,
+         p_start_time      => p_start_time,
+         p_end_time        => p_end_time,
+         p_time_zone       => nvl(p_timezone, 'GMT'),
+         p_date_time_type  => 'TIMESTAMP WITH TIME ZONE',
+         p_units           => p_units,
+         p_unit_system     => 'SI',
+         p_trim            => l_trim,
+         p_start_inclusive => case when nvl(p_inclusive, 1) = 0 then 'F' else 'T' end,
+         p_end_inclusive   => case when nvl(p_inclusive, 1) = 0 then 'F' else 'T' end,
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => p_versiondate,
+         p_max_version     => l_max_version,
+         p_office_id       => p_officeid);
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END retrieve_ts;
@@ -4303,7 +3876,6 @@ AS
       j                 PLS_INTEGER;
       t                 nested_ts_table := nested_ts_table ();
       rec               SYS_REFCURSOR;
-      l_time_zone       VARCHAR2 (28) := NVL (p_time_zone, 'UTC');
       must_exist        BOOLEAN;
       tsid              VARCHAR2(191);
    BEGIN
@@ -4351,7 +3923,7 @@ AS
                              p_timeseries_info (i).unit,
                              p_timeseries_info (i).start_time,
                              p_timeseries_info (i).end_time,
-                             p_time_zone,
+                             nvl(p_time_zone, 'UTC'),
                              p_trim,
                              p_start_inclusive,
                              p_end_inclusive,
@@ -4399,7 +3971,7 @@ AS
                   units,
                   start_time,
                   end_time,
-                  l_time_zone "TIME_ZONE",
+                  nvl(p_time_zone, 'UTC') "TIME_ZONE",
                   CURSOR (  SELECT date_time, VALUE, quality_code
                               FROM TABLE (t1.data)
                           ORDER BY date_time ASC)
@@ -5046,7 +4618,7 @@ AS
 
       rollback;
       return FALSE;
-      
+
    end update_ts_extents;
 
    procedure update_ts_extents(
@@ -5676,14 +5248,15 @@ AS
                  into l_irr_interval
                  from cwms_interval
                 where interval_id = substr(cwms_util.split_text(format_lrts_input(p_cwms_ts_id), 4, '.'), 2);
-               l_first_time := cast(p_timeseries_data(1).date_time at time zone l_loc_tz as date);
+               l_first_time := cast(p_timeseries_data(1).date_time at time zone 'UTC' as date);
                if not l_allow_sub_minute then
                   l_first_time := trunc(l_first_time, 'MI');
                end if;
-               l_irr_offset := (l_first_time - get_time_on_before_interval(
-                  p_datetime    => l_first_time,
-                  p_ts_offset   => 0,
-                  p_ts_interval => l_irr_interval)) * 1440;
+               l_irr_offset := (l_first_time - top_of_interval_utc(
+                  p_date_time_utc      => l_first_time,
+                  p_interval           => l_irr_interval,
+                  p_interval_time_zone => l_loc_tz,
+                  p_next               => 'F')) * 1440;
                l_utc_offset := l_irr_offset;
             else
                ---------------------------------------------------------
@@ -5945,6 +5518,16 @@ AS
                     from table(l_timeseries_data);
                exception
                   when too_many_rows then
+                     dbms_output.enable;
+                     dbms_output.put_line('time series id  = '||l_cwms_ts_id);
+                     dbms_output.put_line('interval        = '||l_irr_interval);
+                     dbms_output.put_line('local time zone = '||l_loc_tz);
+                     for i in 1..l_timeseries_data.count loop
+                        dbms_output.put(i||chr(9)||l_timeseries_data(i).date_time);
+                        dbms_output.put(chr(9)||from_tz(cwms_util.change_timezone(cast(l_timeseries_data(i).date_time as timestamp), extract(timezone_region from l_timeseries_data(i).date_time), l_loc_tz), l_loc_tz));
+                        dbms_output.put(chr(9)||get_utc_interval_offset(from_tz(cwms_util.change_timezone(cast(l_timeseries_data(i).date_time as timestamp), extract(timezone_region from l_timeseries_data(i).date_time), l_loc_tz), l_loc_tz), l_irr_interval));
+                        dbms_output.new_line;
+                     end loop;
                      raise_application_error (
                         -20110,
                         'ERROR: Incoming data set contains multiple interval offsets. Unable to store data for '
@@ -8719,8 +8302,8 @@ AS
                    p_end_time          => p_end_time,
                    p_time_zone         => 'UTC',
                    p_trim              => p_trim,
-                   p_start_inclusive   => p_inclusive,
-                   p_end_inclusive     => p_inclusive,
+                   p_start_inclusive   => case when nvl(p_inclusive, 1) = 0 then 'F' else 'T' end,
+                   p_end_inclusive     => case when nvl(p_inclusive, 1) = 0 then 'F' else 'T' end,
                    p_previous          => 'F',
                    p_next              => 'F',
                    p_version_date      => p_version_date,
@@ -8747,8 +8330,8 @@ AS
                    p_end_time          => p_end_time,
                    p_time_zone         => 'UTC',
                    p_trim              => p_trim,
-                   p_start_inclusive   => p_inclusive,
-                   p_end_inclusive     => p_inclusive,
+                   p_start_inclusive   => case when nvl(p_inclusive, 1) = 0 then 'F' else 'T' end,
+                   p_end_inclusive     => case when nvl(p_inclusive, 1) = 0 then 'F' else 'T' end,
                    p_previous          => 'F',
                    p_next              => 'F',
                    p_version_date      => p_version_date,
@@ -10679,24 +10262,26 @@ end retrieve_existing_item_counts;
       PRAGMA EXCEPTION_INIT (ts_id_not_found, -20001);
       l_ts_code         NUMBER (14);
       l_ts_id           VARCHAR2(191);
+      l_cache_key       varchar2(208) := upper(cwms_util.get_db_office_id(p_office_id))||'/'||upper(p_ts_id_or_alias);
    BEGIN
-      BEGIN
-         l_ts_code := get_ts_code (p_ts_id_or_alias, p_office_id);
-      EXCEPTION
-         WHEN ts_id_not_found
+      if l_ts_id is null then
+         BEGIN
+            l_ts_code := get_ts_code (p_ts_id_or_alias, p_office_id);
+         EXCEPTION
+            WHEN ts_id_not_found
+            THEN
+               begin
+                  l_ts_code := get_ts_code (p_ts_id_or_alias, p_office_id);
+               exception
+                  when ts_id_not_found then null;
+               end;
+         END;
+
+         IF l_ts_code IS NOT NULL
          THEN
-            begin
-               l_ts_code := get_ts_code(format_lrts_input(p_ts_id_or_alias), p_office_id);
-            exception
-               when ts_id_not_found then null;
-            end;
-      END;
-
-      IF l_ts_code IS NOT NULL
-      THEN
-         l_ts_id := get_ts_id (l_ts_code);
-      END IF;
-
+            l_ts_id := get_ts_id (l_ts_code);
+         END IF;
+      end if;
       RETURN l_ts_id;
    END get_ts_id;
 
@@ -11067,19 +10652,42 @@ end retrieve_existing_item_counts;
    FUNCTION get_interval (p_interval_id IN VARCHAR2)
       RETURN NUMBER
    IS
-      l_interval NUMBER;
-   BEGIN
-      begin
-         SELECT interval
-           INTO l_interval
-           FROM cwms_interval
-          WHERE UPPER(interval_id) = UPPER(format_lrts_interval_input(p_interval_id));
-      exception
-         when no_data_found then
-            cwms_err.raise('INVALID_INTERVAL_ID', p_interval_id);
-      end;
-      RETURN l_interval;
-   END get_interval;
+      l_interval     number;
+      l_interval_num number;
+      l_interval_id  cwms_interval.interval_id%type;
+   begin
+      l_interval := cwms_cache.get(g_interval_cache, p_interval_id);
+      if l_interval is null then
+         begin
+            l_interval_num := to_number(p_interval_id);
+            begin
+               select interval
+                 into l_interval
+                 from cwms_interval
+                where interval = l_interval_num;
+            exception
+               when no_data_found then
+                  cwms_err.raise('INVALID_INTERVAL_ID', p_interval_id);
+            end;
+         exception
+            when others then
+               if sqlerrm like '%character to number conversion error%' then
+                  l_interval_id := format_lrts_interval_input(p_interval_id);
+                  begin
+                     select interval
+                       into l_interval
+                       from cwms_interval
+                      where upper(interval_id) = upper(l_interval_id);
+                  exception
+                     when no_data_found then
+                        cwms_err.raise('INVALID_INTERVAL_ID', p_interval_id);
+                  end;
+               end if;
+         end;
+         cwms_cache.put(g_interval_cache, p_interval_id, l_interval);
+      end if;
+      return l_interval;
+   end get_interval;
 
    FUNCTION get_utc_interval_offset (
       p_date_time_utc    IN DATE,
@@ -11088,7 +10696,7 @@ end retrieve_existing_item_counts;
    IS
       l_date_time_utc date := trunc(p_date_time_utc, 'MI');
    BEGIN
-      return round((l_date_time_utc - get_time_on_before_interval(p_date_time_utc, 0, p_interval_minutes)) * 1440, 9);
+      return round((p_date_time_utc - top_of_interval_plus_offset_utc(p_date_time_utc, p_interval_minutes, 0, 'F')) * 1440);
    END get_utc_interval_offset;
 
    FUNCTION get_times_for_time_window (
@@ -11127,14 +10735,16 @@ end retrieve_existing_item_counts;
       ----------------------------------------------------------------------
       -- get first and last times that are in time window and on interval --
       ----------------------------------------------------------------------
-      l_start_time_utc := get_time_on_after_interval(
+      l_start_time_utc := top_of_interval_plus_offset_utc(
          cwms_util.change_timezone(p_start_time, p_time_zone, 'UTC'),
+         p_interval_minutes,
          p_utc_interval_offset_minutes,
-         p_interval_minutes);
-      l_end_time_utc := get_time_on_before_interval(
+         'T');
+      l_end_time_utc := top_of_interval_plus_offset_utc(
          cwms_util.change_timezone(p_end_time, p_time_zone, 'UTC'),
+         p_interval_minutes,
          p_utc_interval_offset_minutes,
-         p_interval_minutes);
+         'F');
       if l_start_time_utc > l_end_time_utc then cwms_err.raise('ERROR', 'Time window contains no times on interval.'); end if;
       -------------------
       -- get the times --
@@ -14589,6 +14199,7 @@ begin
    g_ts_id_cache.name       := 'cwms_ts.g_ts_id_cache';
    g_ts_id_alias_cache.name := 'cwms_ts.g_ts_id_alias_cache';
    g_is_lrts_cache.name     := 'cwms_ts.g_is_lrts_cache';
+   g_interval_cache.name    := 'cwms_ts.g_interval_cache';
 END cwms_ts;                                                --end package body
 /
 SHOW ERRORS;

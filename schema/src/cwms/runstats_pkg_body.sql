@@ -7,6 +7,26 @@ as
    g_run2   number;
    g_middle boolean := FALSE;
 
+   -- AUTOTRACE global variables
+   --
+   -- Note package global variables start with "g" to differentiate their scope
+   --      from procedure local variables which start with "l".
+
+   g_waiting           constant integer := 0;
+   g_started           constant integer := 1;
+   g_paused            constant integer := 2;
+   g_resumed           constant integer := 3;
+
+   g_rec        rec_tab;   -- Statistics numbers, names and values
+   g_rec2       rec_tab_t; -- Table of start statistics values
+   g_rec3       rec_tab_t; -- Table of stop statistics values
+   g_acc        rec_tab_t; -- Table of accumulated statistics values
+   g_times      num_t;     -- Start times
+   g_times2     num_t;     -- accumulated times
+   g_at_status  num_t;     -- statuses
+   g_at_resumes num_t;
+   g_at_output  integer := g_output_warning;
+
    procedure rs_start
    is
    begin
@@ -282,6 +302,15 @@ as
 
    end rs_stop;
 
+   procedure output_call_stack is
+      l_call_stack str_tab_tab_t := cwms_util.get_call_stack;
+   begin
+      dbms_output.put_line('RUNSTATS: Call stack:');
+      for i in 3..l_call_stack.count loop
+         dbms_output.put_line(to_char(i-2, '999')||' : '||l_call_stack(i)(1)||':'||l_call_stack(i)(2));
+      end loop;
+   end output_call_stack;
+   
    procedure at_adjust_rc is
       i    number;     -- for itterating over the collection
    begin
@@ -294,21 +323,32 @@ as
       end loop;
    end at_adjust_rc;
 
-   procedure at_start ( p_n in number default 1) is
+   procedure at_start    ( p_n          in number default 1,
+                           p_paused     in varchar2 default 'F')
+   is
    begin
       -- Save current AUTOTRACE statistics
+      
+      if g_at_output >= g_output_trace then
+         dbms_output.put_line('RUNSTATS: Starting bucket '||p_n||' (paused = '||p_paused||')');
+         if g_at_output = g_output_call_stack then
+            output_call_stack;
+         end if;   
+      end if;   
 
-      if g_at_status.exists(p_n) then
-         case g_at_status(p_n)
-         when g_waiting then
-            null;
-         when g_started then
-            dbms_output.put_line( 'Forcing restart of started bucket '||p_n);
-         when g_paused then
-            dbms_output.put_line( 'Forcing restart of paused bucket '||p_n);
-         when g_resumed then
-            dbms_output.put_line( 'Forcing restart of resumed bucket '||p_n);
-         end case;
+      if g_at_output >= g_output_warning then
+         if g_at_status.exists(p_n) then
+            case g_at_status(p_n)
+            when g_waiting then
+               null;
+            when g_started then
+               dbms_output.put_line( 'RUNSTATS: Forcing restart of started bucket '||p_n);
+            when g_paused then
+               dbms_output.put_line( 'RUNSTATS: Forcing restart of paused bucket '||p_n);
+            when g_resumed then
+               dbms_output.put_line( 'RUNSTATS: Forcing restart of resumed bucket '||p_n);
+            end case;
+         end if;
       end if;
 
       select statistic#, name, v.value
@@ -318,6 +358,7 @@ as
       at_adjust_rc;
 
       g_times(p_n) := to_number(to_char(systimestamp, 'sssss.ff'));  -- microsecond
+      g_at_resumes(p_n) := 0;
 
       select statistic#, name, 0
       bulk   collect into g_acc(p_n)
@@ -325,26 +366,40 @@ as
 
       g_times2(p_n) := 0;
 
-      g_at_status(p_n) := g_started;
+      g_at_status(p_n) := case when p_paused = 'T' then g_paused else g_started end;
 
    end at_start;
 
    procedure at_pause ( p_n in number default 1) is
    begin
       -- Accumulate current AUTOTRACE statistics and stop monitoring
+      
+      if g_at_output >= g_output_trace then
+         dbms_output.put_line('RUNSTATS: Pausing bucket '||p_n);
+         if g_at_output = g_output_call_stack then
+            output_call_stack;
+         end if;   
+      end if;   
 
-      case g_at_status(p_n)
-      when g_waiting then
-         dbms_output.put_line ( 'Statistics don''t exist for bucket '||p_n);
-         return;
-      when g_started then
-         null;
-      when g_paused then
-         dbms_output.put_line( 'Bucket '||p_n||' was already paused.');
-         return;
-      when g_resumed then
-         null;
-      end case;
+      if g_at_output >= g_output_error then
+         if g_at_status.exists(p_n) then
+            case g_at_status(p_n)
+            when g_waiting then
+               dbms_output.put_line ( 'RUNSTATS: Statistics don''t exist for bucket '||p_n);
+               return;
+            when g_started then
+               null;
+            when g_paused then
+               dbms_output.put_line( 'RUNSTATS: Bucket '||p_n||' was already paused.');
+               return;
+            when g_resumed then
+               null;
+            end case;
+         else
+            dbms_output.put_line ( 'RUNSTATS: Statistics don''t exist for bucket '||p_n);
+            return;
+         end if;
+      end if;
 
      -- Get current  statistics
 
@@ -366,19 +421,34 @@ as
    procedure at_resume ( p_n in number default 1) is
    begin
       -- Resume monitoring AUTOTRACE statistics
+      
+      if g_at_output >= g_output_trace then
+         dbms_output.put_line('RUNSTATS: Resuming bucket '||p_n);
+         if g_at_output = g_output_call_stack then
+            output_call_stack;
+         end if;   
+      end if;   
 
-      case g_at_status(p_n)
-      when g_waiting then
-         dbms_output.put_line ( 'Statistics don''t exist for bucket '||p_n);
-      when g_started then
-         dbms_output.put_line( 'Bucket '||p_n||' has not been paused');
-         return;
-      when g_paused then
-         null;
-      when g_resumed then
-         dbms_output.put_line( 'Bucket '||p_n||' has not been paused');
-         return;
-      end case;
+      if g_at_output >= g_output_error then
+         if g_at_status.exists(p_n) then
+            case g_at_status(p_n)
+            when g_waiting then
+               dbms_output.put_line ( 'RUNSTATS: Statistics don''t exist for bucket '||p_n);
+               return;
+            when g_started then
+               dbms_output.put_line( 'RUNSTATS: Bucket '||p_n||' has not been paused');
+               return;
+            when g_paused then
+               null;
+            when g_resumed then
+               dbms_output.put_line( 'RUNSTATS: Bucket '||p_n||' has not been paused');
+               return;
+            end case;
+         else
+            dbms_output.put_line ( 'RUNSTATS: Statistics don''t exist for bucket '||p_n);
+            return;
+         end if;
+      end if;   
 
       select statistic#, name, v.value
       bulk   collect into g_rec2(p_n)
@@ -387,6 +457,7 @@ as
       at_adjust_rc;
 
       g_times(p_n) := to_number(to_char(systimestamp, 'sssss.ff'));  -- microsecond
+      g_at_resumes(p_n) := g_at_resumes(p_n)  + 1;
 
       g_at_status(p_n) := g_resumed;
 
@@ -399,18 +470,32 @@ as
    is
    begin
       -- Stop monitoring and output accumulated AUTOTRACE statistics
+      
+      if g_at_output >= g_output_trace then
+         dbms_output.put_line('RUNSTATS: Stopping bucket '||p_n);
+         if g_at_output = g_output_call_stack then
+            output_call_stack;
+         end if;   
+      end if;   
 
-      case g_at_status(p_n)
-      when g_waiting then
-         dbms_output.put_line ( 'Statistics don''t exist for bucket '||p_n);
-         return;
-      when g_started then
-         at_pause(p_n);
-      when g_paused then
-         null;
-      when g_resumed then
-         at_pause(p_n);
-      end case;
+      if g_at_output >= g_output_error then
+         if g_at_status.exists(p_n) then
+            case g_at_status(p_n)
+            when g_waiting then
+               dbms_output.put_line ( 'RUNSTATS: Statistics don''t exist for bucket '||p_n);
+               return;
+            when g_started then
+               at_pause(p_n);
+            when g_paused then
+               null;
+            when g_resumed then
+               at_pause(p_n);
+            end case;
+         else
+            dbms_output.put_line ( 'RUNSTATS: Statistics don''t exist for bucket '||p_n);
+            return;
+         end if;
+      end if;   
 
       dbms_output.put_line (' ');
       dbms_output.put_line ( rpad(p_lbl,9) || to_char( g_times2(p_n),'990.999999' )||' elapsed time (sec)' );
@@ -420,10 +505,23 @@ as
             dbms_output.put_line ( rpad(p_lbl,9)||to_char(g_acc(p_n)(i).value, '9999999999')||' '||g_acc(p_n)(i).name );
          end if;
       end loop;
+      if g_at_resumes(p_n) > 0 then
+         dbms_output.put_line(rpad(p_lbl, 9)||to_char(g_at_resumes(p_n), '9999999999')||' times resumed');
+      end if;
 
       g_at_status(p_n) := g_waiting;
 
    end at_stop;
+
+   procedure at_set_output ( p_level      in integer)
+   is
+   begin
+      if p_level between g_output_none and g_output_call_stack then
+         g_at_output := p_level;
+      else
+         cwms_err.raise('ERROR', 'P_Level must be in the range of '||g_output_none||'..'||g_output_call_stack);
+      end if;
+   end at_set_output;
 
    function at_get_names ( p_n          in number   default 1)
       return str_tab_t
@@ -437,7 +535,7 @@ as
       return l_names;
    end at_get_names;
 
-   function at_get_value ( p_n          in number default 1,
+   function at_get_value ( p_n          in number,
                            p_name       in varchar2 )
       return number
    is

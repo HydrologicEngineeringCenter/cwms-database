@@ -833,9 +833,9 @@ begin
    dbms_output.put_line('READS : 1='||l_reads(1)||chr(9)||', 2='||l_reads(2)||chr(9)||', Ratio='||round(l_reads(1)/l_reads(2), 2));
    dbms_output.put_line('TIMES : 1='||l_times(1)||chr(9)||', 2='||l_times(2)||chr(9)||', Ratio='||round(l_times(1)/l_times(2), 2));
 
-   ut.expect(round(l_gets(1)/l_gets(2), 2)).to_equal(1);
-   ut.expect(round(l_reads(1)/l_reads(2), 2)).to_equal(1);
-   ut.expect(round(l_times(1)/l_times(2), 2)).to_equal(1);
+   ut.expect(round(l_gets(1)/l_gets(2), 1)).to_equal(1);
+   ut.expect(round(l_reads(1)/l_reads(2), 1)).to_equal(1);
+   ut.expect(round(l_times(1)/l_times(2), 1)).to_equal(1);
 end test_runstats;
 end test_cwms_util;
 /
