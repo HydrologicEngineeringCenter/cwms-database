@@ -891,58 +891,6 @@ AS
       return null;
    end snap_to_interval_offset_tz;
 
-
-   --
-   --*******************************************************************   --
-   --*******************************************************************   --
-   --
-   -- GET_TIME_ON_AFTER_INTERVAL - if p_datetime is on the interval, than
-   --      p_datetime is returned, if p_datetime is off of the interval, than
-   --      the first datetime after p_datetime is returned.
-   --
-   --      Function is usable down to 1 minute.
-   --
-   --      All offsets stored in the database are in minutes. --
-   --      p_ts_offset and p_ts_interval are passed in as minutes --
-   --      p_datetime is assumed to be in UTC --
-   --
-   --      Weekly intervals - the weekly interval starts with Sunday.
-   --
-   ----------------------------------------------------------------------------
-   --
-
-   FUNCTION get_time_on_after_interval (p_datetime      IN DATE,
-                                        p_ts_offset     IN NUMBER, -- in minutes.
-                                        p_ts_interval   IN NUMBER -- in minutes.
-                                                                 )
-      RETURN DATE
-   IS
-   BEGIN
-      return top_of_interval_plus_offset_utc(
-         p_date_time       => p_datetime,
-         p_interval        => p_ts_interval,
-         p_interval_offset => nvl(p_ts_offset, 0),
-         p_next            => 'T');
-   END get_time_on_after_interval;
-
-   --
-   --  See get_time_on_after_interval for description/comments/etc...
-   --
-   FUNCTION get_time_on_before_interval (p_datetime      IN DATE,
-                                         p_ts_offset     IN NUMBER,
-                                         p_ts_interval   IN NUMBER)
-      RETURN DATE
-   IS
-   BEGIN
-      return top_of_interval_plus_offset_utc(
-         p_date_time       => p_datetime,
-         p_interval        => p_ts_interval,
-         p_interval_offset => nvl(p_ts_offset, 0),
-         p_next            => 'F');
-   END get_time_on_before_interval;
-
-
-
    FUNCTION get_location_id (p_cwms_ts_id     IN VARCHAR2,
                              p_db_office_id   IN VARCHAR2)
       RETURN VARCHAR2
@@ -2747,146 +2695,6 @@ AS
       return l_reg_times_utc;
    end get_reg_ts_times_utc_f;
 
-   FUNCTION get_lrts_times_utc(
-      p_start_time_utc  in date,
-      p_end_time_utc    in date,
-      p_interval        in number,
-      p_local_time_zone in varchar2)
-      return date_table_type deterministic
-   is
-      l_utc_times       date_table_type := date_table_type();
-      l_local_time      date;
-      l_local_time_prev date;
-      l_utc_time        date;
-      l_utc_time_tmp    date;
-      l_dst_offset      number;
-      l_fraction        number;
-      l_month_interval  integer;
-      l_first           boolean;
-      l_exists          char(1);
-   begin
-      -------------------
-      -- sanity checks --
-      -------------------
-      if p_interval        is null then cwms_err.raise('NULL_ARGUMENT', 'P_Interval');        end if;
-      if p_local_time_zone is null then cwms_err.raise('NULL_ARGUMENT', 'P_Local_time_Zone'); end if;
-      ---------------------------------------
-      -- short circuit on null input times --
-      ---------------------------------------
-      if p_start_time_utc is null or p_end_time_utc is null then
-         return l_utc_times;
-      end if;
-      --------------------
-      -- get DST offset --
-      --------------------
-      select cwms_util.dsinterval_to_minutes(dst_offset) / 1440
-        into l_dst_offset
-        from cwms_time_zone
-       where time_zone_name = cwms_util.get_time_zone_name(p_local_time_zone);
-      ------------------------------------
-      -- get interval in days or months --
-      ------------------------------------
-      if mod(p_interval, 30) = 0 or mod(p_interval, 365) = 0 then
-         if mod(p_interval, 30) = 0 then
-            l_month_interval := p_interval / 30;
-         else
-            l_month_interval := p_interval / 365 * 12;
-         end if;
-      end if;
-      l_utc_time := p_start_time_utc;
-      if l_month_interval is null then
-         ------------------------------------------------------------------
-         -- use date/time arithmetic                                     --
-         --                                                              --
-         -- here the interals can be on the same order as the DST offset --
-         -- so we have to worry about making sure we capture every valid --
-         -- UTC time in the area of the overlapped local time period     --
-         ------------------------------------------------------------------
-         l_first := true;
-         loop
-            l_local_time := cwms_util.change_timezone(l_utc_time, 'UTC', p_local_time_zone);
-            l_utc_time := cwms_util.change_timezone(l_local_time, p_local_time_zone, 'UTC');
-            if not l_first then
-               l_fraction := (l_local_time - l_local_time_prev) / p_interval;
-               if trunc(l_fraction) != l_fraction then
-                  ----------------------------------------------------------------
-                  -- adding the interval to the previous UTC time resulted in a --
-                  -- local time that isn't on the interval, so make the local   --
-                  -- time be on the interval and compute the UTC time from it   --
-                  ----------------------------------------------------------------
-                  l_local_time := l_local_time_prev + p_interval;
-                  l_utc_time := cwms_util.change_timezone(l_local_time, p_local_time_zone, 'UTC');
-                  l_utc_time_tmp := l_utc_time - l_dst_offset;
-                  if cwms_util.change_timezone(l_utc_time_tmp, 'UTC', p_local_time_zone) = l_local_time then
-                     l_utc_time := l_utc_time_tmp;
-                  end if;
-               else
-                  l_utc_time_tmp := l_utc_time - l_dst_offset;
-                  if cwms_util.change_timezone(l_utc_time_tmp, 'UTC', p_local_time_zone) = l_local_time then
-                     ----------------------------------------------------------------------------------------
-                     -- time is in the overlapped local time period (2 valid UTC times for the local time) --
-                     -- so choose the earlier UTC time unless it's already in the results                  --
-                     ----------------------------------------------------------------------------------------
-                     l_exists := 'F';
-                     begin
-                        select 'T'
-                          into l_exists
-                          from dual
-                         where exists (select column_value
-                                         from table(l_utc_times)
-                                        where column_value = l_utc_time_tmp
-                                      );
-                     exception
-                        when no_data_found then null;
-                     end;
-                     if l_exists = 'F' then
-                        l_utc_time := l_utc_time_tmp;
-                     end if;
-                  end if;
-               end if;
-            end if;
-            ----------------------------------------------------------------
-            -- delay exit until here because the test variable may be     --
-            -- recomputed between the top of the loop and here            --
-            ----------------------------------------------------------------
-            exit when l_utc_time > p_end_time_utc;
-            if l_utc_time is null then
-               ----------------------------------------------------------------------------
-               -- only happens when UTC time is computed from an invalid local time (any --
-               -- time in the missing local time hour of the spring DST transition)      --
-               ----------------------------------------------------------------------------
-               l_utc_time := cwms_util.change_timezone(l_local_time + p_interval, p_local_time_zone, 'UTC');
-            else
-               l_utc_times.extend;
-               l_utc_times(l_utc_times.count) := l_utc_time;
-               l_utc_time := l_utc_time + p_interval;
-            end if;
-            -------------------------------
-            -- set up for next iteration --
-            -------------------------------
-            l_local_time_prev := l_local_time;
-            l_first := false;
-         end loop;
-      else
-         --------------------------------------------------------------
-         -- use calendar math                                        --
-         --                                                          --
-         -- here the intervals are guaranteed to be so much greater  --
-         -- than the DST offset that we don't need to worry about it --
-         --------------------------------------------------------------
-         l_local_time := cwms_util.change_timezone(l_utc_time,   'UTC', p_local_time_zone);
-         loop
-            l_utc_time := cwms_util.change_timezone(l_local_time, p_local_time_zone, 'UTC');
-            exit when l_utc_time > p_end_time_utc;
-            if l_utc_time is not null then
-               l_utc_times.extend;
-               l_utc_times(l_utc_times.count) := l_utc_time;
-            end if;
-            l_local_time := add_months(l_local_time, l_month_interval);
-         end loop;
-      end if;
-      return l_utc_times;
-   end get_lrts_times_utc;
    --------------------------------------------------------------------------------
    -- function is_lrts
    --------------------------------------------------------------------------------
@@ -5440,14 +5248,15 @@ AS
                  into l_irr_interval
                  from cwms_interval
                 where interval_id = substr(cwms_util.split_text(format_lrts_input(p_cwms_ts_id), 4, '.'), 2);
-               l_first_time := cast(p_timeseries_data(1).date_time at time zone l_loc_tz as date);
+               l_first_time := cast(p_timeseries_data(1).date_time at time zone 'UTC' as date);
                if not l_allow_sub_minute then
                   l_first_time := trunc(l_first_time, 'MI');
                end if;
-               l_irr_offset := (l_first_time - get_time_on_before_interval(
-                  p_datetime    => l_first_time,
-                  p_ts_offset   => 0,
-                  p_ts_interval => l_irr_interval)) * 1440;
+               l_irr_offset := (l_first_time - top_of_interval_utc(
+                  p_date_time_utc      => l_first_time,
+                  p_interval           => l_irr_interval,
+                  p_interval_time_zone => l_loc_tz,
+                  p_next               => 'F')) * 1440;
                l_utc_offset := l_irr_offset;
             else
                ---------------------------------------------------------

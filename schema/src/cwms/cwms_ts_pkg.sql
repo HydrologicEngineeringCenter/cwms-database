@@ -412,38 +412,6 @@ AS
       return date;
 
    /**
-    * Retrieve the beginning time of the next interval a specified time, interval, and offset
-    *
-    * @param p_datetime    The UTC time to retrieve the start of the next interval for
-    * @param p_ts_offset   The data offset into the UTC interval, in minutes
-    * @param p_ts_interval The data interval length in minutes
-    *
-    * @return The beginning time of the next interval
-    * @deprecated Use top_of_interval_plus_offset_utc
-    * @see cwms_ts.top_of_interval_plus_offset_utc
-    */
-   FUNCTION get_time_on_after_interval (p_datetime      IN DATE,
-                                        p_ts_offset     IN NUMBER,
-                                        p_ts_interval   IN NUMBER)
-      RETURN DATE;
-
-   /**
-    * Retrieve the beginning time of the current interval a specified time, interval, and offset
-    *
-    * @param p_datetime    The UTC time to retrieve the start of the next interval for
-    * @param p_ts_offset   The data offset into the UTC interval, in minutes
-    * @param p_ts_interval The data interval length in minutes
-    *
-    * @return The beginning time of the current interval
-    * @deprecated Use top_of_interval_plus_offset_utc
-    * @see cwms_ts.top_of_interval_plus_offset_utc
-    */
-   FUNCTION get_time_on_before_interval (p_datetime      IN DATE,
-                                         p_ts_offset     IN NUMBER,
-                                         p_ts_interval   IN NUMBER)
-      RETURN DATE;
-
-   /**
     * Retrieves the unique numeric code identifying a specified parameter
     *
     * @param p_base_parameter_id The base parameter identifier of the parameter
@@ -1053,24 +1021,6 @@ AS
       return date_table_type;
 
    /**
-    * Returns a table of UTC times in a specified LRTS time window. This can be used
-    * to get the times to select out the TSV tables or views for LRTS.
-    *
-    * @param p_start_time_utc  The start of the LRTS time window IN UTC
-    * @param p_end_time_utc    The end of the LRTS time window IN UTC
-    * @param p_interval        The LRTS interval IN DAYS
-    * @param p_local_time_zone The time zone of the LRTS location
-    *
-    * @return The LRTS times in UTC
-    */
-   FUNCTION get_lrts_times_utc(
-      p_start_time_utc  in date,
-      p_end_time_utc    in date,
-      p_interval        in number,
-      p_local_time_zone in varchar2)
-      return date_table_type deterministic;
-
-   /**
     * Returns whether a time series id references an LRTS
     *
     * @param p_cwms_ts_id The time series identifier to test
@@ -1249,8 +1199,61 @@ AS
       p_date_range     in date_range_t,
       p_version_date   in date default null,
       p_max_version    in varchar2 default 'T');
-   /*
-    * Temporarily Undocumented
+   /**
+    * Retrieves time series data for a specified time series and time window, including LRTS time zone
+    *
+    * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
+    * contains the following columns, sorted by date_time:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date/time of the value, in the specified time zone</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">value</td>
+    *     <td class="descr">binary_double</td>
+    *     <td class="descr">The data value</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">quality_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The quality code for the data value</td>
+    *   </tr>
+    * </table>
+    * @param p_cwms_ts_id_out  The case-corrected version of the time series identifier
+    * @param p_units_out       The unit of the retrieved data values
+    * @param p_time_zone_id    The location time zone
+    * @param p_cwms_ts_id      The time series identifier to retrieve data for
+    * @param p_start_time      The start time of the time window
+    * @param p_end_time        The end time of the time window
+    * @param p_time_zone       The time zone for the time window and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified.
+    * @param p_date_time_type  The data type to retrieve for date_time values in the cursor. Valid values are 'DATE', 'TIMESTAMP', and 'TIMESTAMP WITH TIME ZONE'. If not specified, 'DATE' is used
+    * @param p_units           The unit to retrieve the data values in. If unspecified or NULL, default unit for the specified unit system is used. The unit used will be determined in this order:
+    *                          <ol>
+    *                          <li>The display unit for session user/parameter/unit system, if set</li>
+    *                          <li>The display unit for session user's current offce/parameter/unit system if set</li>
+    *                          <li>The default unit for the parameter/unit system. If the unit system is 'SI', this is the dataase storage unit</li>
+    *                          </ol>
+    * @param p_unit_system     The unit system ('EN' or 'SI') used to determine the actual unit if p_units is unspecified or NULL. If unspecified, 'SI' is used
+    * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
+    * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window begins on ('T') or after ('F') the start time
+    * @param p_end_inclusive   A flag ('T' or 'F') that specifies whether the time window ends on ('T') or before ('F') the end time
+    * @param p_previous        A flag ('T' or 'F') that specifies whether to retrieve the latest value before the start of the time window
+    * @param p_next            A flag ('T' or 'F') that specifies whether to retrieve the earliest value after the end of the time window
+    * @param p_version_date    The version date of the data to retrieve. If unspecified or NULL, the version date is determined by p_max_version
+    * @param p_max_version     A flag ('T' or 'F') that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_version_date is NULL
+    * @param p_office_id       The office that owns the time series. If unspecified or NULL, the session user's current office is used
     */
    function retrieve_ts_f (
       p_cwms_ts_id_out       out varchar2,
@@ -1306,21 +1309,12 @@ AS
     * </table>
     * @param p_cwms_ts_id_out  The case-corrected version of the time series identifier
     * @param p_units_out       The unit of the retrieved data values
-    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_time_zone_id    The location time zone
     * @param p_cwms_ts_id      The time series identifier to retrieve data for
     * @param p_units           The unit to retrieve the data values in
     * @param p_start_time      The start time of the time window
     * @param p_end_time        The end time of the time window
-    * @param p_time_zone       The time zone for the time window and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings)
-    * time zone can be specified. For local time zones there are two behaviors that can be specified for retrieving data across a (Spring or Autum)
-    * Daylight Savings boundary.
-    * <ul><li>The <strong>default behavior</strong> is to retrieve the data normally and label it according to the local time zone, which will result in time discontinuities
-    *         at the DST boundaries. The Spring discontinuity will result in a missing 0200 hour; the Autum discontinuity will result in a repeated
-    *         0100 hour (with possibly different values).</li>
-    *     <li>The <strong>alternate behavior</strong> - specified by pre-pending <strong><code>!</code></strong> to the time zone (e.g. <code>!US/Pacific</code>) - is to retrieve data that can be used
-    *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
-    *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
-    *         one corresponding to Daylight Savings) in the Autum.</li></ul>
+    * @param p_time_zone       The time zone for the time window and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified.
     * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
     * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window begins on ('T') or after ('F') the start time
     * @param p_end_inclusive   A flag ('T' or 'F') that specifies whether the time window ends on ('T') or before ('F') the end time
@@ -1387,16 +1381,7 @@ AS
     * @param p_units           The unit to retrieve the data values in
     * @param p_start_time      The start time of the time window
     * @param p_end_time        The end time of the time window
-    * @param p_time_zone       The time zone for the time window and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings)
-    * time zone can be specified. For local time zones there are two behaviors that can be specified for retrieving data across a (Spring or Autum)
-    * Daylight Savings boundary.
-    * <ul><li>The <strong>default behavior</strong> is to retrieve the data normally and label it according to the local time zone, which will result in time discontinuities
-    *         at the DST boundaries. The Spring discontinuity will result in a missing 0200 hour; the Autum discontinuity will result in a repeated
-    *         0100 hour (with possibly different values).</li>
-    *     <li>The <strong>alternate behavior</strong> - specified by pre-pending <strong><code>!</code></strong> to the time zone (e.g. <code>!US/Pacific</code>) - is to retrieve data that can be used
-    *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
-    *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
-    *         one corresponding to Daylight Savings) in the Autum.</li></ul>
+    * @param p_time_zone       The time zone for the time window and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified. 
     * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
     * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window begins on ('T') or after ('F') the start time
     * @param p_end_inclusive   A flag ('T' or 'F') that specifies whether the time window ends on ('T') or before ('F') the end time
@@ -1431,16 +1416,7 @@ AS
     * @param p_units           The unit to retrieve the data values in
     * @param p_start_time      The start time of the time window
     * @param p_end_time        The end time of the time window
-    * @param p_time_zone       The time zone for the time window and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings)
-    * time zone can be specified. For local time zones there are two behaviors that can be specified for retrieving data across a (Spring or Autum)
-    * Daylight Savings boundary.
-    * <ul><li>The <strong>default behavior</strong> is to retrieve the data normally and label it according to the local time zone, which will result in time discontinuities
-    *         at the DST boundaries. The Spring discontinuity will result in a missing 0200 hour; the Autum discontinuity will result in a repeated
-    *         0100 hour (with possibly different values).</li>
-    *     <li>The <strong>alternate behavior</strong> - specified by pre-pending <strong><code>!</code></strong> to the time zone (e.g. <code>!US/Pacific</code>) - is to retrieve data that can be used
-    *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
-    *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
-    *         one corresponding to Daylight Savings) in the Autum.</li></ul>
+    * @param p_time_zone       The time zone for the time window and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified. 
     * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
     * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window begins on ('T') or after ('F') the start time
     * @param p_end_inclusive   A flag ('T' or 'F') that specifies whether the time window ends on ('T') or before ('F') the end time
@@ -1530,22 +1506,13 @@ AS
     *     <td class="descr">The quality code for the data value</td>
     *   </tr>
     * </table>
-    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_time_zone_id    The location time zone
     * @param p_units           The unit to retrieve the data values in
     * @param p_officeid        The office that owns the time series
     * @param p_cwms_ts_id      The time series identifier to retrieve data for
     * @param p_start_time      The start time of the time window
     * @param p_end_time        The end time of the time window
-    * @param p_timezone        The time zone for the time window. Either a standard (constant offset from UTC) or local (observes Daylight Savings)
-    * time zone can be specified. For local time zones there are two behaviors that can be specified for retrieving data across a (Spring or Autum)
-    * Daylight Savings boundary.
-    * <ul><li>The <strong>default behavior</strong> is to retrieve the data normally and label it according to the local time zone, which will result in time discontinuities
-    *         at the DST boundaries. The Spring discontinuity will result in a missing 0200 hour; the Autum discontinuity will result in a repeated
-    *         0100 hour (with possibly different values).</li>
-    *     <li>The <strong>alternate behavior</strong> - specified by pre-pending <strong><code>!</code></strong> to the time zone (e.g. <code>!US/Pacific</code>) - is to retrieve data that can be used
-    *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
-    *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
-    *         one corresponding to Daylight Savings) in the Autum.</li></ul>
+    * @param p_timezone        The time zone for the time window. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified. 
     * @param p_trim            A flag (0 or 1) that specifies whether to trim missing values from the beginning and end of the retrieved values
     * @param p_inclusive       A flag (0 or 1) that specifies whether the start and end time are included in the time window
     * @param p_versiondate     The version date of the data to retrieve. If not specified or NULL, the version date is determined by p_max_version
@@ -1602,16 +1569,7 @@ AS
     * @param p_cwms_ts_id      The time series identifier to retrieve data for
     * @param p_start_time      The start time of the time window
     * @param p_end_time        The end time of the time window
-    * @param p_timezone        The time zone for the time window. Either a standard (constant offset from UTC) or local (observes Daylight Savings)
-    * time zone can be specified. For local time zones there are two behaviors that can be specified for retrieving data across a (Spring or Autum)
-    * Daylight Savings boundary.
-    * <ul><li>The <strong>default behavior</strong> is to retrieve the data normally and label it according to the local time zone, which will result in time discontinuities
-    *         at the DST boundaries. The Spring discontinuity will result in a missing 0200 hour; the Autum discontinuity will result in a repeated
-    *         0100 hour (with possibly different values).</li>
-    *     <li>The <strong>alternate behavior</strong> - specified by pre-pending <strong><code>!</code></strong> to the time zone (e.g. <code>!US/Pacific</code>) - is to retrieve data that can be used
-    *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
-    *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
-    *         one corresponding to Daylight Savings) in the Autum.</li></ul>
+    * @param p_timezone        The time zone for the time window. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified. 
     * @param p_trim            A flag (0 or 1) that specifies whether to trim missing values from the beginning and end of the retrieved values
     * @param p_inclusive       A flag (0 or 1) that specifies whether the start and end time are included in the time window
     * @param p_versiondate     The version date of the data to retrieve. If not specified or NULL, the version date is determined by p_max_version
@@ -1691,20 +1649,11 @@ AS
     *     <td class="descr">The quality code for the data value</td>
     *   </tr>
     * </table>
-    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_time_zone_id    The location time zone
     * @param p_cwms_ts_id      The time series identifier to retrieve data for
     * @param p_units           The unit to retrieve the data values in
     * @param p_start_time      The start time of the time window
-    * @param p_end_time        The end time of the time window. Either a standard (constant offset from UTC) or local (observes Daylight Savings)
-    * time zone can be specified. For local time zones there are two behaviors that can be specified for retrieving data across a (Spring or Autum)
-    * Daylight Savings boundary.
-    * <ul><li>The <strong>default behavior</strong> is to retrieve the data normally and label it according to the local time zone, which will result in time discontinuities
-    *         at the DST boundaries. The Spring discontinuity will result in a missing 0200 hour; the Autum discontinuity will result in a repeated
-    *         0100 hour (with possibly different values).</li>
-    *     <li>The <strong>alternate behavior</strong> - specified by pre-pending <strong><code>!</code></strong> to the time zone (e.g. <code>!US/Pacific</code>) - is to retrieve data that can be used
-    *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
-    *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
-    *         one corresponding to Daylight Savings) in the Autum.</li></ul>
+    * @param p_end_time        The end time of the time window. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified. 
     * @param p_time_zone       The time zone for the time window and retrieved times
     * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
     * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window begins on ('T') or after ('F') the start time
@@ -1766,16 +1715,7 @@ AS
     * @param p_cwms_ts_id      The time series identifier to retrieve data for
     * @param p_units           The unit to retrieve the data values in
     * @param p_start_time      The start time of the time window
-    * @param p_end_time        The end time of the time window. Either a standard (constant offset from UTC) or local (observes Daylight Savings)
-    * time zone can be specified. For local time zones there are two behaviors that can be specified for retrieving data across a (Spring or Autum)
-    * Daylight Savings boundary.
-    * <ul><li>The <strong>default behavior</strong> is to retrieve the data normally and label it according to the local time zone, which will result in time discontinuities
-    *         at the DST boundaries. The Spring discontinuity will result in a missing 0200 hour; the Autum discontinuity will result in a repeated
-    *         0100 hour (with possibly different values).</li>
-    *     <li>The <strong>alternate behavior</strong> - specified by pre-pending <strong><code>!</code></strong> to the time zone (e.g. <code>!US/Pacific</code>) - is to retrieve data that can be used
-    *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
-    *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
-    *         one corresponding to Daylight Savings) in the Autum.</li></ul>
+    * @param p_end_time        The end time of the time window. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified. 
     * @param p_time_zone       The time zone for the time window and retrieved times
     * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
     * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window begins on ('T') or after ('F') the start time
@@ -1891,16 +1831,7 @@ AS
     *   </tr>
     * </table>
     * @param p_timeseries_info The time series identifiers, time windows, and units to retrieve data for
-    * @param p_time_zone       The time zone for the time windows and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings)
-    * time zone can be specified. For local time zones there are two behaviors that can be specified for retrieving data across a (Spring or Autum)
-    * Daylight Savings boundary.
-    * <ul><li>The <strong>default behavior</strong> is to retrieve the data normally and label it according to the local time zone, which will result in time discontinuities
-    *         at the DST boundaries. The Spring discontinuity will result in a missing 0200 hour; the Autum discontinuity will result in a repeated
-    *         0100 hour (with possibly different values).</li>
-    *     <li>The <strong>alternate behavior</strong> - specified by pre-pending <strong><code>!</code></strong> to the time zone (e.g. <code>!US/Pacific</code>) - is to retrieve data that can be used
-    *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
-    *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
-    *         one corresponding to Daylight Savings) in the Autum.</li></ul>
+    * @param p_time_zone       The time zone for the time windows and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified. 
     * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
     * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window begins on ('T') or after ('F') the start time
     * @param p_end_inclusive   A flag ('T' or 'F') that specifies whether the time window ends on ('T') or before ('F') the end time
@@ -2462,7 +2393,7 @@ AS
     * </table>
     * @param p_units_out       The unit of the retrieved data values
     * @param p_cwms_ts_id_out  The case-corrected version of the time series identifier
-    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_time_zone_id    The location time zone
     * @param p_units_in        The unit to retrieve the data values in
     * @param p_cwms_ts_id_in   The time series identifier to retrieve data for
     * @param p_start_time      The start time of the time window
