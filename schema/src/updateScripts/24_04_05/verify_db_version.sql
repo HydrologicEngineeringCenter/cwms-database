@@ -9,7 +9,7 @@ begin
         where version_date = (select max(version_date) from &cwms_schema..av_db_change_log where application = 'CWMS')
       )
    loop
-      if rec.version <> '23.03.16' then
+      if rec.version <> '23.3.16' then
         cwms_err.raise('ERROR', 'Expected version 23.03.16, got version '||rec.version||' ('||rec.version_date||')');
       end if;
    end loop;

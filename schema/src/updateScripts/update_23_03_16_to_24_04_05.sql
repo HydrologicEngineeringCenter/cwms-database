@@ -81,33 +81,33 @@ PROMPT #########################################################################
 PROMPT ALTERING TABLES
 @./24_04_05/at_cwms_ts_id_table_Triggers
 
-## remove RESULT_CACHE (MODE DEFAULT) from at_data_stream_properties
-select * into at_data_stream_properties_tmp from at_data_stream_properties
-drop table at_data_stream_properties
-@../tables/at_data_stream_properties
-insert into at_data_stream_properties select * from at_data_stream_properties_tmp
-drop table at_data_stream_properties_tmp
+-- remove RESULT_CACHE (MODE DEFAULT) from at_data_stream_properties
+-- create table at_data_stream_properties_tmp as select * from at_data_stream_properties;
+-- drop table at_data_stream_properties;
+-- @../tables/at_data_stream_properties
+-- insert into at_data_stream_properties select * from at_data_stream_properties_tmp;
+-- drop table at_data_stream_properties_tmp;
 
-## remove RESULT_CACHE (MODE DEFAULT) from at_shef_decode_specs
-select * into at_shef_decode_specs_tmp from at_shef_decode_specs
-drop table at_shef_decode_specs
-@../tables/at_shef_decode_specs
-insert into at_shef_decode_specs select * from at_shef_decode_specs_tmp
-drop table at_shef_decode_specs_tmp
+-- remove RESULT_CACHE (MODE DEFAULT) from at_shef_decode_specs
+-- create table at_shef_decode_specs_tmp as select * from at_shef_decode_specs;
+-- drop table at_shef_decode_specs;
+-- @../tables/at_shef_decode_specs
+-- insert into at_shef_decode_specs select * from at_shef_decode_specs_tmp;
+-- drop table at_shef_decode_specs_tmp;
 
-## update at_ts_extents table
+-- update at_ts_extents table
 alter table at_ts_extents add has_non_zero_quality char(1);
 alter table at_ts_extents add constraint at_ts_extents_ck1 check (nvl(has_non_zero_quality, 'F') in ('T', 'F'));
-comment on table at_ts_extents column at_ts_extents.has_non_zero_quality  is 'Specifies whether the ENTIRE time series has ANY quality_code other than zero)';
+comment on column at_ts_extents.has_non_zero_quality  is 'Specifies whether the ENTIRE time series has ANY quality_code other than zero)';
 
-## create at_tsv_count table
+-- create at_tsv_count table
 @./24_04_05/at_tsv_count
 
-## update cwms_nation_sp table
+-- update cwms_nation_sp table
 alter table cwms_nation_sp alter column FIPS_CNTRY  not null;
 ALTER TABLE CWMS_NATION_SP ADD CONSTRAINT CWMS_NATION_SP_U2 UNIQUE (FIPS_CNTRY) ENABLE VALIDATE;
 
-## create run_stats table
+-- create run_stats table
 create global temporary table run_stats(
    runid varchar2(15), 
    name  varchar2(80), 
@@ -117,30 +117,6 @@ create global temporary table run_stats(
 PROMPT ################################################################################
 PROMPT ADDING USGS TS GROUP CATEGORY
 @./24_04_05/USGSDataAquisition
-
-
-PROMPT ################################################################################
-PROMPT CREATING AND ALTERING PACKAGE SPECIFICATIONS
-select systimestamp from dual;
-@../cwms/cwms_cache_pkg.sql
-@../cwms/cwms_ts_pkg_body.sql
-@../cwms/cwms_cat_pkg.sql
-@../cwms/cwms_env_pkg.sql
-@../cwms/cwms_forecast_pkg.sql
-@../cwms/cwms_level_pkg.sql
-@../cwms/cwms_loc_pkg.sql
-@../cwms/cwms_rating_pkg.sql
-@../cwms/cwms_schema_pkg.sql
-@../cwms/cwms_shef_pkg.sql
-@../cwms/cwms_text_pkg.sql
-@../cwms/cwms_ts_pkg.sql
-@../cwms/cwms_tsv_pkg.sql
-@../cwms/cwms_util_pkg.sql
-@../cwms/cwms_xchg_pkg.sql
-@../cwms/runstats_pkg.sql
-alter session set current_schema = &cwms_dba_schema;
-@../cwms_dba/cwms_user_admin_pkg
-alter session set current_schema = &cwms_schema;
 
 
 PROMPT ################################################################################
@@ -188,41 +164,6 @@ PROMPT CREATING AND ALTERING TYPE BODIES
 
 drop trigger at_tsv_count_trig
 
-???cwms_types.sql
-
-
-
-PROMPT ################################################################################
-PROMPT CREATING AND ALTERING PACKAGE BODIES
-select systimestamp from dual;
-@../cwms/cwms_pool_pkg_bod.sql
-@../cwms/cwms_ts_pkg_body.sql
-@../cwms/cwms_cache_pkg_body.sql
-@../cwms/cwms_cat_pkg_body.sql
-@../cwms/cwms_data_dissem_pkg_body.sql
-@../cwms/cwms_env_pkg_body.sql
-@../cwms/cwms_err_pkg_body.sql
-@../cwms/cwms_forecast_pkg_body.sql
-@../cwms/cwms_level_pkg_body.sql
-@../cwms/cwms_loc_pkg_body.sql
-@../cwms/cwms_lock_pkg_body.sql
-@../cwms/cwms_project_pkg_body.sql
-@../cwms/cwms_rating_pkg_body.sql
-@../cwms/cwms_shef_pkg_body.sql
-@../cwms/cwms_text_pkg_body.sql
-@../cwms/cwms_ts_pkg_body.sql
-@../cwms/cwms_ts_profile_pkg_body.sql
-@../cwms/cwms_tsv_pkg_body.sql
-@../cwms/cwms_util_pkg_body.sql
-@../cwms/cwms_vt_pkg_body.sql
-@../cwms/cwms_xchg_pkg_body.sql
-@../cwms/runstats_pkg_body.sql
-alter session set current_schema = &cwms_dba_schema;
-@../cwms_dba/cwms_user_admin_pkg_body
-alter session set current_schema = &cwms_schema;
-
-
-
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING VIEWS
 select systimestamp from dual;
@@ -262,6 +203,62 @@ delete from at_clob where id = '/VIEWDOCS/AV_TS_TEXT';
 @../cwms/views/av_ts_msg_archive
 @../cwms/views/av_ts_text
 @../cwms/views/stats 
+
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING PACKAGE SPECIFICATIONS
+select systimestamp from dual;
+@../cwms/cwms_cache_pkg.sql
+@../cwms/cwms_ts_pkg_body.sql
+@../cwms/cwms_cat_pkg.sql
+@../cwms/cwms_env_pkg.sql
+@../cwms/cwms_forecast_pkg.sql
+@../cwms/cwms_level_pkg.sql
+@../cwms/cwms_loc_pkg.sql
+@../cwms/cwms_rating_pkg.sql
+@../cwms/cwms_schema_pkg.sql
+@../cwms/cwms_shef_pkg.sql
+@../cwms/cwms_text_pkg.sql
+@../cwms/cwms_ts_pkg.sql
+@../cwms/cwms_tsv_pkg.sql
+@../cwms/cwms_util_pkg.sql
+@../cwms/cwms_xchg_pkg.sql
+@../cwms/runstats_pkg.sql
+alter session set current_schema = &cwms_dba_schema;
+@../cwms_dba/cwms_user_admin_pkg
+alter session set current_schema = &cwms_schema;
+
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING PACKAGE BODIES
+select systimestamp from dual;
+@../cwms/cwms_pool_pkg_bod.sql
+@../cwms/cwms_ts_pkg_body.sql
+@../cwms/cwms_cache_pkg_body.sql
+@../cwms/cwms_cat_pkg_body.sql
+@../cwms/cwms_data_dissem_pkg_body.sql
+@../cwms/cwms_env_pkg_body.sql
+@../cwms/cwms_err_pkg_body.sql
+@../cwms/cwms_forecast_pkg_body.sql
+@../cwms/cwms_level_pkg_body.sql
+@../cwms/cwms_loc_pkg_body.sql
+@../cwms/cwms_lock_pkg_body.sql
+@../cwms/cwms_project_pkg_body.sql
+@../cwms/cwms_rating_pkg_body.sql
+@../cwms/cwms_shef_pkg_body.sql
+@../cwms/cwms_text_pkg_body.sql
+@../cwms/cwms_ts_pkg_body.sql
+@../cwms/cwms_ts_profile_pkg_body.sql
+@../cwms/cwms_tsv_pkg_body.sql
+@../cwms/cwms_util_pkg_body.sql
+@../cwms/cwms_vt_pkg_body.sql
+@../cwms/cwms_xchg_pkg_body.sql
+@../cwms/runstats_pkg_body.sql
+alter session set current_schema = &cwms_dba_schema;
+@../cwms_dba/cwms_user_admin_pkg_body
+alter session set current_schema = &cwms_schema;
+
+
+
+
 
 PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
