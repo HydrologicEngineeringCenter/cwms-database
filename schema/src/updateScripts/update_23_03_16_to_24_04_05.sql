@@ -107,6 +107,11 @@ comment on column at_ts_extents.has_non_zero_quality  is 'Specifies whether the 
 alter table cwms_nation_sp alter column FIPS_CNTRY  not null;
 ALTER TABLE CWMS_NATION_SP ADD CONSTRAINT CWMS_NATION_SP_U2 UNIQUE (FIPS_CNTRY) ENABLE VALIDATE;
 
+alter table AT_PHYSICAL_LOCATION drop constraint AT_PHYSICAL_LOCATION_FK6;
+ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION_SP (FIPS_CNTRY);
+
+@./24_04_05/at_cwms_ts_spec_updates
+
 -- create run_stats table
 create global temporary table run_stats(
    runid varchar2(15), 
