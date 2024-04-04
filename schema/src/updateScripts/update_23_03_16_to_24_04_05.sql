@@ -113,6 +113,7 @@ create global temporary table run_stats(
    name  varchar2(80), 
    value number(*,0)
 ) on commit preserve rows;
+commit;
 
 PROMPT ################################################################################
 PROMPT ADDING USGS TS GROUP CATEGORY
@@ -223,9 +224,7 @@ select systimestamp from dual;
 @../cwms/cwms_util_pkg.sql
 @../cwms/cwms_xchg_pkg.sql
 @../cwms/runstats_pkg.sql
-alter session set current_schema = &cwms_dba_schema;
-@../cwms_dba/cwms_user_admin_pkg
-alter session set current_schema = &cwms_schema;
+
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING PACKAGE BODIES
@@ -252,12 +251,6 @@ select systimestamp from dual;
 @../cwms/cwms_vt_pkg_body.sql
 @../cwms/cwms_xchg_pkg_body.sql
 @../cwms/runstats_pkg_body.sql
-alter session set current_schema = &cwms_dba_schema;
-@../cwms_dba/cwms_user_admin_pkg_body
-alter session set current_schema = &cwms_schema;
-
-
-
 
 
 PROMPT ################################################################################
