@@ -105,7 +105,10 @@ comment on column at_ts_extents.has_non_zero_quality  is 'Specifies whether the 
 
 --update CWMS_STATE to add nation_code
 @./24_04_05/cwms_state
-@./24_05_04/CWMS_COUNTY
+
+@./24_04_05/CWMS_COUNTY
+
+insert into CWMS_USGS_FLOW_ADJ(ADJ_ID, ADJ_NAME, DESCRIPTION) values('NONE','Unknown','Transfer from null code');
 
 drop table CWMS_NATION
 -- update cwms_nation_sp table
@@ -133,7 +136,7 @@ PROMPT ADDING USGS TS GROUP CATEGORY
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING TYPE SPECIFICATIONS
 select systimestamp from dual;
-# exicute type body code...
+
 drop type location_level_t force;
 drop type location_obj_t force;
 drop type location_ref_t force;
