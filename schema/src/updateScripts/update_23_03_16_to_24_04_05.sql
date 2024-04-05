@@ -103,6 +103,11 @@ comment on column at_ts_extents.has_non_zero_quality  is 'Specifies whether the 
 -- create at_tsv_count table
 @./24_04_05/at_tsv_count
 
+--update CWMS_STATE to add nation_code
+@./24_04_05/cwms_state
+@./24_05_04/CWMS_COUNTY
+
+drop table CWMS_NATION
 -- update cwms_nation_sp table
 alter table cwms_nation_sp alter column FIPS_CNTRY  not null;
 ALTER TABLE CWMS_NATION_SP ADD CONSTRAINT CWMS_NATION_SP_U2 UNIQUE (FIPS_CNTRY) ENABLE VALIDATE;
@@ -211,30 +216,9 @@ delete from at_clob where id = '/VIEWDOCS/AV_TS_TEXT';
 @../cwms/views/stats 
 
 PROMPT ################################################################################
-PROMPT CREATING AND ALTERING PACKAGE SPECIFICATIONS
-select systimestamp from dual;
-@../cwms/cwms_cache_pkg.sql
-@../cwms/cwms_ts_pkg_body.sql
-@../cwms/cwms_cat_pkg.sql
-@../cwms/cwms_env_pkg.sql
-@../cwms/cwms_forecast_pkg.sql
-@../cwms/cwms_level_pkg.sql
-@../cwms/cwms_loc_pkg.sql
-@../cwms/cwms_rating_pkg.sql
-@../cwms/cwms_schema_pkg.sql
-@../cwms/cwms_shef_pkg.sql
-@../cwms/cwms_text_pkg.sql
-@../cwms/cwms_ts_pkg.sql
-@../cwms/cwms_tsv_pkg.sql
-@../cwms/cwms_util_pkg.sql
-@../cwms/cwms_xchg_pkg.sql
-@../cwms/runstats_pkg.sql
-
-
-PROMPT ################################################################################
 PROMPT CREATING AND ALTERING PACKAGE BODIES
 select systimestamp from dual;
-@../cwms/cwms_pool_pkg_bod.sql
+@../cwms/cwms_pool_pkg_body.sql
 @../cwms/cwms_ts_pkg_body.sql
 @../cwms/cwms_cache_pkg_body.sql
 @../cwms/cwms_cat_pkg_body.sql
@@ -257,6 +241,25 @@ select systimestamp from dual;
 @../cwms/cwms_xchg_pkg_body.sql
 @../cwms/runstats_pkg_body.sql
 
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING PACKAGE SPECIFICATIONS
+select systimestamp from dual;
+@../cwms/cwms_cache_pkg.sql
+@../cwms/cwms_ts_pkg_body.sql
+@../cwms/cwms_cat_pkg.sql
+@../cwms/cwms_env_pkg.sql
+@../cwms/cwms_forecast_pkg.sql
+@../cwms/cwms_level_pkg.sql
+@../cwms/cwms_loc_pkg.sql
+@../cwms/cwms_rating_pkg.sql
+@../cwms/cwms_schema_pkg.sql
+@../cwms/cwms_shef_pkg.sql
+@../cwms/cwms_text_pkg.sql
+@../cwms/cwms_ts_pkg.sql
+@../cwms/cwms_tsv_pkg.sql
+@../cwms/cwms_util_pkg.sql
+@../cwms/cwms_xchg_pkg.sql
+@../cwms/runstats_pkg.sql
 
 PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
