@@ -20,6 +20,7 @@ begin
                   and object_name not like 'SYS\_%' escape '\'
              order by object_name)
    loop
+      continue when rec.object_name in ('FILE_T', 'BLOB_FILE_T', 'TEXT_FILE_T');
       dbms_output.put_line('Dropping type '||rec.object_name);
       execute immediate 'drop type '||rec.object_name||' force';
    end loop;
@@ -191,7 +192,9 @@ end;
 @@cwms/types/tstz_tab_t
 @@cwms/types/date_range_t
 @@cwms/types/date_range_t-body
-
+@@cwms/types/file_t-body
+@@cwms/types/text_file_t-body
+@@cwms/types/blob_file_t-body
 -- HOST pwd
 @@rowcps_types
 @@cwms_types_rating

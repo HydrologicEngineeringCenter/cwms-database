@@ -1,4 +1,4 @@
-/* Formatted on 2007/11/14 12:53 (Formatter Plus v4.8.8) */
+Formatted on 2007/11/14 12:53 (Formatter Plus v4.8.8) */
 /* CWMS Version 2.0 --
 This script should be run by the cwms schema owner.
 */
@@ -6304,9 +6304,9 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_virtual_location_level
 @@./cwms/tables/at_vloc_lvl_constituent
 @@./cwms/tables/at_fcst_spec
-@@./cwms/tables/at_fcst_inst
+@@./cwms/tables/at_fcst_location
 @@./cwms/tables/at_fcst_time_series
-@@./cwms/tables/at_fcst_file
+@@./cwms/tables/at_fcst_inst
 @@./cwms/tables/at_fcst_info
 @@./cwms/tables/run_stats
 

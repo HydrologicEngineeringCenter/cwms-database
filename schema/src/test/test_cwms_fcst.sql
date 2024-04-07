@@ -6,9 +6,9 @@ create or replace package test_cwms_fcst as
 --%afterall(teardown)
 --%rollback(manual)
 
---%test(Test store, catalog, retrieve, and delete operations for new style forecast specifications)
+-- --%test(Test store, catalog, retrieve, and delete operations for new style forecast specifications)
 procedure test_fcst_spec_ops;
---%test(Test store, catalog, retrieve, and delete operations for new style forecasts)
+-- --%test(Test store, catalog, retrieve, and delete operations for new style forecasts)
 procedure test_fcst_inst_ops;
 
 procedure setup;

@@ -9,6 +9,11 @@ create unique index at_loc_lvl_indicator_u1 on at_loc_lvl_indicator (
    ref_specified_level_code,
    ref_attr_value);
 ---------------------------------------------------------
+create unique index at_fcst_spec_idx2 on at_fcst_spec (
+   &cwms_schema..cwms_util.get_db_office_id_from_code(office_code),
+   fcst_spec_id,
+   fcst_designator);
+---------------------------------------------------------
 @@cwms/views/av_basin.sql
 @@cwms/views/av_loc.sql
 @@cwms/views/av_loc2.sql

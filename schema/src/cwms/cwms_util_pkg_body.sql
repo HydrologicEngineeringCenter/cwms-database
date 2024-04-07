@@ -647,7 +647,7 @@ as
    END get_db_office_code;
 
    FUNCTION get_db_office_id_from_code (p_db_office_code IN NUMBER)
-      RETURN VARCHAR2
+      RETURN VARCHAR2 DETERMINISTIC
    IS
       l_db_office_id   VARCHAR2 (64);
    BEGIN
@@ -6963,6 +6963,132 @@ as
 
       return l_value = 'T';
    end output_debug_info;
+
+   function find_closing(
+      p_text      in varchar2,
+      p_start_pos in binary_integer)
+      return binary_integer
+   is
+      l_open_char  varchar2(1);
+      l_close_char varchar2(1);
+      l_level      binary_integer := 0;
+   begin
+      if p_start_pos > length(p_text) then
+         cwms_err.raise('ERROR', 'Position is greater than text length');
+      end if;
+      l_open_char  := substr(p_text, p_start_pos, 1);
+      l_close_char := case l_open_char
+                      when '{' then '}'
+                      when '[' then ']'
+                      when '(' then ')'
+                      else null
+                      end;
+      if l_close_char is null then
+         cwms_err.raise('ERROR', 'Expected {, [, or (, got '||nvl(l_open_char, '<NULL>'));
+      end if;
+      for i in p_start_pos..length(p_text) loop
+         case substr(p_text, i, 1)
+         when l_open_char then
+            l_level := l_level + 1;
+         when l_close_char then
+            l_level := l_level - 1;
+            if l_level = 0 then
+               --------------
+               -- found it --
+               --------------
+               return i;
+            end if;
+         else
+            null;
+         end case;
+      end loop;
+      ---------------
+      -- not found --
+      ---------------
+      return null;
+   end find_closing;
+
+   function parse_json(
+      p_text in varchar2)
+      return json_value_tab_t
+   is
+      key_value_pairs json_value_tab_t;
+      l_len           binary_integer;
+      l_start         binary_integer;
+      l_end           binary_integer;
+      l_key           varchar2(32767);
+      l_value         varchar2(32767);
+      l_escape        boolean;
+      l_char          varchar2(1);
+      l_value_type    json_value_type_t;
+   begin
+      ----------------------------
+      -- verify it's valid JSON --
+      ----------------------------
+      if p_text is not json then
+         cwms_err.raise('ERROR', 'Text is not valid JSON');
+      end if;
+      ----------------------------------
+      -- manually parse the JSON text --
+      ----------------------------------
+      l_len := length(p_text);
+      l_end := 1;
+      while l_end < l_len loop
+         l_start := regexp_instr(p_text, '".+?"\s*:\s*', l_end, 1, 0, 'm');
+         exit when l_start = 0;
+         l_end := regexp_instr(p_text, '".+?"\s*:\s*', l_start, 1, 1, 'm');
+         l_key := regexp_replace(substr(p_text, l_start, l_end-l_start), '"(.+?)"\s*:\s*', '\1', 1, 1, 'm');
+         l_start := l_end;
+         l_value_type := case substr(p_text, l_start, 1)
+                         when '{' then json_type_object
+                         when '[' then json_type_array
+                         when '"' then json_type_string
+                         when 't' then json_type_boolean
+                         when 'f' then json_type_boolean
+                         when 'n' then json_type_null
+                         else json_type_number
+                         end;
+         case l_value_type
+         when json_type_string then
+            l_start  := l_start+1;
+            l_escape := false;
+            l_value  := null;
+            for i in l_start..l_len loop
+               l_end := i;
+               l_char := substr(p_text, i, 1);
+               case l_char
+               when '\' then l_escape := not l_escape;
+               when '"' then if l_escape then l_escape := false; else exit; end if;
+               else l_escape := false;
+               end case;
+               if not l_escape then
+                  l_value := l_value || l_char;
+               end if;
+            end loop;
+         when json_type_number then
+            l_end := regexp_instr(p_text, '-?\d+(\.\d+)?([Ee][+-]?\d+)?', l_start, 1, 1, 'm');
+            l_value := substr(p_text, l_start, l_end-l_start);
+         when json_type_boolean then
+            l_end := regexp_instr(p_text, '\w+', l_start, 1, 1, 'm');
+            l_value := substr(p_text, l_start, l_end-l_start);
+         when json_type_null then
+            l_end := regexp_instr(p_text, '\w+', l_start, 1, 1, 'm');
+            l_value := substr(p_text, l_start, l_end-l_start);
+         when json_type_array then
+            l_end := cwms_util.find_closing(p_text, l_start);
+            l_value := substr(p_text, l_start, l_end-l_start + 1);
+         when json_type_object then
+            l_end := cwms_util.find_closing(p_text, l_start);
+            l_value := substr(p_text, l_start, l_end-l_start + 1);
+         end case;
+         key_value_pairs(l_key) := json_value_rec_t(l_value_type, l_value);
+         l_start := l_end + 1;
+      end loop;
+      ----------------------------
+      -- return the parsed data --
+      ----------------------------
+      return key_value_pairs;
+   end parse_json;
 
 begin
    g_timezone_cache.name              := 'cwms_util.g_timezone_cache';

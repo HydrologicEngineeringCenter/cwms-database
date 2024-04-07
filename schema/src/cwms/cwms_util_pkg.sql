@@ -7,6 +7,48 @@ CREATE OR REPLACE PACKAGE cwms_util
  * @since CWMS 2.0
  */
 AS
+   /**
+    * Type used in json_value_rec_t
+    */
+   subtype json_value_type_t is varchar2(1);
+   /**
+    * Type used in json_value_rec_t
+    */
+   subtype json_value_t is varchar2(32767);
+   /**
+    * Type used in json_value_tab_t
+    */
+   type json_value_rec_t is record(type json_value_type_t, value json_value_t);
+   /**
+    * Type retured from parse_json
+    */
+   type json_value_tab_t is table of json_value_rec_t index by json_value_t;
+   /**
+    * Specifies the value is a JSON string
+    */
+   json_type_string  constant json_value_type_t := 'S';
+   /**
+    * Specifies the value is a JSON number
+    */
+   json_type_number  constant json_value_type_t := 'N';
+   /**
+    * Specifies the value is a JSON boolean
+    */
+   json_type_boolean constant json_value_type_t := 'B';
+   /**
+    * Specifies the value is a JSON null
+    */
+   json_type_null    constant json_value_type_t := 'L';
+   /**
+    * Specifies the value is a JSON array
+    */
+   json_type_array   constant json_value_type_t := 'A';
+   /**
+    * Specifies the value is a JSON object
+    */
+   json_type_object  constant json_value_type_t := 'O';
+
+
    g_timezone_cache              cwms_cache.str_str_cache_t;
    g_time_zone_name_cache        cwms_cache.str_str_cache_t;
    g_time_zone_code_cache        cwms_cache.str_str_cache_t;
@@ -997,7 +1039,7 @@ AS
     *
     */
    FUNCTION get_db_office_id_from_code (p_db_office_code IN NUMBER)
-      RETURN VARCHAR2;
+      RETURN VARCHAR2 DETERMINISTIC;
    /**
     * Replace glob wildcard chars (?,*) with SQL ones (_,%), using '\\' as an
     * escape character.
@@ -3202,6 +3244,28 @@ AS
     */
    function output_debug_info
       return boolean;
+   /**
+    * Find the position of the closing character in text string
+    *
+    * @param t_text      The text to find the closing character position in
+    * @param p_start_pos The position of the opening character, must be one of {, [, or ('
+    *
+    * @return The position of the closing character, if any, otherwise NULL
+    */
+   function find_closing(
+      p_text      in varchar2,
+      p_start_pos in binary_integer)
+      return binary_integer;
+   /**
+    * Parses JSON text into key/value pairs. Only top-level names are included - the value of any name that is
+    * an array or object is the actual text of the array or object
+    *
+    * @param p_text The JSON text to be parsed
+    * @return The key/value pairs
+    */
+   function parse_json(
+      p_text in varchar2)
+      return json_value_tab_t;
 END cwms_util;
 /
 set escape off

@@ -3015,20 +3015,9 @@ AS
          -- forecasts --
          ---------------
          -- AT_FCST_xxx
-         for i in 1..l_location_codes.count loop
-            for rec in (select fcst_spec_id
-                          from at_fcst_spec
-                         where office_code = l_db_office_code
-                           and location_code = l_location_codes(i)
-                       )
-            loop
-               cwms_fcst.delete_fcst_spec(
-                  p_fcst_spec_id   => rec.fcst_spec_id,
-                  p_location_id    => cwms_util.get_location_id(l_location_codes(i)),
-                  p_delete_action  => cwms_util.delete_all,
-                  p_office_id      => l_db_office_id);
-            end loop;
-         end loop;
+            delete
+              from at_fcst_location
+             where primary_location_code in (select * from table (l_location_codes));
          -- AT_FORECAST_xxx
          select clob_code
            bulk collect

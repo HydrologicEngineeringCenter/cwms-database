@@ -39,7 +39,7 @@ DECLARE
       'av_fcst_spec',
       'av_fcst_inst',
       'av_fcst_time_series',
-      'av_fcst_file',
+      'av_fcst_location',
       'av_fcst_info',
       'av_forecast',              -- created in at_schema_2
       'av_forecast_ex',           -- created in at_schema_2
@@ -182,7 +182,7 @@ END;
 @@cwms/views/av_fcst_spec
 @@cwms/views/av_fcst_inst
 @@cwms/views/av_fcst_time_series
-@@cwms/views/av_fcst_file
+@@cwms/views/av_fcst_location
 @@cwms/views/av_fcst_info
 @@cwms/views/av_gage
 @@cwms/views/av_gage_method
