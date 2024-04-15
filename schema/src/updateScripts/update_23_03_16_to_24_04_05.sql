@@ -242,6 +242,7 @@ select systimestamp from dual;
 @../cwms/cwms_util_pkg_body.sql
 @../cwms/cwms_vt_pkg_body.sql
 @../cwms/cwms_xchg_pkg_body.sql
+@../cwms/cwms_msg_pkg_body.sql
 @../cwms/runstats_pkg_body.sql
 
 PROMPT ################################################################################
@@ -260,8 +261,10 @@ select systimestamp from dual;
 @../cwms/cwms_text_pkg.sql
 @../cwms/cwms_ts_pkg.sql
 @../cwms/cwms_tsv_pkg.sql
+@../cwms/cwms_vt_pkg.sql
 @../cwms/cwms_util_pkg.sql
 @../cwms/cwms_xchg_pkg.sql
+@../cwms/cwms_msg_pkg.sql
 @../cwms/runstats_pkg.sql
 
 PROMPT ################################################################################
