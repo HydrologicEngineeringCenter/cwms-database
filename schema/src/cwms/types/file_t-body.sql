@@ -4,7 +4,7 @@ create or replace type body file_t as
       return varchar2
    is
    begin
-      cwms_err.raise('ERROR', 'Validate procedure cannot be called on abstract type');
+      cwms_err.raise('ERROR', 'To_string function cannot be called on abstract type');
    end to_string;
    
    member procedure validate_obj
