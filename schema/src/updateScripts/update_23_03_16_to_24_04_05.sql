@@ -101,7 +101,7 @@ alter table at_ts_extents add constraint at_ts_extents_ck1 check (nvl(has_non_ze
 comment on column at_ts_extents.has_non_zero_quality  is 'Specifies whether the ENTIRE time series has ANY quality_code other than zero)';
 
 -- create at_tsv_count table
-@./24_04_05/at_tsv_count
+@./24_04_05/at_tsv_count_1
 
 --update CWMS_STATE to add nation_code
 @./24_04_05/cwms_state
@@ -176,7 +176,7 @@ PROMPT CREATING AND ALTERING TYPE BODIES
 @../cwms/types/vdatum_stream_rating_t-body
 @../cwms/types/zlocation_level_t-body
 
-drop trigger at_tsv_count_trig
+drop trigger at_tsv_count_trig;
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING VIEWS
@@ -326,8 +326,12 @@ begin
    end loop;
 end;
 /
+PROMPT ################################################################################
+PROMPT CREATING AT_TSV_COUNT TRIGGERS
+@./24_04_05/at_tsv_count_2
+PROMPT ################################################################################
+PROMPT RESTORING PRE-UPDATE PRIVILEGES
 @@./util/restore_privs
-
 PROMPT ################################################################################
 PROMPT RECOMPILING SCHEMA
 select systimestamp from dual;
