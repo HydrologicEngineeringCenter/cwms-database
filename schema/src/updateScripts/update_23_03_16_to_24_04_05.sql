@@ -110,9 +110,9 @@ comment on column at_ts_extents.has_non_zero_quality  is 'Specifies whether the 
 
 insert into CWMS_USGS_FLOW_ADJ(ADJ_ID, ADJ_NAME, DESCRIPTION) values('NONE','Unknown','Transfer from null code');
 
-drop table CWMS_NATION
+
 -- update cwms_nation_sp table
-alter table cwms_nation_sp alter column FIPS_CNTRY  not null;
+alter table cwms_nation_sp modify FIPS_CNTRY not null;
 ALTER TABLE CWMS_NATION_SP ADD CONSTRAINT CWMS_NATION_SP_U2 UNIQUE (FIPS_CNTRY) ENABLE VALIDATE;
 
 alter table AT_PHYSICAL_LOCATION drop constraint AT_PHYSICAL_LOCATION_FK6;
@@ -219,6 +219,28 @@ delete from at_clob where id = '/VIEWDOCS/AV_TS_TEXT';
 @../cwms/views/stats 
 
 PROMPT ################################################################################
+PROMPT CREATING AND ALTERING PACKAGE SPECIFICATIONS
+select systimestamp from dual;
+@../cwms/cwms_cache_pkg.sql
+@../cwms/cwms_ts_pkg_body.sql
+@../cwms/cwms_cat_pkg.sql
+@../cwms/cwms_env_pkg.sql
+@../cwms/cwms_forecast_pkg.sql
+@../cwms/cwms_level_pkg.sql
+@../cwms/cwms_loc_pkg.sql
+@../cwms/cwms_rating_pkg.sql
+@../cwms/cwms_shef_pkg.sql
+@../cwms/cwms_text_pkg.sql
+@../cwms/cwms_ts_pkg.sql
+@../cwms/cwms_tsv_pkg.sql
+@../cwms/cwms_vt_pkg.sql
+@../cwms/cwms_util_pkg.sql
+@../cwms/cwms_xchg_pkg.sql
+@../cwms/cwms_msg_pkg.sql
+@../cwms/runstats_pkg.sql
+create or replace public synonym runstats for runstats;
+
+PROMPT ################################################################################
 PROMPT CREATING AND ALTERING PACKAGE BODIES
 select systimestamp from dual;
 @../cwms/cwms_pool_pkg_body.sql
@@ -246,30 +268,10 @@ select systimestamp from dual;
 @../cwms/runstats_pkg_body.sql
 
 PROMPT ################################################################################
-PROMPT CREATING AND ALTERING PACKAGE SPECIFICATIONS
-select systimestamp from dual;
-@../cwms/cwms_cache_pkg.sql
-@../cwms/cwms_ts_pkg_body.sql
-@../cwms/cwms_cat_pkg.sql
-@../cwms/cwms_env_pkg.sql
-@../cwms/cwms_forecast_pkg.sql
-@../cwms/cwms_level_pkg.sql
-@../cwms/cwms_loc_pkg.sql
-@../cwms/cwms_rating_pkg.sql
-@../cwms/cwms_schema_pkg.sql
-@../cwms/cwms_shef_pkg.sql
-@../cwms/cwms_text_pkg.sql
-@../cwms/cwms_ts_pkg.sql
-@../cwms/cwms_tsv_pkg.sql
-@../cwms/cwms_vt_pkg.sql
-@../cwms/cwms_util_pkg.sql
-@../cwms/cwms_xchg_pkg.sql
-@../cwms/cwms_msg_pkg.sql
-@../cwms/runstats_pkg.sql
-
-PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
 select systimestamp from dual;
+drop table CWMS_NATION;
+@./24_04_05/at_tsv_count_2
 declare
    type usernames_t is table of varchar2(30);
    usernames usernames_t;
@@ -326,9 +328,6 @@ begin
    end loop;
 end;
 /
-PROMPT ################################################################################
-PROMPT CREATING AT_TSV_COUNT TRIGGERS
-@./24_04_05/at_tsv_count_2
 PROMPT ################################################################################
 PROMPT RESTORING PRE-UPDATE PRIVILEGES
 @@./util/restore_privs
