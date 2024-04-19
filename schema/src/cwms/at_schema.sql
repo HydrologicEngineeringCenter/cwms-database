@@ -292,7 +292,8 @@ ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK2 FOREIGN
 ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK3 FOREIGN KEY (TIME_ZONE_CODE) REFERENCES CWMS_TIME_ZONE (TIME_ZONE_CODE);
 ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK4 FOREIGN KEY (LOCATION_KIND) REFERENCES CWMS_LOCATION_KIND (LOCATION_KIND_CODE);
 ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK5 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
-ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION_SP (FIPS_CNTRY);
+-- This completes successfully but is missing when the build finishes!!! Moved to happen later.
+-- ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION_SP (FIPS_CNTRY);
 
 CREATE UNIQUE INDEX AT_PHYSICAL_LOCATION_U1 ON AT_PHYSICAL_LOCATION (BASE_LOCATION_CODE, UPPER(SUB_LOCATION_ID))
 LOGGING
@@ -1951,6 +1952,9 @@ ALTER TABLE AT_TS_CATEGORY ADD CONSTRAINT AT_TS_CATEGORY_FK1 FOREIGN KEY (DB_OFF
 
 INSERT INTO at_ts_category VALUES (0, 'Default',        53, 'Default');
 INSERT INTO at_ts_category VALUES (1, 'Agency Aliases', 53, 'Time series aliases for various agencies');
+INSERT INTO at_ts_category VALUES (3, 'Data Dissemination', 53, 'These TS Groups are used to manage which TS Ids are streamed to various data dissemination databases.');
+INSERT INTO at_ts_category VALUES (10, 'Data Acquisition', 53, 'These TS Groups are used to manage data aquisition from other organizations');
+
 
 --------
 --------
@@ -2049,6 +2053,11 @@ ALTER TABLE at_ts_group ADD (
 /
 INSERT INTO at_ts_group VALUES (0, 0, 'Default',        'All Time Series',                           53, NULL, NULL);
 INSERT INTO at_ts_group VALUES (1, 1, 'USACE Standard', 'USACE National Standard Naming Convention', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (100, 3, 'CorpsNet Include List', 'These TS Id''s will be streamed to the National CorpsNet CWMS DB', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (101, 3, 'CorpsNet Exclude List', 'These TS Id''s will not be streamed to the National CorpsNet DB', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (102, 3, 'DMZ Include List', 'These TS Id''s will be streamed to the National DMZ CWMS DB', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (103, 3, 'DMZ Exclude List', 'These TS Id''s will not be streamed to the National DMZ CWMS DB', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (201, 10, 'USGS TS Data Acquisition', 'These TS Id''s will be used to store data acquired from the USGS', 53, NULL, NULL);
 COMMIT ;
 -----
 
@@ -6304,5 +6313,4 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_virtual_location_level
 @@./cwms/tables/at_vloc_lvl_constituent
 @@./cwms/tables/run_stats
-
 
