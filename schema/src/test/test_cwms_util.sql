@@ -829,13 +829,19 @@ begin
       end loop;
    end if;
 
-   dbms_output.put_line('GETS  : 1='||l_gets(1)||chr(9) ||', 2='||l_gets(2)||chr(9) ||', Ratio='||round(l_gets(1)/l_gets(2), 2));
-   dbms_output.put_line('READS : 1='||l_reads(1)||chr(9)||', 2='||l_reads(2)||chr(9)||', Ratio='||round(l_reads(1)/l_reads(2), 2));
-   dbms_output.put_line('TIMES : 1='||l_times(1)||chr(9)||', 2='||l_times(2)||chr(9)||', Ratio='||round(l_times(1)/l_times(2), 2));
+   dbms_output.put_line('GETS  : 1='||l_gets(1)||chr(9) ||', 2='||l_gets(2)||chr(9) ||', Ratio='||case when l_gets(2) = 0 then '???' else to_char(round(l_gets(1)/l_gets(2), 2)) end);
+   dbms_output.put_line('READS : 1='||l_reads(1)||chr(9)||', 2='||l_reads(2)||chr(9)||', Ratio='||case when l_reads(2) = 0 then '???' else to_char(round(l_reads(1)/l_reads(2), 2)) end);
+   dbms_output.put_line('TIMES : 1='||l_times(1)||chr(9)||', 2='||l_times(2)||chr(9)||', Ratio='||case when l_times(2) = 0 then '???' else to_char(round(l_times(1)/l_times(2), 2)) end);
 
-   ut.expect(round(l_gets(1)/l_gets(2), 1)).to_equal(1);
-   ut.expect(round(l_reads(1)/l_reads(2), 1)).to_equal(1);
-   ut.expect(round(l_times(1)/l_times(2), 1)).to_equal(1);
+   if l_gets(2) > 0 then
+      ut.expect(round(l_gets(1)/l_gets(2), 1)).to_equal(1);
+   end if;
+   if l_reads(2) > 0 then
+      ut.expect(round(l_reads(1)/l_reads(2), 1)).to_equal(1);
+   end if;
+   if l_times(2) > 0 then
+      ut.expect(round(l_times(1)/l_times(2), 1)).to_equal(1);
+   end if;
 end test_runstats;
 end test_cwms_util;
 /
