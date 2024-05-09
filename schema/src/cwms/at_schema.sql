@@ -3136,6 +3136,7 @@ create global temporary table at_session_info
 )
 on commit preserve rows
 /
+grant select on at_session_info to cwms_user;
 
 create table cwms_media_type (
    media_type_code    number(4)    not null,
