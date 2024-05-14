@@ -129,73 +129,16 @@ NOTE the dockerimage is not generally friendly for diagnosing thing as it's inte
 for use after the build scripts have been verified. The buildCWMS_DB.log and other logging .txt
 files will be printed to the schema installers stdout.
 
-# Docker Compose
 
-The Compose file `docker-compose.yml` is a [YAML](https://yaml.org/) file defining services, networks and volumes for `cwms_database` application.  Included services are `database`, `schema`, `cwms-data` and `radar`.  Each of these services are listed in detail below.
+### Build for dev
 
-### Docker Network and Volume
+It is recommend that you open the schema directory as the root directory in any IDE you should.
 
-The Compose file defines the network and volume as external.  Therefore, these will need to be created before starting services.
-
-Terminal:
-
-- docker network create ***network-name-in-compose***
-- docker volume create ***volume-name-in-compose***
-
-### Docker Compose UP
-
-Some defined services are dependent on others.  This does require a startup sequence with Compose and not starting everything at the same time.  The `database` service must be started first and ready before initializing the schema.  After the database is ready and the schema install has completed, `cwms-data` service can start.  The schema install and cwms-data services do not have to stay `alive` and will stop after their completion.  The `radar` service can start without dependencies but typically started last.
-
-
-Terminal:
-
-- docker compose up [--build] database
-- docker compose up [--build] schema
-- docker compose up [--build] cwms-data
-- docker compose up [--build] radar
-
-## Docker Compose Services
-----
-### Database
-
-Oracle container using image `registry.hecdev.net/oracle/database:19.3.0-ee`.  Two of the three environment variables can be modified but are already set to support local development.  Changing variable values does require updating environement variables in the other services.
-
-### Schema
-
-CWMS Schema Installer is this repository building from context `./schema`.  Environment variables are set for local development.  Modifying any of these values will require updating other services environment variable values.
-
-### CWMS Data
-
-CWMS Data service is a container running Ubuntu and local Python package `cwmsdata` to initialize the CWMS database with locations (`usgs-sites`) and time series (`usgs-ts`).  Both `usgs-sites` and `usgs-ts` are command-line tools that take similar arguments to filter sites by [HUC](http://water.usgs.gov/GIS/huc_name.html), list of locations ([NWIS Mapper](http://maps.waterdata.usgs.gov/mapper/)) and/or [parameter codes](http://help.waterdata.usgs.gov/codes-and-parameters/parameters).
-
-An entry point shell script (`entrypoint.sh`) can be used to execute `cwmsdata` command-line tools `usgs-sites` or `usgs-ts`.  The following is the usage for `entrypopint.sh`
-
-    a) # Keep the container alive
-    c) # Switches for commands
-    s) # Run usgs-sites
-    t) # Run usgs-ts
-    h) # Print usage message
-
-Example `CMD` entry for `entrypoint.sh` that loads sites and time series data in Hydrologic Unit Code (HUC) area `05130105` for parameters `00060` and `00065`.
-
-```
-CMD [ "-st", "-c", "--huc 05130105 --parameter_code 00060 00065" ]
-```
-
-
-### CWMS-Data-API
-
-The Compose file references [USACE/cwms-data-api](https://github.com/USACE/cwms-data-api) locally with a relative path.  Modify the `radar:build:context` path according to local setup.
-
-----
-
-### build for dev
-
-copy the wcdba_overrides.xml or teamcity_overrides.xml to build/localoverrides.xml and alter the settings internally to match the test database you have either setup or had provided.
+Copy the teamcity_overrides.xml to build/localoverrides.xml (or preferably to a directory outside the build tree) and alter the settings internally to match the test database you have either setup or had provided.
 
 It is assumed that apex (20.1 at time of writing) has previously been installed in the database; failure to meet this condition will cause the build to fail. Additionally, the Oracle Instant client with the SQL*Plus and Tools packages is required to be set in the PATH variable. 
 
-to build the database run the following:
+To build the database run the following:
 
     ant -Dbuilduser.overrides=build/local_overrides.xml clean build
 
@@ -204,7 +147,7 @@ to build the database run the following:
 *build* will initialize the database.
 
 
-### test
+### Tests
 
 You must have utplsql from github.com/utPLSQL/utPLSQL-cli on your path. 
 If you get the error that the oci version doesn't match while trying to run the tests remove all of the oracle jar from the utPLSQL-cli installation path *lib* directory and copy the ojdbc8.jar from your instantclient folder. (This issue has previously been reported to the utPLSQL team and should eventually be fixed.)
@@ -212,6 +155,8 @@ If you get the error that the oci version doesn't match while trying to run the 
 to run the tests 
 
    ant -Dbuilduser.overrides=build/local_overrides.xml test
+   # or likely more often
+   ant -Dbuilduser.overrides=build/local_overrides.xml clean build test
 
 The test framework will be installed, and the tests will be run. The following files will be created:
 
@@ -220,19 +165,30 @@ The test framework will be installed, and the tests will be run. The following f
 - build/coverage.html Code coverage in a pretty HTML format.
 - build/coverage.xml Code coverage in a format that TeamCity and others can pick up. It is the Cobertura format.
 
+The tests themselves are simply PL/SQL procedures and the utPLSQL library provides facitilies for assertions and reporting.
+There are multiple test targets called by the root `test` target in ant. Each target has a unique set of tests and a specific username to set permissions correctly.
+
+The full suite of tests usually takes about 5-7 minutes to run.
+
+When creating a new tests, if the test makes sense to add to an existing file, do so, that is easier. If you need to create a new test suite, consider the usage
+of the code under test and add it to the target with appropriate credentials.
+
+NOTE: Due to the complexity of the system, we don't currently have a good way to tell the ant targets exactly which tests to run. You may edit the build.xml to comment out the tests
+you don't want while doing your initial work. Try to revert the changes before PR submission (unless draft) though we *usually* catch them during review.
+
+NOTE2: If enough people complain about this I'll take the time to you know, actually see if we can fix that situation.
+
 ### Modifying the build
 
 For simple modifications provide a pull request with the build code modified as normal.
 
-If you want to create a new build configuration you will first need to submit a pull request with the code with the build steps commented out but otherwise generating the new configuration. 
-Once everyone agrees on this new step we will merge it into master, which will cause teamcity to generate and link the new configuration, and you will need to continue further on a new branch so that TeamCity can actually run the steps. This is a current limitation of TeamCity. 
-
 
 ### Update scripts and Releases
 
--  We're not going to bump the version on everything change we'll leave the pom.xml at MAJOR-SNAPSHOT (I think we'll go ahead and push to nexus)
+- We're not going to bump the version on everything change we'll leave the pom.xml at MAJOR-SNAPSHOT (I think we'll go ahead and push to nexus)
 - We'll keep a running update script: update_18.1.8_to_99_99_99.sql (if you make a change the correct alteration commands should go in there.)
 - When we do a release it will be a PR to a release branch (e.g. v18 or v18.1 or something, still working exactly what out.)
+- We do appreciate developers creating their own update scripts for changes but also understand how difficult that is.
 
 #### Versioning
 
@@ -255,6 +211,10 @@ Year/major is for major changes, which due to the nature of how we change the da
 minor - new features that don't break anything
 
 patch - bug fixes to existing code
+
+## Docker Compose
+
+There is a docker compose file to assist with certain developement. See the docker-compose.README.md file for additional details.
 
 ## Reviewers
 
