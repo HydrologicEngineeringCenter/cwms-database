@@ -120,6 +120,9 @@ ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN
 
 @./24_04_05/at_cwms_ts_spec_updates
 
+-- grant access to at_session_info table
+grant select on at_session_info to cwms_user;
+
 -- create run_stats table
 create global temporary table run_stats(
    runid varchar2(15), 
