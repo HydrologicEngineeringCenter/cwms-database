@@ -107,6 +107,9 @@ procedure test_retrieve_ts_raw;
 -- --%test (Test RETRIEVE_TS_F)
 procedure test_retrieve_ts_f;
 
+-- --%test (Test CWMS_V_TS_ID_ACCESS)
+procedure test_cwms_v_ts_id_access;
+
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
@@ -3209,6 +3212,45 @@ AS
       cwms_ts.set_use_new_lrts_format_on_output('F');
    end test_retrieve_ts_f;
 
+   --------------------------------------------------------------------------------
+   -- procedure test_cwms_v_ts_id_access
+   --------------------------------------------------------------------------------
+   procedure test_cwms_v_ts_id_access
+   is
+      l_count     binary_integer;
+      l_ts_id     varchar2 (191) := test_base_location_id || '.Code.Inst.1Hour.0.Test';
+      l_loc_id    varchar2 (57) := test_base_location_id;
+      l_unit      varchar2 (16) := 'n/a';
+      l_office_id varchar2 (16) := '&&office_id';
+      l_ts_data   cwms_t_ztsv_array := cwms_t_ztsv_array (
+                     cwms_t_ztsv (date '2021-10-01' + 1 / 24, 1, 0),
+                     cwms_t_ztsv (date '2021-10-01' + 2 / 24, 2, 0),
+                     cwms_t_ztsv (date '2021-10-01' + 3 / 24, 3, 0),
+                     cwms_t_ztsv (date '2021-10-01' + 4 / 24, 4, 0),
+                     cwms_t_ztsv (date '2021-10-01' + 5 / 24, 5, 0),
+                     cwms_t_ztsv (date '2021-10-01' + 6 / 24, 6, 0));
+   begin
+       -------------------------
+       -- store a time series --
+       -------------------------
+       cwms_loc.store_location(
+         p_location_id    => l_loc_id,
+         p_db_office_id   => l_office_id);
+
+       cwms_ts.zstore_ts(
+         p_cwms_ts_id        => l_ts_id,
+         p_units             => l_unit,
+         p_timeseries_data   => l_ts_data,
+         p_store_rule        => cwms_util.replace_all,
+         p_office_id         => l_office_id);
+
+      ---------------------------------------
+      -- verify we can see the time series --
+      ---------------------------------------
+      select count(*) into l_count from cwms_v_ts_id where cwms_ts_id = l_ts_id;
+      ut.expect(l_count).to_equal(1);
+
+   end test_cwms_v_ts_id_access;
 
 END test_cwms_ts;
 /

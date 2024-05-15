@@ -218,6 +218,8 @@ set define on
 @@cwms/tables/at_tsv_count
 
 @@cwms/views/mv_location_level_curval
+-- replace previous dummy view
+@@cwms/views/av_cwms_ts_id
 @@cwms/tables/at_clob_index.sql
 @@cwms/tables/indexes_for_spatial_data.sql
 --------------------------------------------------

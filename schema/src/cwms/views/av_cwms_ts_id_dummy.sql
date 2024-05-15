@@ -72,12 +72,12 @@ AS
    with function get_lrts return number DETERMINISTIC is
       l_code number := 0;
    begin
-      select nvl((select bitand(num_value,4)
-                    from cwms_20.at_session_info
-                   where item_name = 'USE_NEW_LRTS_ID_FORMAT'),
-                  0 )
-        into l_code
-        from dual;
+--      select nvl((select bitand(num_value,4)
+--                    from cwms_20.at_session_info
+--                   where item_name = 'USE_NEW_LRTS_ID_FORMAT'),
+--                  0 )
+--        into l_code
+--        from dual;
       return l_code;
    end;
    SELECT  db_office_id,
