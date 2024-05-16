@@ -195,6 +195,8 @@ begin
       l_crsr := cwms_forecast.cat_forecast_f(
          p_location_id_mask => c_fcst_loc_id,
          p_forecast_id_mask => c_fcst_id,
+         p_max_fcst_age     => 'P10Y',
+         p_max_issue_age    => 'P10Y',
          p_abbreviated      => 'T',
          p_time_zone        => 'UTC',
          p_office_id_mask   => c_office_id);
@@ -221,6 +223,8 @@ begin
       l_crsr := cwms_forecast.cat_forecast_f(
          p_location_id_mask => c_fcst_loc_id,
          p_forecast_id_mask => c_fcst_id,
+         p_max_fcst_age     => 'P10Y',
+         p_max_issue_age    => 'P10Y',
          p_abbreviated      => 'F',
          p_time_zone        => 'UTC',
          p_office_id_mask   => c_office_id);
