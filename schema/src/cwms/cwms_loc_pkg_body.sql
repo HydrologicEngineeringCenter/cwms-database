@@ -5832,7 +5832,7 @@ end unassign_loc_groups;
                                 rec.published_longitude,
                                 rec.bounding_office_id,
                                 rec.bounding_office_name,
-                                rec.long_name,
+                                rec.nation_id,
                                 rec.nearest_city
                                );
       END LOOP;
