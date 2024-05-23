@@ -2314,12 +2314,12 @@ AS
       l_loc_obj := location_obj_t(l_loc_code);
       ut.expect(l_loc_obj.location_ref.office_id).to_equal('&&office_id');
       ut.expect(l_loc_obj.location_ref.base_location_id).to_equal('TestLocObj');
-      ut.expect(l_loc_obj.nation_id).to_equal('UNITED STATES');
+      ut.expect(l_loc_obj.nation_id).to_equal('United States');
 
       l_loc_obj := cwms_loc.retrieve_location(l_loc_code);
       ut.expect(l_loc_obj.location_ref.office_id).to_equal('&&office_id');
       ut.expect(l_loc_obj.location_ref.base_location_id).to_equal('TestLocObj');
-      ut.expect(l_loc_obj.nation_id).to_equal('UNITED STATES');
+      ut.expect(l_loc_obj.nation_id).to_equal('United States');
    end;
 
 END test_cwms_loc;
