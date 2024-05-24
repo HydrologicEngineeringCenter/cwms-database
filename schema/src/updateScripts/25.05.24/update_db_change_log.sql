@@ -21,13 +21,12 @@ begin
            l_database_id,
            'CWMS',
            24,
-           04,
            05,
-           to_date ('05APR2024', 'DDMONYYYY'),
-           'CWMS Database Release 24.04.05',
+           24,
+           to_date ('24MAY2024', 'DDMONYYYY'),
+           'CWMS Database Release 24.05.24',
            'Updated from 23.03.16'
           );
    commit;
 end;
 /
-

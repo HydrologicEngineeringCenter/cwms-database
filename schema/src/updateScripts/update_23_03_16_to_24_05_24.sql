@@ -45,7 +45,7 @@ end;
 whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
-define logfile=update_&db_name._23_03_16_to_24_04_05.log
+define logfile=update_&db_name._23_03_16_to_24_05_24.log
 PROMPT log file = &logfile
 spool &logfile append;
 -------------------
@@ -54,7 +54,7 @@ spool &logfile append;
 PROMPT ################################################################################
 PROMPT VERIFYING EXPECTED VERSION
 select systimestamp from dual;
-@@./24_04_05/verify_db_version
+@@./24_05_24/verify_db_version
 
 
 PROMPT ################################################################################
@@ -79,7 +79,7 @@ select systimestamp from dual;
 
 PROMPT ################################################################################
 PROMPT ALTERING TABLES
-@./24_04_05/at_cwms_ts_id_table_Triggers
+@./24_05_24/at_cwms_ts_id_table_Triggers
 
 -- remove RESULT_CACHE (MODE DEFAULT) from at_data_stream_properties
 -- create table at_data_stream_properties_tmp as select * from at_data_stream_properties;
@@ -101,12 +101,12 @@ alter table at_ts_extents add constraint at_ts_extents_ck1 check (nvl(has_non_ze
 comment on column at_ts_extents.has_non_zero_quality  is 'Specifies whether the ENTIRE time series has ANY quality_code other than zero)';
 
 -- create at_tsv_count table
-@./24_04_05/at_tsv_count_1
+@./24_05_24/at_tsv_count_1
 
 --update CWMS_STATE to add nation_code
-@./24_04_05/cwms_state
+@./24_05_24/cwms_state
 
-@./24_04_05/CWMS_COUNTY
+@./24_05_24/CWMS_COUNTY
 
 insert into CWMS_USGS_FLOW_ADJ(ADJ_ID, ADJ_NAME, DESCRIPTION) values('NONE','Unknown','Transfer from null code');
 
@@ -118,7 +118,7 @@ ALTER TABLE CWMS_NATION_SP ADD CONSTRAINT CWMS_NATION_SP_U2 UNIQUE (FIPS_CNTRY) 
 alter table AT_PHYSICAL_LOCATION drop constraint AT_PHYSICAL_LOCATION_FK6;
 ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION_SP (FIPS_CNTRY);
 
-@./24_04_05/at_cwms_ts_spec_updates
+@./24_05_24/at_cwms_ts_spec_updates
 
 -- grant access to at_session_info table
 grant select on at_session_info to cwms_user;
@@ -133,7 +133,7 @@ commit;
 
 PROMPT ################################################################################
 PROMPT ADDING USGS TS GROUP CATEGORY
-@./24_04_05/USGSDataAquisition
+@./24_05_24/USGSDataAquisition
 
 
 PROMPT ################################################################################
@@ -274,7 +274,7 @@ PROMPT #########################################################################
 PROMPT FINAL HOUSEKEEPING
 select systimestamp from dual;
 drop table CWMS_NATION;
-@./24_04_05/at_tsv_count_2
+@./24_05_24/at_tsv_count_2
 declare
    type usernames_t is table of varchar2(30);
    usernames usernames_t;
@@ -363,7 +363,7 @@ whenever sqlerror exit;
 PROMPT ################################################################################
 PROMPT UPDATING DB_CHANGE_LOG
 select systimestamp from dual;
-@@./24_04_05/update_db_change_log
+@@./24_05_24/update_db_change_log
 select substr(version, 1, 10) as version,
        to_char(version_date, 'yyyy-mm-dd hh24:mi') as version_date,
        to_char(apply_date, 'yyyy-mm-dd hh24:mi') as apply_date
