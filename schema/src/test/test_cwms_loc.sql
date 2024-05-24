@@ -39,6 +39,8 @@ procedure test_cwmsvue_442_location_level_performance_re_write;
 procedure test_get_local_timezone_returns_null;
 --%test(CWDB-246 Vertical datum info output limited size to 4000 bytes)
 procedure cwdb_246_vertical_datum_info_output_limited_size_to_4000_bytes;
+--%test(CWDDB-288 Location Object nation usage)
+procedure cwdb_288_location_object_creation;
 
 procedure setup;
 procedure teardown;
@@ -57,7 +59,7 @@ AS
     BEGIN
         FOR rec
             IN (SELECT COLUMN_VALUE     AS loc_name
-                  FROM TABLE (str_tab_t ('TestLoc1', 'TestLoc2')))
+                  FROM TABLE (str_tab_t ('TestLoc1', 'TestLoc2', 'TestLocObj')))
         LOOP
             BEGIN
                 cwms_loc.delete_location (
@@ -2279,7 +2281,46 @@ AS
 
    end cwdb_246_vertical_datum_info_output_limited_size_to_4000_bytes;
 
+   procedure cwdb_288_location_object_creation
+   is
+      l_loc_code cwms_20.at_physical_location.location_code%type;
+      l_loc_obj cwms_20.location_obj_t;
+   begin
+      cwms_loc.store_location2(
+         p_location_id  => 'TestLocObj',
+         p_location_type => 'Test',
+         p_elevation => 41.3,
+         p_elev_unit_id => 'ft',
+         p_vertical_datum => 'NGVD29',
+         p_latitude => 38.56,
+         p_longitude => -121.73,
+         p_horizontal_datum => 'NAD83',
+         p_public_name => 'RMA Office',
+         p_long_name => 'The RMA Office in Davis.',
+         p_description => '<insert terrible, but friendly and funny, description of the group.>',
+         p_time_zone_id => 'America/Los_Angeles',
+         p_county_name  => 'Yolo',
+         p_state_initial => 'CA',
+         p_active => 'T',
+         p_location_kind_id => 'SITE',
+         p_map_label => 'RMA',
+         p_published_latitude => 38.56,
+         p_published_longitude => -121.73,
+         p_bounding_office_id => 'SPD',
+         p_nation_id  => 'UNITED STATES',
+         p_nearest_city => 'Davis',
+         p_db_office_id => '&&office_id');
+      l_loc_code := cwms_loc.get_location_code('&&office_id','TestLocObj');
+      l_loc_obj := location_obj_t(l_loc_code);
+      ut.expect(l_loc_obj.location_ref.office_id).to_equal('&&office_id');
+      ut.expect(l_loc_obj.location_ref.base_location_id).to_equal('TestLocObj');
+      ut.expect(l_loc_obj.nation_id).to_equal('United States');
 
+      l_loc_obj := cwms_loc.retrieve_location(l_loc_code);
+      ut.expect(l_loc_obj.location_ref.office_id).to_equal('&&office_id');
+      ut.expect(l_loc_obj.location_ref.base_location_id).to_equal('TestLocObj');
+      ut.expect(l_loc_obj.nation_id).to_equal('United States');
+   end;
 
 END test_cwms_loc;
 /
