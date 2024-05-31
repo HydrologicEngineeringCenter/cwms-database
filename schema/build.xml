@@ -999,7 +999,7 @@
          <isset property="database.eroc"/>
       </condition>
 
-      <condition property="docker.props.oracle.image" value="${oracle.image}" else="registry.hecdev.net/oracle/database:19.3.0-ee">
+      <condition property="docker.props.oracle.image" value="${oracle.image}" else="gvenzl/oracle-free:23.4">
          <isset property="oracle.image"/>
       </condition>
 
@@ -1153,11 +1153,9 @@
                <arg value="--name"/>
                <arg value="${docker.props.container_name_valid}"/>
                <arg value="-e"/>
-               <arg value="ORACLE_PDB=${database.name}"/>
+               <arg value="ORACLE_DATABASE=${database.name}"/>
                <arg value="-e"/>
-               <arg value="ORACLE_PWD=${database.syspw}"/>
-               <arg value="-e"/>
-               <arg value="enterprise"/>
+               <arg value="ORACLE_PASSWORD=${database.syspw}"/>
                <arg value="-v"/>
                <arg value="${database.volume}:/opt/oracle/oradata"/>
                <arg value="${docker.props.oracle.image}"/>
