@@ -5912,7 +5912,7 @@ end unassign_loc_groups;
                                 p_location.published_latitude,
                                 p_location.published_longitude,
                                 p_location.bounding_office_id,
-                                p_location.long_name,
+                                p_location.nation_id,
                                 p_location.nearest_city,
                                 'T',
                                 p_location.location_ref.get_office_id
