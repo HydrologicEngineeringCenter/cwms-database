@@ -848,7 +848,11 @@ function request_lock(
    p_application_id  in varchar2,
    p_revoke_existing in varchar2 default 'F',
    p_revoke_timeout  in integer  default 30,
-   p_office_id       in varchar2 default null)
+   p_office_id       in varchar2 default null,
+   p_username        in varchar2 default null,
+   p_osuser          in varchar2 default null,
+   p_program         in varchar2 default null,
+   p_machine         in varchar2 default null)
    return varchar2
 is
    revocation_denied exception;
@@ -859,10 +863,6 @@ is
 
    l_lock_id         varchar2(40);
    l_do_lock         boolean := true;
-   l_username        varchar2(30);
-   l_osuser          varchar2(30);
-   l_program         varchar2(64);
-   l_machine         varchar2(64);
    l_office_id       varchar2(16);
    l_already_locked  boolean := false;
    l_id              integer;
@@ -898,16 +898,34 @@ begin
    end if;
    if l_do_lock then
       l_lock_id := rawtohex(sys_guid());
-      select username,
-             osuser,
-             program,
-             machine
-        into l_username,
-             l_osuser,
-             l_program,
-             l_machine
-        from v$session
-       where sid = sys_context('userenv', 'sid');
+
+      if p_username is null then
+         select username
+         into p_username
+         from v$session
+         where sid = sys_context('userenv', 'sid');
+      end if;
+
+      if p_osuser is null then
+         select osuser
+         into p_osuser
+         from v$session
+         where sid = sys_context('userenv', 'sid');
+      end if;
+
+      if p_program is null then
+         select program
+         into p_program
+         from v$session
+         where sid = sys_context('userenv', 'sid');
+      end if;
+
+      if p_machine is null then
+         select machine
+         into p_machine
+         from v$session
+         where sid = sys_context('userenv', 'sid');
+      end if;
 
       begin
          insert
@@ -925,10 +943,10 @@ begin
                   cwms_loc.get_location_code(p_office_id, p_project_id),
                   lower(p_application_id),
                   systimestamp at time zone 'UTC',
-                  l_username,
-                  l_osuser,
-                  l_program,
-                  l_machine
+                  p_username,
+                  p_osuser,
+                  p_program,
+                  p_machine
                 );
       exception
          when already_locked then
