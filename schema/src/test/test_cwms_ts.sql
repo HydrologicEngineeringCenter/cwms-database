@@ -3256,7 +3256,7 @@ AS
 
    end test_cwms_v_ts_id_access;
    --------------------------------------------------------------------------------
-   -- procedure test_cwms_v_ts_id_access
+   -- procedure    procedure test_cwdb_289_retrieve_ts_with_session_timezone_not_utc
    --------------------------------------------------------------------------------
    procedure test_cwdb_289_retrieve_ts_with_session_timezone_not_utc
    is
