@@ -3378,27 +3378,53 @@ AS
       ---------------------------------
       -- build and return the cursor --
       ---------------------------------
-      open l_crsr for
-         select case p_date_time_type
-                when 'DATE' then
-                   nvl(q1.date_time, q2.date_time)
-                when 'TIMESTAMP' then
-                   cast(nvl(q1.date_time, q2.date_time) as timestamp)
-                when 'TIMESTAMP WITH TIME ZONE' then
-                   from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone)
-                end as date_time,
-                value,
-                nvl(quality_code, 0) as quality_code
-            from (select date_time,
-                         value,
-                         quality_code
-                    from table(l_ts_retrieved)
-                 ) q1
-                 full outer join
-                 (select column_value as date_time
-                    from table(l_reg_ts_times)
-                 ) q2 on q2.date_time = q1.date_time
-         order by 1;
+      case p_date_time_type
+      when 'DATE' then
+         open l_crsr for
+            select nvl(q1.date_time, q2.date_time) as date_time,
+                   value,
+                   nvl(quality_code, 0) as quality_code
+              from (select date_time,
+                           value,
+                           quality_code
+                      from table(l_ts_retrieved)
+                   ) q1
+                   full outer join
+                   (select column_value as date_time
+                      from table(l_reg_ts_times)
+                   ) q2 on q2.date_time = q1.date_time
+             order by 1;
+      when 'TIMESTAMP' then
+         open l_crsr for
+            select cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
+                   value,
+                   nvl(quality_code, 0) as quality_code
+              from (select date_time,
+                           value,
+                           quality_code
+                      from table(l_ts_retrieved)
+                   ) q1
+                   full outer join
+                   (select column_value as date_time
+                      from table(l_reg_ts_times)
+                   ) q2 on q2.date_time = q1.date_time
+             order by 1;
+      when 'TIMESTAMP WITH TIME ZONE' then
+         open l_crsr for
+            select from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
+                   value,
+                   nvl(quality_code, 0) as quality_code
+              from (select date_time,
+                           value,
+                           quality_code
+                      from table(l_ts_retrieved)
+                   ) q1
+                   full outer join
+                   (select column_value as date_time
+                      from table(l_reg_ts_times)
+                   ) q2 on q2.date_time = q1.date_time
+             order by 1;
+      end case;
       return l_crsr;
    end retrieve_ts_f;
 

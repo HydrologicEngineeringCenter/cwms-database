@@ -101,14 +101,18 @@ CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
 --%test (Test GET_REG_TS_TIMES)
  procedure test_get_reg_ts_times_utc;
 
--- --%test (Test RETRIEVE_TS_RAW)
+--%test (Test RETRIEVE_TS_RAW)
 procedure test_retrieve_ts_raw;
 
--- --%test (Test RETRIEVE_TS_F)
+--%test (Test RETRIEVE_TS_F)
 procedure test_retrieve_ts_f;
 
--- --%test (Test CWMS_V_TS_ID_ACCESS)
+--%test (Test CWMS_V_TS_ID_ACCESS)
 procedure test_cwms_v_ts_id_access;
+
+--%test (CWDB-289 Retrieve TS with session time zone other than UTC)
+procedure test_cwdb_289_retrieve_ts_with_session_timezone_not_utc;
+
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -3251,6 +3255,110 @@ AS
       ut.expect(l_count).to_equal(1);
 
    end test_cwms_v_ts_id_access;
+   --------------------------------------------------------------------------------
+   -- procedure test_cwms_v_ts_id_access
+   --------------------------------------------------------------------------------
+   procedure test_cwdb_289_retrieve_ts_with_session_timezone_not_utc
+   is
+      l_ts_id           varchar2 (191) := test_base_location_id || '.Code.Inst.1Hour.0.Test';
+      l_loc_id          varchar2 (57) := test_base_location_id;
+      l_unit            varchar2 (16) := 'n/a';
+      l_office_id       varchar2 (16) := '&&office_id';
+      l_ts_data         cwms_t_ztsv_array := cwms_t_ztsv_array ();
+      l_ts_count        binary_integer := 24;
+      l_session_tzs     cwms_t_str_tab := cwms_t_str_tab('UTC', 'US/Central');
+      l_date_time_types cwms_t_str_tab := cwms_t_str_tab('DATE', 'TIMESTAMP', 'TIMESTAMP WITH TIME ZONE');
+      l_session_tz      varchar2(128);
+      l_crsr            sys_refcursor;
+      l_ts_id_out       cwms_v_ts_id.cwms_ts_id%type;
+      l_unit_id_out     cwms_v_ts_id.unit_id%type;
+      l_time_zone_out   cwms_v_ts_id.time_zone_id%type;
+      l_dates           cwms_t_date_table;
+      l_timestamps      cwms_t_timestamp_tab;
+      l_timestamp_tzs   cwms_t_tstz_tab;
+      l_values          cwms_t_double_tab;
+      l_qualities       cwms_t_number_tab;
+   begin
+      l_ts_data.extend(l_ts_count);
+      for i in 1..l_ts_count loop
+         l_ts_data(i) := cwms_t_ztsv(date '2024-03-10' + i/24, i, 3);
+      end loop;
+
+       cwms_loc.store_location(
+         p_location_id    => l_loc_id,
+         p_db_office_id   => l_office_id);
+
+       cwms_ts.zstore_ts(
+         p_cwms_ts_id        => l_ts_id,
+         p_units             => l_unit,
+         p_timeseries_data   => l_ts_data,
+         p_store_rule        => cwms_util.replace_all,
+         p_office_id         => l_office_id);
+
+      for i in 1..l_session_tzs.count loop
+         execute immediate 'alter session set time_zone = '''||l_session_tzs(i)||'''';
+         select sessiontimezone into l_session_tz from dual;
+         ut.expect(l_session_tz).to_equal(l_session_tzs(i));
+
+         for j in 1..l_date_time_types.count loop
+            begin
+               l_crsr := cwms_ts.retrieve_ts_f (
+                  p_cwms_ts_id_out  => l_ts_id_out,
+                  p_units_out       => l_unit_id_out,
+                  p_time_zone_id    => l_time_zone_out,
+                  p_cwms_ts_id      => l_ts_id,
+                  p_start_time      => date '2024-03-10',
+                  p_end_time        => date '2024-03-12',
+                  p_time_zone       => 'UTC',
+                  p_date_time_type  => l_date_time_types(j),
+                  p_units           => l_unit,
+                  p_trim            => 'T',
+                  p_office_id       => '&&office_id');
+
+
+               case
+               when l_date_time_types(j) = 'DATE' then
+                  fetch l_crsr
+                   bulk collect
+                   into l_dates,
+                        l_values,
+                        l_qualities;
+                  close l_crsr;
+                  ut.expect(l_dates.count).to_equal(l_ts_count);
+                  ut.expect(l_dates(l_ts_count-1)).to_equal(l_ts_data(l_ts_count-1).date_time);
+               when l_date_time_types(j) = 'TIMESTAMP' then
+                  fetch l_crsr
+                   bulk collect
+                   into l_timestamps,
+                        l_values,
+                        l_qualities;
+                  close l_crsr;
+                  ut.expect(l_timestamps.count).to_equal(l_ts_count);
+                  ut.expect(l_timestamps(l_ts_count-1)).to_equal(cast(l_ts_data(l_ts_count-1).date_time as timestamp));
+               when l_date_time_types(j) = 'TIMESTAMP WITH TIME ZONE' then
+                  fetch l_crsr
+                   bulk collect
+                   into l_timestamp_tzs,
+                        l_values,
+                        l_qualities;
+                  close l_crsr;
+                  ut.expect(l_timestamp_tzs.count).to_equal(l_ts_count);
+                  ut.expect(l_timestamp_tzs(l_ts_count-1)).to_equal(from_tz(cast(l_ts_data(l_ts_count-1).date_time as timestamp), 'UTC'));
+               end case;
+               ut.expect(l_values(l_ts_count-1)).to_equal(l_ts_count-1);
+            exception
+               when others then
+                  dbms_output.put_line(dbms_utility.format_error_backtrace);
+                  ut.expect(sqlerrm).to_be_null;
+            end;
+         end loop;
+      end loop;
+
+      execute immediate 'alter session set time_zone = ''UTC''';
+      select sessiontimezone into l_session_tz from dual;
+      ut.expect(l_session_tz).to_equal('UTC');
+
+   end test_cwdb_289_retrieve_ts_with_session_timezone_not_utc;
 
 END test_cwms_ts;
 /
