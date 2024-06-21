@@ -397,6 +397,10 @@ function publish_status_update(
  * @param p_revoke_existing A flag ('T'/'F') specifying whether to revoke any existing lock on the project/application combination.
  * @param p_revoke_timeout  The number of seconds to wait for any revocation to be denied by the owner of the current lock on the project before revoking.
  * @param p_office_id       The text identifier of the office requesting the lock (and owning the project). If NULL or not specified, the session user's default office is used.
+ * @param p_username        The database user name of the user requesting the lock. If NULL the session username is used.
+ * @param p_osuser          The operating system user name of the user requesting the lock. If NULL the session osuser is used.
+ * @param p_program         The name of the program requesting the lock. If NULL the session program is used.
+ * @param p_machine         The name of the computer requesting the lock. If NULL the session machine is used.
  *
  * @return A text identifier of the lock placed on the project for the application, or NULL if the project could not be locked.
  */
@@ -405,7 +409,11 @@ function request_lock(
    p_application_id  in varchar2,
    p_revoke_existing in varchar2 default 'F',
    p_revoke_timeout  in integer  default 30,
-   p_office_id       in varchar2 default null)
+   p_office_id       in varchar2 default null,
+   p_username        in varchar2 default null,
+   p_osuser          in varchar2 default null,
+   p_program         in varchar2 default null,
+   p_machine         in varchar2 default null)
    return varchar2;
 
 /**       
