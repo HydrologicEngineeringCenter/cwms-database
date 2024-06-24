@@ -863,6 +863,10 @@ is
 
    l_lock_id         varchar2(40);
    l_do_lock         boolean := true;
+   l_username        varchar2(30);
+   l_osuser          varchar2(30);
+   l_program         varchar2(64);
+   l_machine         varchar2(64);
    l_office_id       varchar2(16);
    l_already_locked  boolean := false;
    l_id              integer;
@@ -899,33 +903,23 @@ begin
    if l_do_lock then
       l_lock_id := rawtohex(sys_guid());
 
-      if p_username is null then
-         select username
-         into p_username
+      if p_username is null or p_osuser is null or p_program is null or p_machine is null then
+         select username,
+                osuser,
+                program,
+                machine
+         into l_username,
+            l_osuser,
+            l_program,
+            l_machine
          from v$session
          where sid = sys_context('userenv', 'sid');
       end if;
 
-      if p_osuser is null then
-         select osuser
-         into p_osuser
-         from v$session
-         where sid = sys_context('userenv', 'sid');
-      end if;
-
-      if p_program is null then
-         select program
-         into p_program
-         from v$session
-         where sid = sys_context('userenv', 'sid');
-      end if;
-
-      if p_machine is null then
-         select machine
-         into p_machine
-         from v$session
-         where sid = sys_context('userenv', 'sid');
-      end if;
+      l_username := nvl(p_username, l_username);
+      l_osuser :=  nvl(p_osuser, l_osuser);
+      l_program := nvl(p_program, l_program);
+      l_machine := nvl(p_machine, l_machine);
 
       begin
          insert
@@ -943,10 +937,10 @@ begin
                   cwms_loc.get_location_code(p_office_id, p_project_id),
                   lower(p_application_id),
                   systimestamp at time zone 'UTC',
-                  p_username,
-                  p_osuser,
-                  p_program,
-                  p_machine
+                  l_username,
+                  l_osuser,
+                  l_program,
+                  l_machine
                 );
       exception
          when already_locked then
