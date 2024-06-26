@@ -185,7 +185,7 @@ end;
 alter session set current_schema = &builduser
 
 -- create CWMS service user
-begin execute immediate 'create user ' || cwms_sec.cac_service_user || ' PROFILE CWMS_PROF IDENTIFIED BY values ''FEDCBA9876543210'' '; end; 
+begin execute immediate 'create user ' || cwms_sec.cac_service_user || ' PROFILE CWMS_PROF IDENTIFIED BY "FEDCBA9876543210" '; end; 
 /
 -- Replace connect to role with create session/set container for RDS compatibility
 begin execute immediate 'grant create session to ' || cwms_sec.cac_service_user; end; 

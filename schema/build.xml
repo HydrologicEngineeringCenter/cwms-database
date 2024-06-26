@@ -204,7 +204,7 @@
       <echo message="setting up test framework tests." />
 
       <get dest="build/deps/utPLSQL.zip" verbose="true" ignoreerrors="false" skipexisting="true">
-         <url url="https://www.hec.usace.army.mil/nexus/repository/maven-public/org/utplsql/utplsql/3.1.10/utplsql-3.1.10.zip"/>
+         <url url="https://github.com/utPLSQL/utPLSQL/releases/download/v3.1.14/utPLSQL.zip"/>
       </get>
       <if>
          <not><available file="build/deps/utPLSQL.zip"/></not>
@@ -999,7 +999,7 @@
          <isset property="database.eroc"/>
       </condition>
 
-      <condition property="docker.props.oracle.image" value="${oracle.image}" else="gvenzl/oracle-free:23.4">
+      <condition property="docker.props.oracle.image" value="${oracle.image}" else="gvenzl/oracle-free:23.4-full">
          <isset property="oracle.image"/>
       </condition>
 
