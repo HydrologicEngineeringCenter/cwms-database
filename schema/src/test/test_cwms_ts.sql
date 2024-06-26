@@ -3264,9 +3264,19 @@ AS
       l_loc_id          varchar2 (57) := test_base_location_id;
       l_unit            varchar2 (16) := 'n/a';
       l_office_id       varchar2 (16) := '&&office_id';
-      l_ts_data         cwms_t_ztsv_array := cwms_t_ztsv_array ();
-      l_ts_count        binary_integer := 24;
+      l_ts_data         cwms_t_ztsv_array := cwms_t_ztsv_array();
+      l_ts_count        binary_integer := 48;
+      l_ts_count2       binary_integer;
       l_session_tzs     cwms_t_str_tab := cwms_t_str_tab('UTC', 'US/Central');
+      l_retrieve_tzs    cwms_t_str_tab := cwms_t_str_tab('UTC', 'US/Pacific', 'Europe/Bucharest', 'America/Santiago', 'Australia/Sydney');
+      l_start_dates     cwms_t_date_table := cwms_t_date_table(
+                                                date '2024-03-10',  -- Spring boundary for US/Pacific       ( -8 ->  -7)
+                                                date '2024-03-31',  -- Spring boundary for Europe/Bucharest ( +2 ->  +3)
+                                                date '2024-04-06',  -- Spring boundary for Autralia/Sydney  (+10 ->  +9) and America/Santiago (-3 -> -4)
+                                                date '2024-09-09',  -- Fall boundary for America/Santiago   ( -4 ->  -3)
+                                                date '2024-10-06',  -- Fall boudnary for Autralia/Sydney    ( +9 -> +10)
+                                                date '2024-10-27',  -- Fall boundary for Europe/Bucharest   ( +3 ->  +2)
+                                                date '2024-11-03'); -- Fall boundary for US/Pacific         ( -7 ->  -8)
       l_date_time_types cwms_t_str_tab := cwms_t_str_tab('DATE', 'TIMESTAMP', 'TIMESTAMP WITH TIME ZONE');
       l_session_tz      varchar2(128);
       l_crsr            sys_refcursor;
@@ -3278,79 +3288,134 @@ AS
       l_timestamp_tzs   cwms_t_tstz_tab;
       l_values          cwms_t_double_tab;
       l_qualities       cwms_t_number_tab;
+      l_exp_date        date;
+      l_exp_ts          timestamp;
+      l_exp_tstz        timestamp with time zone;
    begin
-      l_ts_data.extend(l_ts_count);
-      for i in 1..l_ts_count loop
-         l_ts_data(i) := cwms_t_ztsv(date '2024-03-10' + i/24, i, 3);
-      end loop;
-
-       cwms_loc.store_location(
+      -------------------------
+      -- create the location --
+      -------------------------
+      cwms_loc.store_location(
          p_location_id    => l_loc_id,
          p_db_office_id   => l_office_id);
-
-       cwms_ts.zstore_ts(
+      --------------------
+      -- create ts data --
+      --------------------
+      l_ts_data.extend(l_ts_count * l_start_dates.count);
+      for i in 1..l_start_dates.count loop
+         for j in 1..l_ts_count loop
+            l_ts_data((i-1)*l_ts_count+j) := cwms_t_ztsv(l_start_dates(i) - 1 + j/24, j, 3);
+         end loop;
+      end loop;
+      cwms_ts.zstore_ts(
          p_cwms_ts_id        => l_ts_id,
          p_units             => l_unit,
          p_timeseries_data   => l_ts_data,
          p_store_rule        => cwms_util.replace_all,
          p_office_id         => l_office_id);
-
+      ----------------------------------------------------------------------
+      -- retrieve the data using various session and retrieval time zones --
+      ----------------------------------------------------------------------
       for i in 1..l_session_tzs.count loop
          execute immediate 'alter session set time_zone = '''||l_session_tzs(i)||'''';
          select sessiontimezone into l_session_tz from dual;
          ut.expect(l_session_tz).to_equal(l_session_tzs(i));
+         dbms_output.put_line('==> Session time zone = '||l_session_tzs(i));
+         for j in 1..l_retrieve_tzs.count loop
+            dbms_output.put_line('==> Retrieve time zone '||l_retrieve_tzs(j));
+            for k in 1..l_date_time_types.count loop
+               dbms_output.put_line('==> Date_Time Type = '||l_date_time_types(k));
+               for m in 1..l_start_dates.count loop
+                  begin
+                     dbms_output.put_line('==> Retrieving '||(l_start_dates(m) - 1)||' - '||(l_start_dates(m) + l_ts_count/24 + 1)||' '||l_retrieve_tzs(j));
+                     l_crsr := cwms_ts.retrieve_ts_f (
+                        p_cwms_ts_id_out  => l_ts_id_out,
+                        p_units_out       => l_unit_id_out,
+                        p_time_zone_id    => l_time_zone_out,
+                        p_cwms_ts_id      => l_ts_id,
+                        p_start_time      => l_start_dates(m) - 2,
+                        p_end_time        => l_start_dates(m) + 2,
+                        p_time_zone       => l_retrieve_tzs(j),
+                        p_date_time_type  => l_date_time_types(k),
+                        p_units           => l_unit,
+                        p_trim            => 'T',
+                        p_office_id       => '&&office_id');
 
-         for j in 1..l_date_time_types.count loop
-            begin
-               l_crsr := cwms_ts.retrieve_ts_f (
-                  p_cwms_ts_id_out  => l_ts_id_out,
-                  p_units_out       => l_unit_id_out,
-                  p_time_zone_id    => l_time_zone_out,
-                  p_cwms_ts_id      => l_ts_id,
-                  p_start_time      => date '2024-03-10',
-                  p_end_time        => date '2024-03-12',
-                  p_time_zone       => 'UTC',
-                  p_date_time_type  => l_date_time_types(j),
-                  p_units           => l_unit,
-                  p_trim            => 'T',
-                  p_office_id       => '&&office_id');
-
-
-               case
-               when l_date_time_types(j) = 'DATE' then
-                  fetch l_crsr
-                   bulk collect
-                   into l_dates,
-                        l_values,
-                        l_qualities;
-                  close l_crsr;
-                  ut.expect(l_dates.count).to_equal(l_ts_count);
-                  ut.expect(l_dates(l_ts_count-1)).to_equal(l_ts_data(l_ts_count-1).date_time);
-               when l_date_time_types(j) = 'TIMESTAMP' then
-                  fetch l_crsr
-                   bulk collect
-                   into l_timestamps,
-                        l_values,
-                        l_qualities;
-                  close l_crsr;
-                  ut.expect(l_timestamps.count).to_equal(l_ts_count);
-                  ut.expect(l_timestamps(l_ts_count-1)).to_equal(cast(l_ts_data(l_ts_count-1).date_time as timestamp));
-               when l_date_time_types(j) = 'TIMESTAMP WITH TIME ZONE' then
-                  fetch l_crsr
-                   bulk collect
-                   into l_timestamp_tzs,
-                        l_values,
-                        l_qualities;
-                  close l_crsr;
-                  ut.expect(l_timestamp_tzs.count).to_equal(l_ts_count);
-                  ut.expect(l_timestamp_tzs(l_ts_count-1)).to_equal(from_tz(cast(l_ts_data(l_ts_count-1).date_time as timestamp), 'UTC'));
-               end case;
-               ut.expect(l_values(l_ts_count-1)).to_equal(l_ts_count-1);
-            exception
-               when others then
-                  dbms_output.put_line(dbms_utility.format_error_backtrace);
-                  ut.expect(sqlerrm).to_be_null;
-            end;
+                     case
+                     when l_date_time_types(k) = 'DATE' then
+                        l_dates := cwms_t_date_table();
+                        fetch l_crsr
+                         bulk collect
+                         into l_dates,
+                              l_values,
+                              l_qualities;
+                        close l_crsr;
+                        ut.expect(l_dates.count).to_equal(l_ts_count);
+                        if l_dates.count = l_ts_count then
+                           for n in 1..l_ts_count loop
+                              l_exp_date := cwms_util.change_timezone(l_ts_data(n+(m-1)*l_ts_count).date_time, 'UTC', l_retrieve_tzs(j));
+                              if l_exp_date is null then
+                                 l_exp_date := cwms_util.change_timezone(l_ts_data(n+(m-1)*l_ts_count).date_time - 1/86400, 'UTC', l_retrieve_tzs(j)) + 1/86400;
+                              end if;
+                              if l_exp_date is null then
+                                 l_exp_date := cwms_util.change_timezone(l_ts_data(n+(m-1)*l_ts_count).date_time + 1/86400, 'UTC', l_retrieve_tzs(j)) - 1/86400;
+                              end if;
+                              ut.expect(l_dates(n)).to_equal(l_exp_date);
+                              ut.expect(l_values(n)).to_equal(l_ts_data(n).value);
+                           end loop;
+                        end if;
+                     when l_date_time_types(k) = 'TIMESTAMP' then
+                        l_timestamps := cwms_t_timestamp_tab();
+                        fetch l_crsr
+                         bulk collect
+                         into l_timestamps,
+                              l_values,
+                              l_qualities;
+                        close l_crsr;
+                        ut.expect(l_timestamps.count).to_equal(l_ts_count);
+                        if l_timestamps.count = l_ts_count then
+                           for n in 1..l_ts_count loop
+                              l_exp_ts := cwms_util.change_timezone(cast(l_ts_data(n+(m-1)*l_ts_count).date_time as timestamp), 'UTC', l_retrieve_tzs(j));
+                              if l_exp_ts is null then
+                                 l_exp_ts := cwms_util.change_timezone(cast(l_ts_data(n+(m-1)*l_ts_count).date_time as timestamp) - interval '0 0:0:1' day to second, 'UTC', l_retrieve_tzs(j)) + interval '0 0:0:1' day to second;
+                              end if;
+                              if l_exp_ts is null then
+                                 l_exp_ts := cwms_util.change_timezone(cast(l_ts_data(n+(m-1)*l_ts_count).date_time as timestamp) + interval '0 0:0:1' day to second, 'UTC', l_retrieve_tzs(j)) - interval '0 0:0:1' day to second;
+                              end if;
+                              ut.expect(l_timestamps(n)).to_equal(l_exp_ts);
+                              ut.expect(l_values(n)).to_equal(l_ts_data(n).value);
+                           end loop;
+                        end if;
+                     when l_date_time_types(k) = 'TIMESTAMP WITH TIME ZONE' then
+                        l_timestamp_tzs := cwms_t_tstz_tab();
+                        fetch l_crsr
+                         bulk collect
+                         into l_timestamp_tzs,
+                              l_values,
+                              l_qualities;
+                        close l_crsr;
+                        ut.expect(l_timestamp_tzs.count).to_equal(l_ts_count);
+                        if l_timestamp_tzs.count = l_ts_count then
+                           for n in 1..l_ts_count loop
+                              l_exp_tstz := from_tz(cast(l_ts_data(n+(m-1)*l_ts_count).date_time as timestamp), 'UTC') at time zone l_retrieve_tzs(j);
+                              if l_exp_tstz is null then
+                                 l_exp_tstz := from_tz(cast(l_ts_data(n+(m-1)*l_ts_count).date_time as timestamp) - interval '0 0:0:1' day to second, 'UTC') at time zone l_retrieve_tzs(j) + interval '0 0:0:1' day to second;
+                              end if;
+                              if l_exp_tstz is null then
+                                 l_exp_tstz := from_tz(cast(l_ts_data(n+(m-1)*l_ts_count).date_time as timestamp) + interval '0 0:0:1' day to second, 'UTC') at time zone l_retrieve_tzs(j) - interval '0 0:0:1' day to second;
+                              end if;
+                              ut.expect(l_timestamp_tzs(n)).to_equal(l_exp_tstz);
+                              ut.expect(l_values(n)).to_equal(l_ts_data(n).value);
+                           end loop;
+                        end if;
+                     end case;
+                  exception
+                     when others then
+                        dbms_output.put_line(dbms_utility.format_error_backtrace);
+                        ut.expect(sqlerrm).to_be_null;
+                  end;
+               end loop;
+            end loop;
          end loop;
       end loop;
 
