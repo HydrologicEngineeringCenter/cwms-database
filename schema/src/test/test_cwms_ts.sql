@@ -3272,9 +3272,9 @@ AS
       l_start_dates     cwms_t_date_table := cwms_t_date_table(
                                                 date '2024-03-10',  -- Spring boundary for US/Pacific       ( -8 ->  -7)
                                                 date '2024-03-31',  -- Spring boundary for Europe/Bucharest ( +2 ->  +3)
-                                                date '2024-04-06',  -- Spring boundary for Autralia/Sydney  (+10 ->  +9) and America/Santiago (-3 -> -4)
-                                                date '2024-09-09',  -- Fall boundary for America/Santiago   ( -4 ->  -3)
-                                                date '2024-10-06',  -- Fall boudnary for Autralia/Sydney    ( +9 -> +10)
+                                                date '2024-04-06',  -- Fall boundary for Autralia/Sydney    (+11 -> +10) and America/Santiago (-3 -> -4)
+                                                date '2024-09-09',  -- Spring boundary for America/Santiago ( -4 ->  -3)
+                                                date '2024-10-06',  -- Spring boudnary for Autralia/Sydney  (+10 -> +11)
                                                 date '2024-10-27',  -- Fall boundary for Europe/Bucharest   ( +3 ->  +2)
                                                 date '2024-11-03'); -- Fall boundary for US/Pacific         ( -7 ->  -8)
       l_date_time_types cwms_t_str_tab := cwms_t_str_tab('DATE', 'TIMESTAMP', 'TIMESTAMP WITH TIME ZONE');
