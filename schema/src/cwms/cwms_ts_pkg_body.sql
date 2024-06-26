@@ -3182,6 +3182,7 @@ AS
       l_top_of_interval date;
       l_datum_offset    binary_double;
       l_reg_ts_times    date_table_type := date_table_type();
+      l_dst_offset      interval day to second;
    begin
       -------------------
       -- sanity checks --
@@ -3378,52 +3379,199 @@ AS
       ---------------------------------
       -- build and return the cursor --
       ---------------------------------
+      l_dst_offset := cwms_util.get_time_zone_dst_offset(l_date_range.time_zone);
       case p_date_time_type
       when 'DATE' then
-         open l_crsr for
-            select nvl(q1.date_time, q2.date_time) as date_time,
-                   value,
-                   nvl(quality_code, 0) as quality_code
-              from (select date_time,
-                           value,
-                           quality_code
-                      from table(l_ts_retrieved)
-                   ) q1
-                   full outer join
-                   (select column_value as date_time
-                      from table(l_reg_ts_times)
-                   ) q2 on q2.date_time = q1.date_time
-             order by 1;
+         if l_dst_offset = interval '0 0:0:0' day to second then
+            --------------------------------------------------
+            -- no difference in summer time and winter time --
+            --------------------------------------------------
+            open l_crsr for
+               select nvl(q1.date_time, q2.date_time) as date_time,
+                      value,
+                      nvl(quality_code, 0) as quality_code
+                 from (select date_time,
+                              value,
+                              quality_code
+                         from table(l_ts_retrieved)
+                      ) q1
+                      full outer join
+                      (select column_value as date_time
+                         from table(l_reg_ts_times)
+                      ) q2 on q2.date_time = q1.date_time
+                order by 1;
+         else
+            --------------------------------------------------------------------------------------------------
+            -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
+            --------------------------------------------------------------------------------------------------
+            open l_crsr for
+               select distinct
+                      nvl(q1.date_time, q2.date_time) as date_time,
+                      value,
+                      nvl(quality_code, 0) as quality_code
+                 from (select date_time,
+                              value,
+                              quality_code
+                         from table(l_ts_retrieved)
+                      ) q1
+                      full outer join
+                      (select column_value as date_time
+                         from table(l_reg_ts_times)
+                      ) q2 on q2.date_time = q1.date_time
+                order by 1;
+         end if;
       when 'TIMESTAMP' then
-         open l_crsr for
-            select cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
-                   value,
-                   nvl(quality_code, 0) as quality_code
-              from (select date_time,
-                           value,
-                           quality_code
-                      from table(l_ts_retrieved)
-                   ) q1
-                   full outer join
-                   (select column_value as date_time
-                      from table(l_reg_ts_times)
-                   ) q2 on q2.date_time = q1.date_time
-             order by 1;
+         if l_dst_offset = interval '0 0:0:0' day to second then
+            --------------------------------------------------
+            -- no difference in summer time and winter time --
+            --------------------------------------------------
+            open l_crsr for
+               select cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
+                      value,
+                      nvl(quality_code, 0) as quality_code
+                 from (select date_time,
+                              value,
+                              quality_code
+                         from table(l_ts_retrieved)
+                      ) q1
+                      full outer join
+                      (select column_value as date_time
+                         from table(l_reg_ts_times)
+                      ) q2 on q2.date_time = q1.date_time
+                order by 1;
+         else
+            --------------------------------------------------------------------------------------------------
+            -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
+            --------------------------------------------------------------------------------------------------
+            open l_crsr for
+               select distinct -- distinct is to remove duplicate times/values when crossing Fall DST boundary
+                      cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
+                      value,
+                      nvl(quality_code, 0) as quality_code
+                 from (select date_time,
+                              value,
+                              quality_code
+                         from table(l_ts_retrieved)
+                      ) q1
+                      full outer join
+                      (select column_value as date_time
+                         from table(l_reg_ts_times)
+                      ) q2 on q2.date_time = q1.date_time
+                order by 1;
+            end if;
       when 'TIMESTAMP WITH TIME ZONE' then
-         open l_crsr for
-            select from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
-                   value,
-                   nvl(quality_code, 0) as quality_code
-              from (select date_time,
-                           value,
-                           quality_code
-                      from table(l_ts_retrieved)
-                   ) q1
-                   full outer join
-                   (select column_value as date_time
-                      from table(l_reg_ts_times)
-                   ) q2 on q2.date_time = q1.date_time
-             order by 1;
+         if l_dst_offset = interval '0 0:0:0' day to second then
+            --------------------------------------------------
+            -- no difference in summer time and winter time --
+            --------------------------------------------------
+            open l_crsr for
+               select from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
+                      value,
+                      nvl(quality_code, 0) as quality_code
+                 from (select date_time,
+                              value,
+                              quality_code
+                         from table(l_ts_retrieved)
+                      ) q1
+                      full outer join
+                      (select column_value as date_time
+                         from table(l_reg_ts_times)
+                      ) q2 on q2.date_time = q1.date_time
+                order by 1;
+         else
+            open l_crsr for
+            --------------------------------------------------------------------------------------------------
+            -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
+            --------------------------------------------------------------------------------------------------
+               select distinct
+                      from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
+                      value,
+                      nvl(quality_code, 0) as quality_code
+                 from (select date_time,
+                              value,
+                              quality_code
+                         from table(l_ts_retrieved)
+                      ) q1
+                      full outer join
+                      (select column_value as date_time
+                         from table(l_reg_ts_times)
+                      ) q2 on q2.date_time = q1.date_time
+                order by 1;
+            ---------------------------------------------------------------------------------------------
+            -- With TIMESTAMP WITH TIME ZONE, although the DISTINCT select eliminates duplicate times  --
+            -- and everything looks fine if you display the times using time zone region or time zone  --
+            -- abbreviation, if you display them with time zone hour and time zone minute it's obvious --
+            -- that some times in the transition from summer to winter time (where local times can     --
+            -- repeat) are incorrectly assigned to the post-transition offset.                         --
+            ---------------------------------------------------------------------------------------------
+            declare
+               type tstz_indices_t is table of number_tab_t index by varchar2(64);
+               l_tstzs            tstz_tab_t;
+               l_values           double_tab_t;
+               l_qualities        number_tab_t;
+               l_dst_year         binary_integer;
+               l_dst_overlap      timestamp_tab_t;
+               l_tstz_indices     tstz_indices_t;
+               l_tstz_str         varchar2(64);
+               l_tstz_fmt         varchar2(31) := 'yyyy-mm-dd hh24:mi:ss.fftzh:tzm';
+               l_index            binary_integer;
+            begin
+               -------------------------------------
+               -- collect the values for analysis --
+               -------------------------------------
+               fetch l_crsr
+                bulk collect
+                into l_tstzs,
+                     l_values,
+                     l_qualities;
+               close l_crsr;
+               --------------------------------------------------------------------------
+               -- collect indices of times in the summer to winter transition overlaps --
+               --------------------------------------------------------------------------
+               for i in 1..l_tstzs.count loop
+                  if l_dst_year is null or extract(year from l_tstzs(i)) != l_dst_year then
+                     l_dst_year := extract(year from l_tstzs(i));
+                     l_dst_overlap := cwms_util.get_time_zone_dst_overlap(l_date_range.time_zone, l_dst_year);
+                  end if ;
+                  if l_dst_overlap is not null and cast(l_tstzs(i) as timestamp) between l_dst_overlap(1) and l_dst_overlap(2) then
+                     l_tstz_str := to_char(l_tstzs(i), l_tstz_fmt);
+                     if not l_tstz_indices.exists(l_tstz_str) then
+                        l_tstz_indices(l_tstz_str) := new number_tab_t();
+                     end if;
+                     l_tstz_indices(l_tstz_str).extend;
+                     l_tstz_indices(l_tstz_str)(l_tstz_indices(l_tstz_str).count) := i;
+                  end if;
+               end loop;
+               ---------------------------------------------------------------------------------
+               -- for any time that appears twice in the summer to winter transition overlap, --
+               -- move the first occurrence back by the DST offset value                      --
+               ---------------------------------------------------------------------------------
+               l_tstz_str := l_tstz_indices.first;
+               while l_tstz_str is not null loop
+                  if l_tstz_indices(l_tstz_str).count > 1 then
+                     if l_tstz_indices(l_tstz_str).count = 2 then
+                        l_index := l_tstz_indices(l_tstz_str)(1);
+                        l_tstzs(l_index) := l_tstzs(l_index) - l_dst_offset;
+                     else
+                        cwms_err.raise('ERROR', 'Time '||l_tstz_str||' appears in data set more than 2 times');
+                     end if;
+                  end if;
+                  l_tstz_str := l_tstz_indices.next(l_tstz_str);
+               end loop;
+               ------------------------------------------------------
+               -- re-open the cursor on the possibly modified data --
+               ------------------------------------------------------
+               open l_crsr
+                  for select tstzs.column_value,
+                             vals.column_value,
+                             qualities.column_value
+                        from (select column_value, rownum as rn from table(l_tstzs)) tstzs
+                             join
+                             (select column_value, rownum as rn from table(l_values)) vals on vals.rn = tstzs.rn
+                             join
+                             (select column_value, rownum as rn from table(l_qualities)) qualities on qualities.rn = tstzs.rn;
+            end;
+         end if;
       end case;
       return l_crsr;
    end retrieve_ts_f;
