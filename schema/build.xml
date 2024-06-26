@@ -1,106 +1,106 @@
-<project name="cwms_database_schema" 
-		 default="all" 
-		 xmlns:resolver="antlib:org.apache.maven.resolver.ant"
-		 xmlns:if="ant:if"
-		 xmlns:unless="ant:unless">
-	<taskdef uri="antlib:org.apache.maven.resolver.ant" resource="org/apache/maven/resolver/ant/antlib.xml"
+<project name="cwms_database_schema"
+       default="all"
+       xmlns:resolver="antlib:org.apache.maven.resolver.ant"
+       xmlns:if="ant:if"
+       xmlns:unless="ant:unless">
+   <taskdef uri="antlib:org.apache.maven.resolver.ant" resource="org/apache/maven/resolver/ant/antlib.xml"
     classpath="lib/maven-resolver-ant-tasks-1.2.1-uber.jar" />
 
-	<description>
-		Build, Deployment, and Installation file for the CWMS Database
-	</description>
+   <description>
+      Build, Deployment, and Installation file for the CWMS Database
+   </description>
 
 
 
 
-	<resolver:pom id="pom" file="pom.xml" />
-	<!-- used by both docker and maven plugin, leave above all the pom/maven stuff -->
-	<property name="docker.props.image.basename" value="cwms/schema_installer"/>
-	<!-- Allow for now but this should've always been grouped under cwms. -->
-	<property name="docker.props.image.basename_old" value="cwms_schema_installer"/>
-	<property name="docker.registry" value="registry.hecdev.net"/>
-	<property name="dryrun" value="false"/>
+   <resolver:pom id="pom" file="pom.xml" />
+   <!-- used by both docker and maven plugin, leave above all the pom/maven stuff -->
+   <property name="docker.props.image.basename" value="cwms/schema_installer"/>
+   <!-- Allow for now but this should've always been grouped under cwms. -->
+   <property name="docker.props.image.basename_old" value="cwms_schema_installer"/>
+   <property name="docker.registry" value="registry.hecdev.net"/>
+   <property name="dryrun" value="false"/>
 
-	<target name="version">
-		<echo message="${pom.version}"/>
-	</target>
-	<!-- read in the environment for use in properties -->
-	<property environment="env"/>
+   <target name="version">
+      <echo message="${pom.version}"/>
+   </target>
+   <!-- read in the environment for use in properties -->
+   <property environment="env"/>
 
-	<!-- set file locations for this build -->
-	<property name="root"  location="."/>
-	<property name="src" location="${root}/src"/>
-	<property name="lib"  location="${root}/lib"/>
-	<property name="test"  location="${root}/test"/>
-	<property name="build.dir" location="${root}/build"/>
-	<property name="coverage.dir" location="${build.dir}/coverage"/>
+   <!-- set file locations for this build -->
+   <property name="root"  location="."/>
+   <property name="src" location="${root}/src"/>
+   <property name="lib"  location="${root}/lib"/>
+   <property name="test"  location="${root}/test"/>
+   <property name="build.dir" location="${root}/build"/>
+   <property name="coverage.dir" location="${build.dir}/coverage"/>
 
     <resolver:localrepo dir="${build.dir}/repo"/>
-	<resolver:authentication id="auth" username="${env.NEXUS_USER}" password="${env.NEXUS_PASSWORD}" />
-	<resolver:remoterepo id="hec-nexus-snapshots" url="https://www.hec.usace.army.mil/nexus/repository/cwms-snapshots" type="default" releases="false" snapshots="true" authref="auth"/>
-	<resolver:remoterepo id="hec-nexus-releases" url="https://www.hec.usace.army.mil/nexus/repository/cwms-releases" type="default" releases="true" snapshots="false" authref="auth"/>
+   <resolver:authentication id="auth" username="${env.NEXUS_USER}" password="${env.NEXUS_PASSWORD}" />
+   <resolver:remoterepo id="hec-nexus-snapshots" url="https://www.hec.usace.army.mil/nexus/repository/cwms-snapshots" type="default" releases="false" snapshots="true" authref="auth"/>
+   <resolver:remoterepo id="hec-nexus-releases" url="https://www.hec.usace.army.mil/nexus/repository/cwms-releases" type="default" releases="true" snapshots="false" authref="auth"/>
 
     <resolver:remoterepos id="resolver.repositories">
         <resolver:remoterepo refid="central" />
-		<resolver:remoterepo refid="hec-nexus-snapshots" />
-		<resolver:remoterepo refid="hec-nexus-releases" />
-	</resolver:remoterepos>
+      <resolver:remoterepo refid="hec-nexus-snapshots" />
+      <resolver:remoterepo refid="hec-nexus-releases" />
+   </resolver:remoterepos>
 
-	<condition property="target_repository" value="hec-nexus-snapshots" else="hec-nexus-releases">
-		<matches pattern="^.*-SNAPSHOT$" string="${pom.version}"/>
-	</condition>
+   <condition property="target_repository" value="hec-nexus-snapshots" else="hec-nexus-releases">
+      <matches pattern="^.*-SNAPSHOT$" string="${pom.version}"/>
+   </condition>
 
 
-	<!-- Load in the ant-contrib jar to use the foreach external task -->
-	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
-		<classpath>
-			<pathelement location="${root}/lib/ant-contrib.jar"/>
-		</classpath>
-	</taskdef>
+   <!-- Load in the ant-contrib jar to use the foreach external task -->
+   <taskdef resource="net/sf/antcontrib/antcontrib.properties">
+      <classpath>
+         <pathelement location="${root}/lib/ant-contrib.jar"/>
+      </classpath>
+   </taskdef>
 
-	<import optional="true" file="${root}/${env.USERNAME}.xml"/>
-	<import optional="true" file="${builduser.overrides}"/>
+   <import optional="true" file="${root}/${env.USERNAME}.xml"/>
+   <import optional="true" file="${builduser.overrides}"/>
 
-	<property name="output.lines" value="1000"/>
+   <property name="output.lines" value="1000"/>
 
-	<!-- whether or not this build is a debug build -->
-	<property name="debug"  value="true"/>
+   <!-- whether or not this build is a debug build -->
+   <property name="debug"  value="true"/>
 
-	<!-- the amount of memory to allocate to javac during compile -->
-	<property name="memMax" value="1024m"/>
+   <!-- the amount of memory to allocate to javac during compile -->
+   <property name="memMax" value="1024m"/>
 
-	<!-- flag to create the test account -->
-	<property name="test.account.create" value="-testaccount"/>
-	<property name="seq.start" value=""/>
+   <!-- flag to create the test account -->
+   <property name="test.account.create" value="-testaccount"/>
+   <property name="seq.start" value=""/>
 
         <!-- Existing CWMS instances at current office (used to determine CWMS_SEQ offset) -->
         <property name="cwms.existing.instances" value="0"/>
 
 
-	<!-- flags to control output of auto kill and auto build -->
-	<property name="autobuild.echo" value="OFF"/>
-	<property name="autokill.echo" value="OFF"/>
+   <!-- flags to control output of auto kill and auto build -->
+   <property name="autobuild.echo" value="OFF"/>
+   <property name="autokill.echo" value="OFF"/>
 
-	<!-- flags to force the kill script to ignore errors. -->
-	<property name="autokill.force" value="-force"/>
-
-
-	<!-- Initialize the project for building. -->
-	<target name="init">
-		<!-- Create the time stamp -->
-		<tstamp/>
-		<!-- TODO: consider pulling this from TeamCity -->
-		<property name="wcdba.build" value="WCDBA:Build:${DSTAMP}:${TSTAMP}"/>
+   <!-- flags to force the kill script to ignore errors. -->
+   <property name="autokill.force" value="-force"/>
 
 
-		<mkdir dir="${build.dir}/deps"/> <!-- create the directory for output -->
-		<mkdir dir="${coverage.dir}"/>
-	</target>
+   <!-- Initialize the project for building. -->
+   <target name="init">
+      <!-- Create the time stamp -->
+      <tstamp/>
+      <!-- TODO: consider pulling this from TeamCity -->
+      <property name="wcdba.build" value="WCDBA:Build:${DSTAMP}:${TSTAMP}"/>
+
+
+      <mkdir dir="${build.dir}/deps"/> <!-- create the directory for output -->
+      <mkdir dir="${coverage.dir}"/>
+   </target>
 
 
 
-	<!-- Create CWMS schema build user -->
-	<target name="createbuilduser" description="creates user to build CWMS schema" depends="init">
+   <!-- Create CWMS schema build user -->
+   <target name="createbuilduser" description="creates user to build CWMS schema" depends="init">
                 <echo message="Create build user"/>
                 <exec dir="${root}" executable="sqlplus">
                         <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
@@ -108,176 +108,176 @@
                         <arg value="${oracle.builduser}"/>
                         <arg value="${oracle.builduser.password}"/>
                 </exec>
-	</target>
+   </target>
 
-	<target name="build" description="Executes python scripts to build the CWMS schema" depends="createbuilduser,database-version">
-		
-		<echo message="Building version: ${simple.build.version}"/>
-		<echo message="Have version: ${cwms.installed.version}"/>
-		<if>
-			<equals arg1="${cwms.installed.version}" arg2="${simple.build.version}"/>
-			<then>
-				<fail message="Version already installed" status="50"/>
-			</then>
-		</if>
-		<echo message="Build sql scripts..."/>
-		<if>
-			<equals arg1="${office.secondary.id}" arg2="" />
-			<then>
-				<property name="buildSqlScript-arg-line" value="buildSqlScripts.py ${oracle.cwms.user} ${cwms.existing.instances} ${office.primary.id} ${test.account.create} ${seq.start}"/>
-				<echo message="${buildSqlScript-arg-line}"/>
-			</then>
-			<else>
-				<property name="buildSqlScript-arg-line" value="buildSqlScripts.py ${oracle.cwms.user} ${cwms.existing.instances} ${office.primary.id} ${office.secondary.id} ${test.account.create} ${seq.start}"/>
-				<echo message="${buildSqlScript-arg-line}"/>
-			</else>
-		</if>
+   <target name="build" description="Executes python scripts to build the CWMS schema" depends="createbuilduser,database-version">
 
-		<exec dir="${src}" executable="python2" output="build-sql-script-output.txt" error="build-sql-script-error.txt" resultproperty="build-sql-script-result">
-			<arg line="${buildSqlScript-arg-line}"/>
-		</exec>
+      <echo message="Building version: ${simple.build.version}"/>
+      <echo message="Have version: ${cwms.installed.version}"/>
+      <if>
+         <equals arg1="${cwms.installed.version}" arg2="${simple.build.version}"/>
+         <then>
+            <fail message="Version already installed" status="50"/>
+         </then>
+      </if>
+      <echo message="Build sql scripts..."/>
+      <if>
+         <equals arg1="${office.secondary.id}" arg2="" />
+         <then>
+            <property name="buildSqlScript-arg-line" value="buildSqlScripts.py ${oracle.cwms.user} ${cwms.existing.instances} ${office.primary.id} ${test.account.create} ${seq.start}"/>
+            <echo message="${buildSqlScript-arg-line}"/>
+         </then>
+         <else>
+            <property name="buildSqlScript-arg-line" value="buildSqlScripts.py ${oracle.cwms.user} ${cwms.existing.instances} ${office.primary.id} ${office.secondary.id} ${test.account.create} ${seq.start}"/>
+            <echo message="${buildSqlScript-arg-line}"/>
+         </else>
+      </if>
 
-		<if>
-			<equals arg1="${build-sql-script-result}" arg2="0" />
-			<then>
-				<echo message="Finished building sql scripts"/>
-			</then>
-			<else>
-				<concat>
-					<filelist dir="${root}" files="build-sql-script-output.txt,build-sql-script-error.txt"/>
-				</concat>
-				<echo message="${build-sql-script-result}"/>
-				<fail/>
-			</else>
-		</if>
+      <exec dir="${src}" executable="python2" output="build-sql-script-output.txt" error="build-sql-script-error.txt" resultproperty="build-sql-script-result">
+         <arg line="${buildSqlScript-arg-line}"/>
+      </exec>
 
-		<echo message="Finished building sql scripts"/>
+      <if>
+         <equals arg1="${build-sql-script-result}" arg2="0" />
+         <then>
+            <echo message="Finished building sql scripts"/>
+         </then>
+         <else>
+            <concat>
+               <filelist dir="${root}" files="build-sql-script-output.txt,build-sql-script-error.txt"/>
+            </concat>
+            <echo message="${build-sql-script-result}"/>
+            <fail/>
+         </else>
+      </if>
 
-
-		<echo message="Creating new CWMS Schema..."/>
-
-		<property name="autobuild-arg-line" value="autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} builduser=${oracle.builduser} builduser_passwd=${oracle.builduser.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} pd_office=${office.primary.id} pd_passwd=${oracle.cwmspd.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
-		<echo message="${autobuild-arg-line}"/>
-
-		<exec dir="${src}" executable="python2" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
-			<arg line="${autobuild-arg-line}"/>
-		</exec>
-
-		<if>
-			<equals arg1="${auto-build-result}" arg2="0" />
-			<then>
-				<echo message="Finished creating new CWMS Schema"/>
-			</then>
-			<else>
-				<!-- concat last 1000 lines of std output -->
-				<concat>
-					<filelist dir="${root}" files="auto-build-output.txt"/>
-					<filterchain>
-						<filterreader classname="org.apache.tools.ant.filters.TailFilter">
-							<param name="lines" value="${output.lines}"/>
-						</filterreader>
-					</filterchain>
-				</concat>
-				<!-- concat all of std error -->
-				<concat>
-					<filelist dir="${root}" files="auto-build-error.txt"/>
-				</concat>
-				<echo message="${auto-build-result}"/>
-				<fail/>
-			</else>
-		</if>
-
-		<echo message="Populating CWMS_DB_CHANGE_LOG with current version"/>
-		<exec dir="${root}" executable="python2" output="populate_cwms_db_change_log.sql">
-			<arg value="extract_version_update_info.py"/>
-		</exec>
-		<exec dir="${root}" executable="sqlplus">
-			<arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}" />
-			<arg value="@populate_cwms_db_change_log"/>
-		</exec>
-
-	</target>
+      <echo message="Finished building sql scripts"/>
 
 
+      <echo message="Creating new CWMS Schema..."/>
 
-	<target name="setup-tests" depends="init" description="Install the test framework into the oracle database">
-		<echo message="setting up test framework tests." />
+      <property name="autobuild-arg-line" value="autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} builduser=${oracle.builduser} builduser_passwd=${oracle.builduser.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} pd_office=${office.primary.id} pd_passwd=${oracle.cwmspd.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
+      <echo message="${autobuild-arg-line}"/>
 
-		<get dest="build/deps/utPLSQL.zip" verbose="true" ignoreerrors="false" skipexisting="true">
-			<url url="https://www.hec.usace.army.mil/nexus/repository/maven-public/org/utplsql/utplsql/3.1.10/utplsql-3.1.10.zip"/>
-		</get>
-		<if>
-			<not><available file="build/deps/utPLSQL.zip"/></not>
-			<then>
-				<echo message="Failed to download test framework"/>
-				<fail/>
-			</then>
-		</if>
-		<unzip src="build/deps/utPLSQL.zip" dest="build/deps/" />
+      <exec dir="${src}" executable="python2" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
+         <arg line="${autobuild-arg-line}"/>
+      </exec>
+
+      <if>
+         <equals arg1="${auto-build-result}" arg2="0" />
+         <then>
+            <echo message="Finished creating new CWMS Schema"/>
+         </then>
+         <else>
+            <!-- concat last 1000 lines of std output -->
+            <concat>
+               <filelist dir="${root}" files="auto-build-output.txt"/>
+               <filterchain>
+                  <filterreader classname="org.apache.tools.ant.filters.TailFilter">
+                     <param name="lines" value="${output.lines}"/>
+                  </filterreader>
+               </filterchain>
+            </concat>
+            <!-- concat all of std error -->
+            <concat>
+               <filelist dir="${root}" files="auto-build-error.txt"/>
+            </concat>
+            <echo message="${auto-build-result}"/>
+            <fail/>
+         </else>
+      </if>
+
+      <echo message="Populating CWMS_DB_CHANGE_LOG with current version"/>
+      <exec dir="${root}" executable="python2" output="populate_cwms_db_change_log.sql">
+         <arg value="extract_version_update_info.py"/>
+      </exec>
+      <exec dir="${root}" executable="sqlplus">
+         <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}" />
+         <arg value="@populate_cwms_db_change_log"/>
+      </exec>
+
+   </target>
+
+
+
+   <target name="setup-tests" depends="init" description="Install the test framework into the oracle database">
+      <echo message="setting up test framework tests." />
+
+      <get dest="build/deps/utPLSQL.zip" verbose="true" ignoreerrors="false" skipexisting="true">
+         <url url="https://www.hec.usace.army.mil/nexus/repository/maven-public/org/utplsql/utplsql/3.1.10/utplsql-3.1.10.zip"/>
+      </get>
+      <if>
+         <not><available file="build/deps/utPLSQL.zip"/></not>
+         <then>
+            <echo message="Failed to download test framework"/>
+            <fail/>
+         </then>
+      </if>
+      <unzip src="build/deps/utPLSQL.zip" dest="build/deps/" />
 
                 <!-- Due to STIG V-53973 certain grants are removed from PUBLIC schema. They need to be restored to individual schemas-->
-		<echo message="     Additional grants for UT3 user"/>
-        	<echo file="build/deps/utPLSQL/source/create_utplsql_owner.sql" append="true">
-          		grant execute on dbms_lob to &amp;ut3_user;
-	  		grant execute on dbms_random to &amp;ut3_user;
-	  		grant execute on dbms_obfuscation_toolkit to &amp;ut3_user;
-	  		grant execute on dbms_sql to &amp;ut3_user;
-        	</echo>
-		<echo message="   Installing test framework into database" />
-		<exec dir="build/deps/utPLSQL/source" executable="sqlplus" output="${build.dir}/tests.log" append="true">
-			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
-			<arg value="@install_headless_with_trigger.sql" />
-		</exec>
-		<echo message="     Tweaking privileges for UT3 user"/>
+      <echo message="     Additional grants for UT3 user"/>
+           <echo file="build/deps/utPLSQL/source/create_utplsql_owner.sql" append="true">
+                grant execute on dbms_lob to &amp;ut3_user;
+           grant execute on dbms_random to &amp;ut3_user;
+           grant execute on dbms_obfuscation_toolkit to &amp;ut3_user;
+           grant execute on dbms_sql to &amp;ut3_user;
+           </echo>
+      <echo message="   Installing test framework into database" />
+      <exec dir="build/deps/utPLSQL/source" executable="sqlplus" output="${build.dir}/tests.log" append="true">
+         <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+         <arg value="@install_headless_with_trigger.sql" />
+      </exec>
+      <echo message="     Tweaking privileges for UT3 user"/>
         <exec executable="sqlplus" output="${build.dir}/tests.log" append="true">
-			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+         <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
             <redirector inputstring="GRANT INHERIT PRIVILEGES ON USER sys TO ut3;"/>
         </exec>
 
-	</target>
+   </target>
 
-	<target name="tests-install" description="Install all of the test code and set the right grants" depends="init">
-		<echo message="    loading test code" />
+   <target name="tests-install" description="Install all of the test code and set the right grants" depends="init">
+      <echo message="    loading test code" />
         <exec dir="src/test" executable="sqlplus">
-			<arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}" />
+         <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}" />
             <arg value="@tests.sql"/>
-			<arg value="${office.primary.id}"/>
-			<arg value="${oracle.cwms.user}"/>
-			<arg value="${office.primary.code}hectest_up"/>
-			<arg value="${office.primary.code}"/>
+         <arg value="${office.primary.id}"/>
+         <arg value="${oracle.cwms.user}"/>
+         <arg value="${office.primary.code}hectest_up"/>
+         <arg value="${office.primary.code}"/>
         </exec>
-		<exec dir="src/test" executable="sqlplus">
-			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
-			<arg value="@test_grants.sql"/>
+      <exec dir="src/test" executable="sqlplus">
+         <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
+         <arg value="@test_grants.sql"/>
             <arg value="${office.primary.code}cwmspd"/>
-			<arg value="${office.primary.code}hectest_ro"/>
-			<arg value="${office.primary.code}hectest_db"/>
-			<arg value="${office.primary.code}hectest_pu"/>
-			<arg value="${office.primary.code}hectest_up"/>			
-			<arg value="${oracle.cwms.user}"/>
-			<arg value="${office.primary.code}hectest"/>
-			<arg value="${office.primary.code}webtest"/>
-			<arg value="${office.primary.code}hectest_multioffice"/>
-		</exec>
-	</target>
+         <arg value="${office.primary.code}hectest_ro"/>
+         <arg value="${office.primary.code}hectest_db"/>
+         <arg value="${office.primary.code}hectest_pu"/>
+         <arg value="${office.primary.code}hectest_up"/>
+         <arg value="${oracle.cwms.user}"/>
+         <arg value="${office.primary.code}hectest"/>
+         <arg value="${office.primary.code}webtest"/>
+         <arg value="${office.primary.code}hectest_multioffice"/>
+      </exec>
+   </target>
 
-	<target name="test" depends="setup-tests,tests-install" description="run all tests." >
-		<mkdir dir="${coverage.dir}" />
-		<antcall target="clean-test-data"/>
-		<antcall target="load-test-data"/>
-		<antcall target="test-as_multioffice_user"/>
-		<antcall target="test-as_normal_user"/>
-		<antcall target="test-as_pd_user"/>
-		<antcall target="test-as_pdu_user"/>
-		<antcall target="test-as_ro_user"/>
-		<antcall target="test-as_up_user"/>
-		<antcall target="test-as_dba_user"/>
-		<antcall target="test-as_web_user"/>
-		<!-- we will then merge all of the test output and code coverage-->
+   <target name="test" depends="setup-tests,tests-install" description="run all tests." >
+      <mkdir dir="${coverage.dir}" />
+      <antcall target="clean-test-data"/>
+      <antcall target="load-test-data"/>
+      <antcall target="test-as_multioffice_user"/>
+      <antcall target="test-as_normal_user"/>
+      <antcall target="test-as_pd_user"/>
+      <antcall target="test-as_pdu_user"/>
+      <antcall target="test-as_ro_user"/>
+      <antcall target="test-as_up_user"/>
+      <antcall target="test-as_dba_user"/>
+      <antcall target="test-as_web_user"/>
+      <!-- we will then merge all of the test output and code coverage-->
 
-		<!-- create coverage zip for TeamCity-->
-		<zip destfile="${build.dir}/coverage.zip" basedir="${coverage.dir}" includes="**"/>
-	</target>
+      <!-- create coverage zip for TeamCity-->
+      <zip destfile="${build.dir}/coverage.zip" basedir="${coverage.dir}" includes="**"/>
+   </target>
 
 
     <target name="test-as_pdu_user" depends="setup-tests,tests-install" description="run tests that require connecting with a CWMS DBA user/PD user">
@@ -290,22 +290,22 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=${oracle.cwms.user}.test_aaa"/>
+         <arg value="-p=${oracle.cwms.user}.test_aaa"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_dba.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pdu.xml" />
-			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/><arg value="-D"/><arg value="-s"/>
-			<arg value="${office.primary.code}hectest_pu/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest_pu/${oracle.hectest.password}@${oracle.cwms.instance}" />
         </exec>
 
-		<fail>
-			<condition>
-				<not>
-					<equals arg1="0" arg2="${utreturn}"/>
-				</not>
-			</condition>
-		</fail>
+      <fail>
+         <condition>
+            <not>
+               <equals arg1="0" arg2="${utreturn}"/>
+            </not>
+         </condition>
+      </fail>
 
     </target>
 
@@ -319,23 +319,23 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=${oracle.cwms.user}.test_dba"/>
+         <arg value="-p=${oracle.cwms.user}.test_dba"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_dba.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_dba.xml" />
-			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/><arg value="-D"/><arg value="-s"/>
-			<arg value="${office.primary.code}hectest_db/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest_db/${oracle.hectest.password}@${oracle.cwms.instance}" />
 
         </exec>
 
-		<fail>
-			<condition>
-				<not>
-					<equals arg1="0" arg2="${utreturn}"/>
-				</not>
-			</condition>
-		</fail>
+      <fail>
+         <condition>
+            <not>
+               <equals arg1="0" arg2="${utreturn}"/>
+            </not>
+         </condition>
+      </fail>
 
     </target>
 
@@ -349,23 +349,23 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=${oracle.cwms.user}.test_up"/>
+         <arg value="-p=${oracle.cwms.user}.test_up"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_up.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_up.xml" />
-			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/><arg value="-D"/><arg value="-s"/>
-			<arg value="${office.primary.code}hectest_up/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest_up/${oracle.hectest.password}@${oracle.cwms.instance}" />
 
         </exec>
 
-		<fail>
-			<condition>
-				<not>
-					<equals arg1="0" arg2="${utreturn}"/>
-				</not>
-			</condition>
-		</fail>
+      <fail>
+         <condition>
+            <not>
+               <equals arg1="0" arg2="${utreturn}"/>
+            </not>
+         </condition>
+      </fail>
 
     </target>
 
@@ -379,27 +379,27 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=${oracle.cwms.user}.test_ro"/>
+         <arg value="-p=${oracle.cwms.user}.test_ro"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_ro.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_ro.xml" />
-			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/><arg value="-D"/><arg value="-s"/>
-			<arg value="${office.primary.code}hectest_ro/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest_ro/${oracle.hectest.password}@${oracle.cwms.instance}" />
 
         </exec>
 
-		<fail>
-			<condition>
-				<not>
-					<equals arg1="0" arg2="${utreturn}"/>
-				</not>
-			</condition>
-		</fail>
+      <fail>
+         <condition>
+            <not>
+               <equals arg1="0" arg2="${utreturn}"/>
+            </not>
+         </condition>
+      </fail>
 
     </target>
 
-	<target name="test-as_web_user" description="run tests that require connecting with a WEB tier user">
+   <target name="test-as_web_user" description="run tests that require connecting with a WEB tier user">
         <if>
             <available file="build/tests.log"/>
             <then></then>
@@ -409,25 +409,25 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=${oracle.cwms.user}.test_webuser_abilities"/>
+         <arg value="-p=${oracle.cwms.user}.test_webuser_abilities"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_webuser.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_webuser_abilities.xml" />
-			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/><arg value="-D"/><arg value="-s"/>
-			<arg value="${office.primary.code}webtest/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}webtest/${oracle.hectest.password}@${oracle.cwms.instance}" />
         </exec>
-		<fail>
-			<condition>
-				<not>
-					<equals arg1="0" arg2="${utreturn}"/>
-				</not>
-			</condition>
-		</fail>
+      <fail>
+         <condition>
+            <not>
+               <equals arg1="0" arg2="${utreturn}"/>
+            </not>
+         </condition>
+      </fail>
 
     </target>
 
-	<target name="test-as_multioffice_user" description="run tests that require connecting with a user with permissions in more than one office">
+   <target name="test-as_multioffice_user" description="run tests that require connecting with a user with permissions in more than one office">
         <if>
             <available file="build/tests.log"/>
             <then></then>
@@ -437,25 +437,25 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=${oracle.cwms.user}.test_multiple_office_perms"/>
+         <arg value="-p=${oracle.cwms.user}.test_multiple_office_perms"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_webuser.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_webuser_abilities.xml" />
-			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/><arg value="-D"/><arg value="-s"/>
-			<arg value="${office.primary.code}hectest_multioffice/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest_multioffice/${oracle.hectest.password}@${oracle.cwms.instance}" />
         </exec>
-		<fail>
-			<condition>
-				<not>
-					<equals arg1="0" arg2="${utreturn}"/>
-				</not>
-			</condition>
-		</fail>
+      <fail>
+         <condition>
+            <not>
+               <equals arg1="0" arg2="${utreturn}"/>
+            </not>
+         </condition>
+      </fail>
 
     </target>
 
-	<target name="test-as_normal_user" depends="setup-tests,tests-install" description="run tests that require connecting with a normal CWMS user">
+   <target name="test-as_normal_user" depends="setup-tests,tests-install" description="run tests that require connecting with a normal CWMS user">
         <if>
             <available file="build/tests.log"/>
             <then></then>
@@ -465,29 +465,29 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=${oracle.cwms.user}.test_aq_user,${oracle.cwms.user}.test_aaa_normaluserfails"/>
+         <arg value="-p=${oracle.cwms.user}.test_aq_user,${oracle.cwms.user}.test_aaa_normaluserfails"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_ro.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_ro.xml" />
-			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/><arg value="-D"/><arg value="-s"/>
-			<arg value="${office.primary.code}hectest/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest/${oracle.hectest.password}@${oracle.cwms.instance}" />
 
         </exec>
 
-		<fail>
-			<condition>
-				<not>
-					<equals arg1="0" arg2="${utreturn}"/>
-				</not>
-			</condition>
-		</fail>
+      <fail>
+         <condition>
+            <not>
+               <equals arg1="0" arg2="${utreturn}"/>
+            </not>
+         </condition>
+      </fail>
 
     </target>
 
     <target name="load-test-data" description="Load data needed for running tests">
-	<echo message="    Loading test clobs"/>
-	<exec executable="sqlldr" dir="${src}/test/data/ratings" failonerror="true">
+   <echo message="    Loading test clobs"/>
+   <exec executable="sqlldr" dir="${src}/test/data/ratings" failonerror="true">
             <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=xsl_test_clobs.ctl"/>
         </exec>
     </target>
@@ -497,23 +497,23 @@
         <echo message="    clean test data" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=${oracle.cwms.user}.test_clean_all"/>
+         <arg value="-p=${oracle.cwms.user}.test_clean_all"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_pd.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pd.xml" />
-			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/><arg value="-D"/><arg value="-s"/>
-			<arg value="${office.primary.code}cwmspd/${oracle.cwmspd.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}cwmspd/${oracle.cwmspd.password}@${oracle.cwms.instance}" />
 
         </exec>
 
-		<fail>
-			<condition>
-				<not>
-					<equals arg1="0" arg2="${utreturn}"/>
-				</not>
-			</condition>
-		</fail>
+      <fail>
+         <condition>
+            <not>
+               <equals arg1="0" arg2="${utreturn}"/>
+            </not>
+         </condition>
+      </fail>
 
     </target>
     <target name="test-as_pd_user" description="run tests that require connecting with a PD user">
@@ -525,36 +525,36 @@
 
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
-            <arg value="run"/>	    
-			<arg value="-p=${oracle.cwms.user}.test_cwms_rating,${oracle.cwms.user}.test_lrts_updates,${oracle.cwms.user}.test_probability_parameter,${oracle.cwms.user}.test_cwms_loc,${oracle.cwms.user}.test_cwms_ts,${oracle.cwms.user}.test_cwms_util,${oracle.cwms.user}.test_cwms_err,${oracle.cwms.user}.test_cwms_prop,${oracle.cwms.user}.test_versioned_time_series,${oracle.cwms.user}.test_update_ts_extents,${oracle.cwms.user}.test_cwms_pool,${oracle.cwms.user}.test_timeseries_snapping,${oracle.cwms.user}.test_cwms_cat,${oracle.cwms.user}.test_cwms_msg,${oracle.cwms.user}.test_cwms_level,${oracle.cwms.user}.test_cwms_display,${oracle.cwms.user}.test_cwms_data_dissem,${oracle.cwms.user}.test_cwms_stream,${oracle.cwms.user}.test_cwms_forecast,${oracle.cwms.user}.test_cwms_xchg,${oracle.cwms.user}.test_cwms_cache"/>
+            <arg value="run"/>
+         <arg value="-p=${oracle.cwms.user}.test_cwms_rating,${oracle.cwms.user}.test_lrts_updates,${oracle.cwms.user}.test_probability_parameter,${oracle.cwms.user}.test_cwms_loc,${oracle.cwms.user}.test_cwms_ts,${oracle.cwms.user}.test_cwms_util,${oracle.cwms.user}.test_cwms_err,${oracle.cwms.user}.test_cwms_prop,${oracle.cwms.user}.test_versioned_time_series,${oracle.cwms.user}.test_update_ts_extents,${oracle.cwms.user}.test_cwms_pool,${oracle.cwms.user}.test_timeseries_snapping,${oracle.cwms.user}.test_cwms_cat,${oracle.cwms.user}.test_cwms_msg,${oracle.cwms.user}.test_cwms_level,${oracle.cwms.user}.test_cwms_display,${oracle.cwms.user}.test_cwms_data_dissem,${oracle.cwms.user}.test_cwms_stream,${oracle.cwms.user}.test_cwms_forecast,${oracle.cwms.user}.test_cwms_xchg,${oracle.cwms.user}.test_cwms_cache"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_pd.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pd.xml" />
-			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/><arg value="-D"/><arg value="-s"/>
-			<arg value="${office.primary.code}cwmspd/${oracle.cwmspd.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}cwmspd/${oracle.cwmspd.password}@${oracle.cwms.instance}" />
 
         </exec>
 
-		<fail>
-			<condition>
-				<not>
-					<equals arg1="0" arg2="${utreturn}"/>
-				</not>
-			</condition>
-		</fail>
+      <fail>
+         <condition>
+            <not>
+               <equals arg1="0" arg2="${utreturn}"/>
+            </not>
+         </condition>
+      </fail>
 
     </target>
 
 
     <target name="destroy-tests">
-		<echo message="    Removing test framework"/>
-		<exec dir="build/deps/utPLSQL/source" executable="sqlplus">
-			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
-			<redirector inputstring="drop user ut3 cascade;">
+      <echo message="    Removing test framework"/>
+      <exec dir="build/deps/utPLSQL/source" executable="sqlplus">
+         <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+         <redirector inputstring="drop user ut3 cascade;">
 
-			</redirector>
-		</exec>
+         </redirector>
+      </exec>
         <delete file="build/test.log"/>
 
     </target>
@@ -563,156 +563,156 @@
 
 
 
-	<target name="tail-test">
-		<concat>
-			<filelist dir="${root}" files="auto-build-output.txt"/>
-			<filterchain>
-				<filterreader classname="org.apache.tools.ant.filters.TailFilter">
-					<param name="lines" value="${output.lines}"/>
-				</filterreader>
-			</filterchain>
-		</concat>
-	</target>
+   <target name="tail-test">
+      <concat>
+         <filelist dir="${root}" files="auto-build-output.txt"/>
+         <filterchain>
+            <filterreader classname="org.apache.tools.ant.filters.TailFilter">
+               <param name="lines" value="${output.lines}"/>
+            </filterreader>
+         </filterchain>
+      </concat>
+   </target>
 
-	<!-- Executes python script to drop the CWMS schema. -->
-	<target name="clean" description="Executes python script to drop the CWMS schema" depends="createbuilduser">
+   <!-- Executes python script to drop the CWMS schema. -->
+   <target name="clean" description="Executes python script to drop the CWMS schema" depends="createbuilduser">
 
-		<echo message="dropping existing CWMS Schema..."/>
+      <echo message="dropping existing CWMS Schema..."/>
 
-		<property name="autokill-arg-line" value="autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} builduser=${oracle.builduser} builduser_passwd=${oracle.builduser.password} cwms_schema=${oracle.cwms.user} ${autokill.force} ${build.restricted}"/>
-		<echo message="${autokill-arg-line}"/>
+      <property name="autokill-arg-line" value="autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} builduser=${oracle.builduser} builduser_passwd=${oracle.builduser.password} cwms_schema=${oracle.cwms.user} ${autokill.force} ${build.restricted}"/>
+      <echo message="${autokill-arg-line}"/>
 
-		<exec dir="${src}" executable="python2" output="auto-kill-output.txt" error="auto-kill-error.txt" resultproperty="auto-kill-result">
-			<arg line="${autokill-arg-line}"/>
-		</exec>
+      <exec dir="${src}" executable="python2" output="auto-kill-output.txt" error="auto-kill-error.txt" resultproperty="auto-kill-result">
+         <arg line="${autokill-arg-line}"/>
+      </exec>
 
-		<if>
-			<equals arg1="${auto-kill-result}" arg2="0" />
-			<then>
-				<echo message="Finished dropping existing CWMS Schema"/>
-			</then>
-			<else>
-				<concat>
-					<filelist dir="${root}" files="auto-kill-output.txt,auto-kill-error.txt"/>
-				</concat>
-				<echo message="${auto-kill-result}"/>
-				<fail/>
-			</else>
-		</if>
+      <if>
+         <equals arg1="${auto-kill-result}" arg2="0" />
+         <then>
+            <echo message="Finished dropping existing CWMS Schema"/>
+         </then>
+         <else>
+            <concat>
+               <filelist dir="${root}" files="auto-kill-output.txt,auto-kill-error.txt"/>
+            </concat>
+            <echo message="${auto-kill-result}"/>
+            <fail/>
+         </else>
+      </if>
 
     </target>
 
-	<target name="java-resources">
-		<mkdir dir="${build.dir}/resources/cwms/data"/>
-		<exec dir="${src}" executable="python2" failonerror="true" output="${build.dir}/resources/cwms/data/unitConversions.def" error="${build.dir}/resources.log">
-			<arg line="unitConversions.py"/>
-		</exec>
-		<exec dir="${src}" executable="python2" failonerror="true" output="${build.dir}/resoursces.log" error="${build.dir}/resources.log">
-			<arg line="build_db_parameters_def.py ${build.dir}/resources/cwms/data/db_parameter_units.def"/>
-		</exec>
-	</target>
+   <target name="java-resources">
+      <mkdir dir="${build.dir}/resources/cwms/data"/>
+      <exec dir="${src}" executable="python2" failonerror="true" output="${build.dir}/resources/cwms/data/unitConversions.def" error="${build.dir}/resources.log">
+         <arg line="unitConversions.py"/>
+      </exec>
+      <exec dir="${src}" executable="python2" failonerror="true" output="${build.dir}/resoursces.log" error="${build.dir}/resources.log">
+         <arg line="build_db_parameters_def.py ${build.dir}/resources/cwms/data/db_parameter_units.def"/>
+      </exec>
+   </target>
 
-	<!-- Loads rowcps schema. -->
-	<target name="load-rowcps-schema" description="Loads rowcps schema">
+   <!-- Loads rowcps schema. -->
+   <target name="load-rowcps-schema" description="Loads rowcps schema">
 
-		<echo message="Loading rowcps Schema..."/>
+      <echo message="Loading rowcps Schema..."/>
 
-		<property name="rowcpsLoad-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @rowcps_schema"/>
-		<echo message="${rowcpsLoad-arg-line}"/>
+      <property name="rowcpsLoad-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @rowcps_schema"/>
+      <echo message="${rowcpsLoad-arg-line}"/>
 
-		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-output.txt" error="rowcps-load-error.txt" resultproperty="rowcps-load-result">
-			<arg line="${rowcpsLoad-arg-line}"/>
-		</exec>
+      <exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-output.txt" error="rowcps-load-error.txt" resultproperty="rowcps-load-result">
+         <arg line="${rowcpsLoad-arg-line}"/>
+      </exec>
 
-		<if>
-			<equals arg1="${rowcps-load-result}" arg2="0" />
-			<then>
-				<echo message="Finished Loading existing rowcps Schema"/>
-			</then>
-			<else>
-				<concat>
-					<filelist dir="${root}" files="rowcps-load-output.txt,rowcps-load-error.txt"/>
-				</concat>
-				<echo message="${rowcps-load-result}"/>
-				<fail/>
-			</else>
-		</if>
+      <if>
+         <equals arg1="${rowcps-load-result}" arg2="0" />
+         <then>
+            <echo message="Finished Loading existing rowcps Schema"/>
+         </then>
+         <else>
+            <concat>
+               <filelist dir="${root}" files="rowcps-load-output.txt,rowcps-load-error.txt"/>
+            </concat>
+            <echo message="${rowcps-load-result}"/>
+            <fail/>
+         </else>
+      </if>
 
-	</target>
+   </target>
 
-	<target name = "load-rowcps-api">
-		<echo message="Loading rowcps Types..."/>
+   <target name = "load-rowcps-api">
+      <echo message="Loading rowcps Types..."/>
 
-		<property name="rowcpsLoadTypes-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @rowcps_types"/>
-		<echo message="${rowcpsLoadTypes-arg-line}"/>
+      <property name="rowcpsLoadTypes-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @rowcps_types"/>
+      <echo message="${rowcpsLoadTypes-arg-line}"/>
 
-		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-types-load-output.txt" error="rowcps-types-load-error.txt" resultproperty="rowcps-types-load-result">
-			<arg line="${rowcpsLoadTypes-arg-line}"/>
-		</exec>
+      <exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-types-load-output.txt" error="rowcps-types-load-error.txt" resultproperty="rowcps-types-load-result">
+         <arg line="${rowcpsLoadTypes-arg-line}"/>
+      </exec>
 
-		<if>
-			<equals arg1="${rowcps-types-load-result}" arg2="0" />
-			<then>
-				<echo message="Finished Loading existing rowcps Types"/>
-			</then>
-			<else>
-				<concat>
-					<filelist dir="${root}" files="rowcps-types-load-output.txt,rowcps-types-load-error.txt"/>
-				</concat>
-				<echo message="${rowcps-types-load-result}"/>
-				<fail/>
-			</else>
-		</if>
+      <if>
+         <equals arg1="${rowcps-types-load-result}" arg2="0" />
+         <then>
+            <echo message="Finished Loading existing rowcps Types"/>
+         </then>
+         <else>
+            <concat>
+               <filelist dir="${root}" files="rowcps-types-load-output.txt,rowcps-types-load-error.txt"/>
+            </concat>
+            <echo message="${rowcps-types-load-result}"/>
+            <fail/>
+         </else>
+      </if>
 
-		<echo message="Loading CWMS project Package..."/>
+      <echo message="Loading CWMS project Package..."/>
 
-		<property name="rowcpsLoadCWMSProjectPkg-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @cwms_project_pkg"/>
-		<echo message="${rowcpsLoadCWMSProjectPkg-arg-line}"/>
+      <property name="rowcpsLoadCWMSProjectPkg-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @cwms_project_pkg"/>
+      <echo message="${rowcpsLoadCWMSProjectPkg-arg-line}"/>
 
-		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-output.txt" error="rowcps-load-CWMS-Project-Pkg-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-result">
-			<arg line="${rowcpsLoadCWMSProjectPkg-arg-line}"/>
-		</exec>
+      <exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-output.txt" error="rowcps-load-CWMS-Project-Pkg-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-result">
+         <arg line="${rowcpsLoadCWMSProjectPkg-arg-line}"/>
+      </exec>
 
-		<if>
-			<equals arg1="${rowcps-load-CWMS-Project-Pkg-result}" arg2="0" />
-			<then>
-				<echo message="Finished Loading CWMS project Package"/>
-			</then>
-			<else>
-				<concat>
-					<filelist dir="${root}" files="rowcps-load-CWMS-Project-Pkg-output.txt,rowcps-load-CWMS-Project-Pkg-error.txt"/>
-				</concat>
-				<echo message="${rowcps-load-CWMS-Project-Pkg-result}"/>
-				<fail/>
-			</else>
-		</if>
+      <if>
+         <equals arg1="${rowcps-load-CWMS-Project-Pkg-result}" arg2="0" />
+         <then>
+            <echo message="Finished Loading CWMS project Package"/>
+         </then>
+         <else>
+            <concat>
+               <filelist dir="${root}" files="rowcps-load-CWMS-Project-Pkg-output.txt,rowcps-load-CWMS-Project-Pkg-error.txt"/>
+            </concat>
+            <echo message="${rowcps-load-CWMS-Project-Pkg-result}"/>
+            <fail/>
+         </else>
+      </if>
 
-		<echo message="Loading CWMS project Package Body..."/>
+      <echo message="Loading CWMS project Package Body..."/>
 
-		<property name="rowcpsLoadCWMSProjectPkgBody-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @cwms_project_pkg_body"/>
-		<echo message="${rowcpsLoadCWMSProjectPkgBody-arg-line}"/>
+      <property name="rowcpsLoadCWMSProjectPkgBody-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @cwms_project_pkg_body"/>
+      <echo message="${rowcpsLoadCWMSProjectPkgBody-arg-line}"/>
 
-		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-body-output.txt" error="rowcps-load-CWMS-Project-Pkg-body-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-body-result">
-			<arg line="${rowcpsLoadCWMSProjectPkgBody-arg-line}"/>
-		</exec>
+      <exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-body-output.txt" error="rowcps-load-CWMS-Project-Pkg-body-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-body-result">
+         <arg line="${rowcpsLoadCWMSProjectPkgBody-arg-line}"/>
+      </exec>
 
-		<if>
-			<equals arg1="${rowcps-load-CWMS-Project-Pkg-body-result}" arg2="0" />
-			<then>
-				<echo message="Finished Loading CWMS project Package Body"/>
-			</then>
-			<else>
-				<concat>
-					<filelist dir="${root}" files="rowcps-load-CWMS-Project-Pkg-body-output.txt,rowcps-load-CWMS-Project-Pkg-body-error.txt"/>
-				</concat>
-				<echo message="${rowcps-load-CWMS-Project-Pkg-body-result}"/>
-				<fail/>
-			</else>
-		</if>
+      <if>
+         <equals arg1="${rowcps-load-CWMS-Project-Pkg-body-result}" arg2="0" />
+         <then>
+            <echo message="Finished Loading CWMS project Package Body"/>
+         </then>
+         <else>
+            <concat>
+               <filelist dir="${root}" files="rowcps-load-CWMS-Project-Pkg-body-output.txt,rowcps-load-CWMS-Project-Pkg-body-error.txt"/>
+            </concat>
+            <echo message="${rowcps-load-CWMS-Project-Pkg-body-result}"/>
+            <fail/>
+         </else>
+      </if>
     </target>
 
-	<!-- Drop existing CWMS schema then build a new CWMS schema. -->
-	<target name="all-schema" depends="clean,build" description="drop existing CWMS schema then build a new CWMS schema">
+   <!-- Drop existing CWMS schema then build a new CWMS schema. -->
+   <target name="all-schema" depends="clean,build" description="drop existing CWMS schema then build a new CWMS schema">
     </target>
 
     <target name="all" depends="all-schema" description="does a clean build">
@@ -830,54 +830,54 @@
     <target name="rebuild-schema-with-export" depends="exportSchema,export,clean,build,import,createUsers" description="export AT tables,drop existing CWMS schema then build a new CWMS schema, import AT data, recreate user accounts">
     </target>
 
-	
 
-	<target name="clean-output-files">
-		<delete file="auto-build-error.txt"/>
-		<delete file="auto-build-output.txt"/>
-		<delete file="auto-kill-error.txt"/>
-		<delete file="auto-kill-output.txt"/>
-		<delete file="build-sql-script-error.txt"/>
-		<delete file="build-sql-script-output.txt"/>
-		<delete file="local_wcdba_overrides.xml"/>
-		<delete file="src/CWMS_AGG_DISTRICT_DATA_TABLE.log"/>
-		<delete file="src/CWMS_CITIES_SP_DATA_TABLE.log"/>
-		<delete file="src/CWMS_COUNTY_SP_DATA_TABLE.log"/>
-		<delete file="src/CWMS_NATION_SP_DATA_TABLE.log"/>
-		<delete file="src/CWMS_NID_DATA_TABLE.log"/>
-		<delete file="src/CWMS_OFFICES_GEOLOC_DATA_TABLE.log"/>
-		<delete file="src/CWMS_STATE_SP_DATA_TABLE.log"/>
-		<delete file="src/CWMS_STATION_NWS_DATA_TABLE.log"/>
-		<delete file="src/CWMS_STATION_USGS_DATA_TABLE.log"/>
-		<delete file="src/CWMS_TIME_ZONE_SP_DATA_TABLE.log"/>
-		<delete file="src/CWMS_USACE_DAM_DATA_TABLE.log"/>
-		<delete file="src/autobuild.sql"/>
-		<delete file="src/autokill.sql"/>
-		<delete file="src/buildCWMS_DB.log"/>
-		<delete file="src/cwms/defines.sql"/>
-		<delete file="src/data/radar_xslt_clobs.ctl"/>
-		<delete file="src/data/unit_alias_data.sql"/>
-		<delete file="src/dropCwms.sql"/>
-		<delete file="src/killCWMS_DB.log"/>
-		<delete file="src/mathComputations.pyc"/>
-		<delete file="src/py_BuildCwms.sql"/>
-		<delete file="src/py_ErocUsers.sql"/>
-		<delete file="src/py_Queues.sql"/>
-		<delete file="src/py_prompt.sql"/>
-		<delete file="src/qualityLoader.ctl"/>
-		<delete file="src/qualityLoader.log"/>
-		<delete file="src/radar_xslt_clobs.log"/>
-		<delete>
-			<fileset dir="." includes="**/*.pyc"/>
-		</delete>
-		<delete file="src/vertcon_clobs.log"/>
-		<delete>
-			<fileset dir="src/updateScripts" includes="*.log"/>
-		</delete>
-	</target>
 
-	<target name="jdbcdeps">
-		<resolver:resolve>
+   <target name="clean-output-files">
+      <delete file="auto-build-error.txt"/>
+      <delete file="auto-build-output.txt"/>
+      <delete file="auto-kill-error.txt"/>
+      <delete file="auto-kill-output.txt"/>
+      <delete file="build-sql-script-error.txt"/>
+      <delete file="build-sql-script-output.txt"/>
+      <delete file="local_wcdba_overrides.xml"/>
+      <delete file="src/CWMS_AGG_DISTRICT_DATA_TABLE.log"/>
+      <delete file="src/CWMS_CITIES_SP_DATA_TABLE.log"/>
+      <delete file="src/CWMS_COUNTY_SP_DATA_TABLE.log"/>
+      <delete file="src/CWMS_NATION_SP_DATA_TABLE.log"/>
+      <delete file="src/CWMS_NID_DATA_TABLE.log"/>
+      <delete file="src/CWMS_OFFICES_GEOLOC_DATA_TABLE.log"/>
+      <delete file="src/CWMS_STATE_SP_DATA_TABLE.log"/>
+      <delete file="src/CWMS_STATION_NWS_DATA_TABLE.log"/>
+      <delete file="src/CWMS_STATION_USGS_DATA_TABLE.log"/>
+      <delete file="src/CWMS_TIME_ZONE_SP_DATA_TABLE.log"/>
+      <delete file="src/CWMS_USACE_DAM_DATA_TABLE.log"/>
+      <delete file="src/autobuild.sql"/>
+      <delete file="src/autokill.sql"/>
+      <delete file="src/buildCWMS_DB.log"/>
+      <delete file="src/cwms/defines.sql"/>
+      <delete file="src/data/radar_xslt_clobs.ctl"/>
+      <delete file="src/data/unit_alias_data.sql"/>
+      <delete file="src/dropCwms.sql"/>
+      <delete file="src/killCWMS_DB.log"/>
+      <delete file="src/mathComputations.pyc"/>
+      <delete file="src/py_BuildCwms.sql"/>
+      <delete file="src/py_ErocUsers.sql"/>
+      <delete file="src/py_Queues.sql"/>
+      <delete file="src/py_prompt.sql"/>
+      <delete file="src/qualityLoader.ctl"/>
+      <delete file="src/qualityLoader.log"/>
+      <delete file="src/radar_xslt_clobs.log"/>
+      <delete>
+         <fileset dir="." includes="**/*.pyc"/>
+      </delete>
+      <delete file="src/vertcon_clobs.log"/>
+      <delete>
+         <fileset dir="src/updateScripts" includes="*.log"/>
+      </delete>
+   </target>
+
+   <target name="jdbcdeps">
+      <resolver:resolve>
             <resolver:dependencies>
                 <resolver:dependency coords="org.python:jython-standalone:2.7.2" />
                 <resolver:dependency coords="com.oracle.ojdbc:ojdbc8:19.3.0.0" />
@@ -886,24 +886,24 @@
             <files refid="deps" dir="${build.dir}/deps" layout="{artifactId}.{extension}"/>
             <resolver:properties prefix="dep." classpath="runtime"/>
         </resolver:resolve>
-	</target>
+   </target>
 
-	<target name="xml-schemas" depends="jdbcdeps">
-	    <property name="xml_schema_zipfile" location="${build.dir}/xmlSchema.zip"/>
-	    <echo message="==> Cleaning the xml directory"/>
+   <target name="xml-schemas" depends="jdbcdeps">
+       <property name="xml_schema_zipfile" location="${build.dir}/xmlSchema.zip"/>
+       <echo message="==> Cleaning the xml directory"/>
         <exec executable="make" dir="${src}/xml" failonerror="false">
             <arg value="zipfile=${xml_schema_zipfile}"/>
             <arg value="clean"/>
         </exec>
-	    <echo message="==> Loading the hec-datatypes template CLOB"/>
+       <echo message="==> Loading the hec-datatypes template CLOB"/>
         <exec executable="sqlldr" dir="${src}/xml" failonerror="true">
             <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=hec-datatypes_xml_schema.ctl"/>
         </exec>
-	    <echo message="==> Building the hec-datatypes.xsd file from the database"/>
-        
+       <echo message="==> Building the hec-datatypes.xsd file from the database"/>
+
         <java
             fork="true"
-			failonerror="true"
+         failonerror="true"
             classname="org.python.util.jython"
             >
             <classpath>
@@ -915,18 +915,18 @@
             <arg value="-p"/><arg value="${oracle.cwms.password}"/>
             <arg value="-o"/><arg value="${src}/xml"/>
         </java>
-	    <echo message="==> Making the .svg files and the .zip file"/>
+       <echo message="==> Making the .svg files and the .zip file"/>
         <exec executable="make" dir="${src}/xml" failonerror="true">
             <arg value="zipfile=${xml_schema_zipfile}"/>
         </exec>
-	</target>
+   </target>
 
-	<!-- TODO: figured out why ${build.dir}/** isn't working -->
-	<target name="bundle" depends="java-resources,xml-schemas">
-		<echo message="${build.dir}" />
-		<zip destfile="${build.dir}/cwms_db_${pom.version}.zip"
-			 basedir="."
-			 excludes="${test}/**,${build.dir}/**,.teamcity/**/,.gitignore,v3.0/**,build/**"
+   <!-- TODO: figured out why ${build.dir}/** isn't working -->
+   <target name="bundle" depends="java-resources,xml-schemas">
+      <echo message="${build.dir}" />
+      <zip destfile="${build.dir}/cwms_db_${pom.version}.zip"
+          basedir="."
+          excludes="${test}/**,${build.dir}/**,.teamcity/**/,.gitignore,v3.0/**,build/**"
              />
         <resolver:resolve>
             <resolver:dependencies>
@@ -944,7 +944,7 @@
         </exec>
         <java
             fork="true"
-			failonerror="true"
+         failonerror="true"
             classname="org.python.util.jython"
             >
             <classpath>
@@ -962,461 +962,461 @@
         <zip destfile="${build.dir}/docs.zip"
              basedir="${build.dir}/docs/"
             />
-		<jar destfile="${build.dir}/resources.jar"
-			 basedir="${build.dir}/resources"
-			 includes="**"
-		/>
-		<resolver:artifacts id="output">
+      <jar destfile="${build.dir}/resources.jar"
+          basedir="${build.dir}/resources"
+          includes="**"
+      />
+      <resolver:artifacts id="output">
             <resolver:artifact file="${build.dir}/cwms_db_${pom.version}.zip" type="zip" id="bundle" pomref="pom"/>
             <resolver:artifact file="${build.dir}/docs.zip" type="zip" id="docs" pomref="pom" classifier="docs"/>
-			<resolver:artifact file="${build.dir}/resources.jar" type="jar" id="resources" pomref="pom" classifier="resources"/>
+         <resolver:artifact file="${build.dir}/resources.jar" type="jar" id="resources" pomref="pom" classifier="resources"/>
             <resolver:artifact file="${xml_schema_zipfile}" type="zip" id="xml_schemas" pomref="pom" classifier="xml_schema_docs"/>
-		</resolver:artifacts>
-	</target>
-	<target name="install" depends="bundle">
-		<resolver:install artifactsref="output" />
-	</target>
-	<target name="deploy" depends="bundle">
-		<echo message="Sending to ${target_repository}"/>
-		<resolver:deploy artifactsref="output">
-			<remoteRepo refid="${target_repository}"/>
-		</resolver:deploy>
-	</target>
+      </resolver:artifacts>
+   </target>
+   <target name="install" depends="bundle">
+      <resolver:install artifactsref="output" />
+   </target>
+   <target name="deploy" depends="bundle">
+      <echo message="Sending to ${target_repository}"/>
+      <resolver:deploy artifactsref="output">
+         <remoteRepo refid="${target_repository}"/>
+      </resolver:deploy>
+   </target>
 
-	<!-- nothing below this line should EVER depend on a passed in overrides file. '
-		 However, one may override settings, like the container_name with a simple -Ddocker.props.container_name=<Some text>
+   <!-- nothing below this line should EVER depend on a passed in overrides file. '
+       However, one may override settings, like the container_name with a simple -Ddocker.props.container_name=<Some text>
 
-	-->
-	<target name="docker.init" depends="init">
-		<condition property="docker.props.container_name" value="cwmsdb_${teamcity.branch}" else="antdockercwmsdb">
-			<isset property="teamcity.branch"/>
-		</condition>
-		<condition property="database.office" value="${database.office}" else="SPK">
-			<isset property="database.office"/>
-		</condition>
+   -->
+   <target name="docker.init" depends="init">
+      <condition property="docker.props.container_name" value="cwmsdb_${teamcity.branch}" else="antdockercwmsdb">
+         <isset property="teamcity.branch"/>
+      </condition>
+      <condition property="database.office" value="${database.office}" else="SPK">
+         <isset property="database.office"/>
+      </condition>
 
-		<condition property="database.eroc" value="${database.eroc}" else="l2">
-			<isset property="database.eroc"/>
-		</condition>
+      <condition property="database.eroc" value="${database.eroc}" else="l2">
+         <isset property="database.eroc"/>
+      </condition>
 
-		<condition property="docker.props.oracle.image" value="${oracle.image}" else="registry.hecdev.net/oracle/database:19.3.0-ee">
-			<isset property="oracle.image"/>
-		</condition>
+      <condition property="docker.props.oracle.image" value="${oracle.image}" else="registry.hecdev.net/oracle/database:19.3.0-ee">
+         <isset property="oracle.image"/>
+      </condition>
 
-		<condition property="docker.props.db_name" value="XEPDB1" else="CWMS">
-			<matches string="${docker.props.oracle.image}" pattern="^.*xe$" casesensitive="false"/>
-		</condition>
+      <condition property="docker.props.db_name" value="XEPDB1" else="CWMS">
+         <matches string="${docker.props.oracle.image}" pattern="^.*xe$" casesensitive="false"/>
+      </condition>
 
-		<property name="docker.props.network_name" value="cwmsdbnet"/>
+      <property name="docker.props.network_name" value="cwmsdbnet"/>
 
-		<condition property="isdeployed" value="true" else="false">
-			<and>
-				<isset property="teamcity.branch"/>
-				<matches string="${teamcity.branch}" pattern="^(master|release/*)" casesensitive="false"/>
-			</and>
-		</condition>
+      <condition property="isdeployed" value="true" else="false">
+         <and>
+            <isset property="teamcity.branch"/>
+            <matches string="${teamcity.branch}" pattern="^(master|release/*)" casesensitive="false"/>
+         </and>
+      </condition>
 
-		<if>
-			<and>
-				<isset property="teamcity.branch"/>
-				<equals arg1="${isdeployed}" arg2="true"/>
-			</and>
-			<then>
-				<property name="docker.props.image_name" value="${docker.props.image.basename}:${pom.version}"/>
-				<property name="docker.props.image_name_old" value="${docker.props.image.basename_old}:${pom.version}"/>
-			</then>
-			<else>
-				<condition property="docker.props.image_name" value="${docker.props.image.basename}:build-${env.USER}" else="${docker.props.image.basename}:build-local">
-					<isset property="env.BUILD_NUMBER"/>
-				</condition>
-				<condition property="docker.props.image_name_old" value="${docker.props.image.basename_old}:build-${env.USER}" else="${docker.props.image_old.basename}:build-local">
-					<isset property="env.BUILD_NUMBER"/>
-				</condition>
-			</else>
-		</if>
+      <if>
+         <and>
+            <isset property="teamcity.branch"/>
+            <equals arg1="${isdeployed}" arg2="true"/>
+         </and>
+         <then>
+            <property name="docker.props.image_name" value="${docker.props.image.basename}:${pom.version}"/>
+            <property name="docker.props.image_name_old" value="${docker.props.image.basename_old}:${pom.version}"/>
+         </then>
+         <else>
+            <condition property="docker.props.image_name" value="${docker.props.image.basename}:build-${env.USER}" else="${docker.props.image.basename}:build-local">
+               <isset property="env.BUILD_NUMBER"/>
+            </condition>
+            <condition property="docker.props.image_name_old" value="${docker.props.image.basename_old}:build-${env.USER}" else="${docker.props.image_old.basename}:build-local">
+               <isset property="env.BUILD_NUMBER"/>
+            </condition>
+         </else>
+      </if>
 
-		<loadresource property="tmp.image_version">
-			<propertyresource name="docker.props.image_name"/>
-			<filterchain>
-				<tokenfilter>
-					<filetokenizer/>
-					<replacestring from="${docker.props.image.basename}:" to=""/>
-				</tokenfilter>
-			</filterchain>
-		</loadresource>
-		<echo message="##teamcity[setParameter name='env.CWMS_INSTALLER_IMAGE' value='${tmp.image_version}']"/>
-
-
-		<echo message="running with the following baseline propertyes"/>
-		<echoproperties prefix="docker."/>
-
-	</target>
-
-	<target name="docker.buildimage" depends="docker.init">
-		<echo message="Creating baseline docker image"/>
-		<exec dir="${root}/.." executable="docker"  failonerror="true">
-			<arg value="build"/>
-			<arg value="--tag"/>
-			<arg value="${docker.props.image_name}"/>
-			<arg value="."/>
-			<redirector output="${root}/build/docker.txt" error="${root}/build/docker.txt" alwayslog="true"/>
-		</exec>
-
-	</target>
-
-	<target name="docker.createnetwork" depends="docker.init">
-		<exec executable="docker" failonerror="false" outputproperty="networkList">
-			<arg value="network"/>
-			<arg value="ls"/>
-		</exec>
-		<if>
-			<matches pattern="${docker.props.network_name}" string="${networkList}"/>
-			<then>
-				<echo message="Network already created"/>
-			</then>
-			<else>
-				<echo message="Creating the docker internal network"/>
-				<exec executable="docker" failonerror="true">
-					<arg value="network"/>
-					<arg value="create"/>
-					<arg value="${docker.props.network_name}"/>
-				</exec>
-			</else>
-		</if>
-	</target>
-
-	<target name="docker.setupparameters" depends="docker.init">
-		<echo message="processing container name to safe characters. Starting with: ${docker.props.container_name}"/>
-		<exec executable="sed" outputProperty="docker.props.container_name_valid" failonerror="true">
-			<arg value="-e"/>
-			<arg value="s@/refs/heads/@@g"/>
-			<arg value="-e"/>
-			<arg value="s@/@_@g"/>
-			<arg value="-e"/>
-			<arg value="s@-@_@g"/>
-			<arg value="-e"/>
-			<arg value="s@#@_@g"/>
-			<redirector inputString="${docker.props.container_name}"/>
-		</exec>
-		<echo message="Name used will be: ${docker.props.container_name_valid}"/>
-		<echo message="Creating parameter file"/>
-		<if>
-			<available file="${root}/build/database.props"/>
-			<then>
-				<echo message="Overwriting Existing Parameters"/>
-			</then>
-		</if>
-
-		<propertyfile file="${root}/build/database.props">
-			<entry key="database.syspw" value="antsyspassword"/>
-			<entry key="database.cwmspw" value="antcwmspassword"/>
-			<entry key="database.buildpw" value="antbuildpassword"/>
-			<entry key="database.office" value="${database.office}"/>
-			<entry key="database.eroc" value="${database.eroc}"/>
-			<entry key="database.host_and_port" value="${docker.props.container_name_valid}:1521"/>
-			<entry key="database.name" value="${docker.props.db_name}"/>
-			<entry key="database.volume" value="${docker.props.container_name_valid}_volume"/>
-		</propertyfile>
-		<echo message="Procedding with the following database parameters"/>
-		<echoproperties prefix="database."/>
-	</target>
-
-	<target name="docker.prepdb" depends="docker.setupparameters,docker.stopdb,docker.createnetwork">
-		<echo message="Creating baseline docker database"/>
-		<loadproperties srcFile="${root}/build/database.props"/>
-		<exec executable="docker" outputproperty="containerList">
-			<arg value="container"/>
-			<arg value="ls"/>
-			<arg value="-a"/>
-		</exec>
-		<echo message="Existing Containers at time of run. Checking for ${docker.props.container_name_valid}"/>
-		<echo message="${containerList}"/>
-		<tstamp>
-			<format property="checkstart" pattern="YYYY-MM-dd'T'HH:mm:ss'Z'" timezone="UTC"/>
-		</tstamp>
-		<if>
-			<matches pattern="${docker.props.container_name_valid}$" string="${containerList}" multiline="true"/>
-			<then>
-				<echo message="Starting Existing Oracle database"/>
-				<exec executable="docker" failonerror="true">
-					<arg value="start"/>
-					<arg value="${docker.props.container_name_valid}"/>
-				</exec>
-			</then>
-			<else>
-				<echo message="Creating new database"/>
-				<exec dir="${root}" executable="docker" failonerror="true">
-					<arg value="volume"/>
-					<arg value="create"/>
-					<arg value="${database.volume}"/>
-				</exec>
-				<exec dir="${root}" executable="docker" failonerror="true">
-					<arg value="run"/>
-					<arg value="-d"/>
-					<arg value="--network"/>
-					<arg value="${docker.props.network_name}"/>
-					<arg value="-p"/>
-					<arg value="1521"/> <!-- random external port will be assigned and stored -->
-					<arg value="--name"/>
-					<arg value="${docker.props.container_name_valid}"/>
-					<arg value="-e"/>
-					<arg value="ORACLE_PDB=${database.name}"/>
-					<arg value="-e"/>
-					<arg value="ORACLE_PWD=${database.syspw}"/>
-					<arg value="-e"/>
-					<arg value="enterprise"/>
-					<arg value="-v"/>
-					<arg value="${database.volume}:/opt/oracle/oradata"/>
-					<arg value="${docker.props.oracle.image}"/>
-				</exec>
-			</else>
-		</if>
-		<echo message="checking from ${checkstart}"/>		
-		<waitfor checkevery="1" checkeveryunit="minute" maxwait="2" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
-			<scriptcondition language="javascript" value="false"><![CDATA[
-				var p = java.lang.Runtime.getRuntime().exec(
-					"docker logs --since " + cwms_database_schema.getProperty("checkstart")
-				   +" " + cwms_database_schema.getProperty("docker.props.container_name_valid") );
-				p.waitFor();
-				var reader = new java.io.InputStreamReader(p.getInputStream());
-				var out = org.apache.tools.ant.util.FileUtils.safeReadFully(reader);
-				var echo = cwms_database_schema.createTask("echo");
-				//echo.setMessage("got" + out);
-				//echo.perform();
-				if( out.contains("DATABASE SETUP WAS NOT SUCCESSFUL!") ){
-					throw "Database Startup or create failed";
-				}
-				self.setValue(out.contains("DATABASE IS READY TO USE"));
-				]]>
-			</scriptcondition>
-
-		</waitfor>
-		<echo message="generating overrides for this run"/>
-		<antcall target="docker.generateoverrides"/>
+      <loadresource property="tmp.image_version">
+         <propertyresource name="docker.props.image_name"/>
+         <filterchain>
+            <tokenfilter>
+               <filetokenizer/>
+               <replacestring from="${docker.props.image.basename}:" to=""/>
+            </tokenfilter>
+         </filterchain>
+      </loadresource>
+      <echo message="##teamcity[setParameter name='env.CWMS_INSTALLER_IMAGE' value='${tmp.image_version}']"/>
 
 
-	</target>
+      <echo message="running with the following baseline propertyes"/>
+      <echoproperties prefix="docker."/>
 
-	<target name="docker.showport" depends="docker.setupparameters">
-		<!--<loadproperties srcFile="${root}/build/database.props"/>-->
-		<echo message="Finding port for ${docker.props.container_name_valid}"/>
-		<exec executable="docker" outputproperty="portOutput" failonerror="true">
-			<arg value="port"/>
-			<arg value="${docker.props.container_name_valid}"/>
-		</exec>
-		<echo message="Your database is listening on ${portOutput}"/>
-		<loadresource property="portLine1">
-			<propertyresource name="portOutput"/>
-			<filterchain>
-				<headfilter lines="1"/>
-			</filterchain>
-		</loadresource>
-		<exec executable="sed" outputProperty="docker.props.external_port">
-			<arg value="-e"/>
-			<arg value="s/^\(.*:\)\(.*\)$/\2/"/>
-			<redirector inputstring="${portLine1}"/>
-		</exec>
-		<echo message="Port is ${docker.props.external_port}"/>
-	</target>
+   </target>
+
+   <target name="docker.buildimage" depends="docker.init">
+      <echo message="Creating baseline docker image"/>
+      <exec dir="${root}/.." executable="docker"  failonerror="true">
+         <arg value="build"/>
+         <arg value="--tag"/>
+         <arg value="${docker.props.image_name}"/>
+         <arg value="."/>
+         <redirector output="${root}/build/docker.txt" error="${root}/build/docker.txt" alwayslog="true"/>
+      </exec>
+
+   </target>
+
+   <target name="docker.createnetwork" depends="docker.init">
+      <exec executable="docker" failonerror="false" outputproperty="networkList">
+         <arg value="network"/>
+         <arg value="ls"/>
+      </exec>
+      <if>
+         <matches pattern="${docker.props.network_name}" string="${networkList}"/>
+         <then>
+            <echo message="Network already created"/>
+         </then>
+         <else>
+            <echo message="Creating the docker internal network"/>
+            <exec executable="docker" failonerror="true">
+               <arg value="network"/>
+               <arg value="create"/>
+               <arg value="${docker.props.network_name}"/>
+            </exec>
+         </else>
+      </if>
+   </target>
+
+   <target name="docker.setupparameters" depends="docker.init">
+      <echo message="processing container name to safe characters. Starting with: ${docker.props.container_name}"/>
+      <exec executable="sed" outputProperty="docker.props.container_name_valid" failonerror="true">
+         <arg value="-e"/>
+         <arg value="s@/refs/heads/@@g"/>
+         <arg value="-e"/>
+         <arg value="s@/@_@g"/>
+         <arg value="-e"/>
+         <arg value="s@-@_@g"/>
+         <arg value="-e"/>
+         <arg value="s@#@_@g"/>
+         <redirector inputString="${docker.props.container_name}"/>
+      </exec>
+      <echo message="Name used will be: ${docker.props.container_name_valid}"/>
+      <echo message="Creating parameter file"/>
+      <if>
+         <available file="${root}/build/database.props"/>
+         <then>
+            <echo message="Overwriting Existing Parameters"/>
+         </then>
+      </if>
+
+      <propertyfile file="${root}/build/database.props">
+         <entry key="database.syspw" value="antsyspassword"/>
+         <entry key="database.cwmspw" value="antcwmspassword"/>
+         <entry key="database.buildpw" value="antbuildpassword"/>
+         <entry key="database.office" value="${database.office}"/>
+         <entry key="database.eroc" value="${database.eroc}"/>
+         <entry key="database.host_and_port" value="${docker.props.container_name_valid}:1521"/>
+         <entry key="database.name" value="${docker.props.db_name}"/>
+         <entry key="database.volume" value="${docker.props.container_name_valid}_volume"/>
+      </propertyfile>
+      <echo message="Procedding with the following database parameters"/>
+      <echoproperties prefix="database."/>
+   </target>
+
+   <target name="docker.prepdb" depends="docker.setupparameters,docker.stopdb,docker.createnetwork">
+      <echo message="Creating baseline docker database"/>
+      <loadproperties srcFile="${root}/build/database.props"/>
+      <exec executable="docker" outputproperty="containerList">
+         <arg value="container"/>
+         <arg value="ls"/>
+         <arg value="-a"/>
+      </exec>
+      <echo message="Existing Containers at time of run. Checking for ${docker.props.container_name_valid}"/>
+      <echo message="${containerList}"/>
+      <tstamp>
+         <format property="checkstart" pattern="YYYY-MM-dd'T'HH:mm:ss'Z'" timezone="UTC"/>
+      </tstamp>
+      <if>
+         <matches pattern="${docker.props.container_name_valid}$" string="${containerList}" multiline="true"/>
+         <then>
+            <echo message="Starting Existing Oracle database"/>
+            <exec executable="docker" failonerror="true">
+               <arg value="start"/>
+               <arg value="${docker.props.container_name_valid}"/>
+            </exec>
+         </then>
+         <else>
+            <echo message="Creating new database"/>
+            <exec dir="${root}" executable="docker" failonerror="true">
+               <arg value="volume"/>
+               <arg value="create"/>
+               <arg value="${database.volume}"/>
+            </exec>
+            <exec dir="${root}" executable="docker" failonerror="true">
+               <arg value="run"/>
+               <arg value="-d"/>
+               <arg value="--network"/>
+               <arg value="${docker.props.network_name}"/>
+               <arg value="-p"/>
+               <arg value="1521"/> <!-- random external port will be assigned and stored -->
+               <arg value="--name"/>
+               <arg value="${docker.props.container_name_valid}"/>
+               <arg value="-e"/>
+               <arg value="ORACLE_PDB=${database.name}"/>
+               <arg value="-e"/>
+               <arg value="ORACLE_PWD=${database.syspw}"/>
+               <arg value="-e"/>
+               <arg value="enterprise"/>
+               <arg value="-v"/>
+               <arg value="${database.volume}:/opt/oracle/oradata"/>
+               <arg value="${docker.props.oracle.image}"/>
+            </exec>
+         </else>
+      </if>
+      <echo message="checking from ${checkstart}"/>
+      <waitfor checkevery="1" checkeveryunit="minute" maxwait="2" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
+         <scriptcondition language="javascript" value="false"><![CDATA[
+            var p = java.lang.Runtime.getRuntime().exec(
+               "docker logs --since " + cwms_database_schema.getProperty("checkstart")
+               +" " + cwms_database_schema.getProperty("docker.props.container_name_valid") );
+            p.waitFor();
+            var reader = new java.io.InputStreamReader(p.getInputStream());
+            var out = org.apache.tools.ant.util.FileUtils.safeReadFully(reader);
+            var echo = cwms_database_schema.createTask("echo");
+            //echo.setMessage("got" + out);
+            //echo.perform();
+            if( out.contains("DATABASE SETUP WAS NOT SUCCESSFUL!") ){
+               throw "Database Startup or create failed";
+            }
+            self.setValue(out.contains("DATABASE IS READY TO USE"));
+            ]]>
+         </scriptcondition>
+
+      </waitfor>
+      <echo message="generating overrides for this run"/>
+      <antcall target="docker.generateoverrides"/>
+
+
+   </target>
+
+   <target name="docker.showport" depends="docker.setupparameters">
+      <!--<loadproperties srcFile="${root}/build/database.props"/>-->
+      <echo message="Finding port for ${docker.props.container_name_valid}"/>
+      <exec executable="docker" outputproperty="portOutput" failonerror="true">
+         <arg value="port"/>
+         <arg value="${docker.props.container_name_valid}"/>
+      </exec>
+      <echo message="Your database is listening on ${portOutput}"/>
+      <loadresource property="portLine1">
+         <propertyresource name="portOutput"/>
+         <filterchain>
+            <headfilter lines="1"/>
+         </filterchain>
+      </loadresource>
+      <exec executable="sed" outputProperty="docker.props.external_port">
+         <arg value="-e"/>
+         <arg value="s/^\(.*:\)\(.*\)$/\2/"/>
+         <redirector inputstring="${portLine1}"/>
+      </exec>
+      <echo message="Port is ${docker.props.external_port}"/>
+   </target>
 
 <!--
-		docker run \-\-network database_net -d \-\-name testdb -e ORACLE_PDB=$DBNAME -e ORACLE_PWD=$SYS_PASSWORD -p 1522:1521 -e enterprise oracle/database:19.3.0-ee
-		docker run \-\-network database_net -e DB_HOST_PORT="testdb:1521" -e DB_NAME="/$DBNAME" -e SYS_PASSWORD=$SYS_PASSWORD cwms_db_install:latest
-	-->
-	<target name="docker.install" depends="docker.prepdb, docker.buildimage">
-		<echo message="Using Docker build to install database"/>
-		<exec executable="docker" failonerror="true" output="build/buildCWMS_DB.log">
-			<arg value="run"/>
-			<arg value="--rm"/>
-			<arg value="--network"/>
-			<arg value="${docker.props.network_name}"/>
-			<arg value="-e"/>
-			<arg value="DB_HOST_PORT=${database.host_and_port}"/>
-			<arg value="-e"/>
-			<arg value="DB_NAME=/${database.name}"/>
-			<arg value="-e"/>
-			<arg value="SYS_PASSWORD=${database.syspw}"/>
-			<arg value="-e"/>
-			<arg value="CWMS_PASSWORD=${database.cwmspw}"/>
-			<arg value="-e"/>
-			<arg value="BUILDUSER_PASSWORD=${database.buildpw}"/>
-			<arg value="-e"/>
-			<arg value="OFFICE_ID=${database.office}"/>
-			<arg value="-e"/>
-			<arg value="OFFICE_EROC=${database.eroc}"/>		
-			<arg value="${docker.props.image_name}"/>			
-		</exec>
-	</target>
+      docker run \-\-network database_net -d \-\-name testdb -e ORACLE_PDB=$DBNAME -e ORACLE_PWD=$SYS_PASSWORD -p 1522:1521 -e enterprise oracle/database:19.3.0-ee
+      docker run \-\-network database_net -e DB_HOST_PORT="testdb:1521" -e DB_NAME="/$DBNAME" -e SYS_PASSWORD=$SYS_PASSWORD cwms_db_install:latest
+   -->
+   <target name="docker.install" depends="docker.prepdb, docker.buildimage">
+      <echo message="Using Docker build to install database"/>
+      <exec executable="docker" failonerror="true" output="build/buildCWMS_DB.log">
+         <arg value="run"/>
+         <arg value="--rm"/>
+         <arg value="--network"/>
+         <arg value="${docker.props.network_name}"/>
+         <arg value="-e"/>
+         <arg value="DB_HOST_PORT=${database.host_and_port}"/>
+         <arg value="-e"/>
+         <arg value="DB_NAME=/${database.name}"/>
+         <arg value="-e"/>
+         <arg value="SYS_PASSWORD=${database.syspw}"/>
+         <arg value="-e"/>
+         <arg value="CWMS_PASSWORD=${database.cwmspw}"/>
+         <arg value="-e"/>
+         <arg value="BUILDUSER_PASSWORD=${database.buildpw}"/>
+         <arg value="-e"/>
+         <arg value="OFFICE_ID=${database.office}"/>
+         <arg value="-e"/>
+         <arg value="OFFICE_EROC=${database.eroc}"/>
+         <arg value="${docker.props.image_name}"/>
+      </exec>
+   </target>
 
-	<target name="docker.generateoverrides" depends="docker.showport">
-		<copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.internal.xml"
-		 	   overwrite="true">
-			<filterchain>
-				<expandproperties/>
-				<replacetokens>
-					<token key="HOST_AND_PORT" value="${database.host_and_port}"/>
-					<token key="DB_PARAMETERS" value=""/>
-				</replacetokens>
-			</filterchain>
-		</copy>
+   <target name="docker.generateoverrides" depends="docker.showport">
+      <copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.internal.xml"
+             overwrite="true">
+         <filterchain>
+            <expandproperties/>
+            <replacetokens>
+               <token key="HOST_AND_PORT" value="${database.host_and_port}"/>
+               <token key="DB_PARAMETERS" value=""/>
+            </replacetokens>
+         </filterchain>
+      </copy>
 
-		<copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.external.xml"
-			  overwrite="true">
-			<filterchain>
-				<expandproperties/>
-				<replacetokens>
-					<token key="HOST_AND_PORT" value="localhost:${docker.props.external_port}"/>
-					<!-- set this here in case user doesn't have it set in their local sqlnet.ora file. -->
-					<token key="DB_PARAMETERS" value="oracle.net.disableOob=true"/>					
-				</replacetokens>
-			</filterchain>
-		</copy>
-	</target>
+      <copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.external.xml"
+           overwrite="true">
+         <filterchain>
+            <expandproperties/>
+            <replacetokens>
+               <token key="HOST_AND_PORT" value="localhost:${docker.props.external_port}"/>
+               <!-- set this here in case user doesn't have it set in their local sqlnet.ora file. -->
+               <token key="DB_PARAMETERS" value="oracle.net.disableOob=true"/>
+            </replacetokens>
+         </filterchain>
+      </copy>
+   </target>
 
-	<target name="docker.stopdb" depends="docker.setupparameters">
-		<echo message="Stopping database"/>
-		<exec dir="${root}" executable="docker" failonerror="false"
-			  resultproperty="stop_fail_code" errorproperty="stop_fail_reason"
-			>
-			<arg value="stop"/>
-			<arg value="${docker.props.container_name_valid}"/>
-		</exec>
-		<if>									
-			<and>
-				<not>
-					<equals arg1="${stop_fail_code}" arg2="0"/>				
-				</not>
-				<not>
-					<contains string="${stop_fail_reason}" substring="No such container" casesensitive="false"/>
-				</not>								
-			</and>					
-			<then>
-				<fail message="Container stopped failed: ${stop_fail_reason}"/>
-			</then>			
-		</if>
-	</target>
+   <target name="docker.stopdb" depends="docker.setupparameters">
+      <echo message="Stopping database"/>
+      <exec dir="${root}" executable="docker" failonerror="false"
+           resultproperty="stop_fail_code" errorproperty="stop_fail_reason"
+         >
+         <arg value="stop"/>
+         <arg value="${docker.props.container_name_valid}"/>
+      </exec>
+      <if>
+         <and>
+            <not>
+               <equals arg1="${stop_fail_code}" arg2="0"/>
+            </not>
+            <not>
+               <contains string="${stop_fail_reason}" substring="No such container" casesensitive="false"/>
+            </not>
+         </and>
+         <then>
+            <fail message="Container stopped failed: ${stop_fail_reason}"/>
+         </then>
+      </if>
+   </target>
 
-	<target name="docker.killdb" depends="docker.stopdb">
-		<echo message="Removing oracle database instance"/>
-		<exec dir="${root}" executable="docker" failonerror="true">
-			<arg value="rm"/>
-			<arg value="${docker.props.container_name_valid}"/>
-		</exec>
-	</target>
+   <target name="docker.killdb" depends="docker.stopdb">
+      <echo message="Removing oracle database instance"/>
+      <exec dir="${root}" executable="docker" failonerror="true">
+         <arg value="rm"/>
+         <arg value="${docker.props.container_name_valid}"/>
+      </exec>
+   </target>
 
-	<target name="docker.resetdbprops" depends="docker.killdb">
-		<echo message="Removing generated properties files"/>
-		<delete file="${root}/build/database.props"/>
-	</target>
+   <target name="docker.resetdbprops" depends="docker.killdb">
+      <echo message="Removing generated properties files"/>
+      <delete file="${root}/build/database.props"/>
+   </target>
 
-	<target name="docker.push" depends="docker.setupparameters">
-		<echo message="Pushing docker image."/>
-		<property name="image_with_reg" value="${docker.registry}/${docker.props.image.basename}"/>
-		<property name="image_old_with_reg" value="${docker.registry}/${docker.props.image.basename_old}"/>
-		<if>
-			<and>
-				<isset property="teamcity.branch"/>
-				<equals arg1="${isdeployed}" arg2="true"/>
-			</and>
-			<then>
-				<condition property="latest_value" value="latest-dev" else="latest">
-					<and>
-						<isset property="teamcity.branch"/>
-						<matches string="${pom.version}" pattern="^.*-SNAPSHOT$" casesensitive="false"/>
-					</and>
-				</condition>
-				<echo message="Tagging images for registry"/>
+   <target name="docker.push" depends="docker.setupparameters">
+      <echo message="Pushing docker image."/>
+      <property name="image_with_reg" value="${docker.registry}/${docker.props.image.basename}"/>
+      <property name="image_old_with_reg" value="${docker.registry}/${docker.props.image.basename_old}"/>
+      <if>
+         <and>
+            <isset property="teamcity.branch"/>
+            <equals arg1="${isdeployed}" arg2="true"/>
+         </and>
+         <then>
+            <condition property="latest_value" value="latest-dev" else="latest">
+               <and>
+                  <isset property="teamcity.branch"/>
+                  <matches string="${pom.version}" pattern="^.*-SNAPSHOT$" casesensitive="false"/>
+               </and>
+            </condition>
+            <echo message="Tagging images for registry"/>
 
-				<exec dir="${root}" executable="docker">
-					<arg value="tag"/>
-					<arg value="${docker.props.image_name}"/>
-					<arg value="${image_with_reg}:${pom.version}"/>
-				</exec>
-				<exec dir="${root}" executable="docker">
-					<arg value="tag"/>
-					<arg value="${docker.props.image_name}"/>
-					<arg value="${image_with_reg}:${latest_value}"/>
-				</exec>
+            <exec dir="${root}" executable="docker">
+               <arg value="tag"/>
+               <arg value="${docker.props.image_name}"/>
+               <arg value="${image_with_reg}:${pom.version}"/>
+            </exec>
+            <exec dir="${root}" executable="docker">
+               <arg value="tag"/>
+               <arg value="${docker.props.image_name}"/>
+               <arg value="${image_with_reg}:${latest_value}"/>
+            </exec>
 
-				<echo message="Tagging images for registry with old name"/>
-				<exec dir="${root}" executable="docker">
-					<arg value="tag"/>
-					<arg value="${docker.props.image_name}"/>
-					<arg value="${image_old_with_reg}:${pom.version}"/>
-				</exec>
-				<exec dir="${root}" executable="docker">
-					<arg value="tag"/>
-					<arg value="${docker.props.image_name}"/>
-					<arg value="${image_old_with_reg}:${latest_value}"/>
-				</exec>
-				
-				<if>
-					<not>
-						<equals arg1="${dryrun}" arg2="true"/>
-					</not>
-					<then>
-						<exec dir="${root}" executable="docker">
-							<arg value="image"/>
-							<arg value="push"/>
-							<arg value="--all-tags"/>
-							<arg value="${image_with_reg}"/>
-						</exec>
-					</then>
-					<else>
-						<echo message="Dry Not, not actually pushing images, just tagging."/>
-					</else>
-				</if>
-				
-				
-			</then>
-			<else>
-				<echo message="Not a deployable build"/>
-			</else>
-		</if>
-	</target>
+            <echo message="Tagging images for registry with old name"/>
+            <exec dir="${root}" executable="docker">
+               <arg value="tag"/>
+               <arg value="${docker.props.image_name}"/>
+               <arg value="${image_old_with_reg}:${pom.version}"/>
+            </exec>
+            <exec dir="${root}" executable="docker">
+               <arg value="tag"/>
+               <arg value="${docker.props.image_name}"/>
+               <arg value="${image_old_with_reg}:${latest_value}"/>
+            </exec>
 
-	<target name="database-version" depends="jdbcdeps">
-		<!-- 
-	arg value="-d"/><arg value="${oracle.cwms.instance}"/>
+            <if>
+               <not>
+                  <equals arg1="${dryrun}" arg2="true"/>
+               </not>
+               <then>
+                  <exec dir="${root}" executable="docker">
+                     <arg value="image"/>
+                     <arg value="push"/>
+                     <arg value="--all-tags"/>
+                     <arg value="${image_with_reg}"/>
+                  </exec>
+               </then>
+               <else>
+                  <echo message="Dry Not, not actually pushing images, just tagging."/>
+               </else>
+            </if>
+
+
+         </then>
+         <else>
+            <echo message="Not a deployable build"/>
+         </else>
+      </if>
+   </target>
+
+   <target name="database-version" depends="jdbcdeps">
+      <!--
+   arg value="-d"/><arg value="${oracle.cwms.instance}"/>
             <arg value="-u"/><arg value="${oracle.cwms.user}"/>
             <arg value="-p"/><arg value="${oracle.cwms.password}"/>
 
-		-->
-		<delete file="${build.dir}/sqlversion"/>
-		<sql driver="oracle.jdbc.driver.OracleDriver"
-			 url="jdbc:oracle:thin:@${oracle.cwms.instance}"
-			 userid="${oracle.cwms.user}"
-			 password="${oracle.cwms.password}"
-			 print="yes"
-			 output="${build.dir}/sqlversion"
-			 errorProperty="version.check.failed"
-			 showheaders="false"
-			 showtrailers="false"
-			 onerror="continue"
-			 failOnConnectionError="false"
-			 >
-			<classpath refid="cp.runtime"/>
-			select 
-    		cl.version 
-				from av_db_change_log cl 
-				where cl.apply_date = (select max(apply_date) from av_db_change_log);
-		</sql>		
-		<loadfile property="cwms.installed.version"
-				  srcFile="${build.dir}/sqlversion"
-				  failonerror="false"
-				  quiet="true"
-				  unless:set="version.check.failed"
-				  >
-			<filterchain>
-				<striplinebreaks/>
-			</filterchain>
-		</loadfile>
-		<property name="cwms.installed.version" value="not installed"/>
-		<propertyregex property="simple.build.version" input="${pom.version}" regexp="(.*)-SNAPSHOT" select="\1"/>
-		<propertyregex property="simple.build.version" input="${simple.build.version}" 
-					   override="true" 
-					   regexp="(\d+)-(\d+)-(\d+)" 
-					   replace="\1.\2.\3" defaultValue="${simple.build.version}"/>
-	</target>
+      -->
+      <delete file="${build.dir}/sqlversion"/>
+      <sql driver="oracle.jdbc.driver.OracleDriver"
+          url="jdbc:oracle:thin:@${oracle.cwms.instance}"
+          userid="${oracle.cwms.user}"
+          password="${oracle.cwms.password}"
+          print="yes"
+          output="${build.dir}/sqlversion"
+          errorProperty="version.check.failed"
+          showheaders="false"
+          showtrailers="false"
+          onerror="continue"
+          failOnConnectionError="false"
+          >
+         <classpath refid="cp.runtime"/>
+         select
+          cl.version
+            from av_db_change_log cl
+            where cl.apply_date = (select max(apply_date) from av_db_change_log);
+      </sql>
+      <loadfile property="cwms.installed.version"
+              srcFile="${build.dir}/sqlversion"
+              failonerror="false"
+              quiet="true"
+              unless:set="version.check.failed"
+              >
+         <filterchain>
+            <striplinebreaks/>
+         </filterchain>
+      </loadfile>
+      <property name="cwms.installed.version" value="not installed"/>
+      <propertyregex property="simple.build.version" input="${pom.version}" regexp="(.*)-SNAPSHOT" select="\1"/>
+      <propertyregex property="simple.build.version" input="${simple.build.version}"
+                  override="true"
+                  regexp="(\d+)-(\d+)-(\d+)"
+                  replace="\1.\2.\3" defaultValue="${simple.build.version}"/>
+   </target>
 
 </project>

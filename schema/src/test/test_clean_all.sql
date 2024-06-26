@@ -28,7 +28,8 @@ AS
     BEGIN
         test_cwms_msg.teardown; 
         test_cwms_prop.teardown; 
-        test_cwms_loc.teardown; 
+        test_cwms_loc.teardown;
+        test_cwms_project.teardown;
         test_cwms_rating.teardown; 
         test_cwms_ts.teardown; 
         test_cwms_util.teardown;

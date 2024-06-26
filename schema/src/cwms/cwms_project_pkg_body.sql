@@ -848,7 +848,11 @@ function request_lock(
    p_application_id  in varchar2,
    p_revoke_existing in varchar2 default 'F',
    p_revoke_timeout  in integer  default 30,
-   p_office_id       in varchar2 default null)
+   p_office_id       in varchar2 default null,
+   p_username        in varchar2 default null,
+   p_osuser          in varchar2 default null,
+   p_program         in varchar2 default null,
+   p_machine         in varchar2 default null)
    return varchar2
 is
    revocation_denied exception;
@@ -898,16 +902,24 @@ begin
    end if;
    if l_do_lock then
       l_lock_id := rawtohex(sys_guid());
-      select username,
-             osuser,
-             program,
-             machine
-        into l_username,
-             l_osuser,
-             l_program,
-             l_machine
-        from v$session
-       where sid = sys_context('userenv', 'sid');
+
+      if p_username is null or p_osuser is null or p_program is null or p_machine is null then
+         select username,
+                osuser,
+                program,
+                machine
+         into l_username,
+            l_osuser,
+            l_program,
+            l_machine
+         from v$session
+         where sid = sys_context('userenv', 'sid');
+      end if;
+
+      l_username := nvl(p_username, l_username);
+      l_osuser :=  nvl(p_osuser, l_osuser);
+      l_program := nvl(p_program, l_program);
+      l_machine := nvl(p_machine, l_machine);
 
       begin
          insert
