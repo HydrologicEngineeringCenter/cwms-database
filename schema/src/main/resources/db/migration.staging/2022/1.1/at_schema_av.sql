@@ -123,7 +123,8 @@ DECLARE
       'av_virtual_location_level', -- created in at_schema_2
       'av_virtual_rating',
       'av_water_user_contract',    -- created in at_schema_2
-      'av_water_user_contract2'    -- created in at_schema_2
+      'av_water_user_contract2',    -- created in at_schema_2
+      'stats'
    );
 BEGIN
 	FOR i IN view_names.FIRST .. view_names.LAST
@@ -151,7 +152,7 @@ END;
 @@cwms/views/av_county
 @@cwms/views/av_current_map_data
 @@cwms/views/av_cwms_media_type
-@@cwms/views/av_cwms_ts_id
+@@cwms/views/av_cwms_ts_id_dummy
 @@cwms/views/av_cwms_ts_id2
 @@cwms/views/av_data_q_changed
 @@cwms/views/av_data_q_protection
@@ -250,6 +251,7 @@ END;
 @@cwms/views/av_virtual_rating
 @@cwms/views/zav_cwms_ts_id
 @@cwms/views/zv_current_crit_file_code
+@@cwms/views/stats
 
 --------------------------------------------------------------------------------
 SHOW ERRORS;

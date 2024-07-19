@@ -218,6 +218,8 @@ set define on
 @@cwms/tables/at_tsv_count
 
 @@cwms/views/mv_location_level_curval
+-- replace previous dummy view
+@@cwms/views/av_cwms_ts_id
 @@cwms/tables/at_clob_index.sql
 @@cwms/tables/indexes_for_spatial_data.sql
 --------------------------------------------------
@@ -369,6 +371,19 @@ begin
    end loop;
 end;
 /
+
+----------------------------------------------------------------------------------------------------------------------------
+-- I hate having this here, but for some reason this SAYS it works when in AT_SCHEMA, but the constraint is missing after --
+-- the build finishes, so do it here (ugh!!!) Also, I had to wrap in a PL/SQL block to keep it from forcing an exit 255!  --
+----------------------------------------------------------------------------------------------------------------------------
+prompt ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION_SP (FIPS_CNTRY);
+begin
+   execute immediate ('ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION_SP (FIPS_CNTRY)');
+exception
+   when others then raise;
+end;
+/
+
 --
 -- all done
 --

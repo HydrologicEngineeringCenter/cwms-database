@@ -30,6 +30,9 @@ as
       cwms_cache.clear(g_parameter_id_cache);
       cwms_cache.clear(g_base_parameter_code_cache);
       cwms_cache.clear(g_unit_conversion_info_cache);
+      cwms_cache.clear(g_time_zone_dst_offset_cache);
+      cwms_cache.clear(g_time_zone_dst_overlap_cache);
+      cwms_cache.clear(g_time_zone_dst_skip_cache);
       cwms_cache.clear(g_office_id_cache);
       cwms_cache.clear(g_office_code_cache);
    end;
@@ -1410,6 +1413,211 @@ as
       THEN
          cwms_err.raise ('INVALID_TIME_ZONE', nvl(p_time_zone_name, '<NULL>'));
    END get_time_zone_name;
+   --------------------------------------------------------------------------------
+   -- function get_time_zone_dst_offset
+   --
+   function get_time_zone_dst_offset(
+      p_time_zone in varchar2)
+      return interval day to second
+   is
+      l_time_zone_name   varchar2 (28);
+      l_cache_key        varchar2(28) := upper(p_time_zone);
+      l_dst_offset       interval day to second;
+   begin
+      l_cache_key := upper(p_time_zone);
+      l_dst_offset := cwms_cache.get(g_time_zone_dst_offset_cache, l_cache_key);
+      if l_dst_offset is null then
+         select dst_offset
+           into l_dst_offset
+           from cwms_time_zone
+          where upper(time_zone_name) = l_cache_key;
+         cwms_cache.put(g_time_zone_dst_offset_cache, l_cache_key, l_dst_offset);
+      end if;
+      return l_dst_offset;
+   end get_time_zone_dst_offset;
+
+   --------------------------------------------------------------------------------
+   -- function get_time_zone_dst_offset_minutes
+   --
+   function get_time_zone_dst_offset_minutes(
+      p_time_zone in varchar2)
+      return binary_integer
+   is
+      l_dst_offset     interval day to second;
+      l_offset_minutes binary_integer;
+   begin
+      l_dst_offset := get_time_zone_dst_offset(p_time_zone);
+      if l_dst_offset is not null then
+         l_offset_minutes := extract(hour from l_dst_offset) * 60 + extract(minute from l_dst_offset);
+      end if;
+      return l_offset_minutes;
+   end get_time_zone_dst_offset_minutes;
+
+   --------------------------------------------------------------------------------
+   -- function get_time_zone_dst_overlap
+   --
+   function get_time_zone_dst_overlap(
+      p_time_zone in varchar2,
+      p_year      in binary_integer)
+      return timestamp_tab_t
+   is
+      l_times         timestamp_tab_t := timestamp_tab_t();
+      l_offsets       dsinterval_tab_t;
+      l_one_minute    interval day to second := interval '00 00:01:00' day to second;
+      l_overlap_start timestamp;
+      l_winter_offset interval day to second;
+      l_overlap       timestamp_tab_t;
+      l_timestamp_fmt varchar2(21) := 'yyyy-mm-dd hh24:mi:ss';
+      l_cache_key     varchar2(64) := upper(p_time_zone)||'/'||p_year;
+      l_cache_val     varchar2(64);
+   begin
+      l_cache_val := cwms_cache.get(g_time_zone_dst_overlap_cache, l_cache_key);
+      if l_cache_val is null then
+         l_times.extend(3);
+         --------------------------------------
+         -- first assume northern hemisphere --
+         --------------------------------------
+         l_times(1) := standard.to_timestamp(p_year||'-06-01 00:00:00', 'yyyy-mm-dd-hh24:mi:ss'); -- summer in northern hemisphere
+         l_times(3) := standard.to_timestamp(p_year||'-12-01 00:00:00', 'yyyy-mm-dd-hh24:mi:ss'); -- winter in northern hemisphere
+         select
+            cwms_util.change_timezone(column_value, p_time_zone, 'UTC') - column_value
+         bulk collect into
+            l_offsets
+         from
+            table(l_times);
+         if l_offsets(1) != l_offsets(3) then
+            if l_offsets(3) < l_offsets(1) then
+               ---------------------------------------------------
+               -- bad assumption, switch to southern hemisphere --
+               ---------------------------------------------------
+               l_times(1) := standard.to_timestamp(p_year||'-01-01 00:00:00', 'yyyy-mm-dd-hh24:mi:ss'); -- summer in southern hemisphere
+               l_times(3) := standard.to_timestamp(p_year||'-06-01 00:00:00', 'yyyy-mm-dd-hh24:mi:ss'); -- winter in southern hemisphere
+               select
+                  cwms_util.change_timezone(column_value, p_time_zone, 'UTC') - column_value
+               bulk collect into
+                  l_offsets
+               from
+                  table(l_times);
+            end if;
+            l_winter_offset := l_offsets(3);
+            ----------------------------------------
+            -- binary search for start of overlap --
+            ----------------------------------------
+            loop
+               l_times(2) := l_times(1) + (l_times(3) - l_times(1)) / 2;
+               l_offsets(2) := cwms_util.change_timezone(l_times(2), p_time_zone, 'UTC') - l_times(2);
+               exit when l_offsets(2) = l_winter_offset
+                     and l_times(3) - l_times(2) < l_one_minute
+                     and extract(minute from l_times(2)) = extract(minute from l_times(3));
+               case
+               when l_offsets(2) = l_offsets(1) then l_times(1) := l_times(2);
+               when l_offsets(2) = l_offsets(3) then l_times(3) := l_times(2);
+               else cwms_err.raise('ERROR', 'Cannot determine DST offset hour');
+               end case;
+            end loop;
+            l_overlap_start := trunc(l_times(2), 'MI');
+            l_overlap := timestamp_tab_t();
+            l_overlap.extend(2);
+            l_overlap(1) := l_overlap_start;
+            select l_overlap_start + get_time_zone_dst_offset(p_time_zone)
+              into l_overlap(2)
+              from dual;
+            l_cache_val := to_char(l_overlap(1), l_timestamp_fmt)||chr(9)||to_char(l_overlap(2), l_timestamp_fmt);
+            cwms_cache.put(g_time_zone_dst_overlap_cache, l_cache_key, l_cache_val);
+         end if;
+      else
+         select
+            to_timestamp(column_value, l_timestamp_fmt)
+         bulk collect into
+            l_overlap
+         from
+            table(cwms_util.split_text(l_cache_val, chr(9)));
+      end if;
+      return l_overlap;
+   end get_time_zone_dst_overlap;
+
+   --------------------------------------------------------------------------------
+   -- function get_time_zone_dst_skip
+   --
+   function get_time_zone_dst_skip(
+      p_time_zone in varchar2,
+      p_year      in binary_integer)
+      return timestamp_tab_t
+   is
+      l_times         timestamp_tab_t := timestamp_tab_t();
+      l_offsets       dsinterval_tab_t;
+      l_one_minute    interval day to second := interval '00 00:01:00' day to second;
+      l_skip_end      timestamp;
+      l_summer_offset interval day to second;
+      l_skip          timestamp_tab_t;
+      l_timestamp_fmt varchar2(21) := 'yyyy-mm-dd hh24:mi:ss';
+      l_cache_key     varchar2(64) := upper(p_time_zone)||'/'||p_year;
+      l_cache_val     varchar2(64);
+   begin
+      l_cache_val := cwms_cache.get(g_time_zone_dst_skip_cache, l_cache_key);
+      if l_cache_val is null then
+         l_times.extend(3);
+         --------------------------------------
+         -- first assume northern hemisphere --
+         --------------------------------------
+         l_times(1) := standard.to_timestamp(p_year||'-01-01 00:00:00', 'yyyy-mm-dd-hh24:mi:ss'); -- winter in northern hemisphere
+         l_times(3) := standard.to_timestamp(p_year||'-06-01 00:00:00', 'yyyy-mm-dd-hh24:mi:ss'); -- summer in northern hemisphere
+         select
+            cwms_util.change_timezone(column_value, p_time_zone, 'UTC') - column_value
+         bulk collect into
+            l_offsets
+         from
+            table(l_times);
+         if l_offsets(1) != l_offsets(3) then
+            if l_offsets(3) > l_offsets(1) then
+               ---------------------------------------------------
+               -- bad assumption, switch to southern hemisphere --
+               ---------------------------------------------------
+               l_times(1) := standard.to_timestamp(p_year||'-06-01 00:00:00', 'yyyy-mm-dd-hh24:mi:ss'); -- winter in southern hemisphere
+               l_times(3) := standard.to_timestamp(p_year||'-12-01 00:00:00', 'yyyy-mm-dd-hh24:mi:ss'); -- summer in southern hemisphere
+               select
+                  cwms_util.change_timezone(column_value, p_time_zone, 'UTC') - column_value
+               bulk collect into
+                  l_offsets
+               from
+                  table(l_times);
+            end if;
+            l_summer_offset := l_offsets(3);
+            ----------------------------------------
+            -- binary search for start of skip --
+            ----------------------------------------
+            loop
+               l_times(2) := l_times(1) + (l_times(3) - l_times(1)) / 2;
+               l_offsets(2) := cwms_util.change_timezone(l_times(2), p_time_zone, 'UTC') - l_times(2);
+               exit when nvl(l_offsets(2), l_summer_offset) = l_summer_offset
+                     and l_times(3) - l_times(2) < l_one_minute
+                     and extract(minute from l_times(2)) = extract(minute from l_times(3));
+               case
+               when nvl(l_offsets(2), l_offsets(1)) = l_offsets(1) then l_times(1) := l_times(2);
+               when nvl(l_offsets(2), l_offsets(3)) = l_offsets(3) then l_times(3) := l_times(2);
+               else cwms_err.raise('ERROR', 'Cannot determine DST offset hour');
+               end case;
+            end loop;
+            l_skip_end := trunc(l_times(2), 'MI');
+            l_skip := timestamp_tab_t();
+            l_skip.extend(2);
+            l_skip(2) := l_skip_end;
+            select l_skip_end - get_time_zone_dst_offset(p_time_zone)
+              into l_skip(1)
+              from dual;
+            l_cache_val := to_char(l_skip(1), l_timestamp_fmt)||chr(9)||to_char(l_skip(2), l_timestamp_fmt);
+            cwms_cache.put(g_time_zone_dst_skip_cache, l_cache_key, l_cache_val);
+         end if;
+      else
+         select
+            to_timestamp(column_value, l_timestamp_fmt)
+         bulk collect into
+            l_skip
+         from
+            table(cwms_util.split_text(l_cache_val, chr(9)));
+      end if;
+      return l_skip;
+   end get_time_zone_dst_skip;
 
    --------------------------------------------------------------------------------
    -- function get_tz_usage_code
@@ -2173,6 +2381,10 @@ as
       l_negative   BOOLEAN := p_millis < 0;
       l_interval   INTERVAL DAY (9) TO SECOND (9);
    BEGIN
+      if p_millis is null
+      THEN
+        RETURN NULL;
+      end if;
       l_day := TRUNC (l_millis / 86400000);
       l_millis := l_millis - (l_day * 86400000);
       l_hour := TRUNC (l_millis / 3600000);
@@ -6681,14 +6893,17 @@ as
    end output_debug_info;
 
 begin
-   g_timezone_cache.name            := 'cwms_util.g_timezone_cache';
-   g_time_zone_name_cache.name      := 'cwms_util.g_time_zone_name_cache';
-   g_time_zone_code_cache.name      := 'cwms_util.g_time_zone_code_cache';
-   g_parameter_id_cache.name        := 'cwms_util.g_parameter_id_cache';
-   g_base_parameter_code_cache.name := 'cwms_util.g_base_parameter_code_cache';
-   g_unit_conversion_info_cache.name := 'cwms_util.g_unit_conversion_info_cache';
-   g_office_id_cache.name           := 'cwms_util.g_office_id_cache';
-   g_office_code_cache.name         := 'cwms_util.g_office_code_cache';
+   g_timezone_cache.name              := 'cwms_util.g_timezone_cache';
+   g_time_zone_name_cache.name        := 'cwms_util.g_time_zone_name_cache';
+   g_time_zone_code_cache.name        := 'cwms_util.g_time_zone_code_cache';
+   g_time_zone_dst_offset_cache.name  := 'cwms_util.g_time_zone_dst_offset_cache';
+   g_time_zone_dst_overlap_cache.name := 'cwms_util.g_time_zone_dst_overlap_cache';
+   g_time_zone_dst_skip_cache.name    := 'cwms_util.g_time_zone_dst_skip_cache';
+   g_parameter_id_cache.name          := 'cwms_util.g_parameter_id_cache';
+   g_base_parameter_code_cache.name   := 'cwms_util.g_base_parameter_code_cache';
+   g_unit_conversion_info_cache.name  := 'cwms_util.g_unit_conversion_info_cache';
+   g_office_id_cache.name             := 'cwms_util.g_office_id_cache';
+   g_office_code_cache.name           := 'cwms_util.g_office_code_cache';
 
 END cwms_util;
 /

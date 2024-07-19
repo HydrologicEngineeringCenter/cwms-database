@@ -31,7 +31,7 @@ procedure test_cwdb_222_sublocation_vdi_inheritance;
 procedure test_cwdb_143_storing_elev_with_unknown_datum_offset;
 --%test(CWDB-159 Store location in Ontario, CA
 procedure test_cwdb_159_store_location_in_ontario_canada;
---%test(CWDB-232 Improve creation of new locations with lat/lon)
+--%test(CWDB-239 Improve creation of new locations with lat/lon)
 procedure test_cwdb_239_improve_creation_of_new_locations_with_lat_lon;
 --%test(CWMSVUE-442 AV_LOCATION_LEVEL performance re-write)
 procedure test_cwmsvue_442_location_level_performance_re_write;
@@ -39,6 +39,10 @@ procedure test_cwmsvue_442_location_level_performance_re_write;
 procedure test_get_local_timezone_returns_null;
 --%test(CWDB-246 Vertical datum info output limited size to 4000 bytes)
 procedure cwdb_246_vertical_datum_info_output_limited_size_to_4000_bytes;
+--%test(CWDB-288 Location Object nation usage)
+procedure cwdb_288_location_object_creation;
+--%test(CWDB-290 Bounding Office Overrides Lat/Lon)
+procedure cwdb_290_bounding_office_overrides_lat_lon;
 
 procedure setup;
 procedure teardown;
@@ -57,7 +61,7 @@ AS
     BEGIN
         FOR rec
             IN (SELECT COLUMN_VALUE     AS loc_name
-                  FROM TABLE (str_tab_t ('TestLoc1', 'TestLoc2')))
+                  FROM TABLE (str_tab_t ('TestLoc1', 'TestLoc2', 'TestLocObj', 'MikesHouse')))
         LOOP
             BEGIN
                 cwms_loc.delete_location (
@@ -984,6 +988,8 @@ AS
                 <formula>0.37*60*(i1-506)*sqrt(2*32.2*(i1-i2))</formula>
               </simple-rating>
             </ratings>','$location-id', l_location_id));
+      x_item_does_not_exist exception;
+      pragma exception_init(x_item_does_not_exist, -20034);
    begin
       teardown;
       -------------------------------------------------------------------------
@@ -1112,8 +1118,19 @@ AS
                p_offset              => l_offset_to_ngvd29,
                p_unit                => 'ft',
                p_office_id           => l_office_id);
-            commit;
+         else
+            begin
+               cwms_loc.delete_vertical_datum_offset(
+                  p_location_id          => l_location_id,
+                  p_vertical_datum_id_1  => 'Pensacola',
+                  p_vertical_datum_id_2  => 'NGVD29',
+                  p_match_effective_date => 'F',
+                  p_office_id            => l_office_id);
+            exception
+               when x_item_does_not_exist then null;
+            end;
          end if;
+         commit;
          ------------------------------------------------
          -- store the time series with a default datum --
          -- (should raise an exception if no offset)   --
@@ -2058,7 +2075,9 @@ AS
       ut.expect(l_rec.county_name).to_equal('Yakutat');
       ut.expect(l_rec.state_initial).to_equal('AK');
       ut.expect(l_rec.nation_id).to_equal('United States');
-      ut.expect(l_rec.bounding_office_id).to_equal('POA');
+      -- Behavior changed with CWDB-290. P_BOUNDING_OFFICE_ID now overrides P_LATITUDE/P_LONGITUDE (MDP 18Jun2024)
+      -- ut.expect(l_rec.bounding_office_id).to_equal('POA');
+      ut.expect(l_rec.bounding_office_id).to_equal('NWS');
       ut.expect(l_rec.nearest_city).to_equal('Juneau');
       -- update with valid lat/lon with non-null info (should overwrite existing values)
       l_rec := store_location(59.994444444444, -139.486388888889, 'King', 'WA', 'US', 'NWS', 'Seattle');
@@ -2266,7 +2285,92 @@ AS
 
    end cwdb_246_vertical_datum_info_output_limited_size_to_4000_bytes;
 
+   procedure cwdb_288_location_object_creation
+   is
+      l_loc_code cwms_20.at_physical_location.location_code%type;
+      l_loc_obj cwms_20.location_obj_t;
+   begin
+      cwms_loc.store_location2(
+         p_location_id  => 'TestLocObj',
+         p_location_type => 'Test',
+         p_elevation => 41.3,
+         p_elev_unit_id => 'ft',
+         p_vertical_datum => 'NGVD29',
+         p_latitude => 38.56,
+         p_longitude => -121.73,
+         p_horizontal_datum => 'NAD83',
+         p_public_name => 'RMA Office',
+         p_long_name => 'The RMA Office in Davis.',
+         p_description => '<insert terrible, but friendly and funny, description of the group.>',
+         p_time_zone_id => 'America/Los_Angeles',
+         p_county_name  => 'Yolo',
+         p_state_initial => 'CA',
+         p_active => 'T',
+         p_location_kind_id => 'SITE',
+         p_map_label => 'RMA',
+         p_published_latitude => 38.56,
+         p_published_longitude => -121.73,
+         p_bounding_office_id => 'SPD',
+         p_nation_id  => 'UNITED STATES',
+         p_nearest_city => 'Davis',
+         p_db_office_id => '&&office_id');
+      l_loc_code := cwms_loc.get_location_code('&&office_id','TestLocObj');
+      l_loc_obj := location_obj_t(l_loc_code);
+      ut.expect(l_loc_obj.location_ref.office_id).to_equal('&&office_id');
+      ut.expect(l_loc_obj.location_ref.base_location_id).to_equal('TestLocObj');
+      ut.expect(l_loc_obj.nation_id).to_equal('United States');
 
+      l_loc_obj := cwms_loc.retrieve_location(l_loc_code);
+      ut.expect(l_loc_obj.location_ref.office_id).to_equal('&&office_id');
+      ut.expect(l_loc_obj.location_ref.base_location_id).to_equal('TestLocObj');
+      ut.expect(l_loc_obj.nation_id).to_equal('United States');
+   end;
+   --------------------------------------------------------------------------------
+   -- procedure cwdb_290_bounding_office_overrides_lat_lon
+   --------------------------------------------------------------------------------
+   procedure cwdb_290_bounding_office_overrides_lat_lon
+   is
+      l_bounding_office  cwms_v_office.office_id%type;
+      l_expected_results cwms_t_str_tab := cwms_t_str_tab('SWT', 'SPK');
+      exc_location_id_not_found   exception;
+      pragma exception_init (exc_location_id_not_found, -20025);
+   begin
+      for i in 1..2 loop
+         begin
+            cwms_loc.delete_location('MikesHouse', cwms_util.delete_all, 'SPK');
+         exception
+            when exc_location_id_not_found then null;
+         end;
+         -----------------------------------------------------------------------
+         -- store a location within SWT but assign SPK as the bounding office --
+         -----------------------------------------------------------------------
+         cwms_loc.store_location2 (
+            p_location_id				=> 'MikesHouse',
+            p_latitude					=> 36.147,
+            p_longitude 				=> -96.089,
+            p_public_name				=> 'Mike''s House',
+            p_long_name 				=> 'The place where Mike lives',
+            p_description				=> 'In Lakeside Park',
+            p_time_zone_id 			=> 'US/Central',
+            p_county_name				=> 'Tulsa',
+            p_state_initial			=> 'OK',
+            p_active 					=> 'T',
+            p_bounding_office_id    => case when i = 1 then null else 'SPK' end,
+            p_nation_id 				=> 'US',
+            p_nearest_city 			=> 'Sand Springs',
+            p_db_office_id 			=> 'SPK');
+
+         select bounding_office_id
+         into l_bounding_office
+         from av_loc
+         where location_id = 'MikesHouse' 
+            and db_office_id = 'SPK'
+            and unit_system = 'SI';
+
+         ut.expect(l_bounding_office).to_equal(l_expected_results(i));
+      end loop;
+
+   end cwdb_290_bounding_office_overrides_lat_lon;
 
 END test_cwms_loc;
 /

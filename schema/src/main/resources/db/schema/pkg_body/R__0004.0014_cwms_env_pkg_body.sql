@@ -69,13 +69,15 @@ AS
       l_office_id_attr   VARCHAR2 (30) := 'SESSION_OFFICE_ID';
       l_office_code_attr   VARCHAR2 (30) := 'SESSION_OFFICE_CODE';
       l_office_id   VARCHAR2 (16);
+      l_office_code cwms_office.office_code%type;
       --
       l_cnt         NUMBER;
-      l_username    VARCHAR2 (31);
+      l_username    VARCHAR2 (31) := CWMS_UTIL.get_user_id();
    BEGIN
       BEGIN
          pause_office_caching;
          l_office_id := CWMS_UTIL.GET_DB_OFFICE_ID (p_office_id);
+         l_office_code := CWMS_UTIL.get_db_office_code(l_office_id);
       EXCEPTION
          WHEN OTHERS
          THEN
@@ -94,16 +96,16 @@ AS
       --
       SELECT COUNT (*)
         INTO l_cnt
-        FROM TABLE (cwms_sec.get_assigned_priv_groups_tab)
-       WHERE db_office_id = l_office_id;
+        FROM at_sec_users
+        WHERE db_office_code = l_office_code
+          AND username = l_username;
 
       IF l_cnt > 0
       THEN
          SET_CWMS_ENV (l_office_id_attr, l_office_id);
-         SET_CWMS_ENV (l_office_code_attr, CWMS_UTIL.GET_DB_OFFICE_CODE(l_office_id));
+         SET_CWMS_ENV (l_office_code_attr, l_office_code);
          SET_SESSION_PRIVILEGES;
       ELSE
-         l_username := cwms_util.get_user_id;
          resume_office_caching;
          cwms_err.raise (
             'ERROR',
