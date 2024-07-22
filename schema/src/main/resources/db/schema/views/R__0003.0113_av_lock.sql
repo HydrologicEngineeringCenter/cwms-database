@@ -1,3 +1,5 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCK', null,
+'
 /**
  * Displays AV_LOCK information
  *
@@ -26,6 +28,7 @@
  * @field elev_closure_high_water_lower_pool_warning      The warning level elevation that a lock closes due to high water in the upper pool
  * @field chamber_location_description_code                    A single chamber, land side main, land side aux, river side main, river side aux.
  */
+');
 create or replace force view av_lock(
    lock_id,
    project_id,
@@ -169,3 +172,4 @@ end;
 
 
 create or replace public synonym cwms_v_lock for av_lock;
+

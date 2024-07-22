@@ -32,9 +32,9 @@ create or replace package test_av_ts_grp_assgn as
    c_assigned_ts_id constant varchar2(60) := c_location_id || '.Temp-Air.Inst.6Hours.0.Raw-Mesonet';
    c_shared_ref_ts_id constant varchar2(60) := c_location_id || '.Temp-Air.Inst.1Hour.0.Raw-Mesonet';
 end test_av_ts_grp_assgn;
-show errors
 /
-show errors
+show errors;
+
 grant execute on test_av_ts_grp_assgn to cwms_user;
 create or replace package body test_av_ts_grp_assgn as
    --------------------------------------------------------------------------------

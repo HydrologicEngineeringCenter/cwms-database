@@ -330,8 +330,8 @@ function get_warning_buffer_value(
          if l_count = 0 then
                cwms_err.raise(
                   'ITEM_DOES_NOT_EXIST',
-                  'Lock Location Code ',
-                  p_lock_location_code
+                  'Lock Location Code '||p_lock_location_code,
+                  ' Location. Location does not exist'
                );
          end if;
       end;
@@ -403,7 +403,6 @@ PROCEDURE retrieve_lock(
 is
    l_lock_loc location_obj_t;
    l_unit                varchar2(16);
-   l_factor              number;
    l_high_water_upper_pool_value   number;
    l_high_water_lower_pool_value   number;
    l_low_water_upper_pool_value    number;
@@ -578,6 +577,7 @@ begin
     where uc.from_unit_id = p_lock.units_id
       and bp.base_parameter_id = 'Length'
       and uc.to_unit_code = bp.unit_code;
+      and uc.to_unit_code = bp.unit_code;
 
    select function
      into l_volume_function
@@ -637,7 +637,7 @@ begin
       -------------
       update at_lock
          set row = l_lock_rec
-       where lock_location_code = l_lock_rec.lock_location_code;
+      where lock_location_code = l_lock_rec.lock_location_code;
    else
       ------------
       -- insert --
