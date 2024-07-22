@@ -25,7 +25,14 @@ AS
     lock_length binary_double,        -- Param: Length. the length of the lock chamber
     minimum_draft binary_double,      -- Param: Depth. the minimum depth of water that is maintained for vessels for this particular lock
     normal_lock_lift binary_double,   -- Param: Height. The difference between upstream pool and downstream pool at normal elevation.
-    units_id VARCHAR2(16)             -- the units id used for width, length, draft, and lift.
+    units_id VARCHAR2(16),            -- the units id used for width, length, draft, and lift.
+    maximum_lock_lift binary_double,  -- Param: Height. The maximum lift the lock can support
+    elev_units_id VARCHAR(16),         -- the units of the elevation pool values
+    elev_closure_high_water_upper_pool binary_double, -- Param: Elev-Pool. The elevation that a lock closes due to high water in the upper pool
+    elev_closure_high_water_lower_pool binary_double, -- Param: Elev-Pool. The elevation that a lock closes due to high water in the lower pool
+    elev_closer_low_water_upper_pool binary_double, -- Param: Elev-Pool. The elevation that a lock closes due to lower water in the upper pool
+    elev_closure_low_water_lower_pool binary_double, -- Param: Elev-Pool. The elevation that a lock closes due to low water in the lower pool
+    chamber_location_description VARCHAR2(55) -- A single chamber, land side main, land side aux, river side main, river side aux.
   );
 /
 

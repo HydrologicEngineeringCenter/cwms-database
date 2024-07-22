@@ -281,7 +281,14 @@ begin
       l_lock_rec.lock_length,
       l_lock_rec.minimum_draft,
       l_lock_rec.normal_lock_lift,
-      null --  length units.
+      null, --  length units.
+      null, --  elev units.
+      null, --maximum_lock_lift
+      null, --elev_closure_high_water_upper_pool
+      null, --elev_closure_high_water_lower_pool
+      null, --elev_closer_low_water_upper_pool
+      null, --elev_closure_low_water_lower_pool
+      null --chamber_location_description
     );
 
 end retrieve_lock_old;
@@ -411,7 +418,13 @@ begin
                 l.lock_width,
                 l.lock_length,
                 l.minimum_draft,
-                l.normal_lock_lift
+                l.normal_lock_lift,
+                l.elev_closure_high_water_upper_pool,
+                l.elev_closure_high_water_lower_pool,
+                l.elev_closer_low_water_upper_pool,
+                l.elev_closure_low_water_lower_pool,
+                l.chamber_location_description,
+                l.maximum_lock_lift
            from at_lock l
           where l.lock_location_code = p_lock_location_ref.get_location_code)
    loop
@@ -427,7 +440,14 @@ begin
       rec.lock_length,
       rec.minimum_draft,
       rec.normal_lock_lift,
-      cwms_util.get_default_units('Length') --  length units.
+      cwms_util.get_default_units('Length'), --  length units.
+      cwms_util.get_default_units('Elev'), --  length units.
+      rec.elev_closure_high_water_upper_pool,
+      rec.elev_closure_high_water_lower_pool,
+      rec.elev_closer_low_water_upper_pool,
+      rec.elev_closure_low_water_lower_pool,
+      rec.chamber_location_description,
+      rec.maximum_lock_lift
     );
    end loop;
 end retrieve_lock;
@@ -440,6 +460,7 @@ is
    l_exists           boolean;
    l_length_function  cwms_unit_conversion.function%type;
    l_volume_function  cwms_unit_conversion.function%type;
+   l_elev_function    cwms_unit_conversion.function%type;
 begin
    if p_lock is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_LOCK');
@@ -512,6 +533,15 @@ begin
       and bp.base_parameter_id = 'Volume'
       and uc.to_unit_code = bp.unit_code;
 
+   select function
+     into l_elev_function
+     from cwms_unit_conversion uc,,
+          l_elev_offset
+          cwms_base_parameter bp
+     where uc.from_unit_id = p_lock.elev_units_id
+       and bp.base_parameter_id = 'Elev'
+       and uc.to_unit_code = bp.unit_code;
+
    ----------------------------------------------------------
    -- fill out the lock record, don't overwrite with nulls --
    ----------------------------------------------------------
@@ -540,6 +570,26 @@ begin
          when true  then l_lock_rec.normal_lock_lift
          when false then nvl(cwms_util.eval_rpn_expression(l_length_function, double_tab_t(p_lock.normal_lock_lift)), p_lock.normal_lock_lift)
       end;
+   l_lock_rec.elev_closure_high_water_upper_pool :=
+       case p_lock is null
+           when true  then l_lock_rec.elev_closure_high_water_upper_pool
+           when false then nvl(cwms_util.eval_rpn_expression(l_elev_function, p_lock.elev_closure_high_water_upper_pool) , p_lock.elev_closure_high_water_upper_pool)
+       end;
+   l_lock_rec.elev_closure_high_water_lower_pool :=
+       case p_lock is null
+           when true  then l_lock_rec.elev_closure_high_water_lower_pool
+           when false then nvl(cwms_util.eval_rpn_expression(l_elev_function, p_lock.elev_closure_high_water_lower_pool), p_lock.elev_closure_high_water_lower_pool)
+       end;
+   l_lock_rec.elev_closer_low_water_upper_pool :=
+       case p_lock is null
+           when true  then l_lock_rec.elev_closer_low_water_upper_pool
+           when false then nvl(cwms_util.eval_rpn_expression(l_elev_function, p_lock.elev_closer_low_water_upper_pool), p_lock.elev_closer_low_water_upper_pool)
+       end;
+   l_lock_rec.elev_closure_low_water_lower_pool :=
+       case p_lock is null
+           when true  then l_lock_rec.elev_closure_low_water_lower_pool
+           when false then nvl(cwms_util.eval_rpn_expression(l_elev_function, p_lock.elev_closure_low_water_lower_pool), p_lock.elev_closure_low_water_lower_pool)
+       end;
    ---------------------------------
    -- insert or update the record --
    ---------------------------------
