@@ -1,3 +1,9 @@
+create or replace function dash (p1 varchar2, p2 varchar2) return varchar2 as
+  begin
+   return p1||case when p2 is not null then '-' end||p2;
+   --return p1||NVL2(p2,'-'||p2,'');
+end;
+/
 /**
  * Displays information about concrete location levels
  *
@@ -84,11 +90,7 @@ create or replace force view av_location_level
 )
 as
 with
-function dash (p1 varchar2, p2 varchar2) return varchar2 as
-   begin
-      return p1||case when p2 is not null then '-' end||p2;
-      --return p1||NVL2(p2,'-'||p2,'');
-   end;
+
 parameters as
 (  select
           c_bp1.base_parameter_code,

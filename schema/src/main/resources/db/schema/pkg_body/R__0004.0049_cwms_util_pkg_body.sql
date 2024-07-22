@@ -547,21 +547,21 @@ as
 
          IF l_office_id IS NULL
          THEN
-            IF l_username = '&cwms_schema' or l_username = 'NOBODY' or l_username = 'CCP' or l_username = 'SYS' or upper(l_username) = upper(l_upass_id)
+            IF l_username = '${CWMS_SCHEMA}' or l_username = 'NOBODY' or l_username = 'CCP' or l_username = 'SYS' or upper(l_username) = upper(l_upass_id)
             THEN
                l_office_id := 'CWMS';
             ELSE
-         BEGIN
-            SELECT a.office_id
-              INTO l_office_id
-              FROM cwms_office a, at_sec_user_office b
-             WHERE     b.username = l_username
-         AND a.office_code=b.db_office_code;
-          EXCEPTION WHEN OTHERS THEN
-                   cwms_err.raise ('SESSION_OFFICE_ID_NOT_SET');
-               END;
+               BEGIN
+                  SELECT a.office_id
+                  INTO l_office_id
+                  FROM cwms_office a, at_sec_user_office b
+                  WHERE     b.username = l_username
+               AND a.office_code=b.db_office_code;
+               EXCEPTION WHEN OTHERS THEN
+                        cwms_err.raise ('SESSION_OFFICE_ID_NOT_SET');
+                     END;
             END IF;
-            END IF;
+         END IF;
          cwms_cache.put(g_office_id_cache, '<NULL>', l_office_id);
       end if;
 

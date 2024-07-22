@@ -130,3 +130,5 @@ from
          unit_system              u     
   where  location_code != 0
 );
+
+create or replace public synonym cwms_v_loc for av_loc;

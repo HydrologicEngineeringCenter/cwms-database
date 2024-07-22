@@ -208,7 +208,7 @@ task installTests(type: Exec ){
 			args "${cwms_eroc}hectest_up"
 			args "${cwms_schema_name}"
             args "${cwms_eroc}hectest"
-            args "${cwms_eroc}webest"
+            args "${cwms_eroc}webtest"
             args "${cwms_eroc}hectest_multioffice"
         }
     }

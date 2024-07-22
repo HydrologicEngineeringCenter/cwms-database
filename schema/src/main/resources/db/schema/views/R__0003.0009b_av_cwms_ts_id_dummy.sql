@@ -1,6 +1,12 @@
+create or replace function get_lrts return number DETERMINISTIC is
+   l_code number := 0;
+begin
+   -- actual function defined in R__003.0010_av_cwms_ts_id.sql
+   return l_code;
+end;
 -- delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', null,
-'
+--insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', null,
+
 /**
  * Displays CWMS Time Series Identifiers with LRTS as new LRTS IDs
  *
@@ -35,7 +41,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', nul
  * @field historic_flag       Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is part of the hitoric record
  * @field time_zone_id        The time zone of the location for this time series
 */
-');
 
 CREATE OR REPLACE FORCE VIEW av_cwms_ts_id
 (
@@ -68,18 +73,7 @@ CREATE OR REPLACE FORCE VIEW av_cwms_ts_id
     historic_flag,
     time_zone_id
 )
-AS
-   with function get_lrts return number DETERMINISTIC is
-      l_code number := 0;
-   begin
---      select nvl((select bitand(num_value,4)
---                    from cwms_20.at_session_info
---                   where item_name = 'USE_NEW_LRTS_ID_FORMAT'),
---                  0 )
---        into l_code
---        from dual;
-      return l_code;
-   end;
+AS   
    SELECT  db_office_id,
            case when get_LRTS = 4
            then

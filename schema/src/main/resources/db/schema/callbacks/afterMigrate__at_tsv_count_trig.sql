@@ -37,7 +37,7 @@ begin
    select count(*)
      into l_count
      from all_tables
-    where owner = '&cwms_schema'
+    where owner = '${CWMS_SCHEMA}'
       and table_name = 'AT_TSV_COUNT';
 
    l_table_exists := l_count = 1;
@@ -46,7 +46,7 @@ begin
       select count(*)
         into l_count
         from all_tab_columns
-       where owner = '&cwms_schema'
+       where owner = '${CWMS_SCHEMA}'
          and table_name = 'AT_TSV_COUNT';
 
       l_current_table := l_count = 7;
