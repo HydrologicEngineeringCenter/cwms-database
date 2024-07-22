@@ -5,19 +5,28 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCK', null,
  *
  * @since CWMS 2.1
  *
- * @field lock_id                    The..
- * @field project_id                 The..
- * @field lock_location_code         The location_code of the lock
- * @field project_location_code      The location_code of the project
- * @field unit_system                The..
- * @field length_unit_id             The..
- * @field volume_unit_id             The..
- * @field lock_length                The..
- * @field lock_width                 The..
- * @field volume_per_lockage         The..
- * @field minimum_draft              The..
- * @field normal_lock_lift           The..
- * @field db_office_id               The database office ID of the lock
+ * @field lock_id                                         The name of the lock location physical identifier.
+ * @field project_id                                      The name of the project location that this lock is part of.
+ * @field lock_location_code                              The location_code of the lock
+ * @field project_location_code                           The location_code of the project
+ * @field unit_system                                     The unit system for the values and units
+ * @field length_unit_id                                  The units of length values
+ * @field volume_unit_id                                  The units of volume values
+ * @field lock_length                                     The length of the lock chamber
+ * @field lock_width                                      The width of the lock chamber
+ * @field volume_per_lockage                              The volume of water discharged for one lockage at normal headwater and tailwater elevations.  This volume includes any flushing water.
+ * @field minimum_draft                                   The minimum depth of water that is maintained for vessels for this particular lock
+ * @field normal_lock_lift                                The normal lift the lock can support
+ * @field db_office_id                                    The database office ID of the lock
+ * @field maximum_lock_lift                               The maximum lift the lock can support
+ * @field elev_unit_id                                    The units of elevation pool values
+ * @field elev_closure_high_water_upper_pool              The elevation that a lock closes due to high water in the upper pool
+ * @field elev_closure_high_water_lower_pool              The elevation that a lock closes due to high water in the lower pool
+ * @field elev_closer_low_water_upper_pool                The elevation that a lock closes due to lower water in the upper pool
+ * @field elev_closure_low_water_lower_pool               The elevation that a lock closes due to low water in the lower pool
+ * @field elev_closure_high_water_upper_pool_warning      The warning level elevation that a lock closes due to high water in the upper pool
+ * @field elev_closure_high_water_lower_pool_warning      The warning level elevation that a lock closes due to high water in the upper pool
+ * @field chamber_location_description                    A single chamber, land side main, land side aux, river side main, river side aux.
  */
 ');
 create or replace force view av_lock(
@@ -33,7 +42,16 @@ create or replace force view av_lock(
    volume_per_lockage,
    minimum_draft,
    normal_lock_lift,
-   db_office_id
+   db_office_id,
+   maximum_lock_lift,
+   elev_unit_id,
+   elev_closure_high_water_upper_pool,
+   elev_closure_high_water_lower_pool,
+   elev_closer_low_water_upper_pool,
+   elev_closure_low_water_lower_pool,
+   elev_closure_high_water_upper_pool_warning,
+   elev_closure_high_water_lower_pool_warning,
+   chamber_location_description
    )
 as
    select loc1.location_id as lock_id,
@@ -68,7 +86,44 @@ as
              cwms_util.get_default_units('Length', 'SI'),
              cwms_display.retrieve_user_unit_f('Height-Lift', loc1.unit_system))
              as normal_lock_lift,
-         loc1.db_office_id
+          loc1.db_office_id,
+          cwms_util.convert_units(
+             lck.maximum_lock_lift,
+             cwms_util.get_default_units('Length', 'SI'),
+             cwms_display.retrieve_user_unit_f('Height-Lift', loc1.unit_system))
+             as maximum_lock_lift,
+          cwms_display.retrieve_user_unit_f('Elev', loc1.unit_system) as elev_unit_id,
+          cwms_util.convert_units(
+             lck.elev_closure_high_water_upper_pool,
+             cwms_util.get_default_units('Elev', 'SI'),
+             cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+             as elev_closure_high_water_upper_pool,
+          cwms_util.convert_units(
+             lck.elev_closure_high_water_lower_pool,
+             cwms_util.get_default_units('Elev', 'SI'),
+             cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+             as elev_closure_high_water_lower_pool,
+          cwms_util.convert_units(
+             lck.elev_closer_low_water_upper_pool,
+             cwms_util.get_default_units('Elev', 'SI'),
+             cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+             as elev_closer_low_water_upper_pool,
+          cwms_util.convert_units(
+             lck.elev_closure_low_water_lower_pool,
+             cwms_util.get_default_units('Elev', 'SI'),
+             cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+             as elev_closure_low_water_lower_pool,
+          cwms_util.convert_units(
+             lck.elev_closure_high_water_upper_pool - 0.6096,
+             cwms_util.get_default_units('Elev', 'SI'),
+             cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+             as elev_closure_high_water_upper_pool_warning,
+          cwms_util.convert_units(
+             lck.elev_closure_high_water_lower_pool - 0.6096,
+             cwms_util.get_default_units('Elev', 'SI'),
+             cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+             as elev_closure_high_water_lower_pool_warning,
+          lck.chamber_location_description
      from cwms_v_loc2 loc1, cwms_v_loc2 loc2, at_lock lck
     where loc1.location_code = lck.lock_location_code
       and loc2.location_code = lck.project_location_code
