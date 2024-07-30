@@ -179,7 +179,20 @@ PROMPT CREATING AND ALTERING TYPE BODIES
 @../cwms/types/vdatum_stream_rating_t-body
 @../cwms/types/zlocation_level_t-body
 
-drop trigger at_tsv_count_trig;
+DECLARE
+    l_exist PLS_INTEGER;
+BEGIN
+    -- get the trigger count
+    SELECT COUNT(*) INTO l_exist
+    FROM user_triggers
+    WHERE trigger_name = upper('at_tsv_count_trig');
+    
+    -- if the trigger exist, drop it
+    IF l_exist > 0 THEN 
+        EXECUTE IMMEDIATE 'DROP TRIGGER at_tsv_count_trig';
+    END IF;
+END;
+
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING VIEWS
