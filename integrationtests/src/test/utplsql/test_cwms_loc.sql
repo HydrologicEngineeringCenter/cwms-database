@@ -132,6 +132,7 @@ AS
          WHERE base_location_code = l_location_code AND unit_system = 'EN';
 
         ut.expect (l_location_id).to_equal (l_location_id2);
+        ut.expect (cwms_loc.get_location_id(l_location_code)).to_equal (l_location_id2);
 
         SELECT location_id
           INTO l_location_id
