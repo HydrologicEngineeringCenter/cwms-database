@@ -200,18 +200,22 @@ end remove;
 -- procedure remove_by_value
 --------------------------------------------------------------------------------
 procedure remove_by_value(
-   p_cache in out nocopy str_str_cache_t,
-   p_val   in varchar2)
+   p_cache      in out nocopy str_str_cache_t,
+   p_val        in varchar2,
+   p_match_case in varchar2 default 'T')
 is
-   l_key  varchar2(32767) := p_cache.payload_by_key.first;
-   l_keys str_tab_t := str_tab_t();
+   l_key   varchar2(32767) := p_cache.payload_by_key.first;
+   l_keys  str_tab_t := str_tab_t();
+   l_uval  varchar2(32767) := upper(p_val);
+   l_value varchar2(32767);
 begin
    if p_cache.enabled then
       ---------------------------------
       -- collect keys matching value --
       ---------------------------------
       while l_key is not null loop
-         if p_cache.payload_by_key(l_key).value = p_val then
+         l_value := p_cache.payload_by_key(l_key).value;
+         if l_value = p_val or (p_match_case = 'T' and upper(l_value) = l_uval) then
             l_keys.extend;
             l_keys(l_keys.count) := l_key;
          end if;

@@ -2584,7 +2584,7 @@ AS
       -- remove old names from the location code and id caches --
       -----------------------------------------------------------
       cwms_cache.remove(g_location_code_cache, l_db_office_code||'/'||upper(l_location_id_old));
-      cwms_cache.remove_by_value(g_location_id_cache, l_db_office_id||'/'||upper(l_location_id_old));
+      cwms_cache.remove_by_value(g_location_id_cache, l_location_id_old, p_match_case => 'F');
       if l_old_loc_is_base_loc then
          ---------------------------------------------------------------------
          -- we have to check the value of every key for a matching base_loc --
@@ -2606,10 +2606,10 @@ AS
             ---------------------------
             -- the location id cache --
             ---------------------------
-            l_partial_val := l_db_office_id||'/'||upper(l_location_id_old)||'-';
+            l_partial_val := upper(l_location_id_old)||'-';
             l_keys        := cwms_cache.keys(g_location_id_cache);
             for i in 1..l_keys.count loop
-               if instr(cwms_cache.get(g_location_id_cache, l_keys(i)), l_partial_val) = 1 then
+               if instr(upper(cwms_cache.get(g_location_id_cache, l_keys(i))), l_partial_val) = 1 then
                   cwms_cache.remove(g_location_id_cache, l_keys(i));
                end if;
             end loop;
