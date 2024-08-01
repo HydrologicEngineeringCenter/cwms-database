@@ -3,7 +3,7 @@
  *
  * @since Schema 18.1.6
  *
- * @field location_code             The numeric code of the location of the time seires profile
+ * @field location_code             The numeric code of the location of the time series profile
  * @field key_parameter_code        The numeric code of the key parameter of the time series profile
  * @field office_id                 The office that owns the location of the profile
  * @field location_id               The location of the time series profile
