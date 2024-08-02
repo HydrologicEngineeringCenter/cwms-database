@@ -64,6 +64,7 @@ prompt display
 @test_cwms_cache.sql;
 @test_aq_user.sql;
 @test_webuser_abilities.sql;
+@test_cwms_ts_profile.sql
 show errors;
 @test_multiple_office_perms.sql;
 show errors;
