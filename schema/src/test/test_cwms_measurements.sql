@@ -1,9 +1,13 @@
--- Drop the test package if it exists
-DROP PACKAGE test_streamflow_roundtrip CASCADE;
-
--- Create the test package
 CREATE OR REPLACE PACKAGE test_streamflow_roundtrip AS
+    --%suite(Test cwms_stream package code)
+    --%beforeall (setup)
+    procedure  setup;
+    --%afterall(teardown)
+    procedure  teardown;
+
+    --%test(Test roundtrip store and retrieve with supplemental meas data)
     PROCEDURE test_store_and_retrieve;
+    --%test(Test roundtrip store and retrieve with new USGS public api xml format)
     PROCEDURE test_store_and_retrieve_usgs;
 END test_streamflow_roundtrip;
 /
@@ -56,7 +60,6 @@ CREATE OR REPLACE PACKAGE BODY test_streamflow_roundtrip AS
         l_area_unit    VARCHAR2(16) := 'ft2';
         l_velocity_unit VARCHAR2(16) := 'ft/s';
     BEGIN
-        setup;
 
         l_meas_xml_str :=
                 '<measurement height-unit=":elev_unit" flow-unit=":flow_unit" temp-unit=":temp_unit" area-unit=":area_unit" velocity-unit=":velocity_unit" used="true" office-id=":office_id">
@@ -105,13 +108,12 @@ CREATE OR REPLACE PACKAGE BODY test_streamflow_roundtrip AS
                 p_location_id_mask => l_location_id,
                 p_unit_system      => 'EN',
                 p_office_id_mask   => l_office_id);
-
+        ut.expect (l_meas_xml_str).to_equal(l_retrieved_xml_str);
 --         INSERT INTO xml_output_table (xml_data)
 --         VALUES (l_retrieved_xml_str);
 --
 --         COMMIT;
 
-        teardown;
     END test_store_and_retrieve;
 
     PROCEDURE test_store_and_retrieve_usgs IS
@@ -127,7 +129,6 @@ CREATE OR REPLACE PACKAGE BODY test_streamflow_roundtrip AS
         l_area_unit    VARCHAR2(16) := 'ft2';
         l_velocity_unit VARCHAR2(16) := 'ft/s';
     BEGIN
-        setup;
 
         l_meas_xml_str :=
                 '<measurement height-unit=":elev_unit" flow-unit=":flow_unit" temp-unit=":temp_unit" area-unit=":area_unit" velocity-unit=":velocity_unit" used="true" office-id=":office_id">
@@ -176,24 +177,24 @@ CREATE OR REPLACE PACKAGE BODY test_streamflow_roundtrip AS
                 p_unit_system      => 'EN',
                 p_office_id_mask   => l_office_id);
 
+        ut.expect (l_meas_xml_str).to_equal(l_retrieved_xml_str);
 --         INSERT INTO xml_output_table_usgs (xml_data)
 --         VALUES (l_retrieved_xml_str);
 --
 --         COMMIT;
 
-        teardown;
     END test_store_and_retrieve_usgs;
 
 END test_streamflow_roundtrip;
 /
 SHOW ERRORS;
 
--- Execute the test
-BEGIN
-    test_streamflow_roundtrip.test_store_and_retrieve;
-    test_streamflow_roundtrip.test_store_and_retrieve_usgs;
-END;
-/
+-- -- Execute the test
+-- BEGIN
+--     test_streamflow_roundtrip.test_store_and_retrieve;
+--     test_streamflow_roundtrip.test_store_and_retrieve_usgs;
+-- END;
+-- /
 
 -- DROP TABLE xml_output_table;
 -- DROP TABLE xml_output_table_usgs;
