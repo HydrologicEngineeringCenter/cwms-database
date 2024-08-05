@@ -17,6 +17,7 @@ end;
 /
 
 @test_cwms_stream;
+@test_cwms_measurements.sql;
 @test_cwms_prop.sql;
 prompt CWMS MSG
 @test_cwms_msg.sql;
