@@ -132,10 +132,12 @@ procedure remove(
  * Removes all key/payload pairs from the cahce whose payload value matches the specified value if the cache is enabled
  * @param p_cache The cache variable
  * @param p_val   The payload value to remove - any/all key/payload pairs with this value will be removed
+ * @param p_match_case A flag (T/F) specifying whethter to match the values in a case-sensitive (T) or -insensitive (F) manner. If unspecified, 'T' will be used
  */
 procedure remove_by_value(
-   p_cache in out nocopy str_str_cache_t,
-   p_val   in varchar2);
+   p_cache      in out nocopy str_str_cache_t,
+   p_val        in varchar2,
+   p_match_case in varchar2 default 'T');
 /**
  * Clears all data from the cache, but leaves it enabled. Resets counts to 0.
  * @param p_cache The cache variable
