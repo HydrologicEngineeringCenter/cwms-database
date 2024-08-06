@@ -194,11 +194,11 @@ as
       self.height_unit     := cwms_util.get_default_units('Stage', p_unit_system);
       self.flow_unit       := cwms_util.get_default_units('Flow', p_unit_system);
       self.temp_unit       := cwms_util.get_default_units('Temp', p_unit_system);
-      IF upper(trim(p_unit_system)) = 'EN' THEN
+      if upper(trim(p_unit_system)) = 'EN' then
         self.velocity_unit := 'fps';
-      ELSE
+      else
         self.velocity_unit := 'mps';
-      END IF;
+      end if;
       self.area_unit       := cwms_util.get_default_units('Area', p_unit_system);
       self.meas_number     := l_rec.meas_number;
       self.date_time       := cwms_util.change_timezone(l_rec.date_time, 'UTC', self.time_zone);
