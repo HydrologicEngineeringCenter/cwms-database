@@ -1670,9 +1670,7 @@ begin
    loop
       for rec2 in
       (
-          select bl.base_location_id
-            ||substr('-', length(pl.sub_location_id))
-            ||pl.sub_location_id as project_id,
+          select bl.base_location_id||nvl2(pl.sub_location_id,'-',null)||pl.sub_location_id as project_id,
             p.project_location_code
             from at_project p,
             at_physical_location pl,
@@ -1680,9 +1678,7 @@ begin
            where pl.location_code  = p.project_location_code
          and bl.base_location_code = pl.base_location_code
          and bl.db_office_code     = rec1.office_code
-         and upper(bl.base_location_id
-            ||substr('-', length(pl.sub_location_id))
-            ||pl.sub_location_id) like upper(l_project_id_mask) escape '\'
+         and upper(bl.base_location_id||nvl2(pl.sub_location_id,'-',null)||pl.sub_location_id) like upper(l_project_id_mask) escape '\'
         order by 1
       )
       loop
@@ -1753,9 +1749,7 @@ begin
    l_compound_outlet_code := get_compound_outlet_code(p_compound_outlet_id, p_project_id, p_office_id) ;
    for rec in
    (
-      select distinct bl.base_location_id
-         ||substr('-', length(pl.sub_location_id))
-         ||pl.sub_location_id as outlet_id,
+      select distinct bl.base_location_id||nvl2(pl.sub_location_id,'-',null)||pl.sub_location_id as outlet_id,
          coc.outlet_location_code
          from at_comp_outlet_conn coc,
          at_physical_location pl,
