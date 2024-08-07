@@ -6607,7 +6607,7 @@ is
 begin
    l_timezone_id := nvl(
       p_timezone_id,
-      cwms_loc.get_local_timezone(cwms_util.split_text(p_location_level_id, 1, '.'), p_office_id));
+      nvl(cwms_loc.get_local_timezone(cwms_util.split_text(p_location_level_id, 1, '.'), p_office_id), 'UTC'));
    l_date := nvl(p_date, cwms_util.change_timezone(sysdate, 'UTC', l_timezone_id));
    l_loc_level_obj := retrieve_location_level(
       p_location_level_id => p_location_level_id,
