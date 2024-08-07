@@ -6138,6 +6138,7 @@ create table at_streamflow_meas (
    air_temp       binary_double,
    water_temp     binary_double,
    wm_comments    varchar2(256),
+   supplemental_streamflow_meas supp_streamflow_meas_t,
    constraint     at_streamflow_meas_pk  primary key(location_code, meas_number) using index,
    constraint     at_streamflow_meas_fk1 foreign key(location_code) references at_physical_location(location_code),
    constraint     at_streamflow_meas_fk2 foreign key(agency_code) references at_entity (entity_code),
