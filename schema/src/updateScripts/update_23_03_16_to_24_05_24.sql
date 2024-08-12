@@ -202,6 +202,7 @@ delete from at_clob where id = '/VIEWDOCS/AV_TS_EXTENTS_LOCAL';
 delete from at_clob where id = '/VIEWDOCS/AV_TS_EXTENTS_UTC';
 delete from at_clob where id = '/VIEWDOCS/AV_TS_MSG_ARCHIVE';
 delete from at_clob where id = '/VIEWDOCS/AV_TS_TEXT';
+delete from at_clob where id = 'VIEWDOCS/AV_LOCATION_LEVEL_CURVAL';
 @../cwms/views/av_active_flag
 @../cwms/views/av_cwms_ts_id
 @../cwms/views/av_cwms_ts_id2
@@ -220,6 +221,7 @@ delete from at_clob where id = '/VIEWDOCS/AV_TS_TEXT';
 @../cwms/views/av_ts_extents_utc
 @../cwms/views/av_ts_msg_archive
 @../cwms/views/av_ts_text
+@../cwms/views/av_location_level_curval.sql
 @../cwms/views/stats 
 
 PROMPT ################################################################################
