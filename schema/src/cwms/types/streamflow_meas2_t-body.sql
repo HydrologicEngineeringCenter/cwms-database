@@ -103,9 +103,6 @@ as
       self.used           := case get_text('/*/@used', true) when 'true' then 'T' else 'F' end;
       self.height_unit    := get_text('/*/@height-unit', self.used='T');
       self.flow_unit      := get_text('/*/@flow-unit', self.used='T');
-      self.velocity_unit  := get_text('/*/@velocity-unit', self.used='T');
-      self.area_unit      := get_text('/*/@area-unit', self.used='T');
-      self.temp_unit      := get_text('/*/@temp-unit', self.used='T');
       self.meas_number    := get_text('/*/number', true);
       self.time_zone      := nvl(cwms_loc.get_local_timezone(p_location_code => self.location.get_location_code), 'UTC');
       self.date_time      := cwms_util.change_timezone(cast(cwms_util.to_timestamp(get_text('/*/date', true)) as date), 'UTC', self.time_zone);
@@ -129,10 +126,19 @@ as
       self.remarks        := get_text('/*/usgs-measurement/remarks', false);
       self.air_temp       := to_binary_double(get_text('/*/usgs-measurement/air-temp', false));
       self.water_temp     := to_binary_double(get_text('/*/usgs-measurement/water-temp', false));
+      self.temp_unit      := get_text('/*/@temp-unit', self.used='T' and (self.air_temp is not null or self.water_temp is not null));
 
-     self.supp_streamflow_meas := supp_streamflow_meas_t(
-       p_xml.extract('/measurement/supplemental-stream-flow-measurement'));
-
+      self.supp_streamflow_meas := supp_streamflow_meas_t(
+          p_xml.extract('/measurement/supplemental-stream-flow-measurement'));
+      self.area_unit  := get_text('/*/@area-unit', self.used='T' and self.supp_streamflow_meas is not null and (
+            self.supp_streamflow_meas.effective_flow_area is not null or
+            self.supp_streamflow_meas.cross_sectional_area is not null or
+            self.supp_streamflow_meas.main_channel_area is not null or
+            self.supp_streamflow_meas.overbank_area is not null));
+      self.velocity_unit := get_text('/*/@velocity-unit', self.used='T' and self.supp_streamflow_meas is not null and (
+            self.supp_streamflow_meas.avg_velocity is not null or
+            self.supp_streamflow_meas.surface_velocity is not null or
+            self.supp_streamflow_meas.max_velocity is not null));
       return;
    end streamflow_meas2_t;
 
@@ -460,8 +466,8 @@ as
           ||' height-unit="'||self.height_unit||'"'
           ||' flow-unit="'||self.flow_unit||'"'
           ||case self.temp_unit is not null when true then ' temp-unit="'||self.temp_unit||'"' else null end
-          ||case self.area_unit is not null when true then ' area_unit="'||self.area_unit||'"' else null end
-          ||case self.velocity_unit is not null when true then ' velocity_unit="'||self.velocity_unit||'"' else null end
+          ||case self.area_unit is not null when true then ' area-unit="'||self.area_unit||'"' else null end
+          ||case self.velocity_unit is not null when true then ' velocity-unit="'||self.velocity_unit||'"' else null end
           ||' used="'||case self.used when 'T' then 'true' else 'false' end||'">';
       l_text := l_text ||make_elem('location',           self.location.get_location_id);
       l_text := l_text ||make_elem('number',             self.meas_number);
@@ -485,7 +491,7 @@ as
       l_text := l_text ||make_elem('remarks',            self.remarks);
       l_text := l_text ||make_elem('air-temp',           cwms_rounding.round_dt_f(self.air_temp, '9999999999'));
       l_text := l_text ||make_elem('water-temp',         cwms_rounding.round_dt_f(self.water_temp, '9999999999'));
-      l_text := l_text || '</usgs-measuremen>';
+      l_text := l_text || '</usgs-measurement>';
       -- Supplemental Stream Flow Measurement Section
       l_text := l_text || self.supp_streamflow_meas.to_xml;
       l_text := l_text || '</measurement>';

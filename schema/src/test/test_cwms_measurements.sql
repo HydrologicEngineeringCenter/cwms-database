@@ -131,7 +131,7 @@ CREATE OR REPLACE PACKAGE BODY test_streamflow_roundtrip AS
     BEGIN
 
         l_meas_xml_str :=
-                '<measurement height-unit=":elev_unit" flow-unit=":flow_unit" temp-unit=":temp_unit" area-unit=":area_unit" velocity-unit=":velocity_unit" used="true" office-id=":office_id">
+                '<measurement height-unit=":elev_unit" flow-unit=":flow_unit" temp-unit=":temp_unit" used="true" office-id=":office_id">
                     <agency>USGS</agency>
                     <party>:office_id</party>
                     <wm-comments>Test</wm-comments>
