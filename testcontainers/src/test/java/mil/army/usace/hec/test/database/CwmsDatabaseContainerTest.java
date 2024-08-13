@@ -29,7 +29,7 @@ public class CwmsDatabaseContainerTest {
     private static final String DatabaseImage = System.getProperty("database.image", CwmsDatabaseContainer.ORACLE_19C);
 
     private static String teamcityVolumeName(String branch){
-        String generatedVolumeName = "cwmsdb_"+TeamCityUtilities.cleanupBranchName(branch)+"_"+System.getProperty("teamcity.build.agent")+"_volume";
+        String generatedVolumeName = TeamCityUtilities.volumeName("cwmsdb_",branch,System.getProperty("teamcity.build.agent"))+"_test_volume";
         log.debug("Using volume name {}",generatedVolumeName);
         return generatedVolumeName;
     }
