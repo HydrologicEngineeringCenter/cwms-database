@@ -1087,16 +1087,9 @@
 
    <target name="docker.setupparameters" depends="docker.init">
       <echo message="processing container name to safe characters. Starting with: ${docker.props.container_name}"/>
-      <exec executable="sed" outputProperty="docker.props.container_name_valid" failonerror="true">
-         <arg value="-e"/>
-         <arg value="s@/refs/heads/@@g"/>
-         <arg value="-e"/>
-         <arg value="s@/@_@g"/>
-         <arg value="-e"/>
-         <arg value="s@-@_@g"/>
-         <arg value="-e"/>
-         <arg value="s@#@_@g"/>
-         <redirector inputString="${docker.props.container_name}"/>
+      <exec executable="bash" outputProperty="docker.props.container_name_valid" failonerror="true">
+         <arg value="sanitize_name.sh"/>
+         <arg value="${docker.props.container_name}"/>
       </exec>
       <echo message="Name used will be: ${docker.props.container_name_valid}"/>
       <echo message="Creating parameter file"/>
