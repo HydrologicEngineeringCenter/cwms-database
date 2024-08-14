@@ -7,7 +7,7 @@ RUN apt-get -y update && \
     apt-get -y install wget git \
                zip unzip \
                openjdk-8-jdk \
-               libaio1 python python3 \
+               libaio1 python3 \
                ant
 
 RUN ln -s /usr/lib/jvm-1.8.0.openjdk-amd64 /usr/lib/jvm/java
