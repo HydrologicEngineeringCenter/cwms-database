@@ -1926,8 +1926,9 @@ begin
    -- delete the instance record --
    --------------------------------
    delete
-     from at_ts_profile_instance
-    where location_code = l_inst_rec.location_code
+   from at_ts_profile_instance
+   where location_code = l_inst_rec.location_code
+     and upper(version_id) = upper(p_version_id)
      and key_parameter_code = l_inst_rec.key_parameter_code;
 end delete_ts_profile_instance;
 --------------------------------------------------------------------------------
