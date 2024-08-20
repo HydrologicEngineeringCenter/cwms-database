@@ -6,7 +6,7 @@ import java.security.NoSuchAlgorithmException;
 public class TeamCityUtilities {
     public static String cleanupBranchName(String branchName){
         String name =  branchName.replace("/","_")
-                                 .replace("/refds/heads/","")
+                                 .replace("/refs/heads/","")
                                  .replace("-","_")
                                  .replace("#","_");
         
