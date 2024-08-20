@@ -879,7 +879,7 @@
    <target name="jdbcdeps">
       <resolver:resolve>
             <resolver:dependencies>
-                <resolver:dependency coords="org.python3:jython-standalone:2.7.2" />
+                <resolver:dependency coords="org.python:jython-standalone:2.7.2" />
                 <resolver:dependency coords="com.oracle.ojdbc:ojdbc8:19.3.0.0" />
             </resolver:dependencies>
             <path refid="cp.runtime" scopes="compile,runtime,test"/>
