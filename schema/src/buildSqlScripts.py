@@ -151,7 +151,7 @@ userAccess = {}
 for item in tableInfo :
     id = item["ID"]
     tables.append(id)
-    exec("%sTableName = %s" % (id, `item["TABLE"]`))
+    exec("%sTableName = %s" % (id, repr(item["TABLE"])))
     schemaName = item["SCHEMA"]
     schema[id] = schemaName
     if schemaName == "CWMS" : userAccess[id] = item["USERACCESS"]
@@ -5547,7 +5547,7 @@ def main() :
         if not dbhost : dbhost = office_id
         office_names[office_id] = office_name
         if not dbhost_offices.has_key(dbhost) : dbhost_offices[dbhost] = []
-        dbhost_offices[dbhost].append(office_id);
+        dbhost_offices[dbhost].append(office_id)
 
     dbhosts = dbhost_offices.keys()
     dbhosts.sort()
@@ -5565,67 +5565,68 @@ def main() :
     # prompt the user for the primary and sharing offices if not entered on the command line #
     #----------------------------------------------------------------------------------------#
     if not db_office_id:
-        print
+        print()
         for dbhost in dbhosts :
             line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
             for i in range(1, len(dbhost_offices[dbhost])) :
                 line += ", %s" % office_names[dbhost_offices[dbhost][i]]
-            print line
+            print(line)
 
         #------------------------------------------------------------------------------
         # Ask for the db_office_id for this database, i.e., the primary office id
         # for this database.
         #------------------------------------------------------------------------------
-        print
-        print 'Enter the office id for this database. If your office is not listed'
-        print 'or if your building a secondary COOP database for your office, then'
-        print 'please contact HEC for a revised install script.'
+        print()
+        print('Enter the office id for this database. If your office is not listed')
+        print('or if your building a secondary COOP database for your office, then')
+        print('please contact HEC for a revised install script.')
         ok = False
         while not ok :
             print
-            db_office_id = raw_input('Enter the primary office id for this database: ')
+            db_office_id = input('Enter the primary office id for this database: ')
             if not db_office_id :
-                print
-                print "ERROR! You must enter your office id."
+                print()
+                print("ERROR! You must enter your office id.")
                 continue
             else :
                 ok = db_office_id in dbhosts
 
             if ok :
-                print 'You have chosen the following office as the primary office for this'
-                print "database: %s" % db_office_id
-                line = raw_input("Is this correct? (y/n) [n] > ")
+                print('You have chosen the following office as the primary office for this')
+                print("database: %s" % db_office_id)
+                line = input("Is this correct? (y/n) [n] > ")
                 if not line or line[0].upper() != 'Y' :
                     ok = False
-    	    while db_cwms_count < 0 or db_cwms_count > 9 :
-    		db_cwms_count = int(raw_input('Enter CWMS Database Instances already installed at this office(0-9): '))
-    		print db_cwms_count
+                # NOTE: due to mismatch of tabs and spaces the indentaion of this block was ambiguous
+                while db_cwms_count < 0 or db_cwms_count > 9 :
+                    db_cwms_count = int(input('Enter CWMS Database Instances already installed at this office(0-9): '))
+                print(db_cwms_count)
             else :
-                print
-                print "ERROR! Office %s does not host a database. Contact HEC if this" % db_office_id
-                print "is no longer the case."
+                print()
+                print("ERROR! Office %s does not host a database. Contact HEC if this" % db_office_id)
+                print("is no longer the case.")
 
         #------------------------------------------------------------------------------
         # Ask if any other offices will be sharing this database - need to know so that
         # queues can be set-up for them.
         #------------------------------------------------------------------------------
-        print
+        print()
         for dbhost in dbhosts :
             if dbhost != db_office_id :
                 line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
                 for i in range(1, len(dbhost_offices[dbhost])) :
                     line += ", %s" % office_names[dbhost_offices[dbhost][i]]
-                print line
-        print
-        print 'Will other offices share this database as either their primary database'
-        print 'or as a backup database? If so, enter the office id(s) from the above'
-        print 'list. If this datbase will only be used by your office, then simply'
-        print 'press Enter.'
-        print
+                print(line)
+        print()
+        print('Will other offices share this database as either their primary database')
+        print('or as a backup database? If so, enter the office id(s) from the above')
+        print('list. If this datbase will only be used by your office, then simply')
+        print('press Enter.')
+        print()
         ok = False
         while not ok :
             print
-            line  = raw_input('Enter office id(s) of offices sharing this database: ')
+            line  = input('Enter office id(s) of offices sharing this database: ')
             print
             office_ids = line.upper().replace(',', ' ').replace(';', ' ').split()
             if not office_ids :
@@ -5640,19 +5641,19 @@ def main() :
                         ok = True
                         break
                     if office_id not in dbhosts :
-                        print "Office %s does not host a database." % office_id
+                        print("Office %s does not host a database." % office_id)
                         break
                 else :
                     ok = True
 
             if ok :
-                print 'You have made the follwing choices:'
-                print "Primary office for this database: %s" % db_office_id
+                print('You have made the follwing choices:')
+                print("Primary office for this database: %s" % db_office_id)
                 if not office_ids :
-                    print "No other offices will share this database."
+                    print("No other offices will share this database.")
                 else:
-                    print "Office(s) sharing this database: %s" % ','.join(office_ids)
-                line = raw_input("Is this correct? (y/n) [n] > ")
+                    print("Office(s) sharing this database: %s" % ','.join(office_ids))
+                line = input("Is this correct? (y/n) [n] > ")
                 if not line or line[0].upper() != 'Y' :
                     ok = False
 
@@ -5660,24 +5661,24 @@ def main() :
     # prompt the user about creating a test account if not entered on the command line #
     #----------------------------------------------------------------------------------#
     if testAccount == None:
-        print
-        print '-----------TEST ACCOUNT-----------'
-        print
-        line = raw_input('--Do you want to create test accounts? [n]: ')
+        print()
+        print('-----------TEST ACCOUNT-----------')
+        print()
+        line = input('--Do you want to create test accounts? [n]: ')
         testAccount = line.strip().upper().startswith('Y')
-        print
+        print()
 
     if testAccount :
         db_office_eroc = office_erocs[db_office_id].lower()
         test_user_id = db_office_eroc +"hectest"
-        print
-        print "                                               ---------"
-        print "-- The following test account will be created: %s" % test_user_id
-        print "                                               ---------"
-        print "-- This account will have write privileges on all -REV ts ids"
-        print "-- and read privileges on all -RAW ts ids for the %s " % db_office_id
-        print "-- database."
-        print
+        print()
+        print("                                               ---------")
+        print("-- The following test account will be created: %s" % test_user_id)
+        print("                                               ---------")
+        print("-- This account will have write privileges on all -REV ts ids")
+        print("-- and read privileges on all -RAW ts ids for the %s " % db_office_id)
+        print("-- database.")
+        print()
     else:
         db_office_eroc = ''
         test_user_id = ''
@@ -5898,18 +5899,18 @@ def main() :
 
     #==============================================================================
 
-    sys.stderr.write("Creating py_admin_ErocUsers.sql\n");
+    sys.stderr.write("Creating py_admin_ErocUsers.sql\n")
     f  = open("py_admin_ErocUsers.sql", "w")
     for dbhost_id in office_ids :
         for office_id in dbhost_offices[dbhost_id] :
             eroc = office_erocs[office_id].lower()
             f.write(user_delete_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
-    	    if test_user_id :
-        	f.write(test_user_admin_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
+            if test_user_id :
+                f.write(test_user_admin_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
     f.close()
     #==============================================================================
 
-    sys.stderr.write("Creating py_ErocUsers.sql\n");
+    sys.stderr.write("Creating py_ErocUsers.sql\n")
     f  = open("py_ErocUsers.sql", "w")
     users_created = []
     for dbhost_id in office_ids :
@@ -5919,10 +5920,10 @@ def main() :
                 f.write(user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
                 user_id = eroc+"cwmspd"
                 users_created.append(eroc)
-    	    if test_user_id :
-        	db_ofc_code = db_office_code[db_office_id]
-        	db_ofc_eroc = office_erocs[db_office_id]
-        	f.write(test_user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
+            if test_user_id :
+                db_ofc_code = db_office_code[db_office_id]
+                db_ofc_eroc = office_erocs[db_office_id]
+                f.write(test_user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
     f.close()
 
     #==============================================================================
@@ -7822,7 +7823,7 @@ def main() :
     sys.stderr.write("Building timezoneLoadTemplate\n")
     timezoneLoadTemplate = ''
     for time_zone_code,time_zone_name,utc_offset,dst_offset in timezones :
-    	timezoneLoadTemplate +="INSERT INTO @TABLE (TIME_ZONE_CODE,TIME_ZONE_NAME,UTC_OFFSET,DST_OFFSET) VALUES (%d, '%s', '%s', '%s');\n" % (time_zone_code, time_zone_name, utc_offset, dst_offset)
+        timezoneLoadTemplate +="INSERT INTO @TABLE (TIME_ZONE_CODE,TIME_ZONE_NAME,UTC_OFFSET,DST_OFFSET) VALUES (%d, '%s', '%s', '%s');\n" % (time_zone_code, time_zone_name, utc_offset, dst_offset)
     timezoneLoadTemplate +="COMMIT;"
 
     sys.stderr.write("Building timezoneAliasCreationTemplate\n")
@@ -8427,7 +8428,7 @@ def main() :
                         if (d > 0) != (m > 0) : continue
                         for t in range(len(q_test_failed["values"])) :
                             for p in range(len(q_protection["values"])) :
-                                value = 0L \
+                                value = 0 \
                                     | (q_screened["values"][1][0] << q_screened["shift"]) \
                                     | (q_validity["values"][v][0] << q_validity["shift"]) \
                                     | (q_value_range["values"][r][0] << q_value_range["shift"]) \
@@ -9721,7 +9722,7 @@ def main() :
     #print "DROPUSER~SPOOL %s"  % logFileName["DROPUSER"]
     #print prefix[ALL] + "SELECT SYSDATE FROM DUAL;"
     #print prefix[ALL] + "SET ECHO ON"
-    print prefix[ALL] + "SET SERVEROUTPUT ON"
+    print(prefix[ALL] + "SET SERVEROUTPUT ON")
     #print prefix[ALL] + "BEGIN DBMS_OUTPUT.ENABLE(20000); END;"
     #print prefix[ALL] + "/"
 
@@ -9746,7 +9747,7 @@ def main() :
             for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
             exec("%sLoadTemplate = '\\n'.join(lines)" % table)
             exec("%sLoadStr = %sLoadTemplate.replace('@TABLE', '%s')" % (table, table, tableName))
-        except Exception, e:
+        except Exception as e:
             pass
         try :
             lines = eval("%sTestTemplate.split('\\n')" % table)
@@ -9755,9 +9756,9 @@ def main() :
             exec("%sTestStr = %sTestTemplate.replace('@TABLE', '%s')" % (table, table, tableName))
         except :
             pass
-        print dropPrefix
-        print "%sDROP TABLE %s;" % (dropPrefix, tableName)
-        print "%sCOMMIT;" % dropPrefix
+        print(dropPrefix)
+        print("%sDROP TABLE %s;" % (dropPrefix, tableName))
+        print("%sCOMMIT;" % dropPrefix)
 
     #==============================================================================
     # Create CWMS_SEQ for the specified db_office_id's offset...
@@ -9765,15 +9766,15 @@ def main() :
     dbMinValue =  db_office_code[db_office_id] + (100*db_cwms_count)
     dbStartIndex = dbMinValue
     dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
-    print dropPrefix + "DROP SEQUENCE CWMS_SEQ;"
-    print prefix[CWMS] + "CREATE SEQUENCE CWMS_SEQ"
-    print prefix[CWMS] + "\tSTART WITH %s" % dbStartIndex
-    print prefix[CWMS] + "\tINCREMENT BY 1000"
-    print prefix[CWMS] + "\tMINVALUE %s" % dbMinValue
-    print prefix[CWMS] + "\tMAXVALUE 1.0e38"
-    print prefix[CWMS] + "\tNOCYCLE"
-    print prefix[CWMS] + "\tCACHE 20"
-    print prefix[CWMS] + "\tORDER;"
+    print(dropPrefix + "DROP SEQUENCE CWMS_SEQ;")
+    print(prefix[CWMS] + "CREATE SEQUENCE CWMS_SEQ")
+    print(prefix[CWMS] + "\tSTART WITH %s" % dbStartIndex)
+    print(prefix[CWMS] + "\tINCREMENT BY 1000")
+    print(prefix[CWMS] + "\tMINVALUE %s" % dbMinValue)
+    print(prefix[CWMS] + "\tMAXVALUE 1.0e38")
+    print(prefix[CWMS] + "\tNOCYCLE")
+    print(prefix[CWMS] + "\tCACHE 20")
+    print(prefix[CWMS] + "\tORDER;")
 
     #==============================================================================
     # Create any other sequences...
@@ -9782,22 +9783,22 @@ def main() :
     if len(cwmsSequences) :
         dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
         for name, start, increment, minimum, maximum, cycle, cache in cwmsSequences :
-            print dropPrefix + "DROP SEQUENCE %s;" % name
-            print prefix[CWMS] + "CREATE SEQUENCE %s" % name
-            print prefix[CWMS] + "\tSTART WITH %s" % `start`
-            print prefix[CWMS] + "\tINCREMENT BY %s" % `increment`
-            print prefix[CWMS] + "\tMINVALUE %s" % `minimum`
-            print prefix[CWMS] + "\tMAXVALUE %s" % `maximum`
-            print prefix[CWMS] + "\t%s" % cycleStr[cycle]
-            print prefix[CWMS] + "\tCACHE %s" % `cache`
-            print prefix[CWMS] + "\tORDER;"
+            print(dropPrefix + "DROP SEQUENCE %s;" % name)
+            print(prefix[CWMS] + "CREATE SEQUENCE %s" % name)
+            print(prefix[CWMS] + "\tSTART WITH %s" % repr(start))
+            print(prefix[CWMS] + "\tINCREMENT BY %s" % repr(increment))
+            print(prefix[CWMS] + "\tMINVALUE %s" % repr(minimum))
+            print(prefix[CWMS] + "\tMAXVALUE %s" % repr(maximum))
+            print(prefix[CWMS] + "\t%s" % cycleStr[cycle])
+            print(prefix[CWMS] + "\tCACHE %s" % repr(cache))
+            print(prefix[CWMS] + "\tORDER;")
 
-    print dropPrefix + "COMMIT;"
-    print prefix[CWMS] + "COMMIT;"
+    print(dropPrefix + "COMMIT;")
+    print(prefix[CWMS] + "COMMIT;")
 
     dropPrefix = prefix[USER].replace('BUILD', 'DROP')
     for table in tables :
-        print eval("%sCreationStr" % table)
+        print(eval("%sCreationStr" % table))
     #    if schema[table] == "CWMS" and userAccess[table] :
     #        tableName = eval("%sTableName" % table)
     #        print prefix[CWMS] + "GRANT SELECT ON %s TO %s;" % (tableName, userSchema)
@@ -9805,16 +9806,16 @@ def main() :
             # generate private synonyms in the user schema
     #        print prefix[USER] + "CREATE OR REPLACE SYNONYM %s FOR %s.%s;" % (tableName, schema[table], tableName)
     #        print dropPrefix + "DROP SYNONYM %s;" % (tableName)
-    print dropPrefix + "COMMIT;"
+    print(dropPrefix + "COMMIT;")
 
     for table in tables :
         try :
-            print eval("%sLoadStr" % table)
+            print(eval("%sLoadStr" % table))
         except :
             pass
     for table in tables :
         try :
-            print eval("%sTestStr" % table)
+            print(eval("%sTestStr" % table))
         except :
             pass
 

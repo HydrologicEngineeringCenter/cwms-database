@@ -16,7 +16,7 @@ progDir    = os.path.normpath(progDir)
 buildVer   = os.path.split(progDir)[1]
 
 if (len(argv) == 2): 
-	outFile = argv[1]	
+	outFile = argv[1]
 elif (len(argv) < 2):
 	sys.stderr.write("Usage: python build_db_parameters_def.py <output file>\n")
 	sys.stderr.write("Ex:    python build_db_parameters_def.py build/resources/cwms/data/db_parameter_units.def")
@@ -53,6 +53,3 @@ f.write("#position=100\n\n")
 for param_id, si_unit, en_unit in params :
 	f.write(format % (param_id, si_unit, en_unit))
 f.close()
-
-
-
