@@ -1807,7 +1807,7 @@ def convert(value, from_unit, to_unit) :
 
 
 def get_java_resource_format() :
-	buf = StringIO.StringIO()
+	buf = StringIO()
 	date_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
 	git_branch = check_output(["git","branch","--show-current"]).strip()
 	teamcity_build_info = "(manual run)"
@@ -1817,17 +1817,17 @@ def get_java_resource_format() :
 		teamcity_build_info = "(Build %s, #%s)" % (build,build_number)
 	except:
 		pass # we aren't in TEAMCITY so these don't exist
-	buf.write("// Generated from cwms_database:" + git_branch + " " + teamcity_build_info + " on " + date_str + "\n" )
+	buf.write("// Generated from cwms_database:" + str(git_branch) + " " + str(teamcity_build_info) + " on " + str(date_str) + "\n" )
 	buf.write("// UNIT DEFINITIONS\n")
 	buf.write("//  UnitSystem;UnitName;UnitAliases...;...;\n")
 	for d in [d for d in units_by_param] :
-		param = d.keys()[0]
-		buf2 = StringIO.StringIO()
+		param = list(d.keys())[0]
+		buf2 = StringIO()
 		buf.write("\n//%s\n" % param)
-		units = d.values()[0]
+		units = list(d.values())[0]
 		for unit_system_units in units_by_unit_system :
-			unit_system = unit_system_units.keys()[0]
-			for unit in [u for u in sorted(units) if u in unit_system_units.values()[0]] :
+			unit_system = list(unit_system_units.keys())[0]
+			for unit in [u for u in sorted(units) if u in list(unit_system_units.values())[0]] :
 				java_unit, java_aliases = unit, None
 				if unit in unit_aliases :
 					aliases = unit_aliases[unit][:]
@@ -1843,21 +1843,21 @@ def get_java_resource_format() :
 				buf.write("\n")
 				#write out conversion for same unit to different unit system
 				for check_units in units_by_unit_system :
-					check_unit_system = check_units.keys()[0]
+					check_unit_system = list(check_units.keys())[0]
 					#is this the unit system that we are looking at right now
 					if (check_unit_system == unit_system) :
 						#dont do conversions to our selves in the same unit system
 						continue
 					#check if our unit is in this other unit system
-					if (unit in check_units.values()[0]) :
+					if (unit in list(check_units.values())[0]) :
 						#it is - so write out the same unit btwn systems conversion
 						buf2.write("%s;%s>%s;%s;1.0\n" % (unit_system, java_unit, check_unit_system, java_unit))
 				#write out all conversions to other units
 				if unit in conversions :
 					for to_unit_system_units in units_by_unit_system :
 						for to_unit in sorted(conversions[unit].keys()) :
-							if not to_unit in to_unit_system_units.values()[0] : continue
-							to_unit_system = to_unit_system_units.keys()[0]
+							if not to_unit in list(to_unit_system_units.values())[0] : continue
+							to_unit_system = list(to_unit_system_units.keys())[0]
 							conversion = conversions[unit][to_unit]
 							factor, offset, function = conversion["factor"], conversion["offset"], conversion["function"]
 							if to_unit in unit_aliases :
