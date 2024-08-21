@@ -3,7 +3,8 @@
 import os, random, sys
 pgmdir = os.path.split(sys.argv[0])[0]
 if pgmdir not in sys.path : sys.path.append(pgmdir)
-import StringIO, unitConversions
+import unitConversions
+from io import StringIO
 
 def uniqueCombinationsGenerator(items, n):
     '''
@@ -12,7 +13,7 @@ def uniqueCombinationsGenerator(items, n):
     if n==0:
         yield []
     else:
-        for i in xrange(len(items)):
+        for i in range(len(items)):
             for comb in uniqueCombinationsGenerator(items[i+1:],n-1):
                 yield [items[i]] + comb
 
@@ -22,7 +23,7 @@ def uniqueCombinations(items):
     '''
     count = len(items)
     results = []
-    for i in xrange(count) :
+    for i in range(count) :
         for comb in uniqueCombinationsGenerator(items, i+1) :
             results.append(comb)
     return results
@@ -151,7 +152,7 @@ userAccess = {}
 for item in tableInfo :
     id = item["ID"]
     tables.append(id)
-    exec("%sTableName = %s" % (id, repr(item["TABLE"])))
+    exec("global %sTableName; %sTableName = %s" % (id, id, repr(item["TABLE"])))
     schemaName = item["SCHEMA"]
     schema[id] = schemaName
     if schemaName == "CWMS" : userAccess[id] = item["USERACCESS"]
@@ -4455,7 +4456,7 @@ for abstractParam, id, system, name, description in unitDefs :
     unitCode = unitCode + 1
     unitDefsById[abstractParam + "." + id] = {"CODE" : unitCode, "ID" : id, "SYSTEM" : system, "NAME" : name, "ABSTRACT" : abstractParam, "DESCRIPTION" : description}
     unitsByAbsParam.setdefault(abstractParam, []).append(id)
-unitDefIds = unitDefsById.keys()
+unitDefIds = list(unitDefsById.keys())
 unitDefIds.sort()
 
 #------------------#
@@ -4697,7 +4698,7 @@ cwmsUnitParamDefsById = {}
 for paramCode, abstractParam, paramId, name, id, siId, enId, desc in parameters :
 #    uid = abstractParam + '.' + id
     cwmsUnitParamDefsById[abstractParam + '.' + id] = unitDefsById[abstractParam + '.' + id]["CODE"]
-cwmsUnitParamIds = cwmsUnitParamDefsById.keys()
+cwmsUnitParamIds = list(cwmsUnitParamDefsById.keys())
 
 #------------------------#
 # Default Sub-Parameters #
@@ -5546,10 +5547,10 @@ def main() :
         db_office_code[office_id] = ofcCode
         if not dbhost : dbhost = office_id
         office_names[office_id] = office_name
-        if not dbhost_offices.has_key(dbhost) : dbhost_offices[dbhost] = []
+        if dbhost not in dbhost_offices : dbhost_offices[dbhost] = []
         dbhost_offices[dbhost].append(office_id)
 
-    dbhosts = dbhost_offices.keys()
+    dbhosts = list(dbhost_offices.keys())
     dbhosts.sort()
 
     #-------------------------------------------------------------------------------#
@@ -5625,9 +5626,9 @@ def main() :
         print()
         ok = False
         while not ok :
-            print
+            print()
             line  = input('Enter office id(s) of offices sharing this database: ')
-            print
+            print()
             office_ids = line.upper().replace(',', ' ').replace(';', ' ').split()
             if not office_ids :
                 ok = True
@@ -5974,6 +5975,7 @@ def main() :
     #---------------------------------------------------#
 
     sys.stderr.write("Building cwmsOfficeCreationTemplate\n")
+    global cwmsOfficeCreationTemplate
     cwmsOfficeCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6031,6 +6033,7 @@ def main() :
     '''
 
     sys.stderr.write("Building cwmsOfficeLoadTemplate\n")
+    global cwmsOfficeLoadTemplate
     cwmsOfficeLoadTemplate = ''
     code = 0
     for ofcCode, ofc, longName, reportTo, dbHost, eroc, ofcType in offices :
@@ -6049,6 +6052,7 @@ def main() :
     cwmsOfficeLoadTemplate +="COMMIT;"
 
     sys.stderr.write("Building subLocationCreationTemplate\n")
+    global subLocationCreationTemplate
     subLocationCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6104,12 +6108,14 @@ def main() :
     '''
 
     sys.stderr.write("Building subLocationLoadTemplate\n")
+    global subLocationLoadTemplate
     subLocationLoadTemplate = ''
     for i in range(len(subLocations)) :
         subLocationLoadTemplate +="INSERT INTO @TABLE (SUBCWMS_CODE, SUBCWMS_ID) VALUES (%d, '%s');\n" % (i+1, subLocations[i])
     subLocationLoadTemplate +="COMMIT;"
 
     sys.stderr.write("Building shefDurationCreationTemplate\n")
+    global shefDurationCreationTemplate
     shefDurationCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6184,6 +6190,7 @@ def main() :
     /
     '''
     sys.stderr.write("Building shefDurationLoadTemplate\n")
+    global shefDurationLoadTemplate
     shefDurationLoadTemplate = ''
     for durCode, desc, durNum, cwmsDurCode in shef_duration :
         if durNum == 'NULL' :
@@ -6193,6 +6200,7 @@ def main() :
     shefDurationLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building statesCreationTemplate\n")
+    global statesCreationTemplate
     statesCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6236,12 +6244,14 @@ def main() :
     '''
 
     sys.stderr.write("Building statesLoadTemplate\n")
+    global statesLoadTemplate
     statesLoadTemplate = ''
     for id, initial, name, nation in states :
         statesLoadTemplate +="INSERT INTO @TABLE VALUES (%s, '%s', '%s', %s);\n" % (id, initial, name, "'%s'" % nation if nation else 'NULL')
     statesLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building countiesCreationTemplate\n")
+    global countiesCreationTemplate
     countiesCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6286,6 +6296,7 @@ def main() :
 
     controlFilename = "countiesLoader.ctl"
     sys.stderr.write("Building countiesLoadTemplate\n")
+    global countiesLoadTemplate
     countiesLoadTemplate = ''
     for county_code, countyName in counties :
         stateId = "%2.2d" % (county_code / 1000)
@@ -6301,6 +6312,7 @@ def main() :
 
 
     sys.stderr.write("Building intervalOffsetCreationTemplate\n")
+    global intervalOffsetCreationTemplate
     intervalOffsetCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6357,6 +6369,7 @@ def main() :
     '''
 
     sys.stderr.write("Building validValuesCreationTemplate\n")
+    global validValuesCreationTemplate
     validValuesCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6388,6 +6401,7 @@ def main() :
     '''
 
     sys.stderr.write("Building errorMessageCreationTemplate\n")
+    global errorMessageCreationTemplate
     errorMessageCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6419,6 +6433,7 @@ def main() :
     '''
 
     sys.stderr.write("Building errorMessageNewCreationTemplate\n")
+    global errorMessageNewCreationTemplate
     errorMessageNewCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6518,6 +6533,7 @@ def main() :
     '''
 
     sys.stderr.write("Building errorMessageNewLoadTemplate\n")
+    global errorMessageNewLoadTemplate
     errorMessageNewLoadTemplate = ''
     for err_code, err_name, err_msg in errorCodes :
         errorMessageNewLoadTemplate +="INSERT INTO @TABLE (ERR_CODE, ERR_NAME, ERR_MSG) VALUES (%s, '%s', '%s');\n" % (err_code, err_name, err_msg)
@@ -6525,6 +6541,7 @@ def main() :
 
 
     sys.stderr.write("Building intervalCreationTemplate\n")
+    global intervalCreationTemplate
     intervalCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6563,12 +6580,14 @@ def main() :
 
 
     sys.stderr.write("Building intervalLoadTemplate\n")
+    global intervalLoadTemplate
     intervalLoadTemplate = ''
     for code, id, minutesSignature, description in intervals :
         intervalLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', %d, '%s');\n" % (code, id, minutesSignature, description)
     intervalLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building durationCreationTemplate\n")
+    global durationCreationTemplate
     durationCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6610,12 +6629,14 @@ def main() :
 
 
     sys.stderr.write("Building durationLoadTemplate\n")
+    global durationLoadTemplate
     durationLoadTemplate = ''
     for code, id, minutesSignature, description in durations :
         durationLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', %d, '%s');\n" % (code, id, minutesSignature, description)
     durationLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building catalogCreationTemplate\n")
+    global catalogCreationTemplate
     catalogCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6649,12 +6670,14 @@ def main() :
     '''
 
     sys.stderr.write("Building catalogLoadTemplate\n")
+    global catalogLoadTemplate
     catalogLoadTemplate = ''
     for objName, colName, objDesc, colDesc in catalogItems :
         catalogLoadTemplate +="INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s');\n" % (objName, colName, objDesc, colDesc)
     catalogLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building abstractParamCreationTemplate\n")
+    global abstractParamCreationTemplate
     abstractParamCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6721,6 +6744,7 @@ def main() :
 
     abstractParamCodes = {}
     sys.stderr.write("Building abstractParamLoadTemplate\n")
+    global abstractParamLoadTemplate
     abstractParamLoadTemplate = ""
     for i in range(len(abstractParams)) :
         code = i+1
@@ -6730,6 +6754,7 @@ def main() :
     abstractParamLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building unitCreationTemplate\n")
+    global unitCreationTemplate
     unitCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6783,8 +6808,9 @@ def main() :
     '''
 
     sys.stderr.write("Building unitLoadTemplate\n")
+    global unitLoadTemplate
     unitLoadTemplate = ''
-    unitDefIds = unitDefsById.keys()
+    unitDefIds = list(unitDefsById.keys())
     unitDefIds.sort()
     for i in range(len(unitDefIds)) :
         id = unitDefIds[i]
@@ -6809,6 +6835,7 @@ def main() :
     unitLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building cwmsUnitCreationTemplate\n")
+    global cwmsUnitCreationTemplate
     cwmsUnitCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6851,6 +6878,7 @@ def main() :
     '''
 
     sys.stderr.write("Building cwmsUnitLoadTemplate\n")
+    global cwmsUnitLoadTemplate
     cwmsUnitLoadTemplate = ''
     for i in range(len(cwmsUnitParamDefsById)) :
         cwmsUnitCode = cwmsUnitParamDefsById[cwmsUnitParamIds[i]]
@@ -6859,6 +6887,7 @@ def main() :
     cwmsUnitLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building parameterTypeCreationTemplate\n")
+    global parameterTypeCreationTemplate
     parameterTypeCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -6927,6 +6956,7 @@ def main() :
     '''
 
     sys.stderr.write("Building parameterTypeLoadTemplate\n")
+    global parameterTypeLoadTemplate
     parameterTypeLoadTemplate = ''
     for i in range(len(parameterTypes)) :
         code = i+1
@@ -6938,6 +6968,7 @@ def main() :
     parameterTypeLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building parameterCreationTemplate\n")
+    global parameterCreationTemplate
     parameterCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -7124,6 +7155,7 @@ def main() :
     '''
 
     sys.stderr.write("Building parameterLoadTemplate\n")
+    global parameterLoadTemplate
     parameterLoadTemplate = ''
     for i in range(len(parameters)) :
         code, abstractParam, id, name, unitId, siUnitId, enUnitId, description = parameters[i]
@@ -7154,6 +7186,7 @@ def main() :
     #-------------------------------------------------------
     #-------------------------------------------------------
     sys.stderr.write("Building subParameterCreationTemplate\n")
+    global subParameterCreationTemplate
     subParameterCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -7283,6 +7316,7 @@ def main() :
 
 
     sys.stderr.write("Building subParameterLoadTemplate\n")
+    global subParameterLoadTemplate
     subParameterLoadTemplate = \
     '''
     INSERT INTO at_parameter
@@ -7316,6 +7350,7 @@ def main() :
     #-------------------------------------------------------
 
     sys.stderr.write("Building ratingMethodCreationTemplate\n")
+    global ratingMethodCreationTemplate
     ratingMethodCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -7358,6 +7393,7 @@ def main() :
     '''
 
     sys.stderr.write("Building ratingMethodLoadTemplate\n")
+    global ratingMethodLoadTemplate
     ratingMethodLoadTemplate = ''
     code = 1
     for id, description in ratingMethods :
@@ -7366,6 +7402,7 @@ def main() :
     ratingMethodLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building dssParameterTypeCreationTemplate\n")
+    global dssParameterTypeCreationTemplate
     dssParameterTypeCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -7437,6 +7474,7 @@ def main() :
     '''
 
     sys.stderr.write("Building dssParameterTypeLoadTemplate\n")
+    global dssParameterTypeLoadTemplate
     dssParameterTypeLoadTemplate = ''
     for i in range(len(dssParameterTypes)) :
         code = i+1
@@ -7452,6 +7490,7 @@ def main() :
     dssParameterTypeLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building dssXchgDirectionCreationTemplate\n")
+    global dssXchgDirectionCreationTemplate
     dssXchgDirectionCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -7520,6 +7559,7 @@ def main() :
     '''
 
     sys.stderr.write("Building dssXchgDirectionLoadTemplate\n")
+    global dssXchgDirectionLoadTemplate
     dssXchgDirectionLoadTemplate = ''
     for i in range(len(dssXchgDirections)) :
         code = i + 1
@@ -7531,6 +7571,7 @@ def main() :
     dssParameterTypeLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building conversionCreationTemplate\n")
+    global conversionCreationTemplate
     conversionCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -7678,8 +7719,10 @@ def main() :
     '''
 
     sys.stderr.write("Building conversionLoadTemplate\n")
+    global conversionLoadTemplate
     conversionLoadTemplate = ''
-    conversionUnitIds = unitConversionsByUnitIds.keys()
+    global conversionUnitIds
+    conversionUnitIds = list(unitConversionsByUnitIds.keys())
     conversionUnitIds.sort()
     for abstractParam, fromUnit, toUnit in conversionUnitIds :
         conversion = unitConversionsByUnitIds[(abstractParam, fromUnit, toUnit)]
@@ -7699,6 +7742,7 @@ def main() :
     conversionLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building conversionTestTemplate\n")
+    global conversionTestTemplate
     conversionTestTemplate = \
     '''
     CREATE OR REPLACE PROCEDURE @TABLE_TEST
@@ -7768,6 +7812,7 @@ def main() :
     '''
 
     sys.stderr.write("Building timezoneCreationTemplate\n")
+    global timezoneCreationTemplate
     timezoneCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -7821,12 +7866,14 @@ def main() :
     '''
 
     sys.stderr.write("Building timezoneLoadTemplate\n")
+    global timezoneLoadTemplate
     timezoneLoadTemplate = ''
     for time_zone_code,time_zone_name,utc_offset,dst_offset in timezones :
         timezoneLoadTemplate +="INSERT INTO @TABLE (TIME_ZONE_CODE,TIME_ZONE_NAME,UTC_OFFSET,DST_OFFSET) VALUES (%d, '%s', '%s', '%s');\n" % (time_zone_code, time_zone_name, utc_offset, dst_offset)
     timezoneLoadTemplate +="COMMIT;"
 
     sys.stderr.write("Building timezoneAliasCreationTemplate\n")
+    global timezoneAliasCreationTemplate
     timezoneAliasCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -7870,6 +7917,7 @@ def main() :
 
     '''
     sys.stderr.write("Building timezoneAliasLoadTemplate\n")
+    global timezoneAliasLoadTemplate
     timezoneAliasLoadTemplate = ''
     base_tzs = ['GMT', 'UTC']
     signs    = ['-', '+']
@@ -7896,6 +7944,7 @@ def main() :
     timezoneAliasLoadTemplate += 'COMMIT;\n'
 
     sys.stderr.write("Building tzUsageCreationTemplate\n")
+    global tzUsageCreationTemplate
     tzUsageCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -7964,6 +8013,7 @@ def main() :
     '''
 
     sys.stderr.write("Building tzUsageLoadTemplate\n")
+    global tzUsageLoadTemplate
     tzUsageLoadTemplate = ''
     for i in range(len(tzUsages)) :
         code = i+1
@@ -7975,6 +8025,7 @@ def main() :
     tzUsageLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building qScreenedCreationTemplate\n")
+    global qScreenedCreationTemplate
     qScreenedCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8014,12 +8065,14 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building qScreenedLoadTemplate\n")
+    global qScreenedLoadTemplate
     qScreenedLoadTemplate = ''
     for code, id, description in q_screened["values"] :
         qScreenedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qScreenedLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building qValidityCreationTemplate\n")
+    global qValidityCreationTemplate
     qValidityCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8059,12 +8112,14 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building qValidityLoadTemplate\n")
+    global qValidityLoadTemplate
     qValidityLoadTemplate = ''
     for code, id, description in q_validity["values"] :
         qValidityLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qValidityLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building qRangeCreationTemplate\n")
+    global qRangeCreationTemplate
     qRangeCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8104,12 +8159,14 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building qRangeLoadTemplate\n")
+    global qRangeLoadTemplate
     qRangeLoadTemplate = ''
     for code, id, description in q_value_range["values"] :
         qRangeLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qRangeLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building qChangedCreationTemplate\n")
+    global qChangedCreationTemplate
     qChangedCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8149,12 +8206,14 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building qChangedLoadTemplate\n")
+    global qChangedLoadTemplate
     qChangedLoadTemplate = ''
     for code, id, description in q_different["values"] :
         qChangedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qChangedLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building qReplCauseCreationTemplate\n")
+    global qReplCauseCreationTemplate
     qReplCauseCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8194,12 +8253,14 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building qReplCauseLoadTemplate\n")
+    global qReplCauseLoadTemplate
     qReplCauseLoadTemplate = ''
     for code, id, description in q_replacement_cause["values"] :
         qReplCauseLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qReplCauseLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building qReplMethodCreationTemplate\n")
+    global qReplMethodCreationTemplate
     qReplMethodCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8238,12 +8299,14 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building qReplMethodLoadTemplate\n")
+    global qReplMethodLoadTemplate
     qReplMethodLoadTemplate = ''
     for code, id, description in q_replacement_method["values"] :
         qReplMethodLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qReplMethodLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building qTestFailedCreationTemplate\n")
+    global qTestFailedCreationTemplate
     qTestFailedCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8284,12 +8347,14 @@ def main() :
     '''
 
     sys.stderr.write("Building qTestFailedLoadTemplate\n")
+    global qTestFailedLoadTemplate
     qTestFailedLoadTemplate = ''
     for code, id, description in q_test_failed["values"] :
         qTestFailedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qTestFailedLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building qProtectionCreationTemplate\n")
+    global qProtectionCreationTemplate
     qProtectionCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8329,12 +8394,14 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building qProtectionLoadTemplate\n")
+    global qProtectionLoadTemplate
     qProtectionLoadTemplate = ''
     for code, id, description in q_protection["values"] :
         qProtectionLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qProtectionLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building qualityCreationTemplate\n")
+    global qualityCreationTemplate
     qualityCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8451,6 +8518,7 @@ def main() :
     qualityLoadFile.close()
 
     sys.stderr.write("Building logMessageTypesCreationTemplate\n")
+    global logMessageTypesCreationTemplate
     logMessageTypesCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8493,12 +8561,14 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building logMessageTypesLoadTemplate\n")
+    global logMessageTypesLoadTemplate
     logMessageTypesLoadTemplate = ''
     for code, id in logMessageTypes :
         logMessageTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
     logMessageTypesLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building logMessagePropTypesCreationTemplate\n")
+    global logMessagePropTypesCreationTemplate
     logMessagePropTypesCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8541,12 +8611,14 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building logMessagePropTypesLoadTemplate\n")
+    global logMessagePropTypesLoadTemplate
     logMessagePropTypesLoadTemplate = ''
     for code, id in logMessagePropTypes :
         logMessagePropTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
     logMessagePropTypesLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building intpolateUnitsCreationTemplate\n")
+    global interpolateUnitsCreationTemplate
     interpolateUnitsCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8589,12 +8661,14 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building interpolateUnitsLoadTemplate\n")
+    global interpolateUnitsLoadTemplate
     interpolateUnitsLoadTemplate = ''
     for code, id in interpolateUnits :
         interpolateUnitsLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
     interpolateUnitsLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building displayUnitsCreationTemplate\n")
+    global displayUnitsCreationTemplate
     displayUnitsCreationTemplate = \
     '''
     ---------------------------------
@@ -8672,6 +8746,7 @@ def main() :
     '''
 
     sys.stderr.write("Building displayUnitsLoadTemplate\n")
+    global displayUnitsLoadTemplate
     displayUnitsLoadTemplate = ''
 
     for k in range(len(office_ids)) :
@@ -8713,6 +8788,7 @@ def main() :
     displayUnitsLoadTemplate +="COMMIT;\n"
 
     sys.stderr.write("Building gageMethodCreationTemplate\n")
+    global gageMethodCreationTemplate
     gageMethodCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8762,12 +8838,14 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building gageMethodLoadTemplate\n")
+    global gageMethodLoadTemplate
     gageMethodLoadTemplate = ''
     for code, id, description in gageMethods :
         gageMethodLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
     gageMethodLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building gageTypeCreationTemplate\n")
+    global gageTypeCreationTemplate
     gageTypeCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8843,6 +8921,7 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building gageTypeLoadTemplate\n")
+    global gageTypeLoadTemplate
     gageTypeLoadTemplate = ''
     for code, id, manually_read, inquiry_method, tx_method, description in gageTypes :
         if inquiry_method != 'NULL' :
@@ -8915,6 +8994,7 @@ def main() :
 #     streamTypeLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building vertconHeaderCreationTemplate\n")
+    global vertconHeaderCreationTemplate
     vertconHeaderCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -8972,6 +9052,7 @@ def main() :
     '''
 
     sys.stderr.write("Building vertconDataCreationTemplate\n")
+    global vertconDataCreationTemplate
     vertconDataCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9006,6 +9087,7 @@ def main() :
     '''
 
     sys.stderr.write("Building verticalDatumCreationTemplate\n")
+    global verticalDatumCreationTemplate
     verticalDatumCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9026,6 +9108,7 @@ def main() :
     '''
 
     sys.stderr.write("Building verticalDatumLoadTemplate\n")
+    global verticalDatumLoadTemplate
     verticalDatumLoadTemplate = \
     '''
     INSERT INTO CWMS_VERTICAL_DATUM VALUES ('STAGE');
@@ -9035,6 +9118,7 @@ def main() :
     '''
 
     sys.stderr.write("Building storeRuleCreationTemplate\n")
+    global storeRuleCreationTemplate
     storeRuleCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9063,6 +9147,7 @@ def main() :
     '''
 
     sys.stderr.write("Building storeRuleLoadTemplate\n")
+    global storeRuleLoadTemplate
     storeRuleLoadTemplate = \
     '''
     insert into @TABLE values(1, 'REPLACE WITH NON MISSING',    'Insert values at new times and replace any values at existing times, unless the incoming values are specified as missing', 'T');
@@ -9073,6 +9158,7 @@ def main() :
     '''
 
     sys.stderr.write("Building locationKindCreationTemplate\n")
+    global locationKindCreationTemplate
     locationKindCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9105,6 +9191,7 @@ def main() :
     '''
 
     sys.stderr.write("Building locationKindLoadTemplate\n")
+    global locationKindLoadTemplate
     locationKindLoadTemplate = ""
     for code, parentCode, name, representativePoint, description in locationKinds :
         locationKindLoadTemplate += "insert into @TABLE values(%s, %s, '%s', '%s', '%s');\n" % (
@@ -9117,6 +9204,7 @@ def main() :
     locationKindLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building usgsTimeZoneCreationTemplate\n")
+    global usgsTimeZoneCreationTemplate
     usgsTimeZoneCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9142,6 +9230,7 @@ def main() :
     '''
 
     sys.stderr.write("Building usgsTimeZoneLoadTemplate\n")
+    global usgsTimeZoneLoadTemplate
     usgsTimeZoneLoadTemplate = ""
     for tz_id, tz_name, utc_offset in usgsTimeZones :
         usgsTimeZoneLoadTemplate += "insert into @TABLE values('%s', '%s', to_dsinterval('%s'));\n" % (
@@ -9150,6 +9239,7 @@ def main() :
     usgsTimeZoneLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building usgsFlowAdjCreationTemplate\n")
+    global usgsFlowAdjCreationTemplate
     usgsFlowAdjCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9175,6 +9265,7 @@ def main() :
     '''
 
     sys.stderr.write("Building usgsFlowAdjLoadTemplate\n")
+    global usgsFlowAdjLoadTemplate
     usgsFlowAdjLoadTemplate = "set define off\n"
     for adj_id, adj_name, description in usgsFlowAdjustments :
         usgsFlowAdjLoadTemplate += "insert into @TABLE values('%s', '%s', '%s');\n" % (
@@ -9183,6 +9274,7 @@ def main() :
     usgsFlowAdjLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building usgsRatingCtrlCondCreationTemplate\n")
+    global usgsRatingCtrlCondCreationTemplate
     usgsRatingCtrlCondCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9206,6 +9298,7 @@ def main() :
     '''
 
     sys.stderr.write("Building usgsRatingCtrlCondLoadTemplate\n")
+    global usgsRatingCtrlCondLoadTemplate
     usgsRatingCtrlCondLoadTemplate = ""
     for ctrl_cond_id, description in usgsRatingCtrlConditions :
         usgsRatingCtrlCondLoadTemplate += "insert into @TABLE values('%s', '%s');\n" % (
@@ -9214,6 +9307,7 @@ def main() :
     usgsRatingCtrlCondLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building usgsMeasQualCreationTemplate\n")
+    global usgsMeasQualCreationTemplate
     usgsMeasQualCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9239,6 +9333,7 @@ def main() :
     '''
 
     sys.stderr.write("Building usgsMeasQualLoadTemplate\n")
+    global usgsMeasQualLoadTemplate
     usgsMeasQualLoadTemplate = ""
     for qual_id, qual_name, description, in usgsMeasQualities :
         usgsMeasQualLoadTemplate += "insert into @TABLE values('%s', '%s', '%s');\n" % (
@@ -9247,6 +9342,7 @@ def main() :
     usgsMeasQualLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building usgsParameterCreationTemplate\n")
+    global usgsParameterCreationTemplate
     usgsParameterCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9296,7 +9392,7 @@ def main() :
     '''
 
     sys.stderr.write("Building usgsParameterLoadTemplate\n")
-    buf = StringIO.StringIO()
+    buf = StringIO()
     for usgsParam, cwmsBaseParam, cwmsSubParam, cwmsParamType, cwmsUnit, cwmsFactor, cwmsOffset, pe, shefEnglish, shefFactor, shefOffset, name in usgsParameters :
         buf.write("insert into @TABLE values(%s, %s," % (usgsParam, cwmsBaseParam))
         if cwmsSubParam is None : buf.write("NULL, ")
@@ -9304,10 +9400,12 @@ def main() :
         buf.write("%s, %s, %s, %s, " % (cwmsParamType, cwmsUnit, cwmsFactor, cwmsOffset))
         if pe is None : buf.write("NULL, NULL, NULL, NULL, '%s');\n" % name)
         else          : buf.write("'%s', '%s', %s, %s, '%s');\n" % (pe, shefEnglish, shefFactor, shefOffset, name))
+    global usgsParameterLoadTemplate
     usgsParameterLoadTemplate = buf.getvalue()
     buf.close()
 
     sys.stderr.write("Building entityCategoryCreationTemplate\n")
+    global entityCategoryCreationTemplate
     entityCategoryCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9331,6 +9429,7 @@ def main() :
     '''
 
     sys.stderr.write("Building entityCategoryLoadTemplate\n")
+    global entityCategoryLoadTemplate
     entityCategoryLoadTemplate = \
     '''
     insert into @TABLE values('GOV', 'Government entities including military');
@@ -9341,6 +9440,7 @@ def main() :
     '''
 
     sys.stderr.write("Building entityCreationTemplate\n")
+    global entityCreationTemplate
     entityCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9380,6 +9480,7 @@ def main() :
     '''
 
     sys.stderr.write("Building entityLoadTemplate\n")
+    global entityLoadTemplate
     entityLoadTemplate = \
     '''
     insert into @TABLE values(1,NULL,53,NULL,'OTHER','Unknown or unspecified entity');
@@ -9527,6 +9628,7 @@ def main() :
     '''
 
     sys.stderr.write("Building configCategoryCreationTemplate\n")
+    global configCategoryCreationTemplate
     configCategoryCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9550,6 +9652,7 @@ def main() :
     '''
 
     sys.stderr.write("Building configCategoryLoadTemplate\n")
+    global configCategoryLoadTemplate
     configCategoryLoadTemplate = \
     '''
     insert into @TABLE values('GENERAL', 'General purpose configurations');
@@ -9559,6 +9662,7 @@ def main() :
     '''
 
     sys.stderr.write("Building configurationCreationTemplate\n")
+    global configurationCreationTemplate
     configurationCreationTemplate = \
     '''
     -- ## TABLE ###############################################
@@ -9599,6 +9703,7 @@ def main() :
     '''
 
     sys.stderr.write("Building configurationLoadTemplate\n")
+    global configurationLoadTemplate
     configurationLoadTemplate = \
     '''
     insert into @TABLE values(1,NULL,53,'GENERAL','OTHER','Generic general purpose');
@@ -9616,6 +9721,7 @@ def main() :
 
 
     sys.stderr.write("Building gateTypeCreationTemplate\n")
+    global gateTypeCreationTemplate
     gateTypeCreationTemplate = \
     '''
     create table @TABLE (
@@ -9635,6 +9741,7 @@ def main() :
     '''
 
     sys.stderr.write("Building gateTypeLoadTemplate\n")
+    global gateTypeLoadTemplate
     gateTypeLoadTemplate = \
     '''
     insert into @TABLE values( 1, 'OTHER',          'Unknown or unspecified gate type');
@@ -9654,6 +9761,7 @@ def main() :
     COMMIT;
     '''
     sys.stderr.write("Building vlocLvlConstituentTypeCreationTemplate\n")
+    global vlocLvlConstituentTypeCreationTemplate
     vlocLvlConstituentTypeCreationTemplate = \
     '''
     create table @TABLE (
@@ -9666,6 +9774,7 @@ def main() :
     '''
 
     sys.stderr.write("Building vlocLvlConstituentTypeLoadTemplate\n")
+    global vlocLvlConstituentTypeLoadTemplate
     vlocLvlConstituentTypeLoadTemplate = \
     '''
     insert into @TABLE values ('LOCATION_LEVEL');
@@ -9737,29 +9846,30 @@ def main() :
         if schema[table] == "CWMS"  : thisPrefix = prefix[CWMS]
         else                        : thisPrefix = prefix[USER]
         dropPrefix = thisPrefix.replace("BUILD", "DROP")
-        lines = eval("%sCreationTemplate.split('\\n')" % table)
-        for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
-        exec("%sCreationTemplate = '\\n'.join(lines)" % table)
-        exec("%sCreationStr = %sCreationTemplate.replace('@TABLE', '%s')" % (table, table, tableName))
+        lines = eval("%sCreationTemplate.split('\\n')" % table)        
+        for i in list(range(len(lines))) : lines[i] = thisPrefix + lines[i]
+        exec("%sCreationTemplate = '\\n'.join(lines)" % table)        
+        exec("global %sCreationStr; %sCreationStr = %sCreationTemplate.replace('@TABLE', '%s')" % (table, table, table, tableName))
         exec("%sCreationStr = %sCreationStr.replace('@DATASPACE', '%s')" % (table, table, tableSpaceName))
         try :
             lines = eval("%sLoadTemplate.split('\\n')" % table)
             for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
             exec("%sLoadTemplate = '\\n'.join(lines)" % table)
-            exec("%sLoadStr = %sLoadTemplate.replace('@TABLE', '%s')" % (table, table, tableName))
+            exec("global %sLoadStr; %sLoadStr = %sLoadTemplate.replace('@TABLE', '%s')" % (table, table, table, tableName))
         except Exception as e:
-            pass
+            #print("***** %s *****" %s str(e))
+            pass            
         try :
             lines = eval("%sTestTemplate.split('\\n')" % table)
             for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
             exec("%sTestTemplate = '\\n'.join(lines)" % table)
-            exec("%sTestStr = %sTestTemplate.replace('@TABLE', '%s')" % (table, table, tableName))
+            exec("global %sTestStr; %sTestStr = %sTestTemplate.replace('@TABLE', '%s')" % (table, table, table, tableName))
         except :
             pass
         print(dropPrefix)
         print("%sDROP TABLE %s;" % (dropPrefix, tableName))
         print("%sCOMMIT;" % dropPrefix)
-
+    #print("*******TEST*****")
     #==============================================================================
     # Create CWMS_SEQ for the specified db_office_id's offset...
     #==============================================================================
@@ -9839,6 +9949,8 @@ def main() :
     dropCwms  = open(sqlFileName["DROPCWMS"], "w")
     #dropUser  = open(sqlFileName["DROPUSER"], "w")
     for line in lines :
+        if (line.strip() == "") : continue
+        print("'%s'" % line)
         prefix, line = line.split("~", 1)
         if prefix.find("BUILDCWMS") != -1 : buildCwms.write(line)
         #if prefix.find("BUILDUSER") != -1 : buildUser.write(line)
