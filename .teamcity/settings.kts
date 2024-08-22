@@ -259,7 +259,7 @@ object TestContainer : BuildType({
 
             tasks = "sonarqube"
             gradleParams = "-Dsonar.login=%system.SONAR_TOKEN% -Dsonar.host.url=https://sonarqube.hecdev.net -Dorg.gradle.java.home=/usr/lib/jvm/adoptopenjdk-11-hotspot -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER% --info -Dtestcontainer.cwms.bypass.sys.pass=antsyspassword -PmavenUser=%env.NEXUS_USER% -PmavenPassword=%env.NEXUS_PASSWORD%"
-            jdkHome="%env.JDK_1_8_x64%"
+            jdkHome="%env.JDK_11_x64%"
         }
         gradle {
             name = "Push to Nexus"
@@ -267,7 +267,7 @@ object TestContainer : BuildType({
 
             tasks = "publish"
             gradleParams = "-PmavenUser=%env.NEXUS_USER% -PmavenPassword=%env.NEXUS_PASSWORD%"
-            jdkHome ="%env.JDK_1_8_x64%"
+            jdkHome ="%env.JDK_11_x64%"
             conditions {
                 matches("teamcity.build.branch", "(master|release/.*)")
             }
