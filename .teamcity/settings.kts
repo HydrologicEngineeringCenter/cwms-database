@@ -35,7 +35,7 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 'Debug' option is available in the context menu for the task.
 */
 
-version = "2020.2"
+version = "2024.3"
 
 project {
 
@@ -44,7 +44,6 @@ project {
     }
     sequential {
         buildType(Build)
-        buildType(TestContainer)
     }.buildTypes().forEach { buildType(it) }
 
 }
@@ -220,106 +219,4 @@ object Build : BuildType({
     requirements {
         contains("docker.server.osType", "linux")
     }
-})
-
-
-object TestContainer : BuildType({
-    name = "Build TestContainers"
-
-    artifactRules = """
-        build/libs/ =>
-    """.trimIndent()
-
-    params {
-
-    }
-
-    vcs {
-        root(DslContext.settingsRoot)
-    }
-
-    steps {
-        gradle {
-            name = "Build"
-            workingDir="testcontainers"
-            tasks = "clean test"
-            gradleParams="--info -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER% -Dtestcontainer.cwms.bypass.sys.pass=antsyspassword -PmavenUser=%env.NEXUS_USER% -PmavenPassword=%env.NEXUS_PASSWORD%"
-            jdkHome ="%env.JDK_1_8_x64%"
-        }
-        gradle {
-            name = "JavaDoc"
-            workingDir="testcontainers"
-            tasks = "javadoc"
-            gradleParams="--info -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER% -Dtestcontainer.cwms.bypass.sys.pass=antsyspassword -PmavenUser=%env.NEXUS_USER% -PmavenPassword=%env.NEXUS_PASSWORD%"
-            jdkHome ="%env.JDK_1_8_x64%"
-        }
-        gradle {
-            name = "SonarQube Analysis"
-            workingDir = "testcontainers"
-
-            tasks = "sonarqube"
-            gradleParams = "-Dsonar.login=%system.SONAR_TOKEN% -Dsonar.host.url=https://sonarqube.hecdev.net -Dorg.gradle.java.home=/usr/lib/jvm/adoptopenjdk-11-hotspot -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER% --info -Dtestcontainer.cwms.bypass.sys.pass=antsyspassword -PmavenUser=%env.NEXUS_USER% -PmavenPassword=%env.NEXUS_PASSWORD%"
-            jdkHome="%env.JDK_11_x64%"
-        }
-        gradle {
-            name = "Push to Nexus"
-            workingDir = "testcontainers"
-
-            tasks = "publish"
-            gradleParams = "-PmavenUser=%env.NEXUS_USER% -PmavenPassword=%env.NEXUS_PASSWORD%"
-            jdkHome ="%env.JDK_11_x64%"
-            conditions {
-                matches("teamcity.build.branch", "(master|release/.*)")
-            }
-        }
-    }
-
-    triggers {
-        vcs {
-        }
-    }
-
-    failureConditions {
-        executionTimeoutMin = 180
-        failOnMetricChange {
-            metric = BuildFailureOnMetric.MetricType.ARTIFACT_SIZE
-            units = BuildFailureOnMetric.MetricUnit.DEFAULT_UNIT
-            comparison = BuildFailureOnMetric.MetricComparison.MORE
-            compareTo = value()
-            stopBuildOnFailure = true
-            param("metricThreshold", "100MB")
-        }
-    }
-
-    features {
-        commitStatusPublisher {
-            publisher = bitbucketServer {
-                url = "https://bitbucket.hecdev.net"
-                userName = "builduser"
-                password = "credentialsJSON:0c6a7d80-71bc-4c22-931e-1f6999bcc0f1"
-            }
-        }
-        feature {
-            type = "xml-report-plugin"
-            param("xmlReportParsing.reportType", "junit")
-            param("xmlReportParsing.reportDirs", "build/tests*.xml")
-        }
-        dockerSupport {
-            loginToRegistry = on {
-                dockerRegistryId = "PROJECT_EXT_11"
-            }
-        }
-    }
-
-    requirements {
-        contains("docker.server.osType", "linux")
-    }
-
-    dependencies {
-        snapshot(Build){
-            runOnSameAgent = true
-            onDependencyFailure = FailureAction.CANCEL
-        }
-    }
-
 })
