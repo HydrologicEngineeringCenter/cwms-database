@@ -110,7 +110,7 @@
                 </exec>
    </target>
 
-   <target name="build" description="Executes python scripts to build the CWMS schema" depends="createbuilduser,database-version">
+   <target name="build" description="Executes python3 scripts to build the CWMS schema" depends="createbuilduser,database-version">
 
       <echo message="Building version: ${simple.build.version}"/>
       <echo message="Have version: ${cwms.installed.version}"/>
@@ -133,7 +133,7 @@
          </else>
       </if>
 
-      <exec dir="${src}" executable="python2" output="build-sql-script-output.txt" error="build-sql-script-error.txt" resultproperty="build-sql-script-result">
+      <exec dir="${src}" executable="python3" output="build-sql-script-output.txt" error="build-sql-script-error.txt" resultproperty="build-sql-script-result">
          <arg line="${buildSqlScript-arg-line}"/>
       </exec>
 
@@ -159,7 +159,7 @@
       <property name="autobuild-arg-line" value="autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} builduser=${oracle.builduser} builduser_passwd=${oracle.builduser.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} pd_office=${office.primary.id} pd_passwd=${oracle.cwmspd.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
       <echo message="${autobuild-arg-line}"/>
 
-      <exec dir="${src}" executable="python2" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
+      <exec dir="${src}" executable="python3" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
          <arg line="${autobuild-arg-line}"/>
       </exec>
 
@@ -188,7 +188,7 @@
       </if>
 
       <echo message="Populating CWMS_DB_CHANGE_LOG with current version"/>
-      <exec dir="${root}" executable="python2" output="populate_cwms_db_change_log.sql">
+      <exec dir="${root}" executable="python3" output="populate_cwms_db_change_log.sql">
          <arg value="extract_version_update_info.py"/>
       </exec>
       <exec dir="${root}" executable="sqlplus">
@@ -574,15 +574,15 @@
       </concat>
    </target>
 
-   <!-- Executes python script to drop the CWMS schema. -->
-   <target name="clean" description="Executes python script to drop the CWMS schema" depends="createbuilduser">
+   <!-- Executes python3 script to drop the CWMS schema. -->
+   <target name="clean" description="Executes python3 script to drop the CWMS schema" depends="createbuilduser">
 
       <echo message="dropping existing CWMS Schema..."/>
 
       <property name="autokill-arg-line" value="autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} builduser=${oracle.builduser} builduser_passwd=${oracle.builduser.password} cwms_schema=${oracle.cwms.user} ${autokill.force} ${build.restricted}"/>
       <echo message="${autokill-arg-line}"/>
 
-      <exec dir="${src}" executable="python2" output="auto-kill-output.txt" error="auto-kill-error.txt" resultproperty="auto-kill-result">
+      <exec dir="${src}" executable="python3" output="auto-kill-output.txt" error="auto-kill-error.txt" resultproperty="auto-kill-result">
          <arg line="${autokill-arg-line}"/>
       </exec>
 
@@ -604,10 +604,10 @@
 
    <target name="java-resources">
       <mkdir dir="${build.dir}/resources/cwms/data"/>
-      <exec dir="${src}" executable="python2" failonerror="true" output="${build.dir}/resources/cwms/data/unitConversions.def" error="${build.dir}/resources.log">
+      <exec dir="${src}" executable="python3" failonerror="true" output="${build.dir}/resources/cwms/data/unitConversions.def" error="${build.dir}/resources.log">
          <arg line="unitConversions.py"/>
       </exec>
-      <exec dir="${src}" executable="python2" failonerror="true" output="${build.dir}/resoursces.log" error="${build.dir}/resources.log">
+      <exec dir="${src}" executable="python3" failonerror="true" output="${build.dir}/resoursces.log" error="${build.dir}/resources.log">
          <arg line="build_db_parameters_def.py ${build.dir}/resources/cwms/data/db_parameter_units.def"/>
       </exec>
    </target>
@@ -718,14 +718,14 @@
     <target name="all" depends="all-schema" description="does a clean build">
     </target>
 
-    <target name="exportSchema" description="Executes python script to export CWMS schema">
+    <target name="exportSchema" description="Executes python3 script to export CWMS schema">
 
                 <echo message="Exporting CWMS schema ..."/>
 
                 <property name="autoexportschema-arg-line" value="autoexportschema.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexportschema.force}"/>
                 <echo message="${autoexportschema-arg-line}"/>
 
-                <exec dir="${src}" executable="python2" output="auto-export-schema-output.txt" error="auto-export-schema-error.txt" resultproperty="auto-export-schema-result" failonerror="true">
+                <exec dir="${src}" executable="python3" output="auto-export-schema-output.txt" error="auto-export-schema-error.txt" resultproperty="auto-export-schema-result" failonerror="true">
                         <arg line="${autoexportschema-arg-line}"/>
                 </exec>
 
@@ -745,14 +745,14 @@
 
     </target>
 
-    <target name="export" description="Executes python script to export CWMS tables">
+    <target name="export" description="Executes python3 script to export CWMS tables">
 
                 <echo message="Exporting CWMS tables ..."/>
 
-                <property name="autoexport-arg-line" value="python autoexport.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexport.force} ${build.restricted}"/>
+                <property name="autoexport-arg-line" value="python3 autoexport.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexport.force} ${build.restricted}"/>
                 <echo message="${autoexport-arg-line}"/>
 
-                <exec dir="${src}" executable="python2" output="auto-export-output.txt" error="auto-export-error.txt" resultproperty="auto-export-result" failonerror="true">
+                <exec dir="${src}" executable="python3" output="auto-export-output.txt" error="auto-export-error.txt" resultproperty="auto-export-result" failonerror="true">
                         <arg line="${autoexport-arg-line}"/>
                 </exec>
 
@@ -771,15 +771,15 @@
                 </if>
 
     </target>
-    <!-- Executes python script to import CWMS tables -->
-        <target name="import" description="Executes python script to import CWMS schema">
+    <!-- Executes python3 script to import CWMS tables -->
+        <target name="import" description="Executes python3 script to import CWMS schema">
 
                 <echo message="Importing  CWMS tables ..."/>
 
                 <property name="autoimport-arg-line" value="autoimport.py echo=${autoimport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} cwms_dir=${oracle.cwms.dir} ccp_passwd=${oracle.ccp.password} ${autoimport.force} ${build.restricted}"/>
                 <echo message="${autoimport-arg-line}"/>
 
-                <exec dir="${src}" executable="python2" output="auto-import-output.txt" error="auto-import-error.txt" resultproperty="auto-import-result" failonerror="true">
+                <exec dir="${src}" executable="python3" output="auto-import-output.txt" error="auto-import-error.txt" resultproperty="auto-import-result" failonerror="true">
                         <arg line="${autoimport-arg-line}"/>
                 </exec>
 
@@ -798,15 +798,15 @@
                 </if>
 
     </target>
-    <!-- Executes python script to import users -->
-        <target name="createUsers" description="Executes python script to recreate CWMS users">
+    <!-- Executes python3 script to import users -->
+        <target name="createUsers" description="Executes python3 script to recreate CWMS users">
 
                 <echo message="Recreate  CWMS users ..."/>
 
                 <property name="autocreateusers-arg-line" value="autoCreateCWMSUsers.py echo=${autocreateusers.echo} inst=${oracle.cwms.instance} pd_passwd=${oracle.pd.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} ${autocreateusers.force}"/>
                 <echo message="${autocreateusers-arg-line}"/>
 
-                <exec dir="${src}" executable="python2" output="auto-createusers-output.txt" error="auto-createusers-error.txt" resultproperty="auto-createusers-result" failonerror="true">
+                <exec dir="${src}" executable="python3" output="auto-createusers-output.txt" error="auto-createusers-error.txt" resultproperty="auto-createusers-result" failonerror="true">
                         <arg line="${autocreateusers-arg-line}"/>
                 </exec>
 
@@ -1087,16 +1087,9 @@
 
    <target name="docker.setupparameters" depends="docker.init">
       <echo message="processing container name to safe characters. Starting with: ${docker.props.container_name}"/>
-      <exec executable="sed" outputProperty="docker.props.container_name_valid" failonerror="true">
-         <arg value="-e"/>
-         <arg value="s@/refs/heads/@@g"/>
-         <arg value="-e"/>
-         <arg value="s@/@_@g"/>
-         <arg value="-e"/>
-         <arg value="s@-@_@g"/>
-         <arg value="-e"/>
-         <arg value="s@#@_@g"/>
-         <redirector inputString="${docker.props.container_name}"/>
+      <exec executable="bash" outputProperty="docker.props.container_name_valid" failonerror="true">
+         <arg value="sanitize_name.sh"/>
+         <arg value="${docker.props.container_name}"/>
       </exec>
       <echo message="Name used will be: ${docker.props.container_name_valid}"/>
       <echo message="Creating parameter file"/>
