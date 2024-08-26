@@ -1,4 +1,5 @@
-import os, string, StringIO
+import os, string
+from io import StringIO
 
 at_tables = {
 #  table name           office column name
@@ -80,4 +81,3 @@ def get_static_data(filename, schemaname, conn) :
    buf = f.getvalue()
    f.close()
    return buf
-

@@ -1,7 +1,9 @@
 from decimal import *
 from mathComputations import Computation
-import re, string, StringIO, traceback, datetime, os
+import re, string, traceback, datetime, os
 from subprocess import check_output
+from io import StringIO
+from functools import reduce
 
 getcontext().prec = 16 # floating point precision to use
 
@@ -1312,10 +1314,10 @@ units_by_param = [
 
 all_from_units        = [cd[0] for cd in conversion_definitions]
 all_to_units          = [cd[1] for cd in conversion_definitions]
-all_unit_system_units = reduce(lambda a, b : {"" : a.values()[0] + b.values()[0]}, units_by_unit_system)
-all_unit_system_units = all_unit_system_units.values()[0]
-all_param_units       = reduce(lambda a, b : {"" : a.values()[0] + b.values()[0]}, units_by_param)
-all_param_units       = all_param_units.values()[0]
+all_unit_system_units = reduce(lambda a, b : {"" : list(a.values())[0] + list(b.values())[0]}, units_by_unit_system)
+all_unit_system_units = list(all_unit_system_units.values())[0]
+all_param_units       = reduce(lambda a, b : {"" : list(a.values())[0] + list(b.values())[0]}, units_by_param)
+all_param_units       = list(all_param_units.values())[0]
 
 all_units_lists = [
 	all_from_units,
@@ -1492,7 +1494,7 @@ def contains(test, unit) :
 	if test == unit : return True
 	if test.find("-") != -1 and contains(test.split("-"), unit) : return True
 	if re.search("\d+", test) is not None and contains(re.sub("\s+", "", re.sub("\^?\d+", "", test)), unit) : return True
-	if contains_unit.has_key(test) and contains(contains_unit[test], unit) : return True
+	if test in contains_unit and contains(contains_unit[test], unit) : return True
 	return False
 
 def expand_units(unit) :
@@ -1530,11 +1532,12 @@ def process_conversion_definition(from_unit, definition) :
 	#--------------------------------#
 	n_units = []
 	d_units = []
-	identities = map(string.strip, definition.split('|'))
-	id_count = len(identities)
+	identities = map(str.strip, definition.split('|'))
+	id_list = list(identities)
+	id_count = len(id_list)
 	func_ids = []
 	for i in range(id_count) :
-		if patternFunc.match(identities[i]) :
+		if patternFunc.match(id_list[i]) :
 			if i in (0, id_count-1) :
 				func_ids.append(i)
 			else :
@@ -1545,7 +1548,7 @@ def process_conversion_definition(from_unit, definition) :
 		#-----------------------#
 		# non-linear conversion #
 		#-----------------------#
-		m = patternFunc.match(identities[func_ids[0]])
+		m = patternFunc.match(id_list[func_ids[0]])
 		_to_unit = m.group(2)
 		_from_unit = m.group(4)
 		func_name = "%s_to_%s" % (_from_unit, _to_unit)
@@ -1554,7 +1557,7 @@ def process_conversion_definition(from_unit, definition) :
 			unit = _to_unit
 		else :
 			if func_ids[0] == 0:
-				factor, dummy, unit = process_conversion_definition(_to_unit, " | ".join(identities[1:]))
+				factor, dummy, unit = process_conversion_definition(_to_unit, " | ".join(id_list[1:]))
 				func_body  += "|%s|*" % factor
 				try    : offset = offsets["%s_to_%s" % (_to_unit, unit)]
 				except : offset = None
@@ -1565,7 +1568,7 @@ def process_conversion_definition(from_unit, definition) :
 						func_body  += "|%s|+" % offset
 
 			else :
-				factor, dummy, unit = process_conversion_definition(_from_unit, " | ".join(identities[:-1]))
+				factor, dummy, unit = process_conversion_definition(_from_unit, " | ".join(id_list[:-1]))
 				try    : offset = offsets["%s_to_%s" % (from_unit, _from_unit)]
 				except : offset = None
 				if offset :
@@ -1581,12 +1584,12 @@ def process_conversion_definition(from_unit, definition) :
 		#-------------------#
 		# linear conversion #
 		#-------------------#
-		try    : n, d = map(string.strip, from_unit.split('/'))
+		try    : n, d = map(str.strip, from_unit.split('/'))
 		except : n, d = from_unit.strip(), None
 		n_units.extend(expand_units(n))
 		d_units.extend(expand_units(d))
 		factor    = Decimal('1.0')
-		for identity in identities :
+		for identity in id_list :			
 			m = patternIdent.match(identity)
 			assert m is not None
 			func_body = None
@@ -1607,11 +1610,11 @@ def process_conversion_definition(from_unit, definition) :
 				else :
 					factor /= conversion_factors[d_quant]
 
-			try    : n, d = map(string.strip, n_unit.split('/'))
+			try    : n, d = map(str.strip, n_unit.split('/'))
 			except : n, d = n_unit.strip(), None
 			n_units.extend(expand_units(n))
 			d_units.extend(expand_units(d))
-			try    : n, d = map(string.strip, d_unit.split('/'))
+			try    : n, d = map(str.strip, d_unit.split('/'))
 			except : n, d = d_unit.strip(), None
 			d_units.extend(expand_units(n))
 			n_units.extend(expand_units(d))
@@ -1633,7 +1636,7 @@ def process_conversion_definition(from_unit, definition) :
 						if unit.startswith(prefix) :
 							break
 						found = False
-						if contains_unit.has_key(unit) :
+						if unit in contains_unit :
 							for _unit in contains_unit[unit] :
 								if _unit.startswith(prefix) :
 									found = True
@@ -1653,7 +1656,7 @@ def process_conversion_definition(from_unit, definition) :
 						if unit.startswith(prefix) :
 							break
 						found = False
-						if contains_unit.has_key(unit) :
+						if unit in contains_unit :
 							for _unit in contains_unit[unit] :
 								if _unit.startswith(prefix) :
 									found = True
@@ -1683,7 +1686,7 @@ def process_conversion_definition(from_unit, definition) :
 						if unit.startswith(prefix) :
 							break
 						found = False
-						if contains_unit.has_key(unit) :
+						if unit in contains_unit :
 							for _unit in contains_unit[unit] :
 								if _unit.startswith(prefix) :
 									found = True
@@ -1703,7 +1706,7 @@ def process_conversion_definition(from_unit, definition) :
 						if unit.startswith(prefix) :
 							break
 						found = False
-						if contains_unit.has_key(unit) :
+						if unit in contains_unit :
 							for _unit in contains_unit[unit] :
 								if _unit.startswith(prefix) :
 									found = True
@@ -1804,7 +1807,7 @@ def convert(value, from_unit, to_unit) :
 
 
 def get_java_resource_format() :
-	buf = StringIO.StringIO()
+	buf = StringIO()
 	date_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
 	git_branch = check_output(["git","branch","--show-current"]).strip()
 	teamcity_build_info = "(manual run)"
@@ -1814,19 +1817,19 @@ def get_java_resource_format() :
 		teamcity_build_info = "(Build %s, #%s)" % (build,build_number)
 	except:
 		pass # we aren't in TEAMCITY so these don't exist
-	buf.write("// Generated from cwms_database:" + git_branch + " " + teamcity_build_info + " on " + date_str + "\n" )
+	buf.write("// Generated from cwms_database:" + str(git_branch) + " " + str(teamcity_build_info) + " on " + str(date_str) + "\n" )
 	buf.write("// UNIT DEFINITIONS\n")
 	buf.write("//  UnitSystem;UnitName;UnitAliases...;...;\n")
 	for d in [d for d in units_by_param] :
-		param = d.keys()[0]
-		buf2 = StringIO.StringIO()
+		param = list(d.keys())[0]
+		buf2 = StringIO()
 		buf.write("\n//%s\n" % param)
-		units = d.values()[0]
+		units = list(d.values())[0]
 		for unit_system_units in units_by_unit_system :
-			unit_system = unit_system_units.keys()[0];
-			for unit in [u for u in sorted(units) if u in unit_system_units.values()[0]] :
+			unit_system = list(unit_system_units.keys())[0]
+			for unit in [u for u in sorted(units) if u in list(unit_system_units.values())[0]] :
 				java_unit, java_aliases = unit, None
-				if unit_aliases.has_key(unit) :
+				if unit in unit_aliases :
 					aliases = unit_aliases[unit][:]
 					intersection = java_primary_units & set(aliases)
 					if intersection :
@@ -1835,29 +1838,29 @@ def get_java_resource_format() :
 						aliases[aliases.index(java_unit)] = unit
 					java_aliases = aliases
 				buf.write("%s;%s" % (unit_system, java_unit))
-				if unit_aliases.has_key(unit) :
+				if unit in unit_aliases :
 					buf.write(";%s" % ";".join(sorted(java_aliases)))
 				buf.write("\n")
 				#write out conversion for same unit to different unit system
 				for check_units in units_by_unit_system :
-					check_unit_system = check_units.keys()[0];
+					check_unit_system = list(check_units.keys())[0]
 					#is this the unit system that we are looking at right now
 					if (check_unit_system == unit_system) :
 						#dont do conversions to our selves in the same unit system
 						continue
 					#check if our unit is in this other unit system
-					if (unit in check_units.values()[0]) :
+					if (unit in list(check_units.values())[0]) :
 						#it is - so write out the same unit btwn systems conversion
 						buf2.write("%s;%s>%s;%s;1.0\n" % (unit_system, java_unit, check_unit_system, java_unit))
 				#write out all conversions to other units
-				if conversions.has_key(unit) :
+				if unit in conversions :
 					for to_unit_system_units in units_by_unit_system :
 						for to_unit in sorted(conversions[unit].keys()) :
-							if not to_unit in to_unit_system_units.values()[0] : continue
-							to_unit_system = to_unit_system_units.keys()[0]
+							if not to_unit in list(to_unit_system_units.values())[0] : continue
+							to_unit_system = list(to_unit_system_units.keys())[0]
 							conversion = conversions[unit][to_unit]
 							factor, offset, function = conversion["factor"], conversion["offset"], conversion["function"]
-							if unit_aliases.has_key(to_unit) :
+							if to_unit in unit_aliases :
 								aliases = unit_aliases[to_unit][:]
 								intersection = java_primary_units & set(aliases)
 								if intersection :

@@ -74,7 +74,7 @@ for op in op_tokens:
 	for op2 in op_tokens :
 		if op2 != op and op.find(op2) != -1:
 			if not op in super_ops : super_ops.append(op)
-			if not sub_ops.has_key(op2) : sub_ops[op2] = []
+			if not op2 in sub_ops : sub_ops[op2] = []
 			if not op in sub_ops[op2] : sub_ops[op2].append(op)
 
 #-----------------------------------------#
@@ -134,7 +134,7 @@ def infix_to_prefix(args) :
 	elif type(args) == type("") : 
 		tokens = parse_infix(args)
 		if tokens.count("(") != tokens.count(")"): 
-			raise Exception, "Unbalanced parentheses in expr: %s" % args
+			raise Exception("Unbalanced parentheses in expr: %s" % args)
 		tokens.reverse()
 	output_tokens = []
 	stack = []
@@ -158,7 +158,7 @@ def infix_to_prefix(args) :
 						arg_count += 1
 				i += 1
 				stack.append(tokens[i])
-				stack.append(`arg_count`)
+				stack.append(repr(arg_count))
 			while stack[-1] != ")" :
 				output_tokens.append(stack.pop())
 			stack.pop()
@@ -193,7 +193,7 @@ def infix_to_postfix(args):
 	elif type(args) == type("") : 
 		tokens = parse_infix(args)
 		if tokens.count("(") != tokens.count(")"): 
-			raise Exception, "Unbalanced parentheses in expr: %s" % args
+			raise Exception("Unbalanced parentheses in expr: %s" % args)
 	output_tokens = []
 	stack = []
 	i = 0
@@ -216,7 +216,7 @@ def infix_to_postfix(args):
 					elif tokens[j] == "," and level == 1 :
 						arg_count += 1
 			stack.append(token)
-			if arg_count : stack.append(`arg_count`)
+			if arg_count : stack.append(repr(arg_count))
 			i += 1
 		elif token == ")" :
 			while stack[-1] != "(" :
@@ -272,8 +272,8 @@ def postfix_to_tree(args):
 		tokens = args
 	elif type(args) == type("") : 
 		tokens = args.split()
-
-        def make_node(op, stack) :
+		
+	def make_node(op, stack) :
 		node = [op, []]
 		arity = ops[op]["arity"]
 		if arity < 0 : arity = int(stack.pop())
@@ -294,7 +294,7 @@ def compute_tree(tree) :
 			args[i] = compute_tree(args[i])
 		elif args[i] in op_tokens and ops[args[i]]["arity"] == 0 :
 			args[i] = eval(ops[args[i]]["python"])
-	args = map(float, args)
+	args = list(map(float, args))
 	return eval(ops[op]["python"])
 
 def compute_prefix(args):
@@ -399,7 +399,7 @@ def lisp_to_prefix(args):
 					if level == 0 : break
 				elif level == 1 :
 					arg_count += 1
-			output_tokens.extend([tokens[i], `arg_count`])
+			output_tokens.extend([tokens[i], repr(arg_count)])
 			
 		elif tokens[i] not in ("(", ")") : output_tokens.append(tokens[i])
 		
@@ -417,7 +417,7 @@ def prefix_to_lisp(args) :
 	output_tokens = tokens[:]
 	output_tokens.reverse()
 	
-        def parse_prefix_expr(tokens) :
+	def parse_prefix_expr(tokens) :
 		stack = []
 		op = tokens.pop()
 		assert op in op_tokens
@@ -502,7 +502,7 @@ class Computation :
 		elif notation == "lisp" :
 			self.compute_tree = prefix_to_tree(lisp_to_prefix(expr))
 		else :
-			raise Exception, "Invalid notation format: %s" % _notation
+			raise Exception("Invalid notation format: %s" % _notation)
 
 		self.var_locations = {}
 		def process_node(node, global_index="") :
@@ -539,9 +539,9 @@ class Computation :
 		elif notation == "lisp" :
 			return " ".join(map(str, prefix_to_lisp(tree_to_prefix(self.compute_tree))))
 		elif notation == "tree" :
-			print self.compute_tree
+			print(self.compute_tree)
 		else :
-			raise Exception, "Invalid notation format: %s" % _notation
+			raise Exception("Invalid notation format: %s" % _notation)
 
 	def set_values(self, _values, _names):
 		if type(_values) in (type(()), type([])):
@@ -576,32 +576,32 @@ if __name__ == "__main__" :
 	temps = [-40, 0, 32, 37, 98.6, 100, 212]
 	
 	for temp in temps :
-		print "%f F = %f C" % (temp, f2c.compute(temp, "temp_f"))
-		print "%f C = %f F" % (temp, c2f.compute(temp, "temp_c"))
-		print
+		print("%f F = %f C" % (temp, f2c.compute(temp, "temp_f")))
+		print("%f C = %f F" % (temp, c2f.compute(temp, "temp_c")))
+		print()
 	
 	# expr = "2.0/3.0+(4.0-5.0)*4.0"	
 	expr = "$0-[2.1/sqrt(3.2)]*$1+(pow({logn[13.0/log10(2.3)]},(-1.3/2.7)))"
 	expr = "2*$0*$1-(2.1/sqrt(3.2))*$1+(-3.7*((5*logn(13.0/2*log10(2.3)))^(-1.3/2.7)))"
 	# expr = "2*pi/max(+2,min(-3, 6),-4) // 1"
 	
-	print "Infix (Original) = %s" % expr
-	print "Infix (Parsed)   = %s" % " ".join(parse_infix(expr))
+	print("Infix (Original) = %s" % expr)
+	print("Infix (Parsed)   = %s" % " ".join(parse_infix(expr)))
 	
 	postfix = infix_to_postfix(expr)
 	prefix  = infix_to_prefix(expr)
-	print "Infix   -> Postfix = %s" % postfix
-	print "Infix   -> Prefix  = %s" % prefix
+	print("Infix   -> Postfix = %s" % postfix)
+	print("Infix   -> Prefix  = %s" % prefix)
 	lisp    = prefix_to_lisp(infix_to_prefix(expr))
 	
-	print "Infix   -> Lisp    = %s" % lisp
+	print("Infix   -> Lisp    = %s" % lisp)
 	
-	print "Postfix -> Infix   = %s" % postfix_to_infix(postfix)
-	print "Prefix  -> Infix   = %s" % prefix_to_infix(prefix)
-	print "Lisp    -> Infix   = %s" % prefix_to_infix(lisp_to_prefix(lisp))
+	print("Postfix -> Infix   = %s" % postfix_to_infix(postfix))
+	print("Prefix  -> Infix   = %s" % prefix_to_infix(prefix))
+	print("Lisp    -> Infix   = %s" % prefix_to_infix(lisp_to_prefix(lisp)))
 	
 	comp = Computation(expr)
 	
 	for i in range(len(temps)) :
 		args = [temps[i], temps[(i+3)%len(temps)]]
-		print "%s = %s" % (args, comp.compute(args))
+		print("%s = %s" % (args, comp.compute(args)))
