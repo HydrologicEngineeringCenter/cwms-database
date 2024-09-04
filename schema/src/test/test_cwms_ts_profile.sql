@@ -11,8 +11,7 @@ create or replace package test_cwms_ts_profile as
    --%test(Delete single TS Profile instance and ensure only the instance is deleted)
    procedure delete_single_instance;
    procedure teardown;
---    c_office_id constant varchar2(3) := '&&office_id';
-   c_office_id constant varchar2(3) := 'SWT';
+   c_office_id constant varchar2(3) := '&&office_id';
    c_location_ids constant str_tab_t := str_tab_t('TestLocTsProf', 'TestLocTsProf-WithSub');
    c_timezone_ids constant str_tab_t := str_tab_t('US/Central', 'America/Los_Angeles');
 end test_cwms_ts_profile;
