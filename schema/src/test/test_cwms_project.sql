@@ -28,7 +28,7 @@ AS
     IS
 
     BEGIN
-
+        null;
     END setup;
 
 
@@ -164,7 +164,7 @@ AS
          l_ses_users,
          l_os_users,
          l_ses_programs,
-         l_ses_machines,
+         l_ses_machines;
       close l_crsr;
 
       -------------------------------------
