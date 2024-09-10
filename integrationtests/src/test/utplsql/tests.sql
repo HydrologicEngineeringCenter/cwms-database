@@ -68,6 +68,8 @@ prompt display
 @test_cwms_ts_profile.sql
 @test_cwms_outlet.sql
 show errors;
+@test_cwms_project.sql
+show errors;
 @test_multiple_office_perms.sql;
 show errors;
 prompt clean_all
