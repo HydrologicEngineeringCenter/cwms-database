@@ -56,12 +56,12 @@ sed -e "s/HOST_AND_PORT/$DB_HOST_PORT/g" \
 
 cat /overrides.xml
 TABLESPACE_DIR="/opt/oracle/oradata"
-echo "Installing APEX"
-cd /opt/apex/apex
-sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
-    alter system set db_create_file_dest = '/opt/oracle/oradata';
-    create tablespace apex datafile '/opt/oracle/oradata/apex01.dat' size 100M autoextend on next 1M;
-END
+#echo "Installing APEX"
+#cd /opt/apex/apex
+#sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
+#    alter system set db_create_file_dest = '/opt/oracle/oradata';
+#    create tablespace apex datafile '/opt/oracle/oradata/apex01.dat' size 100M autoextend on next 1M;
+#END
 
 sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba @apexins.sql APEX APEX TEMP /i/
 

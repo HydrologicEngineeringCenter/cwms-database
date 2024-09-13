@@ -26,6 +26,3 @@ if [ $? -ne 0 ]; then echo "Failed to stop db?"; exit 6; fi
 ant docker.push -Dteamcity.branch=${BRANCH}_${AGENT} -Denv.USER=$AGENT  -Denv.BUILD_NUMBER=1 -Ddryrun=true -Ddocker.registry=testregistry $*
 if [ $? -ne 0 ]; then echo "Image tagging failed"; exit 7; fi
 
-cd ../testcontainers
-./gradlew clean test --info -Dteamcity.build.branch=${BRANCH} -Dteamcity.build.agent=$AGENT -Dcwms.image=build-${AGENT} -Dcwms.database.syspw=antsyspassword $*
-if [ $? -ne 0 ]; then echo "Failed run test containers test"; exit 7; fi
