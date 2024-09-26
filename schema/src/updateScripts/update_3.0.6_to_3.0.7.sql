@@ -8881,15 +8881,14 @@ AS
 			THEN
 				l_sql_string :=
 					'create user ' || dbms_assert.simple_sql_name(l_username)
-					|| ' PROFILE CWMS_PROF IDENTIFIED BY values ''FEDCBA9876543210''
+					|| ' PROFILE CWMS_PROF IDENTIFIED BY values "FEDCBA9876543210"
 									 DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP ACCOUNT UNLOCK';
 			ELSE
 				l_sql_string :=
 						'create user '
 					|| dbms_assert.simple_sql_name(l_username)
-					|| ' PROFILE CWMS_PROF IDENTIFIED BY '
-					|| dbms_assert.enquote_name(l_password, false)
-					|| ' DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP ACCOUNT UNLOCK';
+					|| ' PROFILE CWMS_PROF IDENTIFIED BY "' || l_password
+					|| '" DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP ACCOUNT UNLOCK';
 			END IF;
 
 			--DBMS_OUTPUT.put_line (l_sql_string);
@@ -9138,4 +9137,3 @@ END;
 exec cwms_sec.create_cwms_service_user;
 exec  cwms_sec.start_clean_session_job;
 exit;
-
