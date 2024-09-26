@@ -1,6 +1,6 @@
-CREATE OR REPLACE package &&cwms_schema..test_cwms_loc as
+CREATE OR REPLACE package &&cwms_schema..test_cwms_loc_normal_user as
 
---%suite(Test cwms_loc package code)
+--%suite(Test cwms_loc package code as normal user)
 --%afterall(teardown)
 --%beforeall (setup)
 --%rollback(manual)
@@ -48,10 +48,12 @@ procedure cwms_305_spk_location_not_creating;
 
 procedure setup;
 procedure teardown;
-end test_cwms_loc;
+end test_cwms_loc_normal_user;
 /
 
-CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_loc
+show errors;
+
+CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_loc_normal_user
 AS
     --------------------------------------------------------------------------------
     -- procedure setup
@@ -2415,7 +2417,7 @@ AS
 
    end cwms_305_spk_location_not_creating;
 
-END test_cwms_loc;
+END test_cwms_loc_normal_user;
 /
 
 show errors;
