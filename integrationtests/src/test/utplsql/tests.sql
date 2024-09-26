@@ -43,6 +43,7 @@ prompt cwms_err
 @test_cwms_err.sql;
 prompt cwms_loc
 @test_cwms_loc.sql;
+@test_cwms_loc_normal_user.sql;
 prompt cwms_ts
 @test_cwms_ts.sql;
 prompt cwms_rating

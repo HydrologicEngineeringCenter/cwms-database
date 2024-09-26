@@ -1,6 +1,6 @@
-CREATE OR REPLACE package &&cwms_schema..test_cwms_loc as
+CREATE OR REPLACE package &&cwms_schema..test_cwms_loc_normal_user as
 
---%suite(Test cwms_loc package code)
+--%suite(Test cwms_loc package code as normal user)
 --%afterall(teardown)
 --%beforeall (setup)
 --%rollback(manual)
@@ -48,10 +48,12 @@ procedure cwms_305_spk_location_not_creating;
 
 procedure setup;
 procedure teardown;
-end test_cwms_loc;
+end test_cwms_loc_normal_user;
 /
 
-CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_loc
+show errors;
+
+CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_loc_normal_user
 AS
     --------------------------------------------------------------------------------
     -- procedure setup
@@ -2169,7 +2171,7 @@ AS
              location_level_id = l_loc_lvl_id and
              time_offset       = to_dsinterval('00 00:00:00');
 
-      ut.expect (round(l_level, 9)).to_equal (round(l_test_level, 9));
+      ut.expect (l_test_level).to_equal (l_level);
 
       -- TEST A SEASIONAL LOCATION LEVEL IN SI UNITS SYSTEM
 
@@ -2184,7 +2186,7 @@ AS
              location_level_id = l_loc_lvl_id and
              time_offset       = to_dsinterval('00 00:00:00');
 
-      ut.expect (round(l_level, 9)).to_equal (round(l_test_level, 9));
+      ut.expect (l_test_level).to_equal (l_level);
 
    end test_cwmsvue_442_location_level_performance_re_write;
 
@@ -2415,7 +2417,7 @@ AS
 
    end cwms_305_spk_location_not_creating;
 
-END test_cwms_loc;
+END test_cwms_loc_normal_user;
 /
 
 show errors;
