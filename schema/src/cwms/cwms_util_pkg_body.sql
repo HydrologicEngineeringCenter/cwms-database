@@ -23,6 +23,8 @@ end;
 /
 CREATE OR REPLACE PACKAGE BODY cwms_util
 as
+   have_apex int := 1;
+
    procedure clear_all_caches
    is
    begin
@@ -2846,19 +2848,35 @@ as
    -- The "v" function is installed with apex - so apex needs to be installed     -
    -- for this package to compile.
    --------------------------------------------------------------------------------
+
+   function APEX_USER_CHECK
+      return boolean
+   is
+   begin
+      if have_apex = 0 then
+         return false;
+      end;
+      begin 
+         return v ('APP_USER') != 'APEX_PUBLIC_USER' AND v ('APP_USER') IS NOT NULL;
+      exception
+      when others then
+         have_apex = 0;
+      end;
+   end;
+
    FUNCTION get_user_id
       RETURN VARCHAR2
    IS
       l_user_id   VARCHAR2 (31);
-   BEGIN
-      IF v ('APP_USER') != 'APEX_PUBLIC_USER' AND v ('APP_USER') IS NOT NULL
+   BEGIN      
+      IF APEX_USER_CHECK()
       THEN
          l_user_id := v ('APP_USER');
       ELSIF SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER') IS NOT NULL
       THEN
          l_user_id := SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER');
       ELSE
-	 l_user_id := USER;
+	      l_user_id := USER;
       END IF;
 
       RETURN UPPER (l_user_id);
