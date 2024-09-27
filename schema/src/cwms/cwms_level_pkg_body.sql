@@ -6605,9 +6605,12 @@ is
    l_timezone_id   cwms_time_zone.time_zone_name%type;
    l_date          date;
 begin
-   l_timezone_id := nvl(
-      p_timezone_id,
-      cwms_loc.get_local_timezone(cwms_util.split_text(p_location_level_id, 1, '.'), p_office_id));
+   l_timezone_id := replace(
+      nvl(
+         p_timezone_id,
+         nvl(cwms_loc.get_local_timezone(cwms_util.split_text(p_location_level_id, 1, '.'), p_office_id), 'UTC')),
+      'Unknown or Not Applicable',
+      'UTC');
    l_date := nvl(p_date, cwms_util.change_timezone(sysdate, 'UTC', l_timezone_id));
    l_loc_level_obj := retrieve_location_level(
       p_location_level_id => p_location_level_id,
