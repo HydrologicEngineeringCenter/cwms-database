@@ -33,6 +33,7 @@ show errors;
 @test_cwms_util.sql;
 @test_cwms_err.sql;
 @test_cwms_loc.sql;
+@test_cwms_loc_normal_user.sql;
 @test_cwms_project.sql;
 @test_cwms_ts.sql;
 @test_cwms_rating.sql;
