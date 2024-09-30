@@ -2850,18 +2850,24 @@ as
    --------------------------------------------------------------------------------
 
    function APEX_USER_CHECK
-      return boolean
+      return varchar2
    is
+      l_apex_check varchar2(400) := q'{v('''APP_USER''')}';
+      l_user varchar2(400);
    begin
       if have_apex = 0 then
-         return false;
-      end;
+         return NULL;
+      end if;
       begin 
-         return v ('APP_USER') != 'APEX_PUBLIC_USER' AND v ('APP_USER') IS NOT NULL;
+         execute immediate l_apex_check into l_user;
+         if l_user != 'APEX_PUBLIC_USER' then
+            return l_user;
+         end if;         
       exception
       when others then
-         have_apex = 0;
+         have_apex := 0;
       end;
+      return null;
    end;
 
    FUNCTION get_user_id
@@ -2869,9 +2875,10 @@ as
    IS
       l_user_id   VARCHAR2 (31);
    BEGIN      
-      IF APEX_USER_CHECK()
+      l_user_id := APEX_USER_CHECK();
+      IF l_user_id != null
       THEN
-         l_user_id := v ('APP_USER');
+         null; -- do nothing, we already have the right user
       ELSIF SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER') IS NOT NULL
       THEN
          l_user_id := SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER');

@@ -2,7 +2,7 @@
 BRANCH=sequence_test
 AGENT=sequence_agent
 
-
+ORACLE_IMAGE=gvenzl/oracle-free:23.4-full-faststart
 
 cd schema
 ant docker.prepdb -Dteamcity.branch=${BRANCH}_${AGENT} -Denv.USER=$AGENT -Denv.BUILD_NUMBER=1 $*
@@ -25,4 +25,3 @@ if [ $? -ne 0 ]; then echo "Failed to stop db?"; exit 6; fi
 
 ant docker.push -Dteamcity.branch=${BRANCH}_${AGENT} -Denv.USER=$AGENT  -Denv.BUILD_NUMBER=1 -Ddryrun=true -Ddocker.registry=testregistry $*
 if [ $? -ne 0 ]; then echo "Image tagging failed"; exit 7; fi
-
