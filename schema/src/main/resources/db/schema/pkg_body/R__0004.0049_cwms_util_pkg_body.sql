@@ -2840,12 +2840,44 @@ as
                                          p_db_office_id));
    END get_loc_group_code;
 
+   --------------------------------------------------------------------------------
+   -- get_user_id uses either sys_context or the apex authenticated user id. -
+   --
+   -- The "v" function is installed with apex - so apex needs to be installed     -
+   -- for this package to compile.
+   --------------------------------------------------------------------------------
+
+   function APEX_USER_CHECK
+      return varchar2
+   is
+      l_apex_check varchar2(400) := q'{v('''APP_USER''')}';
+      l_user varchar2(400);
+   begin
+      if have_apex = 0 then
+         return NULL;
+      end if;
+      begin 
+         execute immediate l_apex_check into l_user;
+         if l_user != 'APEX_PUBLIC_USER' then
+            return l_user;
+         end if;         
+      exception
+      when others then
+         have_apex := 0;
+      end;
+      return null;
+   end;
+
    FUNCTION get_user_id
       RETURN VARCHAR2
    IS
       l_user_id   VARCHAR2 (31);
-   BEGIN
-      IF SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER') IS NOT NULL
+   BEGIN      
+      l_user_id := APEX_USER_CHECK();
+      IF l_user_id != null
+      THEN
+         null; -- do nothing, we already have the right user
+      ELSIF SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER') IS NOT NULL
       THEN
          l_user_id := SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER');
       ELSE
