@@ -15,6 +15,7 @@ c_office_id      constant varchar2(16)  := '&&office_id';
 c_location_id1   constant varchar2(16)  := 'ReqLock1';
 c_location_id2   constant varchar2(16)  := 'ReqLock2';
 c_time_zone      constant varchar2(16)  := 'US/Central';
+c_username       constant varchar2(16)  := 'TestUser1';
 
 end test_cwms_project;
 /
@@ -28,14 +29,20 @@ AS
     IS
 
     BEGIN
-        null;
+       cwms_env.set_session_office_id(c_office_id);
+       DELETE FROM AT_PROJECT_LOCK WHERE project_code = cwms_loc.GET_LOCATION_CODE(c_office_id, c_location_id1);
+       DELETE FROM AT_PROJECT_LOCK WHERE project_code = cwms_loc.GET_LOCATION_CODE(c_office_id, c_location_id2);
+       CWMS_SEC.ADD_CWMS_USER (
+          c_username,
+          cwms_20.char_32_array_type ('CWMS Users','TS ID Creator', 'Viewer Users'),
+          c_office_id);
     END setup;
 
 
     PROCEDURE teardown
     IS
     BEGIN
-        setup;
+       cwms_sec.delete_user(c_username);
     END teardown;
 
 --------------------------------------------------------------------------------
@@ -48,7 +55,6 @@ AS
       l_osuser    varchar2(30);
       l_program   varchar2(48);
       l_machine   varchar2(64);
-      l_username2 varchar2(30) := 'for_user';
       l_osuser2   varchar2(30) := 'for_osuser';
       l_program2  varchar2(48) := 'for_program';
       l_machine2  varchar2(64) := 'for_machine';
@@ -140,7 +146,7 @@ AS
       -- update the lock revoker rights so that we will be able to request locks --
       -------------------------------------
       cwms_project.update_lock_revoker_rights(l_username, c_location_id1, 'T', l_app_id, c_office_id);
-      cwms_project.update_lock_revoker_rights(l_username, c_location_id2, 'T', l_app_id, c_office_id);
+      cwms_project.update_lock_revoker_rights(c_username, c_location_id2, 'T', l_app_id, c_office_id);
 
       -------------------------------------
       -- request a lock at each location:
@@ -148,7 +154,7 @@ AS
       --   one passes in values
       -------------------------------------
       l_lock1_id := cwms_project.request_lock(c_location_id1, l_app_id, 'F', 30, c_office_id);
-      l_lock2_id := cwms_project.request_lock(c_location_id2, l_app_id, 'F', 30, c_office_id, l_username2, l_osuser2, l_program2, l_machine2);
+      l_lock2_id := cwms_project.request_lock(c_location_id2, l_app_id, 'F', 30, c_office_id, c_username, l_osuser2, l_program2, l_machine2);
 
       -------------------------------------
       -- get the locks --
@@ -181,7 +187,7 @@ AS
       -- should have one with session username and one with passed in username
       select count(*) into l_count from table(l_ses_users) where column_value = l_username;
       ut.expect(l_count).to_equal(1);
-      select count(*) into l_count from table(l_ses_users) where column_value = l_username2;
+      select count(*) into l_count from table(l_ses_users) where column_value = c_username;
       ut.expect(l_count).to_equal(1);
 
       -- should have one with session osuser and one with passed in osuser
