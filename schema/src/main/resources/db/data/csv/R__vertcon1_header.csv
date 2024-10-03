@@ -1,0 +1,58 @@
+!query
+declare
+    p_dataset_code cwms_20.cwms_vertcon_header.dataset_code%type := ?;
+    p_office_code  cwms_20.cwms_vertcon_header.office_code%type  := ?;
+    p_dataset_id   cwms_20.cwms_vertcon_header.dataset_id%type   := ?;
+    p_min_lat      cwms_20.cwms_vertcon_header.min_lat%type      := ?;
+    p_max_lat      cwms_20.cwms_vertcon_header.max_lat%type      := ?;
+    p_min_long     cwms_20.cwms_vertcon_header.min_lon%type      := ?;
+    p_max_long     cwms_20.cwms_vertcon_header.max_lon%type      := ?;
+    p_margin       cwms_20.cwms_vertcon_header.margin%type       := ?;
+    p_delta_lat    cwms_20.cwms_vertcon_header.delta_lat%type    := ?;
+    p_delta_long   cwms_20.cwms_vertcon_header.delta_lon%type    := ?;
+begin
+    cwms_msg.log_db_message(cwms_msg.msg_level_normal,'Loading CWMS_VERTCON_HEADER data');
+    
+    MERGE into cwms_20.cwms_vertcon_header cvh
+        USING dual
+        ON (cvh.dataset_code = p_dataset_code)
+        WHEN MATCHED then
+            update set
+                cvh.dataset_id = p_dataset_id,
+                cvh.office_code = p_office_code,
+                cvh.min_lat = p_min_lat,
+                cvh.max_lat = p_max_lat,
+                cvh.min_lon = p_min_long,
+                cvh.max_lon = p_max_long,
+                cvh.margin = p_margin,
+                cvh.delta_lat = p_delta_lat,
+                cvh.delta_lon = p_delta_long
+        WHEN NOT MATCHED then
+            insert( dataset_code, office_code, dataset_id, min_lat, max_lat, min_lon, max_lon, margin, delta_lat, delta_lon)
+            values( p_dataset_code,
+                    p_office_code,
+                    p_dataset_id,
+                    p_min_lat, p_max_lat,
+                    p_min_long, p_max_long,
+                    p_margin,
+                    p_delta_lat, p_delta_long
+                )
+;
+end;
+!endquery
+!description
+:dataset_code (?<current>[0-9]*),(?<remains>.*) int
+:office_code (?<current>[0-9]*),(?<remains>.*) int
+:dataset_id s?("?)(?<current>.*?)\1,(?<remains>.*) string
+:min_lat (?<current>^-?[-0-9.]*),(?<remains>.*) double
+:max_lat (?<current>^-?[-0-9.]*),(?<remains>.*) double
+:min_long (?<current>^-?[-0-9.]*),(?<remains>.*) double
+:max_long (?<current>^-?[-0-9.]*),(?<remains>.*) double
+:margin (?<current>^-?[-0-9.]*),(?<remains>.*) double
+:delta_lat (?<current>^-?[-0-9.]*),(?<remains>.*) double
+:delta_lat (?<current>^-?[-0-9.]*)|(?:,(?<remains>.*))|(?<all>^.*$) double
+!enddescription
+!data
+1,53,"vertconw.94",24,50,-125,-102,0,0.05,0.05
+2,53,"vertconc.94",24,50,-107,-84,0,0.05,0.05
+3,53,"vertcone.94",24,50,-89,-66,0,0.05,0.05
