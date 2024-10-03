@@ -54,6 +54,9 @@ len_data_varchar  integer;
 len_data_clob     integer;
 end test_cwms_util;
 /
+
+show errors;
+
 create or replace package body test_cwms_util as
 --------------------------------------------------------------------------------
 -- procedure setup
@@ -846,5 +849,7 @@ begin
 end test_runstats;
 end test_cwms_util;
 /
+
+show errors;
 
 grant execute on test_cwms_util to cwms_user;
