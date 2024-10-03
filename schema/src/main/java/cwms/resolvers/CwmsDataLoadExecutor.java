@@ -52,9 +52,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
     @Override
     public void execute(Context context) throws SQLException {
         logger.info("Loading " + resource.getFilename());
-        try {
-
-            BufferedReader reader = new BufferedReader(resource.read());
+        try (BufferedReader reader = new BufferedReader(resource.read())){
             String line;
             while( (line = reader.readLine()) != null ){
                 if (line.startsWith("#")){
@@ -108,7 +106,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
             if ("batchsize".equalsIgnoreCase(parts[0])) {
                 this.batchSize = Integer.parseInt(parts[1]);
             } else {
-                logger.warning("Unknown config paramter " + parts[0] + ", ignored.");
+                logger.warning("Unknown config parameter " + parts[0] + ", ignored.");
             }
         }
     }
@@ -130,7 +128,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
         String line;
         int totalEntries = 0;
         while ((line = reader.readLine()) != null) {
-            stmt.clearParameters();
+            //stmt.clearParameters();
             logger.fine(line);
             String remainder = line;
             int idx = 0;
@@ -187,12 +185,21 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
             stmt.addBatch();
             totalEntries++;
             if( totalEntries % batchSize == 0 ){
+                long start = System.currentTimeMillis();
                 stmt.executeBatch();
-                logger.info( "Have now saved: " + totalEntries + " records total for this set.");
+                stmt.clearBatch();
+                long end = System.currentTimeMillis();
+                logger.info( "Have now saved: " + totalEntries + " records total for this set. Execute batch took " + (end-start) + " ms");
             }
         }
+        long start = System.currentTimeMillis();
         stmt.executeBatch();
+        long end = System.currentTimeMillis();
+        logger.info("Last batch took " + (end-start) + " ms");
+        start = System.currentTimeMillis();
         connection.commit();
+        end = System.currentTimeMillis();
+        logger.info("Commit of all batches took " + (end-start) + " ms");
         connection.setAutoCommit(defaultAutoCommit);
         return totalEntries;
     }
@@ -216,7 +223,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
             if( !string.isEmpty() && !string.equalsIgnoreCase("NULL")) {
                 stmt.setInt(idx, Integer.parseInt(string));
             } else {
-                stmt.setNull(idx,Types.NUMERIC);
+                stmt.setNull(idx,Types.INTEGER);
             }
         } else if( "double".equalsIgnoreCase(grp.type) ) {
             if( !string.isEmpty() && !string.equalsIgnoreCase("NULL") ){
