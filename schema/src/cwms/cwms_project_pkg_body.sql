@@ -1435,7 +1435,7 @@ begin
    -- sanity checks --
    -------------------
    cwms_sec.confirm_cwms_user(p_user_id);
-   l_user_id := lower(p_user_id);
+   l_user_id := lower(trim(p_user_id));
    if p_project_ids is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_project_ids');
    end if;
