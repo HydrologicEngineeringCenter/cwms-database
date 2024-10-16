@@ -9950,7 +9950,6 @@ def main() :
     #dropUser  = open(sqlFileName["DROPUSER"], "w")
     for line in lines :
         if (line.strip() == "") : continue
-        print("'%s'" % line)
         prefix, line = line.split("~", 1)
         if prefix.find("BUILDCWMS") != -1 : buildCwms.write(line)
         #if prefix.find("BUILDUSER") != -1 : buildUser.write(line)

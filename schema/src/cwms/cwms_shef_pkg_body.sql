@@ -634,7 +634,7 @@ AS
    --
    BEGIN
       --
-      cwms_apex.aa1 ('in store_shef_spec.');
+      
 
 
       --======
@@ -869,8 +869,7 @@ AS
            FROM at_cwms_ts_spec a
           WHERE a.ts_code = l_ts_code;
 
-         cwms_apex.aa1 (
-            'store_shef_spec - location code: ' || l_location_code);
+         
 
          --======
          --====
@@ -1053,20 +1052,10 @@ AS
                l_shef_duration_code := 'V';
          END;
 
-         cwms_apex.aa1 (
-               'in store_shef_spec - duration: .'
-            || l_shef_duration_numeric
-            || ' - '
-            || l_shef_duration_code);
-
-
          SELECT a.unit_code
            INTO l_shef_unit_code
            FROM cwms_unit a
           WHERE a.unit_id = p_shef_unit_id;
-
-         cwms_apex.aa1 (
-            'store_shef_spec - shef_unit_coded: ' || l_shef_unit_code);
 
          SELECT shef_time_zone_code
            INTO l_shef_time_zone_code
@@ -1191,11 +1180,6 @@ AS
          END IF;
       ELSIF NOT l_shef_spec_exists AND NOT l_ts_id_exists
       THEN
-         cwms_apex.aa1 (
-               'store_shef_spec - CASE 1: '
-            || l_shef_spec
-            || ':'
-            || p_cwms_ts_id);
 
          --
          -- CASE 1 - Perform the INSERT of the new SHEF Spec...
@@ -1214,8 +1198,6 @@ AS
          --
          --
          BEGIN
-            cwms_apex.aa1 (
-               'store_shef_spec - trying to insert into at_shef_decode');
 
             INSERT INTO at_shef_decode (ts_code,
                                         data_stream_code,
@@ -1275,11 +1257,6 @@ AS
             -- CASE 2
             -- CASE 2 - the SHEF Spec and ts_id pair already exists...
             -- CASE 2
-            cwms_apex.aa1 (
-                  'store_shef_spec - CASE 2: '
-               || l_shef_spec
-               || ':'
-               || p_cwms_ts_id);
 
             IF do_ancillary_params_match (
                   p_shef_spec               => l_existing_ts_id_spec,
@@ -1292,12 +1269,6 @@ AS
                   p_ignore_shef_spec        => l_ignore_shef_spec,
                   p_ts_active_flag          => l_ts_active_flag)
             THEN
-               cwms_apex.aa1 (
-                     'store_shef_spec - CASE 2 everything matches so just return: '
-                  || l_shef_spec
-                  || ':'
-                  || p_cwms_ts_id);
-
                -- Everything matches - so there's nothing to do!
                ------
                --=======
@@ -1306,11 +1277,6 @@ AS
             ------
             ELSIF l_update_allowed
             THEN
-               cwms_apex.aa1 (
-                     'store_shef_spec - CASE 2 updated allowed: '
-                  || l_shef_spec
-                  || ':'
-                  || p_cwms_ts_id);
 
                l_ts_code_set_to := l_ts_code;
                l_ts_code_where := l_ts_code;
@@ -1327,11 +1293,6 @@ AS
             -- CASE 3
             -- CASE 3: SHEF Spec is new, ts_id is already assigned
             -- CASE 3 Will reassign the ts_id to the new SHEF Spec
-            cwms_apex.aa1 (
-                  'store_shef_spec - CASE 3 update allowed: '
-               || l_shef_spec
-               || ':'
-               || p_cwms_ts_id);
 
             l_ts_code_set_to := l_ts_code;
             l_ts_code_where := l_ts_code;
@@ -1350,11 +1311,6 @@ AS
          -- CASE 4
          -- CASE 4: ts_id is new, but the SHEF Spec is already assigned to a different ts_id
          -- CASE 4
-         cwms_apex.aa1 (
-               'store_shef_spec - CASE 4: '
-            || l_shef_spec
-            || ':'
-            || p_cwms_ts_id);
 
          l_ts_code_set_to := l_ts_code;
          l_ts_code_where := l_existing_shef_spec.ts_code;
@@ -1378,16 +1334,7 @@ AS
          p_snap_backward_minutes   => p_snap_backward_minutes,
          --   p_local_reg_time_zone_id => NULL,
          p_ts_active_flag          => l_ts_active_flag);
-
-
-
-      cwms_apex.aa1 (
-         'store_shef_spec - trying to insert into at_shef_decode');
-      cwms_apex.aa1 (
-            'store_shef_spec - Acutally Updating: '
-         || l_shef_spec
-         || ':'
-         || p_cwms_ts_id);
+      
 
       UPDATE at_shef_decode
          SET ts_code = l_ts_code_set_to,
@@ -1455,7 +1402,6 @@ AS
       l_loc_group_code          NUMBER;
       l_tmp                     NUMBER;
    BEGIN
-      cwms_apex.aa1 ('in store_shef_spec_feed.');
 
       --
       IF l_dl_time NOT IN ('T', 'F')
@@ -1483,7 +1429,6 @@ AS
                                     p_office_id           => l_db_office_id);
       END;
 
-      cwms_apex.aa1 ('store_shef_spec_feed - ts_code: ' || l_ts_code);
 
       l_data_feed_code :=
          get_data_feed_code (p_data_feed_id     => p_data_feed_id,
@@ -1507,8 +1452,6 @@ AS
         FROM at_cwms_ts_spec a
        WHERE a.ts_code = l_ts_code;
 
-      cwms_apex.aa1 (
-         'store_shef_spec_feed - location code: ' || l_location_code);
 
       --
       -- confirm that an alias exists for the loc group code and/or matches  -
@@ -1543,13 +1486,7 @@ AS
                   || ' and this Location Group: '
                   || p_loc_group_id);
             END IF;
-      END;
-
-      cwms_apex.aa1 (
-            'store_shef_spec_feed - shef id: '
-         || l_shef_loc_id
-         || ' - '
-         || l_shef_id);
+      END;      
 
       IF l_shef_id IS NOT NULL AND l_shef_loc_id IS NOT NULL
       THEN
@@ -1600,21 +1537,12 @@ AS
          WHEN NO_DATA_FOUND
          THEN
             l_shef_duration_code := 'V';
-      END;
-
-      cwms_apex.aa1 (
-            'in store_shef_spec - duration: .'
-         || l_shef_duration_numeric
-         || ' - '
-         || l_shef_duration_code);
+      END;      
 
       SELECT a.unit_code
         INTO l_shef_unit_code
         FROM cwms_unit a
-       WHERE a.unit_id = p_shef_unit_id;
-
-      cwms_apex.aa1 (
-         'store_shef_spec - shef_unit_coded: ' || l_shef_unit_code);
+       WHERE a.unit_id = p_shef_unit_id;      
 
       SELECT shef_time_zone_code
         INTO l_shef_time_zone_code
@@ -1632,9 +1560,7 @@ AS
 
       --
       --
-      -- BEGIN
-      cwms_apex.aa1 (
-         'store_shef_spec - trying to insert into at_shef_decode');
+      -- BEGIN      
 
       INSERT INTO at_shef_decode (ts_code,
                                   data_stream_code,
@@ -4447,8 +4373,6 @@ AS
       END;
    --
    BEGIN
-      cwms_apex.aa1 (
-         'l_run_time: ' || TO_CHAR (l_run_time, 'YYYY-MM-DD HH24:MI:SS'));
 
       FOR rec
          IN (SELECT data_stream_code,
@@ -4474,13 +4398,7 @@ AS
                     AND (   update_idle_period != 0
                          OR update_idle_period IS NULL))
       LOOP
-         l_archive_shef_specs := FALSE;
-
-         cwms_apex.aa1 (
-               'l_run_time: '
-            || TO_CHAR (l_run_time, 'YYYY-MM-DD HH24:MI:SS')
-            || ' data_stream_code: '
-            || rec.data_stream_code);
+         l_archive_shef_specs := FALSE;         
 
          CASE
             WHEN rec.idle_time IS NULL     -- Need to initialize time and hash
@@ -4529,13 +4447,6 @@ AS
                CASE
                   WHEN rec.update_idle_period IS NULL
                   THEN          -- Archive Crit File a specific Time of Day...
-                     cwms_apex.aa1 (
-                           'l_run_time: '
-                        || TO_CHAR (l_run_time, 'YYYY-MM-DD HH24:MI:SS')
-                        || ' data_stream_code: '
-                        || rec.data_stream_code
-                        || ' ToD: rec.idle_time: '
-                        || TO_CHAR (rec.IDLE_TIME, 'YYYY-MM-DD HH24:MI:SS'));
 
                      IF l_run_time > rec.idle_time
                      THEN
@@ -4548,19 +4459,6 @@ AS
                         THEN                 -- Check if Idle Time Exceeded...
                            l_idle_interval :=
                               (l_run_time - rec.idle_time) * 1440;
-                           cwms_apex.aa1 (
-                                 'l_run_time: '
-                              || TO_CHAR (l_run_time,
-                                          'YYYY-MM-DD HH24:MI:SS')
-                              || ' data_stream_code: '
-                              || rec.data_stream_code
-                              || ' Idl: rec.idle_time: '
-                              || TO_CHAR (rec.IDLE_TIME,
-                                          'YYYY-MM-DD HH24:MI:SS')
-                              || ' l_idle_interval: '
-                              || l_idle_interval
-                              || ' rec.update_idle_period: '
-                              || rec.update_idle_period);
 
                            IF l_idle_interval > rec.update_idle_period
                            THEN

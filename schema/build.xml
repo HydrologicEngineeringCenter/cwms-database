@@ -220,7 +220,7 @@
            <echo file="build/deps/utPLSQL/source/create_utplsql_owner.sql" append="true">
                 grant execute on dbms_lob to &amp;ut3_user;
            grant execute on dbms_random to &amp;ut3_user;
-           grant execute on dbms_obfuscation_toolkit to &amp;ut3_user;
+           --grant execute on dbms_obfuscation_toolkit to &amp;ut3_user;
            grant execute on dbms_sql to &amp;ut3_user;
            </echo>
       <echo message="   Installing test framework into database" />
@@ -1004,9 +1004,20 @@
          <isset property="oracle.image"/>
       </condition>
 
-      <condition property="docker.props.db_name" value="XEPDB1" else="CWMS">
+      <condition property="docker.props.oracle-fast-start" value="true">
+         <matches string="${docker.props.oracle.image}" pattern="^.*faststart$" casesensitive="false"/>
+      </condition>
+
+      <!-- Check for XE database -->
+      <condition property="docker.props.db_name" value="XEPDB1">
          <matches string="${docker.props.oracle.image}" pattern="^.*xe$" casesensitive="false"/>
       </condition>
+
+      <!-- Check for faststart which already has a database setup. -->
+      <condition property="docker.props.db_name" value="FREEPDB1" else="CWMS">
+         <isset property="docker.props.oracle-fast-start"/>
+      </condition>
+
 
       <property name="docker.props.network_name" value="cwmsdbnet"/>
 
@@ -1139,7 +1150,7 @@
          </then>
          <else>
             <echo message="Creating new database"/>
-            <exec dir="${root}" executable="docker" failonerror="true">
+            <exec dir="${root}" executable="docker" failonerror="true" unless:set="docker.props.oracle.is-fast-start">
                <arg value="volume"/>
                <arg value="create"/>
                <arg value="${database.volume}"/>
@@ -1157,8 +1168,8 @@
                <arg value="ORACLE_DATABASE=${database.name}"/>
                <arg value="-e"/>
                <arg value="ORACLE_PASSWORD=${database.syspw}"/>
-               <arg value="-v"/>
-               <arg value="${database.volume}:/opt/oracle/oradata"/>
+               <arg value="-v" unless:set="docker.props.oracle.is-fast-start"/>
+               <arg value="${database.volume}:/opt/oracle/oradata" unless:set="docker.props.oracle.is-fast-start"/>
                <arg value="${docker.props.oracle.image}"/>
             </exec>
          </else>
