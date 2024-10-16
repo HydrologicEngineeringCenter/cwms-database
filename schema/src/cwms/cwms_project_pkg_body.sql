@@ -1434,21 +1434,8 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   if p_user_id is null then
-      cwms_err.raise('NULL_ARGUMENT', 'p_user_id');
-   else
-      l_user_id := lower(p_user_id);
-      for rec in (select lower(grantee) as cwms_user
-                    from dba_role_privs
-                   where granted_role = 'CWMS_USER'
-                 )
-      loop
-         l_cwms_users(rec.cwms_user) := true;
-      end loop;
-      if not l_cwms_users.exists(l_user_id) then
-         cwms_err.raise('ERROR', 'User '||p_user_id||' is not a CWMS user.');
-      end if;
-   end if;
+   cwms_sec.confirm_cwms_user(p_user_id);
+   l_user_id := lower(trim(p_user_id));
    if p_project_ids is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_project_ids');
    end if;
@@ -1471,7 +1458,7 @@ begin
       begin
          delete
            from at_prj_lck_revoker_rights
-          where user_id = l_user_id
+          where lower(user_id) = l_user_id
             and office_code = l_office_code
             and application_id = l_application_id;
       exception
@@ -1481,7 +1468,7 @@ begin
      select count(*)
        into l_count
        from at_prj_lck_revoker_rights
-      where user_id        = l_user_id
+      where lower(user_id)        = l_user_id
         and office_code    = l_office_code
         and application_id = l_application_id
         and allow_flag     = l_allow;
@@ -1503,7 +1490,7 @@ begin
       else
          update at_prj_lck_revoker_rights
             set project_list   = p_project_ids
-          where user_id        = l_user_id
+          where lower(user_id)        = l_user_id
             and office_code    = l_office_code
             and application_id = l_application_id
             and allow_flag     = l_allow;
