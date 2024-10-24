@@ -63,7 +63,7 @@ TABLESPACE_DIR="/opt/oracle/oradata"
 #    create tablespace apex datafile '/opt/oracle/oradata/apex01.dat' size 100M autoextend on next 1M;
 #END
 
-sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba @apexins.sql APEX APEX TEMP /i/
+#sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba @apexins.sql APEX APEX TEMP /i/
 
 echo "Creating table spaces at sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba"
 sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
