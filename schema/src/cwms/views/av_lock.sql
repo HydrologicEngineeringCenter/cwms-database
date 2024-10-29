@@ -54,78 +54,78 @@ create or replace force view av_lock(
    chamber_location_description_code
    )
 as
-    select loc1.location_id as lock_id,
-        loc2.location_id as project_id,
-        loc1.location_code as lock_location_code,
-        loc2.location_code as project_location_code,
-        loc1.unit_system,
-        cwms_display.retrieve_user_unit_f('Length', loc1.unit_system) as length_unit_id,
-        cwms_display.retrieve_user_unit_f('Volume', loc1.unit_system) as volume_unit_id,
-        cwms_util.convert_units(
-            lck.lock_length,
-            cwms_util.get_default_units('Length', 'SI'),
-            cwms_display.retrieve_user_unit_f('Length-Lock', loc1.unit_system))
-            as lock_length,
-        cwms_util.convert_units(
-            lck.lock_width,
-            cwms_util.get_default_units('Length', 'SI'),
-            cwms_display.retrieve_user_unit_f('Width-Lock', loc1.unit_system))
-            as lock_width,
-        cwms_util.convert_units(
-            lck.volume_per_lockage,
-            cwms_util.get_default_units('Volume', 'SI'),
-            cwms_display.retrieve_user_unit_f('Volume-Lock', loc1.unit_system))
-            as volume_per_lockage,
-        cwms_util.convert_units(
-             lck.minimum_draft,
-             cwms_util.get_default_units('Length', 'SI'),
-             cwms_display.retrieve_user_unit_f('Depth-Draft', loc1.unit_system))
-             as minimum_draft,
-        cwms_util.convert_units(
-            lck.normal_lock_lift,
-            cwms_util.get_default_units('Length', 'SI'),
-            cwms_display.retrieve_user_unit_f('Height-Lift', loc1.unit_system))
-            as normal_lock_lift,
-          loc1.db_office_id,
-        cwms_util.convert_units(
-            lck.maximum_lock_lift,
-            cwms_util.get_default_units('Length', 'SI'),
-            cwms_display.retrieve_user_unit_f('Height-Lift', loc1.unit_system))
-            as maximum_lock_lift,
-        cwms_display.retrieve_user_unit_f('Elev', loc1.unit_system) as elev_unit_id,
-        cwms_util.convert_units(
-            cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool'),
-            cwms_util.get_default_units('Elev', 'SI'),
-            cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-        as elev_closure_high_water_upper_pool,
-        cwms_util.convert_units(
-            cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool'),
-            cwms_util.get_default_units('Elev', 'SI'),
-            cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-        as elev_closure_high_water_lower_pool,
-        cwms_util.convert_units(
-            cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Upper Pool'),
-            cwms_util.get_default_units('Elev', 'SI'),
-            cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-        as elev_closure_low_water_upper_pool,
-        cwms_util.convert_units(
-            cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Lower Pool'),
-            cwms_util.get_default_units('Elev', 'SI'),
-            cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-        as elev_closure_low_water_lower_pool,
-        cwms_util.convert_units(
-            cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool') - 0.6096, --2ft buffer is 0.6096 meters
-            cwms_util.get_default_units('Elev', 'SI'),
-            cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-                as elev_closure_high_water_upper_pool_warning,
-        cwms_util.convert_units(
-            cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool') - 0.6096, --2ft buffer is 0.6096 meters
-            cwms_util.get_default_units('Elev', 'SI'),
-            cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-                as elev_closure_high_water_lower_pool_warning,
-        lck.chamber_location_description_code
-     from cwms_v_loc2 loc1, cwms_v_loc2 loc2, at_lock lck
-    where loc1.location_code = lck.lock_location_code
+   select loc1.location_id as lock_id,
+      loc2.location_id as project_id,
+      loc1.location_code as lock_location_code,
+      loc2.location_code as project_location_code,
+      loc1.unit_system,
+      cwms_display.retrieve_user_unit_f('Length', loc1.unit_system) as length_unit_id,
+      cwms_display.retrieve_user_unit_f('Volume', loc1.unit_system) as volume_unit_id,
+      cwms_util.convert_units(
+         lck.lock_length,
+         cwms_util.get_default_units('Length', 'SI'),
+         cwms_display.retrieve_user_unit_f('Length-Lock', loc1.unit_system))
+      as lock_length,
+      cwms_util.convert_units(
+         lck.lock_width,
+         cwms_util.get_default_units('Length', 'SI'),
+         cwms_display.retrieve_user_unit_f('Width-Lock', loc1.unit_system))
+      as lock_width,
+      cwms_util.convert_units(
+         lck.volume_per_lockage,
+         cwms_util.get_default_units('Volume', 'SI'),
+         cwms_display.retrieve_user_unit_f('Volume-Lock', loc1.unit_system))
+      as volume_per_lockage,
+      cwms_util.convert_units(
+         lck.minimum_draft,
+         cwms_util.get_default_units('Length', 'SI'),
+         cwms_display.retrieve_user_unit_f('Depth-Draft', loc1.unit_system))
+      as minimum_draft,
+      cwms_util.convert_units(
+         lck.normal_lock_lift,
+         cwms_util.get_default_units('Length', 'SI'),
+         cwms_display.retrieve_user_unit_f('Height-Lift', loc1.unit_system))
+      as normal_lock_lift,
+      loc1.db_office_id,
+      cwms_util.convert_units(
+         lck.maximum_lock_lift,
+         cwms_util.get_default_units('Length', 'SI'),
+         cwms_display.retrieve_user_unit_f('Height-Lift', loc1.unit_system))
+      as maximum_lock_lift,
+      cwms_display.retrieve_user_unit_f('Elev', loc1.unit_system) as elev_unit_id,
+      cwms_util.convert_units(
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool'),
+         cwms_util.get_default_units('Elev', 'SI'),
+         cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+      as elev_closure_high_water_upper_pool,
+      cwms_util.convert_units(
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool'),
+         cwms_util.get_default_units('Elev', 'SI'),
+         cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+      as elev_closure_high_water_lower_pool,
+      cwms_util.convert_units(
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Upper Pool'),
+         cwms_util.get_default_units('Elev', 'SI'),
+         cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+      as elev_closure_low_water_upper_pool,
+      cwms_util.convert_units(
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Lower Pool'),
+         cwms_util.get_default_units('Elev', 'SI'),
+         cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+      as elev_closure_low_water_lower_pool,
+      cwms_util.convert_units(
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool') - 0.6096, --2ft buffer is 0.6096 meters
+         cwms_util.get_default_units('Elev', 'SI'),
+         cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+      as elev_closure_high_water_upper_pool_warning,
+      cwms_util.convert_units(
+          cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool') - 0.6096, --2ft buffer is 0.6096 meters
+         cwms_util.get_default_units('Elev', 'SI'),
+         cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
+      as elev_closure_high_water_lower_pool_warning,
+      lck.chamber_location_description_code
+   from cwms_v_loc2 loc1, cwms_v_loc2 loc2, at_lock lck
+   where loc1.location_code = lck.lock_location_code
       and loc2.location_code = lck.project_location_code
       and loc2.unit_system = 'EN'
 /
