@@ -1566,40 +1566,40 @@ ALTER TABLE at_embankment ADD (
 --------
 CREATE TABLE at_lock
 (
-    lock_location_code                 NUMBER(14) NOT NULL,
-    project_location_code              NUMBER(14) NOT NULL,
-    lock_width                         BINARY_DOUBLE,
-    lock_length                        BINARY_DOUBLE,
-    volume_per_lockage                 BINARY_DOUBLE,
-    minimum_draft                      BINARY_DOUBLE,
-    normal_lock_lift                   BINARY_DOUBLE,
-    units_id                           VARCHAR2(16),
-    maximum_lock_lift                  BINARY_DOUBLE,
-    chamber_location_description_code  NUMBER(14)
+   lock_location_code                 NUMBER(14) NOT NULL,
+   project_location_code              NUMBER(14) NOT NULL,
+   lock_width                         BINARY_DOUBLE,
+   lock_length                        BINARY_DOUBLE,
+   volume_per_lockage                 BINARY_DOUBLE,
+   minimum_draft                      BINARY_DOUBLE,
+   normal_lock_lift                   BINARY_DOUBLE,
+   units_id                           VARCHAR2(16),
+   maximum_lock_lift                  BINARY_DOUBLE,
+   chamber_location_description_code  NUMBER(14)
 )
-    TABLESPACE cwms_20at_data
-    PCTUSED 0
-    PCTFREE 10
-    INITRANS 1
-    MAXTRANS 255
-    STORAGE
+   TABLESPACE cwms_20at_data
+   PCTUSED 0
+   PCTFREE 10
+   INITRANS 1
+   MAXTRANS 255
+   STORAGE
 (
-    INITIAL
-    504 k
-    MINEXTENTS
-    1
-    MAXEXTENTS
-    2147483645
-    PCTINCREASE
-    0
-    BUFFER_POOL
-    DEFAULT
+   INITIAL
+   504 k
+   MINEXTENTS
+   1
+   MAXEXTENTS
+   2147483645
+   PCTINCREASE
+   0
+   BUFFER_POOL
+   DEFAULT
 )
-    LOGGING
-    NOCOMPRESS
-    NOCACHE
-    NOPARALLEL
-    MONITORING
+   LOGGING
+   NOCOMPRESS
+   NOCACHE
+   NOPARALLEL
+   MONITORING
 /
 COMMENT ON COLUMN at_lock.lock_location_code IS 'Unique record identifier for this lock, also in at_physical_location';
 COMMENT ON COLUMN at_lock.project_location_code IS 'The project that this lock is part of';
@@ -1611,39 +1611,39 @@ COMMENT ON COLUMN at_lock.maximum_lock_lift IS 'The maximum lift the lock can su
 COMMENT ON COLUMN at_lock.chamber_location_description_code IS 'A single chamber, land side main, land side aux, river side main, river side aux.';
 
 CREATE UNIQUE INDEX at_lock_idx_1 ON at_lock
-    (lock_location_code, project_location_code)
-    /
+   (lock_location_code, project_location_code)
+   /
 
 ALTER TABLE at_lock
-    ADD (
-        CONSTRAINT at_lock_pk
-            PRIMARY KEY
-                (lock_location_code)
-                USING INDEX
-                    TABLESPACE cwms_20at_data
-                    PCTFREE 10
-                    INITRANS 2
-                    MAXTRANS 255
-                    STORAGE (
-                    INITIAL 64 k
-                    MINEXTENTS 1
-                    MAXEXTENTS 2147483645
-                    PCTINCREASE 0
-                    ))
+   ADD (
+      CONSTRAINT at_lock_pk
+         PRIMARY KEY
+            (lock_location_code)
+            USING INDEX
+               TABLESPACE cwms_20at_data
+               PCTFREE 10
+               INITRANS 2
+               MAXTRANS 255
+               STORAGE (
+               INITIAL 64 k
+               MINEXTENTS 1
+               MAXEXTENTS 2147483645
+               PCTINCREASE 0
+               ))
 /
 
 ALTER TABLE at_lock
-    ADD (
-        CONSTRAINT at_lock_fk1
-            FOREIGN KEY (lock_location_code)
-                REFERENCES at_physical_location (location_code))
+   ADD (
+      CONSTRAINT at_lock_fk1
+         FOREIGN KEY (lock_location_code)
+            REFERENCES at_physical_location (location_code))
 /
 
 ALTER TABLE at_lock
-    ADD (
-        CONSTRAINT at_lock_fk2
-            FOREIGN KEY (project_location_code)
-                REFERENCES at_project (project_location_code))
+   ADD (
+      CONSTRAINT at_lock_fk2
+         FOREIGN KEY (project_location_code)
+            REFERENCES at_project (project_location_code))
 /
 
 

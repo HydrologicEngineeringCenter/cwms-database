@@ -138,9 +138,9 @@ PROCEDURE retrieve_lock(
    p_lock_location_ref IN location_ref_t);
 
 function get_pool_level_value(
-    p_lock_location_code in varchar2,
-    p_specified_level_id in varchar2)
-    return number;
+   p_lock_location_code in varchar2,
+   p_specified_level_id in varchar2)
+   return number;
 
 /**
  * Retrieves info for a specified lock from the database with support for navigational data
