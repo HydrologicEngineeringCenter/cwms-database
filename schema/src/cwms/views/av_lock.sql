@@ -20,12 +20,12 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCK', null,
  * @field db_office_id                                    The database office ID of the lock
  * @field maximum_lock_lift                               The maximum lift the lock can support
  * @field elev_unit_id                                    The units of elevation pool values
- * @field elev_closure_high_water_upper_pool              The elevation that a lock closes due to high water in the upper pool
- * @field elev_closure_high_water_lower_pool              The elevation that a lock closes due to high water in the lower pool
+ * @field elev_inoperable_high_water_upper_pool              The elevation that a lock closes due to high water in the upper pool
+ * @field elev_inoperable_high_water_lower_pool              The elevation that a lock closes due to high water in the lower pool
  * @field elev_closer_low_water_upper_pool                The elevation that a lock closes due to lower water in the upper pool
- * @field elev_closure_low_water_lower_pool               The elevation that a lock closes due to low water in the lower pool
- * @field elev_closure_high_water_upper_pool_warning      The warning level elevation that a lock closes due to high water in the upper pool
- * @field elev_closure_high_water_lower_pool_warning      The warning level elevation that a lock closes due to high water in the upper pool
+ * @field elev_inoperable_low_water_lower_pool               The elevation that a lock closes due to low water in the lower pool
+ * @field elev_inoperable_high_water_upper_pool_warning      The warning level elevation that a lock closes due to high water in the upper pool
+ * @field elev_inoperable_high_water_lower_pool_warning      The warning level elevation that a lock closes due to high water in the upper pool
  * @field chamber_location_description_code                    A single chamber, land side main, land side aux, river side main, river side aux.
  */
 ');
@@ -45,12 +45,12 @@ create or replace force view av_lock(
    db_office_id,
    maximum_lock_lift,
    elev_unit_id,
-   elev_closure_high_water_upper_pool,
-   elev_closure_high_water_lower_pool,
-   elev_closure_low_water_upper_pool,
-   elev_closure_low_water_lower_pool,
-   elev_closure_high_water_upper_pool_warning,
-   elev_closure_high_water_lower_pool_warning,
+   elev_inoperable_high_water_upper_pool,
+   elev_inoperable_high_water_lower_pool,
+   elev_inoperable_low_water_upper_pool,
+   elev_inoperable_low_water_lower_pool,
+   elev_inoperable_high_water_upper_pool_warning,
+   elev_inoperable_high_water_lower_pool_warning,
    chamber_location_description_code
    )
 as
@@ -94,35 +94,35 @@ as
       as maximum_lock_lift,
       cwms_display.retrieve_user_unit_f('Elev', loc1.unit_system) as elev_unit_id,
       cwms_util.convert_units(
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool'),
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool', loc1.db_office_id),
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-      as elev_closure_high_water_upper_pool,
+      as elev_inoperable_high_water_upper_pool,
       cwms_util.convert_units(
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool'),
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool', loc1.db_office_id),
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-      as elev_closure_high_water_lower_pool,
+      as elev_inoperable_high_water_lower_pool,
       cwms_util.convert_units(
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Upper Pool'),
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Upper Pool', loc1.db_office_id),
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-      as elev_closure_low_water_upper_pool,
+      as elev_inoperable_low_water_upper_pool,
       cwms_util.convert_units(
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Lower Pool'),
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Lower Pool', loc1.db_office_id),
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-      as elev_closure_low_water_lower_pool,
+      as elev_inoperable_low_water_lower_pool,
       cwms_util.convert_units(
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool') - 0.6096, --2ft buffer is 0.6096 meters
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool', loc1.db_office_id) - 0.6096, --2ft buffer is 0.6096 meters
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-      as elev_closure_high_water_upper_pool_warning,
+      as elev_inoperable_high_water_upper_pool_warning,
       cwms_util.convert_units(
-          cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool') - 0.6096, --2ft buffer is 0.6096 meters
+          cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool', loc1.db_office_id) - 0.6096, --2ft buffer is 0.6096 meters
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
-      as elev_closure_high_water_lower_pool_warning,
+      as elev_inoperable_high_water_lower_pool_warning,
       lck.chamber_location_description_code
    from cwms_v_loc2 loc1, cwms_v_loc2 loc2, at_lock lck
    where loc1.location_code = lck.lock_location_code
