@@ -157,10 +157,10 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
          units_id          => 'm',                    -- Units for width, length, draft, and lift
          maximum_lock_lift => 25.0,                  -- Maximum lock lift
          elev_units_id     => 'm',                    -- Units for elevation
-         elev_closure_high_water_upper_pool => NULL, -- Elevation for high water upper pool
-         elev_closure_high_water_lower_pool => NULL, -- Elevation for high water lower pool
-         elev_closure_low_water_upper_pool => NULL,    -- Elevation for low water upper pool
-         elev_closure_low_water_lower_pool => NULL,   -- Elevation for low water lower pool
+         elev_inoperable_high_water_upper_pool => NULL, -- Elevation for high water upper pool
+         elev_inoperable_high_water_lower_pool => NULL, -- Elevation for high water lower pool
+         elev_inoperable_low_water_upper_pool => NULL,    -- Elevation for low water upper pool
+         elev_inoperable_low_water_lower_pool => NULL,   -- Elevation for low water lower pool
          chamber_location_description => lookup_type_obj_t(
             office_id => c_office_id,                      -- Assuming you want 'Single Chamber'
             display_value => 'Single Chamber',
@@ -169,10 +169,10 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
          )
       );
 
-      cwms_lock.store_lock_with_nav_data(p_lock => l_lock_obj);
+      cwms_lock.store_lock(p_lock => l_lock_obj);
 
       -- Retrieve the lock object using the location reference
-      cwms_lock.retrieve_lock_with_nav_data(p_lock => l_retrieved_lock_obj, p_lock_location_ref => l_lock_location_ref);
+      cwms_lock.retrieve_lock(p_lock => l_retrieved_lock_obj, p_lock_location_ref => l_lock_location_ref);
 
       ut.expect(l_retrieved_lock_obj.volume_per_lockage).to_equal(l_lock_obj.volume_per_lockage);
       ut.expect(l_retrieved_lock_obj.units_id).to_equal(l_lock_obj.units_id);
@@ -182,10 +182,10 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
       ut.expect(l_retrieved_lock_obj.normal_lock_lift).to_equal(l_lock_obj.normal_lock_lift);
       ut.expect(l_retrieved_lock_obj.maximum_lock_lift).to_equal(l_lock_obj.maximum_lock_lift);
       ut.expect(l_retrieved_lock_obj.elev_units_id).to_equal(l_lock_obj.elev_units_id);
-      ut.expect(l_retrieved_lock_obj.elev_closure_high_water_upper_pool).to_equal(100.0);
-      ut.expect(l_retrieved_lock_obj.elev_closure_high_water_lower_pool).to_equal(200.0);
-      ut.expect(l_retrieved_lock_obj.elev_closure_low_water_upper_pool).to_equal(300.0);
-      ut.expect(l_retrieved_lock_obj.elev_closure_low_water_lower_pool).to_equal(400.0);
+      ut.expect(l_retrieved_lock_obj.elev_inoperable_high_water_upper_pool).to_equal(100.0);
+      ut.expect(l_retrieved_lock_obj.elev_inoperable_high_water_lower_pool).to_equal(200.0);
+      ut.expect(l_retrieved_lock_obj.elev_inoperable_low_water_upper_pool).to_equal(300.0);
+      ut.expect(l_retrieved_lock_obj.elev_inoperable_low_water_lower_pool).to_equal(400.0);
       ut.expect(l_retrieved_lock_obj.chamber_location_description.display_value).to_equal(l_lock_obj.chamber_location_description.display_value);
 
 
@@ -209,17 +209,17 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
             units_id          => 'm',                    -- Units for width, length, draft, and lift
             maximum_lock_lift => 25.0,                  -- Maximum lock lift
             elev_units_id     => 'm',                    -- Units for elevation
-            elev_closure_high_water_upper_pool => 123, -- Elevation for high water upper pool
-            elev_closure_high_water_lower_pool => NULL, -- Elevation for high water lower pool
-            elev_closure_low_water_upper_pool => NULL,    -- Elevation for low water upper pool
-            elev_closure_low_water_lower_pool => NULL,   -- Elevation for low water lower pool
+            elev_inoperable_high_water_upper_pool => 123, -- Elevation for high water upper pool
+            elev_inoperable_high_water_lower_pool => NULL, -- Elevation for high water lower pool
+            elev_inoperable_low_water_upper_pool => NULL,    -- Elevation for low water upper pool
+            elev_inoperable_low_water_lower_pool => NULL,   -- Elevation for low water lower pool
             chamber_location_description => lookup_type_obj_t(
                office_id => c_office_id,                      -- Assuming you want 'Single Chamber'
                display_value => 'Single Chamber',
                tooltip => 'A lock gate system with a single chamber',
                active => 'T')                                 -- Active status
             );
-            cwms_lock.store_lock_with_nav_data(p_lock => l_lock_obj);
+            cwms_lock.store_lock(p_lock => l_lock_obj);
          END;
       ).to_raise_exception('POOL_VALUE_ERROR');
    END test_store_and_retrieve;
