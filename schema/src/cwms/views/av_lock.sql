@@ -54,6 +54,18 @@ create or replace force view av_lock(
    chamber_location_description_code
    )
 as
+   with pool_levels as (
+      select distinct
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool', loc1.db_office_id) as high_water_upper_pool,
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool', loc1.db_office_id) as high_water_lower_pool,
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Upper Pool', loc1.db_office_id) as low_water_upper_pool,
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Lower Pool', loc1.db_office_id) as low_water_lower_pool
+      from cwms_v_loc2 loc1, cwms_v_loc2 loc2, at_lock lck
+      where loc1.location_code = lck.lock_location_code
+         and loc2.location_code = lck.project_location_code
+         and loc2.unit_system = 'EN'
+         and rownum = 1
+   )
    select loc1.location_id as lock_id,
       loc2.location_id as project_id,
       loc1.location_code as lock_location_code,
@@ -94,32 +106,32 @@ as
       as maximum_lock_lift,
       cwms_display.retrieve_user_unit_f('Elev', loc1.unit_system) as elev_unit_id,
       cwms_util.convert_units(
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool', loc1.db_office_id),
+         (select high_water_upper_pool from pool_levels),
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
       as elev_inoperable_high_water_upper_pool,
       cwms_util.convert_units(
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool', loc1.db_office_id),
+         (select high_water_lower_pool from pool_levels),
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
       as elev_inoperable_high_water_lower_pool,
       cwms_util.convert_units(
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Upper Pool', loc1.db_office_id),
+         (select low_water_upper_pool from pool_levels),
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
       as elev_inoperable_low_water_upper_pool,
       cwms_util.convert_units(
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Lower Pool', loc1.db_office_id),
+         (select low_water_lower_pool from pool_levels),
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
       as elev_inoperable_low_water_lower_pool,
       cwms_util.convert_units(
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool', loc1.db_office_id) - 0.6096, --2ft buffer is 0.6096 meters
+         (select high_water_upper_pool from pool_levels) - 0.6096, --2ft buffer is 0.6096 meters
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
       as elev_inoperable_high_water_upper_pool_warning,
       cwms_util.convert_units(
-          cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool', loc1.db_office_id) - 0.6096, --2ft buffer is 0.6096 meters
+         (select high_water_lower_pool from pool_levels) - 0.6096, --2ft buffer is 0.6096 meters
          cwms_util.get_default_units('Elev', 'SI'),
          cwms_display.retrieve_user_unit_f('Elev-Pool', loc1.unit_system))
       as elev_inoperable_high_water_lower_pool_warning,
