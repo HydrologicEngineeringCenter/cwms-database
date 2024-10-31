@@ -7,7 +7,7 @@
 	[	"$",           "k$",          "linear: unit_per_kilo 0"],	
 	//"[kaf]/*_per_k*[ac-ft] | [ac-ft]/ft2_per_acre[ft3] | [ft3]/m_per_ft^3[m3] | *_per_M*[m3]/[mcm]"],
     //[ 	"$/mcm",       "$/kaf",       "[mcm]/*_per_M*[m3] | m_per_ft^3[m3]/[ft3] | ft2_per_acre[ft3]/[ac-ft] | *_per_k*[ac-ft]/[kaf]"],
-    ["%",           "n/a",         "linear: 100 0"],
+    //["%",           "n/a",         "linear: 100 0"],
     ["1/ft",        "1/m",         "function: i / m_per_ft"],
 	[ "acre",			"ft2", 		"function: i*ft2_per_acre"],
 	[ "1000 acre", 		"acre", 	"linear: 1000 0"],
