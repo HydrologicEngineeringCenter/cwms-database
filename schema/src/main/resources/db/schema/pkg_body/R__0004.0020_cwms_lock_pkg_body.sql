@@ -295,8 +295,7 @@ end retrieve_lock_old;
 
 function get_pool_level_value(
    p_lock_location_code in number,
-   p_specified_level_id in varchar2,
-   p_location_office_id in varchar2)
+   p_specified_level_id in varchar2)
    return number
    is
       c_parameter varchar2(20) := 'Elev';
@@ -306,9 +305,15 @@ function get_pool_level_value(
       v_location_level_value number; -- variable to hold the location level value
       v_location_id varchar2(20);
       v_parameter_w_sub_param varchar2(20);
+      v_location_office_id varchar2(16);
    begin
       -- get the location id from the lock location code
       v_location_id := cwms_loc.get_location_id(p_lock_location_code);
+      select db_office_id
+         into v_location_office_id
+      from cwms_v_loc2
+      where location_code = p_lock_location_code
+         and unit_system = 'SI';
       v_parameter_w_sub_param := c_parameter||'-'||c_sub_param;
       cwms_level.retrieve_location_level_value(
          p_level_value => v_location_level_value,
@@ -316,7 +321,7 @@ function get_pool_level_value(
          p_level_units => cwms_util.get_default_units('Elev'),
          p_date => cast(systimestamp at time zone 'UTC' as date), -- use the current date
          p_timezone_id => 'UTC',
-         p_office_id => p_location_office_id
+         p_office_id => v_location_office_id
       );
       return v_location_level_value;
    exception
@@ -366,29 +371,25 @@ begin
       -- retrieve High Water Upper Pool level using the function
       l_high_water_upper_pool_value := get_pool_level_value(
          p_lock_location_code => rec.lock_location_code,
-         p_specified_level_id => 'High Water Upper Pool',
-         p_location_office_id => p_lock_location_ref.office_id
+         p_specified_level_id => 'High Water Upper Pool'
       );
 
       -- retrieve High Water Lower Pool level using the function
       l_high_water_lower_pool_value := get_pool_level_value(
          p_lock_location_code => rec.lock_location_code,
-         p_specified_level_id => 'High Water Lower Pool',
-         p_location_office_id => p_lock_location_ref.office_id
+         p_specified_level_id => 'High Water Lower Pool'
       );
 
       -- retrieve Low Water Upper Pool level using the function
       l_low_water_upper_pool_value := get_pool_level_value(
          p_lock_location_code => rec.lock_location_code,
-         p_specified_level_id => 'Low Water Upper Pool',
-         p_location_office_id => p_lock_location_ref.office_id
+         p_specified_level_id => 'Low Water Upper Pool'
       );
 
       -- retrieve Low Water Lower Pool level using the function
       l_low_water_lower_pool_value := get_pool_level_value(
          p_lock_location_code => rec.lock_location_code,
-         p_specified_level_id => 'Low Water Lower Pool',
-         p_location_office_id => p_lock_location_ref.office_id
+         p_specified_level_id => 'Low Water Lower Pool'
       );
 
       ----------------------------
