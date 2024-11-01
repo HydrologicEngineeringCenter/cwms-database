@@ -139,8 +139,7 @@ PROCEDURE retrieve_lock(
 
 function get_pool_level_value(
    p_lock_location_code in number,
-   p_specified_level_id in varchar2,
-   p_location_office_id in varchar2)
+   p_specified_level_id in varchar2)
    return number;
 
 /**

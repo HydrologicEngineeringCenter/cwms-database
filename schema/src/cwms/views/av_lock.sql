@@ -55,16 +55,12 @@ create or replace force view av_lock(
    )
 as
    with pool_levels as (
-      select distinct
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool', loc1.db_office_id) as high_water_upper_pool,
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool', loc1.db_office_id) as high_water_lower_pool,
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Upper Pool', loc1.db_office_id) as low_water_upper_pool,
-         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Lower Pool', loc1.db_office_id) as low_water_lower_pool
-      from cwms_v_loc2 loc1, cwms_v_loc2 loc2, at_lock lck
-      where loc1.location_code = lck.lock_location_code
-         and loc2.location_code = lck.project_location_code
-         and loc2.unit_system = 'EN'
-         and rownum = 1
+      select
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Upper Pool') as high_water_upper_pool,
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'High Water Lower Pool') as high_water_lower_pool,
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Upper Pool') as low_water_upper_pool,
+         cwms_lock.get_pool_level_value(lck.lock_location_code, 'Low Water Lower Pool') as low_water_lower_pool
+      from at_lock lck
    )
    select loc1.location_id as lock_id,
       loc2.location_id as project_id,
