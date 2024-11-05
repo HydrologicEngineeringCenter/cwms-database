@@ -15,7 +15,7 @@ CREATE TYPE lock_obj_t
  * @member elev_units_id        The unit of the elevation pool values
  * @member elev_inoperable_high_water_upper_pool The elevation that a lock closes due to high water in the upper pool
  * @member elev_inoperable_high_water_lower_pool The elevation that a lock closes due to high water in the lower pool
- * @member elev_closer_low_water_upper_pool The elevation that a lock closes due to lower water in the upper pool
+ * @member elev_inoperable_low_water_upper_pool The elevation that a lock closes due to lower water in the upper pool
  * @member elev_inoperable_low_water_lower_pool The elevation that a lock closes due to low water in the lower pool
  * @member chamber_location_description A single chamber, le main, land side aux, river side main, river side aux.
  */
