@@ -302,28 +302,28 @@ function get_pool_level_value(
       c_sub_param varchar2(20) := 'Inoperable';
       c_param_type varchar2(20) := 'Inst';
       c_duration varchar2(20) := '0';
-      v_location_level_value number; -- variable to hold the location level value
-      v_location_id varchar2(20);
-      v_parameter_w_sub_param varchar2(20);
-      v_location_office_id varchar2(16);
+      l_location_level_value number; -- variable to hold the location level value
+      l_location_id varchar2(20);
+      l_parameter_w_sub_param varchar2(20);
+      l_location_office_id varchar2(16);
    begin
       -- get the location id from the lock location code
-      v_location_id := cwms_loc.get_location_id(p_lock_location_code);
+      l_location_id := cwms_loc.get_location_id(p_lock_location_code);
       select db_office_id
-         into v_location_office_id
+         into l_location_office_id
       from cwms_v_loc2
       where location_code = p_lock_location_code
          and unit_system = 'SI';
-      v_parameter_w_sub_param := c_parameter||'-'||c_sub_param;
+      l_parameter_w_sub_param := c_parameter||'-'||c_sub_param;
       cwms_level.retrieve_location_level_value(
-         p_level_value => v_location_level_value,
-         p_location_level_id => v_location_id||'.'||v_parameter_w_sub_param||'.'||c_param_type||'.'||c_duration||'.'||p_specified_level_id,
+         p_level_value => l_location_level_value,
+         p_location_level_id => l_location_id||'.'||l_parameter_w_sub_param||'.'||c_param_type||'.'||c_duration||'.'||p_specified_level_id,
          p_level_units => cwms_util.get_default_units('Elev'),
          p_date => cast(systimestamp at time zone 'UTC' as date), -- use the current date
          p_timezone_id => 'UTC',
-         p_office_id => v_location_office_id
+         p_office_id => l_location_office_id
       );
-      return v_location_level_value;
+      return l_location_level_value;
    exception
       when no_data_found then
          return null; -- if no data found, return null
