@@ -42,6 +42,7 @@ AS
         test_timeseries_snapping.teardown;
         test_cwms_cat.teardown;
         test_cwms_stream.teardown;
+        test_cwms_lock.teardown;
         test_cwms_data_dissem.teardown;
         test_cwms_forecast.teardown;
         test_cwms_xchg.teardown;

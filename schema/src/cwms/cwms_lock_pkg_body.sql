@@ -281,10 +281,53 @@ begin
       l_lock_rec.lock_length,
       l_lock_rec.minimum_draft,
       l_lock_rec.normal_lock_lift,
-      null --  length units.
+      null, --  length units.
+      null, -- maximum lock lift
+      null, -- elev units
+      null, -- elev_inoperable_high_water_upper_pool
+      null, -- elev_inoperable_high_water_lower_pool
+      null, -- elev_inoperable_low_water_upper_pool
+      null, -- elev_inoperable_low_water_lower_pool
+      null  -- chamber location description
     );
 
 end retrieve_lock_old;
+
+function get_pool_level_value(
+   p_lock_location_code in number,
+   p_specified_level_id in varchar2)
+   return number
+   is
+      c_parameter varchar2(20) := 'Elev';
+      c_sub_param varchar2(20) := 'Inoperable';
+      c_param_type varchar2(20) := 'Inst';
+      c_duration varchar2(20) := '0';
+      l_location_level_value number; -- variable to hold the location level value
+      l_location_id varchar2(20);
+      l_parameter_w_sub_param varchar2(20);
+      l_location_office_id varchar2(16);
+   begin
+      -- get the location id from the lock location code
+      l_location_id := cwms_loc.get_location_id(p_lock_location_code);
+      select db_office_id
+         into l_location_office_id
+      from cwms_v_loc2
+      where location_code = p_lock_location_code
+         and unit_system = 'SI';
+      l_parameter_w_sub_param := c_parameter||'-'||c_sub_param;
+      cwms_level.retrieve_location_level_value(
+         p_level_value => l_location_level_value,
+         p_location_level_id => l_location_id||'.'||l_parameter_w_sub_param||'.'||c_param_type||'.'||c_duration||'.'||p_specified_level_id,
+         p_level_units => cwms_util.get_default_units('Elev'),
+         p_date => cast(systimestamp at time zone 'UTC' as date), -- use the current date
+         p_timezone_id => 'UTC',
+         p_office_id => l_location_office_id
+      );
+      return l_location_level_value;
+   exception
+      when no_data_found then
+         return null; -- if no data found, return null
+end get_pool_level_value;
 
 PROCEDURE retrieve_lock(
    p_lock OUT lock_obj_t,                  --returns a filled in lock object including location data
@@ -295,37 +338,81 @@ is
    l_lock_loc location_obj_t;
    l_unit                varchar2(16);
    l_factor              number;
+   l_high_water_upper_pool_value   number;
+   l_high_water_lower_pool_value   number;
+   l_low_water_upper_pool_value    number;
+   l_low_water_lower_pool_value    number;
 begin
    p_lock := null;
-  
-  ----------------------------------------------------------------------------------
+   ---------------------------------------------------------------------------------
    -- use the cursor loop construct for convenience, there will only be one record --
    ----------------------------------------------------------------------------------
-   for rec in 
-      (	select l.lock_location_code,
-                l.project_location_code,
-                l.volume_per_lockage,
-                l.lock_width,
-                l.lock_length,
-                l.minimum_draft,
-                l.normal_lock_lift
-           from at_lock l
-          where l.lock_location_code = p_lock_location_ref.get_location_code)
+   for rec in
+      (select l.lock_location_code,
+         l.project_location_code,
+         l.volume_per_lockage,
+         l.lock_width,
+         l.lock_length,
+         l.minimum_draft,
+         l.normal_lock_lift,
+         l.chamber_location_description_code,
+         l.maximum_lock_lift,
+         g.chamber_type_display_value,
+         g.chamber_type_tooltip,
+         g.chamber_type_active,
+         o.office_id as gate_office_id
+      from at_lock l
+         left join at_lock_gate_type g
+            on g.chamber_type_code = l.chamber_location_description_code
+         left join cwms_office o
+            on o.office_code = g.db_office_code
+      where l.lock_location_code = p_lock_location_ref.get_location_code)
    loop
-   ----------------------------    
-   -- create the lock object --
-   ----------------------------    
-   p_lock := lock_obj_t(
-      location_ref_t(rec.project_location_code),
-      cwms_loc.retrieve_location(rec.lock_location_code),
-      rec.volume_per_lockage,
-      cwms_util.get_default_units('Volume'), -- volume units.
-      rec.lock_width,
-      rec.lock_length,
-      rec.minimum_draft,
-      rec.normal_lock_lift,
-      cwms_util.get_default_units('Length') --  length units.
-    );
+      -- retrieve High Water Upper Pool level using the function
+      l_high_water_upper_pool_value := get_pool_level_value(
+         p_lock_location_code => rec.lock_location_code,
+         p_specified_level_id => 'High Water Upper Pool'
+      );
+
+      -- retrieve High Water Lower Pool level using the function
+      l_high_water_lower_pool_value := get_pool_level_value(
+         p_lock_location_code => rec.lock_location_code,
+         p_specified_level_id => 'High Water Lower Pool'
+      );
+
+      -- retrieve Low Water Upper Pool level using the function
+      l_low_water_upper_pool_value := get_pool_level_value(
+         p_lock_location_code => rec.lock_location_code,
+         p_specified_level_id => 'Low Water Upper Pool'
+      );
+
+      -- retrieve Low Water Lower Pool level using the function
+      l_low_water_lower_pool_value := get_pool_level_value(
+         p_lock_location_code => rec.lock_location_code,
+         p_specified_level_id => 'Low Water Lower Pool'
+      );
+
+      ----------------------------
+      -- create the lock object --
+      ----------------------------
+      p_lock := lock_obj_t(
+         location_ref_t(rec.project_location_code),
+         cwms_loc.retrieve_location(rec.lock_location_code),
+         rec.volume_per_lockage,
+         cwms_util.get_default_units('Volume'), -- volume units.
+         rec.lock_width,
+         rec.lock_length,
+         rec.minimum_draft,
+         rec.normal_lock_lift,
+         cwms_util.get_default_units('Length'), -- length units.
+         rec.maximum_lock_lift,
+         cwms_util.get_default_units('Elev'), -- elev units.
+         l_high_water_upper_pool_value ,  -- High Water Upper Pool value
+         l_high_water_lower_pool_value ,  -- High Water Lower Pool value
+         l_low_water_upper_pool_value ,   -- Low Water Upper Pool value
+         l_low_water_lower_pool_value ,   -- Low Water Lower Pool value
+         lookup_type_obj_t(rec.gate_office_id, rec.chamber_type_display_value, rec.chamber_type_tooltip, rec.chamber_type_active)
+      );
    end loop;
 end retrieve_lock;
 
@@ -333,15 +420,27 @@ procedure store_lock(
    p_lock           IN lock_obj_t,           -- a populated lock object type.
    p_fail_if_exists IN VARCHAR2 DEFAULT 'T') -- a flag that will cause the procedure to fail if the lock already exists
 is
-   l_lock_rec         at_lock%rowtype; 
+   l_lock_rec         at_lock%rowtype;
    l_exists           boolean;
    l_length_factor    binary_double;
    l_length_offset    binary_double;
    l_volume_factor    binary_double;
    l_volume_offset    binary_double;
+   l_elev_factor    binary_double;
+   l_elev_offset    binary_double;
 begin
-   if p_lock is null then
-      cwms_err.raise('NULL_ARGUMENT', 'P_LOCK');
+    if p_lock is null then
+        cwms_err.raise('NULL_ARGUMENT', 'P_LOCK');
+    end if;
+
+   if p_lock.elev_inoperable_high_water_upper_pool is not null
+   or p_lock.elev_inoperable_high_water_lower_pool is not null
+      or p_lock.elev_inoperable_low_water_upper_pool is not null
+      or p_lock.elev_inoperable_low_water_lower_pool is not null then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            'Lock Pool value',
+            '- Pool values must be null for the lock store call. Pool values must be stored via the location level store call, not directly in the store of the lock object.');
    end if;
    l_lock_rec.lock_location_code := cwms_loc.store_location_f(p_lock.lock_location, 'F');
    if not cwms_loc.can_store(l_lock_rec.lock_location_code, 'LOCK') then
@@ -360,11 +459,11 @@ begin
    -------------------------------------
    begin
       select *
-        into l_lock_rec
-        from at_lock
-       where lock_location_code = l_lock_rec.lock_location_code;
-      l_exists := true;       
-   exception 
+      into l_lock_rec
+      from at_lock
+      where lock_location_code = l_lock_rec.lock_location_code;
+      l_exists := true;
+   exception
       when no_data_found then
          l_exists := false;
    end;
@@ -384,7 +483,7 @@ begin
    begin
       l_lock_rec.project_location_code := p_lock.project_location_ref.get_location_code;
    exception
-      when others then 
+      when others then
          cwms_err.raise(
             'ITEM_DOES_NOT_EXIST',
             'CWMS Project',
@@ -396,52 +495,67 @@ begin
    -- get the conversion factors --
    --------------------------------
    select factor,
-          offset
-     into l_length_factor,
-          l_length_offset
-     from cwms_unit_conversion uc,
-          cwms_base_parameter bp
-    where uc.from_unit_id = p_lock.units_id
+      offset
+   into l_length_factor,
+      l_length_offset
+   from cwms_unit_conversion uc,
+      cwms_base_parameter bp
+   where uc.from_unit_id = p_lock.units_id
       and bp.base_parameter_id = 'Length'
-      and uc.to_unit_code = bp.unit_code; 
+      and uc.to_unit_code = bp.unit_code;
 
    select factor,
-          offset
-     into l_volume_factor,
-          l_volume_offset
-     from cwms_unit_conversion uc,
-          cwms_base_parameter bp
-    where uc.from_unit_id = p_lock.volume_units_id
+      offset
+   into l_volume_factor,
+      l_volume_offset
+   from cwms_unit_conversion uc,
+      cwms_base_parameter bp
+   where uc.from_unit_id = p_lock.volume_units_id
       and bp.base_parameter_id = 'Volume'
-      and uc.to_unit_code = bp.unit_code; 
-          
+      and uc.to_unit_code = bp.unit_code;
+
+   select factor,
+      offset
+   into l_elev_factor,
+      l_elev_offset
+   from cwms_unit_conversion uc,
+      cwms_base_parameter bp
+   where uc.from_unit_id = p_lock.elev_units_id
+      and bp.base_parameter_id = 'Elev'
+      and uc.to_unit_code = bp.unit_code;
+
    ----------------------------------------------------------
-   -- fill out the lock record, don't overwrite with nulls --
+      -- fill out the lock record, don't overwrite with nulls --
    ----------------------------------------------------------
-   l_lock_rec.lock_width := 
+   l_lock_rec.lock_width :=
       case p_lock is null
          when true  then l_lock_rec.lock_width
          when false then p_lock.lock_width * l_length_factor + l_length_offset
       end;
-   l_lock_rec.lock_length := 
+   l_lock_rec.lock_length :=
       case p_lock is null
          when true  then l_lock_rec.lock_length
          when false then p_lock.lock_length * l_length_factor + l_length_offset
       end;
-   l_lock_rec.volume_per_lockage := 
+   l_lock_rec.volume_per_lockage :=
       case p_lock is null
          when true  then l_lock_rec.volume_per_lockage
          when false then p_lock.volume_per_lockage * l_volume_factor + l_volume_offset
       end;
-   l_lock_rec.minimum_draft := 
+   l_lock_rec.minimum_draft :=
       case p_lock is null
          when true  then l_lock_rec.minimum_draft
          when false then p_lock.minimum_draft * l_length_factor + l_length_offset
       end;
-   l_lock_rec.normal_lock_lift := 
+   l_lock_rec.normal_lock_lift :=
       case p_lock is null
          when true  then l_lock_rec.normal_lock_lift
          when false then p_lock.normal_lock_lift * l_length_factor + l_length_offset
+      end;
+   l_lock_rec.maximum_lock_lift :=
+      case p_lock is null
+         when true  then l_lock_rec.maximum_lock_lift
+         when false then p_lock.maximum_lock_lift * l_length_factor + l_length_offset
       end;
    ---------------------------------
    -- insert or update the record --
@@ -452,19 +566,45 @@ begin
       -------------
       update at_lock
          set row = l_lock_rec
-       where lock_location_code = l_lock_rec.lock_location_code; 
+      where lock_location_code = l_lock_rec.lock_location_code;
    else
       ------------
       -- insert --
       ------------
       insert
-        into at_lock
+         into at_lock
       values l_lock_rec;
-   end if;   
-   ---------------------------      
-   -- set the location kind --
-   ---------------------------
-   cwms_loc.update_location_kind(l_lock_rec.lock_location_code, 'LOCK', 'A');                                 
+   end if;
+
+   -- update the chamber_location_description in at_lock_gate_type
+   begin
+      -- Retrieve the chamber_type_code from at_lock_gate_type based on the office_id and display_value
+      select chamber_type_code
+      into l_lock_rec.chamber_location_description_code
+      from at_lock_gate_type
+      where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_lock.chamber_location_description.office_id))
+         and upper(chamber_type_display_value) = upper(p_lock.chamber_location_description.display_value);
+
+      -- if a match is found, update the chamber_location_description_code in the at_lock table
+      update at_lock
+         set chamber_location_description_code = l_lock_rec.chamber_location_description_code
+      where lock_location_code = l_lock_rec.lock_location_code;
+
+   -- Exception handling in case no match is found
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ERROR',
+            'Specified chamber type ('
+            || p_lock.chamber_location_description.office_id
+            || '/'
+            || p_lock.chamber_location_description.display_value
+            || ') does not exist for lock location'
+            || p_lock.lock_location.location_ref.get_office_id
+            || '/'
+            || p_lock.lock_location.location_ref.get_location_id
+         );
+   end;
 end store_lock;
 
 
@@ -581,7 +721,29 @@ begin
    if l_delete_location then
       cwms_loc.delete_location(p_lock_id, l_delete_action2, p_office_id);
    end if;
-end delete_lock2;   
+end delete_lock2;
+
+procedure get_lock_gate_types(
+   p_lookup_type_tab out lookup_type_tab_t,
+   p_db_office_id    in  varchar2 default null
+)
+is
+   l_db_office_id varchar2(16) := nvl(p_db_office_id, cwms_util.user_office_id);
+begin
+   p_lookup_type_tab := lookup_type_tab_t();
+   for rec in (
+      select *
+      from at_lock_gate_type
+      where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(l_db_office_id)))
+   loop
+      p_lookup_type_tab.extend;
+      p_lookup_type_tab(p_lookup_type_tab.count) := lookup_type_obj_t(
+         l_db_office_id,
+         rec.chamber_type_display_value,  -- Update with appropriate field name if different
+         rec.chamber_type_tooltip,        -- Update with appropriate field name if different
+         rec.chamber_type_active);        -- Update with appropriate field name if different
+   end loop;
+end get_lock_gate_types;
 
 END CWMS_LOCK;
 

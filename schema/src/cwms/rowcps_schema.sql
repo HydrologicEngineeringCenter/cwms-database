@@ -452,6 +452,93 @@ INSERT INTO at_document_type VALUES (5, 53, 'Other Documents',      'Other Docum
 --------
 --------
 
+CREATE TABLE at_lock_gate_type
+(
+    chamber_type_code         NUMBER(14)            NOT NULL,
+    db_office_code            NUMBER                NOT NULL,
+    chamber_type_display_value VARCHAR2(50 BYTE)     NOT NULL,
+    chamber_type_tooltip      VARCHAR2(255 BYTE)     NOT NULL,
+    chamber_type_active       VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL
+)
+    TABLESPACE cwms_20at_data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          504 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+COMMENT ON COLUMN at_lock_gate_type.chamber_type_code IS 'The unique id for this chamber_type code record';
+COMMENT ON COLUMN at_lock_gate_type.db_office_code IS 'References the "owning" office.';
+COMMENT ON COLUMN at_lock_gate_type.chamber_type_display_value IS 'The value to display for this chamber_type code record';
+COMMENT ON COLUMN at_lock_gate_type.chamber_type_tooltip IS 'The tooltip or meaning of this chamber_type code record';
+COMMENT ON COLUMN at_lock_gate_type.chamber_type_active IS 'Whether this chamber type entry is currently active';
+
+-- unique index
+CREATE UNIQUE INDEX lock_gate_type_idx1 ON at_lock_gate_type
+    (db_office_code, UPPER("CHAMBER_TYPE_DISPLAY_VALUE"))
+    LOGGING
+tablespace CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+ALTER TABLE at_lock_gate_type ADD (
+  CONSTRAINT at_lock_gate_type_pk
+ PRIMARY KEY
+ (chamber_type_code)
+    USING INDEX
+    TABLESPACE cwms_20at_data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+-- FK
+ALTER TABLE at_lock_gate_type ADD (
+  CONSTRAINT at_lock_gate_fk1
+ FOREIGN KEY (db_office_code)
+ REFERENCES cwms_office (office_code))
+/
+
+ALTER TABLE at_lock_gate_type ADD (
+CONSTRAINT at_lgt_active_ck
+CHECK ( chamber_type_active = 'T' OR chamber_type_active = 'F'))
+/
+
+INSERT INTO at_lock_gate_type (chamber_type_code, db_office_code, chamber_type_display_value, chamber_type_tooltip, chamber_type_active)VALUES (1, 53, 'Single Chamber', 'A lock gate system with a single chamber', 'T');
+INSERT INTO at_lock_gate_type (chamber_type_code, db_office_code, chamber_type_display_value, chamber_type_tooltip, chamber_type_active)VALUES (2, 53, 'Land Side Main', 'The main chamber on the land side of the lock', 'T');
+INSERT INTO at_lock_gate_type (chamber_type_code, db_office_code, chamber_type_display_value, chamber_type_tooltip, chamber_type_active)VALUES (3, 53, 'Land Side Aux', 'An auxiliary chamber on the land side of the lock', 'T');
+INSERT INTO at_lock_gate_type (chamber_type_code, db_office_code, chamber_type_display_value, chamber_type_tooltip, chamber_type_active)VALUES (4, 53, 'River Side Main', 'The main chamber on the river side of the lock', 'T');
+INSERT INTO at_lock_gate_type (chamber_type_code, db_office_code, chamber_type_display_value, chamber_type_tooltip, chamber_type_active)VALUES (5, 53, 'River Side Aux', 'An auxiliary chamber on the river side of the lock', 'T');
+--------
+--------
+
 CREATE TABLE at_embank_structure_type
 (
   structure_type_code         NUMBER(14)            NOT NULL,
@@ -1477,34 +1564,42 @@ ALTER TABLE at_embankment ADD (
 
 --------
 --------
-
 CREATE TABLE at_lock
 (
-  lock_location_code      NUMBER(14)      NOT NULL,
-  project_location_code NUMBER(14)      NOT NULL,
-  lock_width          BINARY_DOUBLE,
-  lock_length         BINARY_DOUBLE,
-  volume_per_lockage      BINARY_DOUBLE,
-  minimum_draft             BINARY_DOUBLE,
-  normal_lock_lift        BINARY_DOUBLE
+   lock_location_code                 NUMBER(14) NOT NULL,
+   project_location_code              NUMBER(14) NOT NULL,
+   lock_width                         BINARY_DOUBLE,
+   lock_length                        BINARY_DOUBLE,
+   volume_per_lockage                 BINARY_DOUBLE,
+   minimum_draft                      BINARY_DOUBLE,
+   normal_lock_lift                   BINARY_DOUBLE,
+   units_id                           VARCHAR2(16),
+   maximum_lock_lift                  BINARY_DOUBLE,
+   chamber_location_description_code  NUMBER(14)
 )
-TABLESPACE cwms_20at_data
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          504 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING
-NOCOMPRESS
-NOCACHE
-NOPARALLEL
-MONITORING
+   TABLESPACE cwms_20at_data
+   PCTUSED 0
+   PCTFREE 10
+   INITRANS 1
+   MAXTRANS 255
+   STORAGE
+(
+   INITIAL
+   504 k
+   MINEXTENTS
+   1
+   MAXEXTENTS
+   2147483645
+   PCTINCREASE
+   0
+   BUFFER_POOL
+   DEFAULT
+)
+   LOGGING
+   NOCOMPRESS
+   NOCACHE
+   NOPARALLEL
+   MONITORING
 /
 COMMENT ON COLUMN at_lock.lock_location_code IS 'Unique record identifier for this lock, also in at_physical_location';
 COMMENT ON COLUMN at_lock.project_location_code IS 'The project that this lock is part of';
@@ -1512,41 +1607,45 @@ COMMENT ON COLUMN at_lock.lock_width IS 'The width of the lock chamber';
 COMMENT ON COLUMN at_lock.lock_length IS 'The length of the lock chamber';
 COMMENT ON COLUMN at_lock.volume_per_lockage IS 'The volume of water discharged for one lockage at normal headwater and tailwater elevations.  This volume includes any flushing water.';
 COMMENT ON COLUMN at_lock.minimum_draft IS 'The minimum depth of water that is maintained for vessels for this particular lock';
+COMMENT ON COLUMN at_lock.maximum_lock_lift IS 'The maximum lift the lock can support';
+COMMENT ON COLUMN at_lock.chamber_location_description_code IS 'A single chamber, land side main, land side aux, river side main, river side aux.';
 
 CREATE UNIQUE INDEX at_lock_idx_1 ON at_lock
-(lock_location_code,project_location_code)
+   (lock_location_code, project_location_code)
+   /
 
-ALTER TABLE at_lock ADD (
-  CONSTRAINT at_lock_pk
- PRIMARY KEY
- (lock_location_code)
-    USING INDEX
-    TABLESPACE cwms_20at_data
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64 k
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
+ALTER TABLE at_lock
+   ADD (
+      CONSTRAINT at_lock_pk
+         PRIMARY KEY
+            (lock_location_code)
+            USING INDEX
+               TABLESPACE cwms_20at_data
+               PCTFREE 10
+               INITRANS 2
+               MAXTRANS 255
+               STORAGE (
+               INITIAL 64 k
+               MINEXTENTS 1
+               MAXEXTENTS 2147483645
+               PCTINCREASE 0
                ))
 /
 
-ALTER TABLE at_lock ADD (
-  CONSTRAINT at_lock_fk1
- FOREIGN KEY (lock_location_code)
- REFERENCES at_physical_location (location_code))
+ALTER TABLE at_lock
+   ADD (
+      CONSTRAINT at_lock_fk1
+         FOREIGN KEY (lock_location_code)
+            REFERENCES at_physical_location (location_code))
 /
 
-ALTER TABLE at_lock ADD (
-  CONSTRAINT at_lock_fk2
- FOREIGN KEY (project_location_code)
- REFERENCES at_project (project_location_code))
+ALTER TABLE at_lock
+   ADD (
+      CONSTRAINT at_lock_fk2
+         FOREIGN KEY (project_location_code)
+            REFERENCES at_project (project_location_code))
 /
 
---------
---------
 
 CREATE TABLE at_lockage
 (
@@ -1581,9 +1680,9 @@ MONITORING
 COMMENT ON COLUMN at_lockage.lockage_code IS 'Unique record identifier for every lockage on a project.  IS automatically generated.';
 COMMENT ON COLUMN at_lockage.lockage_location_code IS 'The lock at which this lockage occurred.  SEE AT_LOCK';
 COMMENT ON COLUMN at_lockage.lockage_datetime IS 'The date and time of the lockage';
-COMMENT ON COLUMN at_lockage.number_boats IS 'The number of boats accomodated in this lockage';
-COMMENT ON COLUMN at_lockage.number_barges IS 'The number of barges accomodated in this lockage';
-COMMENT ON COLUMN at_lockage.tonnage IS 'The tonnage of product accomodated in this lockage';
+COMMENT ON COLUMN at_lockage.number_boats IS 'The number of boats accommodated in this lockage';
+COMMENT ON COLUMN at_lockage.number_barges IS 'The number of barges accommodated in this lockage';
+COMMENT ON COLUMN at_lockage.tonnage IS 'The tonnage of product accommodated in this lockage';
 COMMENT ON COLUMN at_lockage.is_tow_upbound IS 'A boolean-equivalent value for the direction of boats and barges for this lockage.  Constrained to T or F by a check constraint.';
 COMMENT ON COLUMN at_lockage.is_lock_chamber_emptying IS 'A boolean-equivalent value for whether the lockage operation of this record was emptying or filling the lock chamber.  Constrained to T or F by a check constraint.';
 COMMENT ON COLUMN at_lockage.lockage_notes IS 'Any notes pertinent to this lockage';

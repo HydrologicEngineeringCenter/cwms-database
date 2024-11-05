@@ -1523,6 +1523,10 @@ INSERT INTO at_specified_level VALUES(23, 53, 'Top of Inlet',                   
 INSERT INTO at_specified_level VALUES(24, 53, 'Bottom of Inlet',                   'Bottom of Inlet Level');
 INSERT INTO at_specified_level VALUES(25, 53, 'Top of Outlet',                     'Top of Outlet Level');
 INSERT INTO at_specified_level VALUES(26, 53, 'Streambed',                         'Streambed Level');
+INSERT INTO at_specified_level VALUES(27, 53, 'High Water Upper Pool',             'High Water Upper Pool Level');
+INSERT INTO at_specified_level VALUES(28, 53, 'High Water Lower Pool',             'High Water Lower Pool Level');
+INSERT INTO at_specified_level VALUES(29, 53, 'Low Water Upper Pool',              'Low Water Upper Pool Level');
+INSERT INTO at_specified_level VALUES(30, 53, 'Low Water Lower Pool',              'Low Water Lower Pool Level');
 
 CREATE TABLE AT_LOCATION_LEVEL
 (
