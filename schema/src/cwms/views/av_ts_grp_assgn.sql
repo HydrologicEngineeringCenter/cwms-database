@@ -5,16 +5,18 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_GRP_ASSGN', n
  *
  * @since CWMS 2.1
  *
- * @field category_id      time series category (parent of time series group)
- * @field group_id         time series group (child of time series group)
- * @field ts_code          Unique numeric code identfying the time series
- * @field db_office_id     Office that owns the time series
- * @field ts_id            The time series identifier
- * @field alias_id         The alias, if any, for the time series in this time series group
- * @field attribute        The numeric attribute, if any, for this time series with respect to the time series group (can be used for ordering, etc...)
- * @field ref_ts_id        The referenced time series, if any, for this time series with repect to the time series group
- * @field shared_alias_id  The alias, if any, shared by all members of the time series group
- * @field shared_ref_ts_id The referenced time series, if any, shared by all members of the time series group
+ * @field category_id        time series category (parent of time series group)
+ * @field category_office_id Office that owns the time series category
+ * @field group_id           time series group (child of time series group)
+ * @field group_office_id    Office that owns the time series group
+ * @field ts_code            Unique numeric code identifying the time series
+ * @field db_office_id       Office that owns the time series
+ * @field ts_id              The time series identifier
+ * @field alias_id           The alias, if any, for the time series in this time series group
+ * @field attribute          The numeric attribute, if any, for this time series with respect to the time series group (can be used for ordering, etc...)
+ * @field ref_ts_id          The referenced time series, if any, for this time series with repect to the time series group
+ * @field shared_alias_id    The alias, if any, shared by all members of the time series group
+ * @field shared_ref_ts_id   The referenced time series, if any, shared by all members of the time series group
  */
 ');
 CREATE OR REPLACE VIEW av_ts_grp_assgn
