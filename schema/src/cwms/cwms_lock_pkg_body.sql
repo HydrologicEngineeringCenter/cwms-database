@@ -308,31 +308,55 @@ function get_warning_buffer_value(
       l_location_id varchar2(20);
       l_parameter_w_sub_param varchar2(20);
       l_location_office_id varchar2(16);
+      l_loc_ref_t location_ref_t;
    begin
       if p_lock_location_code is null then
-         return c_default_buffer_value;
+         cwms_err.raise(
+            'INVALID_ITEM',
+            'NULL',
+            ' Location - Lock Location must be provided to get the warning buffer value.'
+         );
       end if;
+      declare
+         l_count number;
+      begin
+         select count(*)
+         into l_count
+         from at_physical_location
+         where location_code = p_lock_location_code;
+
+         if l_count = 0 then
+               cwms_err.raise(
+                  'INVALID_ITEM',
+                  'Lock Location Code '||p_lock_location_code,
+                  ' Location. Location does not exist'
+               );
+         end if;
+      end;
       -- get the location id from the lock location code
-      l_location_id := cwms_loc.get_location_id(p_lock_location_code);
+      l_loc_ref_t := location_ref_t(p_lock_location_code);
+      l_location_id := l_loc_ref_t.get_location_id();
       l_parameter_w_sub_param := c_parameter||'-'||c_sub_param;
-      l_location_office_id := location_ref_t(p_lock_location_code).get_office_id();
-      cwms_level.retrieve_location_level_value(
-         p_level_value => l_location_level_value,
-         p_location_level_id => l_location_id||'.'||l_parameter_w_sub_param||'.'||c_param_type||'.'||c_duration||'.'||c_specified_level_id,
-         p_level_units => cwms_util.get_default_units('Elev'),
-         p_date => cast(systimestamp at time zone 'UTC' as date), -- use the current date
-         p_timezone_id => 'UTC',
-         p_office_id => l_location_office_id
-      );
-      -- If NULL is returned, default to 0.6096
-      if l_location_level_value is null then
-         return c_default_buffer_value;
-      end if;
-      return l_location_level_value;
+      l_location_office_id := l_loc_ref_t.get_office_id();
+      begin
+         cwms_level.retrieve_location_level_value(
+            p_level_value => l_location_level_value,
+            p_location_level_id => l_location_id||'.'||l_parameter_w_sub_param||'.'||c_param_type||'.'||c_duration||'.'||c_specified_level_id,
+            p_level_units => cwms_util.get_default_units('Elev'),
+            p_date => cast(systimestamp at time zone 'UTC' as date), -- use the current date
+            p_timezone_id => 'UTC',
+            p_office_id => l_location_office_id
+         );
+         -- If NULL is returned, default to 0.6096
+         if l_location_level_value is null then
+            return c_default_buffer_value;
+         end if;
+         return l_location_level_value;
       -- Exception handling if retrieve_location_level_value raises an error
-   exception
-      when others then
-         return c_default_buffer_value;
+      exception
+         when others then
+            return c_default_buffer_value;
+      end;
 end get_warning_buffer_value;
 
 function get_pool_level_value(

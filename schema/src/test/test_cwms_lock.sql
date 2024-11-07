@@ -151,11 +151,17 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
       ut.expect(l_warning_buffer).to_equal(0.6096);
 
       -- test coverage of handling of null and non-existant p_lock_location_code parameters
-      l_warning_buffer := cwms_lock.get_warning_buffer_value(NULL);
-      ut.expect(l_warning_buffer).to_equal(0.6096);
+      ut.expect(
+         BEGIN
+            l_warning_buffer:= cwms_lock.get_warning_buffer_value(NULL);
+         END;
+      ).to_raise_exception('INVALID_ITEM');
 
-      l_warning_buffer := cwms_lock.get_warning_buffer_value(0123456789);
-      ut.expect(l_warning_buffer).to_equal(0.6096);
+      ut.expect(
+         BEGIN
+            l_warning_buffer:= cwms_lock.get_warning_buffer_value(0123456789);
+         END;
+      ).to_raise_exception('INVALID_ITEM');
 
       -- Test that the lock object throws error with invalid non-null pool values
       ut.expect(
@@ -189,7 +195,7 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
             );
             cwms_lock.store_lock(p_lock => l_lock_obj);
          END;
-      ).to_raise_exception('POOL_VALUE_ERROR');
+      ).to_raise_exception('INVALID_ITEM');
 
       FOR i IN 1..c_implicit_names.COUNT LOOP
                cwms_level.delete_location_level(
