@@ -28,43 +28,6 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
             p_time_zone_id => 'UTC',
             p_db_office_id => 'SPK');
          commit;
-            cwms_project.store_project(project_obj_t(
-               p_project_location             => cwms_t_location_obj(cwms_t_location_ref(proj_location_id, c_office_id)),
-               p_pump_back_location           => null,
-               p_near_gage_location           => null,
-               p_authorizing_law              => null,
-               p_cost_year                    => null,
-               p_federal_cost                 => null,
-               p_nonfederal_cost              => null,
-               p_federal_om_cost              => null,
-               p_nonfederal_om_cost           => null,
-               p_remarks                      => null,
-               p_project_owner                => null,
-               p_hydropower_description       => null,
-               p_sedimentation_description    => null,
-               p_downstream_urban_description => null,
-               p_bank_full_capacity_descript  => null,
-               p_yield_time_frame_start       => null,
-               p_yield_time_frame_end         => null));
-         commit;
-         for i in 1..c_implicit_names.count loop
-            ---------------------------------------------------
-            -- create the location levels for implicit pools --
-            ---------------------------------------------------
-            cwms_level.store_location_level(
-               p_location_level_id => c_location_id||'.'||c_parameter||'.'||c_param_type||'.'||c_duration||'.'||c_implicit_names(i),
-               p_level_value       => 100 * i,
-               p_level_units       => 'm',
-               p_effective_date    => date '2000-01-01',
-               p_office_id         => c_office_id);
-            end loop;
-         commit;
-         cwms_level.store_location_level(
-            p_location_level_id => c_location_id||'.'||'Elev'||'.'||c_param_type||'.'||c_duration||'.'||'Closure Warning',
-            p_level_value       => 3,
-            p_level_units       => 'm',
-            p_effective_date    => date '2000-01-01',
-            p_office_id         => c_office_id);
    end setup;
 
    PROCEDURE teardown IS
@@ -108,33 +71,6 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
       c_duration           CONSTANT VARCHAR2(16) := '0';
       c_implicit_names     CONSTANT cwms_t_str_tab := cwms_t_str_tab('High Water Upper Pool', 'High Water Lower Pool', 'Low Water Upper Pool', 'Low Water Lower Pool');
    BEGIN
-      -- Store a location
-      cwms_loc.store_location(
-         p_location_id  => c_location_id,
-         p_time_zone_id => 'UTC',
-         p_db_office_id => c_office_id);
-      COMMIT;
-
-      -- Store project
-      cwms_project.store_project(project_obj_t(
-         p_project_location             => cwms_t_location_obj(cwms_t_location_ref(proj_location_id, c_office_id)),
-         p_pump_back_location           => NULL,
-         p_near_gage_location           => NULL,
-         p_authorizing_law              => NULL,
-         p_cost_year                    => NULL,
-         p_federal_cost                 => NULL,
-         p_nonfederal_cost              => NULL,
-         p_federal_om_cost              => NULL,
-         p_nonfederal_om_cost           => NULL,
-         p_remarks                      => NULL,
-         p_project_owner                => NULL,
-         p_hydropower_description       => NULL,
-         p_sedimentation_description    => NULL,
-         p_downstream_urban_description => NULL,
-         p_bank_full_capacity_descript  => NULL,
-         p_yield_time_frame_start       => NULL,
-         p_yield_time_frame_end         => NULL));
-      COMMIT;
 
       -- Create the location levels for implicit pools
       FOR i IN 1..c_implicit_names.COUNT LOOP
@@ -145,6 +81,14 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
             p_effective_date    => DATE '2000-01-01',
             p_office_id         => c_office_id);
       END LOOP;
+
+      cwms_level.store_location_level(
+         p_location_level_id => c_location_id||'.'||c_parameter||'.'||c_param_type||'.'||c_duration||'.'||'Warning Buffer',
+         p_level_value       => 3,
+         p_level_units       => 'm',
+         p_effective_date    => date '2000-01-01',
+         p_office_id         => c_office_id);
+      commit;
 
       -- Populate lock_obj_t object with required values
       l_lock_obj := lock_obj_t(
@@ -206,6 +150,13 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
       l_warning_buffer := cwms_lock.get_warning_buffer_value(l_lock_location_ref.get_location_code());
       ut.expect(l_warning_buffer).to_equal(0.6096);
 
+      -- test coverage of handling of null and non-existant p_lock_location_code parameters
+      l_warning_buffer := cwms_lock.get_warning_buffer_value(NULL);
+      ut.expect(l_warning_buffer).to_equal(0.6096);
+
+      l_warning_buffer := cwms_lock.get_warning_buffer_value(0123456789);
+      ut.expect(l_warning_buffer).to_equal(0.6096);
+
       -- Test that the lock object throws error with invalid non-null pool values
       ut.expect(
          BEGIN
@@ -239,6 +190,12 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
             cwms_lock.store_lock(p_lock => l_lock_obj);
          END;
       ).to_raise_exception('POOL_VALUE_ERROR');
+
+      FOR i IN 1..c_implicit_names.COUNT LOOP
+               cwms_level.delete_location_level(
+                  p_location_level_id => c_location_id || '.' || c_parameter || '.' || c_param_type || '.' || c_duration || '.' || c_implicit_names(i),
+                  p_office_id         => c_office_id);
+      END LOOP;
    END test_store_and_retrieve;
 END test_cwms_lock;
 /
