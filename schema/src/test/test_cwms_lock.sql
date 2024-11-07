@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
    PROCEDURE setup IS
       BEGIN
          INSERT INTO AT_PARAMETER (PARAMETER_CODE, DB_OFFICE_CODE, BASE_PARAMETER_CODE, SUB_PARAMETER_ID, SUB_PARAMETER_DESC)
-               VALUES (319, 53, 10, 'Inoperable', 'Elev-Inoperable');
+               VALUES (319, 53, 10, 'Closure', 'Elev-Closure');
          COMMIT;
 
          cwms_loc.store_location(
@@ -59,6 +59,12 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
                p_office_id         => c_office_id);
             end loop;
          commit;
+         cwms_level.store_location_level(
+            p_location_level_id => c_location_id||'.'||'Elev'||'.'||c_param_type||'.'||c_duration||'.'||'Closure Warning',
+            p_level_value       => 3,
+            p_level_units       => 'm',
+            p_effective_date    => date '2000-01-01',
+            p_office_id         => c_office_id);
    end setup;
 
    PROCEDURE teardown IS
@@ -90,16 +96,17 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
    END teardown;
 
    PROCEDURE test_store_and_retrieve IS
-        l_lock_obj           lock_obj_t;
-        l_retrieved_lock_obj lock_obj_t;
-        l_lock_location_ref   location_ref_t := location_ref_t('TestLockLocation123', 'SPK');
-        c_office_id          CONSTANT VARCHAR2(16) := 'SPK';
-        proj_location_id     CONSTANT VARCHAR2(16) := 'ReqLock1';
-        c_location_id        CONSTANT VARCHAR2(57) := 'TestLockLocation123';
-        c_parameter          CONSTANT VARCHAR2(49) := 'Elev-Inoperable';
-        c_param_type         CONSTANT VARCHAR2(16) := 'Inst';
-        c_duration           CONSTANT VARCHAR2(16) := '0';
-        c_implicit_names     CONSTANT cwms_t_str_tab := cwms_t_str_tab('High Water Upper Pool', 'High Water Lower Pool', 'Low Water Upper Pool', 'Low Water Lower Pool');
+      l_lock_obj           lock_obj_t;
+      l_retrieved_lock_obj lock_obj_t;
+      l_lock_location_ref  location_ref_t := location_ref_t('TestLockLocation123', 'SPK');
+      l_warning_buffer   number;
+      c_office_id          CONSTANT VARCHAR2(16) := 'SPK';
+      proj_location_id     CONSTANT VARCHAR2(16) := 'ReqLock1';
+      c_location_id        CONSTANT VARCHAR2(57) := 'TestLockLocation123';
+      c_parameter          CONSTANT VARCHAR2(49) := 'Elev-Closure';
+      c_param_type         CONSTANT VARCHAR2(16) := 'Inst';
+      c_duration           CONSTANT VARCHAR2(16) := '0';
+      c_implicit_names     CONSTANT cwms_t_str_tab := cwms_t_str_tab('High Water Upper Pool', 'High Water Lower Pool', 'Low Water Upper Pool', 'Low Water Lower Pool');
    BEGIN
       -- Store a location
       cwms_loc.store_location(
@@ -157,10 +164,10 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
          units_id          => 'm',                    -- Units for width, length, draft, and lift
          maximum_lock_lift => 25.0,                  -- Maximum lock lift
          elev_units_id     => 'm',                    -- Units for elevation
-         elev_inoperable_high_water_upper_pool => NULL, -- Elevation for high water upper pool
-         elev_inoperable_high_water_lower_pool => NULL, -- Elevation for high water lower pool
-         elev_inoperable_low_water_upper_pool => NULL,    -- Elevation for low water upper pool
-         elev_inoperable_low_water_lower_pool => NULL,   -- Elevation for low water lower pool
+         elev_closure_high_water_upper_pool => NULL, -- Elevation for high water upper pool
+         elev_closure_high_water_lower_pool => NULL, -- Elevation for high water lower pool
+         elev_closure_low_water_upper_pool => NULL,    -- Elevation for low water upper pool
+         elev_closure_low_water_lower_pool => NULL,   -- Elevation for low water lower pool
          chamber_location_description => lookup_type_obj_t(
             office_id => c_office_id,                      -- Assuming you want 'Single Chamber'
             display_value => 'Single Chamber',
@@ -182,12 +189,22 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
       ut.expect(l_retrieved_lock_obj.normal_lock_lift).to_equal(l_lock_obj.normal_lock_lift);
       ut.expect(l_retrieved_lock_obj.maximum_lock_lift).to_equal(l_lock_obj.maximum_lock_lift);
       ut.expect(l_retrieved_lock_obj.elev_units_id).to_equal(l_lock_obj.elev_units_id);
-      ut.expect(l_retrieved_lock_obj.elev_inoperable_high_water_upper_pool).to_equal(100.0);
-      ut.expect(l_retrieved_lock_obj.elev_inoperable_high_water_lower_pool).to_equal(200.0);
-      ut.expect(l_retrieved_lock_obj.elev_inoperable_low_water_upper_pool).to_equal(300.0);
-      ut.expect(l_retrieved_lock_obj.elev_inoperable_low_water_lower_pool).to_equal(400.0);
+      ut.expect(l_retrieved_lock_obj.elev_closure_high_water_upper_pool).to_equal(100.0);
+      ut.expect(l_retrieved_lock_obj.elev_closure_high_water_lower_pool).to_equal(200.0);
+      ut.expect(l_retrieved_lock_obj.elev_closure_low_water_upper_pool).to_equal(300.0);
+      ut.expect(l_retrieved_lock_obj.elev_closure_low_water_lower_pool).to_equal(400.0);
       ut.expect(l_retrieved_lock_obj.chamber_location_description.display_value).to_equal(l_lock_obj.chamber_location_description.display_value);
 
+      l_warning_buffer := cwms_lock.get_warning_buffer_value(l_lock_location_ref.get_location_code());
+      ut.expect(l_warning_buffer).to_equal(3.0);
+
+      cwms_level.delete_location_level(
+         p_location_level_id => c_location_id||'.'||'Elev'||'.'||c_param_type||'.'||c_duration||'.'||'Closure Warning',
+         p_office_id         => c_office_id);
+
+      --now that location level doesnt exist, we should get back default 2 ft
+      l_warning_buffer := cwms_lock.get_warning_buffer_value(l_lock_location_ref.get_location_code());
+      ut.expect(l_warning_buffer).to_equal(0.6096);
 
       -- Test that the lock object throws error with invalid non-null pool values
       ut.expect(
@@ -209,10 +226,10 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
             units_id          => 'm',                    -- Units for width, length, draft, and lift
             maximum_lock_lift => 25.0,                  -- Maximum lock lift
             elev_units_id     => 'm',                    -- Units for elevation
-            elev_inoperable_high_water_upper_pool => 123, -- Elevation for high water upper pool
-            elev_inoperable_high_water_lower_pool => NULL, -- Elevation for high water lower pool
-            elev_inoperable_low_water_upper_pool => NULL,    -- Elevation for low water upper pool
-            elev_inoperable_low_water_lower_pool => NULL,   -- Elevation for low water lower pool
+            elev_closure_high_water_upper_pool => 123, -- Elevation for high water upper pool
+            elev_closure_high_water_lower_pool => NULL, -- Elevation for high water lower pool
+            elev_closure_low_water_upper_pool => NULL,    -- Elevation for low water upper pool
+            elev_closure_low_water_lower_pool => NULL,   -- Elevation for low water lower pool
             chamber_location_description => lookup_type_obj_t(
                office_id => c_office_id,                      -- Assuming you want 'Single Chamber'
                display_value => 'Single Chamber',

@@ -137,6 +137,10 @@ PROCEDURE retrieve_lock(
    p_lock OUT lock_obj_t,                   
    p_lock_location_ref IN location_ref_t);
 
+function get_warning_buffer_value(
+   p_lock_location_code in number)
+   return number;
+
 function get_pool_level_value(
    p_lock_location_code in number,
    p_specified_level_id in varchar2)
