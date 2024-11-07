@@ -299,7 +299,8 @@ function get_warning_buffer_value(
    is
       --this will do a similar lookup to get pool level value but following this id format: 1.	EUFA-LOCK.Elev.Inst.0.Closure Warning
       c_parameter varchar2(20) := 'Elev';
-      c_specified_level_id varchar2(20) := 'Closure Warning';
+      c_sub_param varchar2(20) := 'Closure';
+      c_specified_level_id varchar2(20) := 'Warning Buffer';
       c_param_type varchar2(20) := 'Inst';
       c_duration varchar2(20) := '0';
       c_default_buffer_value number := 0.6096; -- default is 2 ft (0.6096 meters)
@@ -308,16 +309,16 @@ function get_warning_buffer_value(
       l_parameter_w_sub_param varchar2(20);
       l_location_office_id varchar2(16);
    begin
+      if p_lock_location_code is null then
+         return c_default_buffer_value;
+      end if;
       -- get the location id from the lock location code
       l_location_id := cwms_loc.get_location_id(p_lock_location_code);
-      select db_office_id
-         into l_location_office_id
-      from cwms_v_loc2
-      where location_code = p_lock_location_code
-         and unit_system = 'SI';
+      l_parameter_w_sub_param := c_parameter||'-'||c_sub_param;
+      l_location_office_id := location_ref_t(p_lock_location_code).get_office_id();
       cwms_level.retrieve_location_level_value(
          p_level_value => l_location_level_value,
-         p_location_level_id => l_location_id||'.'||c_parameter||'.'||c_param_type||'.'||c_duration||'.'||c_specified_level_id,
+         p_location_level_id => l_location_id||'.'||l_parameter_w_sub_param||'.'||c_param_type||'.'||c_duration||'.'||c_specified_level_id,
          p_level_units => cwms_util.get_default_units('Elev'),
          p_date => cast(systimestamp at time zone 'UTC' as date), -- use the current date
          p_timezone_id => 'UTC',
@@ -350,11 +351,7 @@ function get_pool_level_value(
    begin
       -- get the location id from the lock location code
       l_location_id := cwms_loc.get_location_id(p_lock_location_code);
-      select db_office_id
-         into l_location_office_id
-      from cwms_v_loc2
-      where location_code = p_lock_location_code
-         and unit_system = 'SI';
+      l_location_office_id := location_ref_t(p_lock_location_code).get_office_id();
       l_parameter_w_sub_param := c_parameter||'-'||c_sub_param;
       cwms_level.retrieve_location_level_value(
          p_level_value => l_location_level_value,

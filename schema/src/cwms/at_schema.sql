@@ -1527,7 +1527,7 @@ INSERT INTO at_specified_level VALUES(27, 53, 'High Water Upper Pool',          
 INSERT INTO at_specified_level VALUES(28, 53, 'High Water Lower Pool',             'High Water Lower Pool Level');
 INSERT INTO at_specified_level VALUES(29, 53, 'Low Water Upper Pool',              'Low Water Upper Pool Level');
 INSERT INTO at_specified_level VALUES(30, 53, 'Low Water Lower Pool',              'Low Water Lower Pool Level');
-INSERT INTO at_specified_level VALUES(31, 53, 'Closure Warning',                   'Closure Warning Buffer level');
+INSERT INTO at_specified_level VALUES(31, 53, 'Warning Buffer',                    'Closure Warning Buffer level');
 
 CREATE TABLE AT_LOCATION_LEVEL
 (
