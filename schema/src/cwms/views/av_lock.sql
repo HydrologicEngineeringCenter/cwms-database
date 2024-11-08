@@ -88,7 +88,7 @@ as
       cwms_util.convert_units(
          lck.minimum_draft,
          cwms_util.get_default_units('Length', 'SI'),
-         cwms_display.retrieve_user_unit_f('Depth-Draft', loc1.unit_system))
+         cwms_display.retrieve_user_unit_f('Height-Draft', loc1.unit_system))
       as minimum_draft,
       cwms_util.convert_units(
          lck.normal_lock_lift,
