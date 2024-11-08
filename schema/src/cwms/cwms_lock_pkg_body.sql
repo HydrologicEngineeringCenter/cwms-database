@@ -327,7 +327,7 @@ function get_warning_buffer_value(
 
          if l_count = 0 then
                cwms_err.raise(
-                  'INVALID_ITEM',
+                  'ITEM_DOES_NOT_EXIST',
                   'Lock Location Code '||p_lock_location_code,
                   ' Location. Location does not exist'
                );
