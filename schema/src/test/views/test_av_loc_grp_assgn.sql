@@ -24,7 +24,7 @@ create or replace package test_av_loc_grp_assgn as
    --%test(Test that view shows rows with non-null extra metadata such as reference, shared tsids, attributes, and alias ids)
    procedure non_null_extra_metadata;
    procedure teardown;
-   c_district_office_id constant varchar2(3) := 'SPK';
+   c_district_office_id constant varchar2(3) := '&&office_id';
    c_project_id constant varchar2(30) := 'MARI';
    c_gate_id constant varchar2(30) := 'MARI-TG1';
    c_flow constant varchar2(60) := 'Flow';
@@ -52,19 +52,19 @@ create or replace package body test_av_loc_grp_assgn as
       is
    begin
       clear_caches;
---       cwms_loc.delete_loc_group('Default', c_gate_group, 'T', c_district_office_id);
---       cwms_loc.delete_loc_group(c_flow, c_gate_group, 'T', c_district_office_id);
---       cwms_loc.delete_loc_group(c_rdl, c_gate_group, 'T', c_district_office_id);
---       cwms_loc.delete_loc_cat(c_flow, 'T', c_district_office_id);
---       cwms_loc.delete_loc_cat(c_rdl, 'T', c_district_office_id);
---       cwms_loc.delete_location(
---          p_location_id => c_gate_id,
---          p_delete_action => cwms_util.delete_all,
---          p_db_office_id => c_district_office_id);
---       cwms_loc.delete_location(
---          p_location_id => c_project_id,
---          p_delete_action => cwms_util.delete_all,
---          p_db_office_id => c_district_office_id);
+      cwms_loc.delete_loc_group('Default', c_gate_group, 'T', c_district_office_id);
+      cwms_loc.delete_loc_group(c_flow, c_gate_group, 'T', c_district_office_id);
+      cwms_loc.delete_loc_group(c_rdl, c_gate_group, 'T', c_district_office_id);
+      cwms_loc.delete_loc_cat(c_flow, 'T', c_district_office_id);
+      cwms_loc.delete_loc_cat(c_rdl, 'T', c_district_office_id);
+      cwms_loc.delete_location(
+         p_location_id => c_gate_id,
+         p_delete_action => cwms_util.delete_all,
+         p_db_office_id => c_district_office_id);
+      cwms_loc.delete_location(
+         p_location_id => c_project_id,
+         p_delete_action => cwms_util.delete_all,
+         p_db_office_id => c_district_office_id);
       commit;
       clear_caches;
    exception
