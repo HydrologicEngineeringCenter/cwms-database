@@ -161,7 +161,7 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
          BEGIN
             l_warning_buffer:= cwms_lock.get_warning_buffer_value(0123456789);
          END;
-      ).to_raise_exception('INVALID_ITEM');
+      ).to_raise_exception('ITEM_DOES_NOT_EXIST');
 
       -- Test that the lock object throws error with invalid non-null pool values
       ut.expect(
