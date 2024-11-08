@@ -501,8 +501,8 @@ begin
       or p_lock.elev_closure_low_water_lower_pool is not null then
          cwms_err.raise(
             'INVALID_ITEM',
-            'Lock Pool value',
-            '- Pool values must be null for the lock store call. Pool values must be stored via the location level store call, not directly in the store of the lock object.');
+            'Non-NULL level value',
+            'level value - Pool level values must be null for the lock store call. Pool level values must be stored via the location level store call, not directly in the store of the lock object.');
    end if;
    l_lock_rec.lock_location_code := cwms_loc.store_location_f(p_lock.lock_location, 'F');
    if not cwms_loc.can_store(l_lock_rec.lock_location_code, 'LOCK') then
