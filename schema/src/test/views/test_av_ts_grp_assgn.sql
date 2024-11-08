@@ -13,11 +13,11 @@ create or replace package test_av_ts_grp_assgn as
 
    procedure setup;
 
-   --%test(Test that the view shows assgned time series for CWMS owned categories and groups)
+   --%test(Test that the view shows assigned time series for CWMS owned categories and groups)
    procedure cwms_owned_cat_and_group;
-   --%test(Test that the view shows assgned time series for CWMS owned categories and district owned groups)
+   --%test(Test that the view shows assigned time series for CWMS owned categories and district owned groups)
    procedure cwms_owned_cat_district_owned_group;
-   --%test(Test that the view shows assgned time series for district owned categories and district owned groups)
+   --%test(Test that the view shows assigned time series for district owned categories and district owned groups)
    procedure district_owned_cat_district_owned_group;
    --%test(Test that view shows rows with null extra metadata such as reference, shared tsids, attributes, and alias ids)
    procedure null_extra_metadata;
@@ -141,7 +141,6 @@ create or replace package body test_av_ts_grp_assgn as
                              c_district_office_id);
       cwms_ts.assign_ts_group(c_rdl_aliases, c_reporting, c_shared_ref_ts_id, null,
                               null, null, c_district_office_id);
-      commit;
    end setup;
    --------------------------------------------------------------------------------
    -- procedure cat_profile_parser
