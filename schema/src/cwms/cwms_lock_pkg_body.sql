@@ -284,14 +284,80 @@ begin
       null, --  length units.
       null, -- maximum lock lift
       null, -- elev units
-      null, -- elev_inoperable_high_water_upper_pool
-      null, -- elev_inoperable_high_water_lower_pool
-      null, -- elev_inoperable_low_water_upper_pool
-      null, -- elev_inoperable_low_water_lower_pool
+      null, -- elev_closure_high_water_upper_pool
+      null, -- elev_closure_high_water_lower_pool
+      null, -- elev_closure_low_water_upper_pool
+      null, -- elev_closure_low_water_lower_pool
       null  -- chamber location description
     );
 
 end retrieve_lock_old;
+
+function get_warning_buffer_value(
+   p_lock_location_code in number)
+   return number
+   is
+      --this will do a similar lookup to get pool level value but following this id format: 1.	EUFA-LOCK.Elev.Inst.0.Closure Warning
+      c_parameter varchar2(20) := 'Elev';
+      c_sub_param varchar2(20) := 'Closure';
+      c_specified_level_id varchar2(20) := 'Warning Buffer';
+      c_param_type varchar2(20) := 'Inst';
+      c_duration varchar2(20) := '0';
+      c_default_buffer_value number := 0.6096; -- default is 2 ft (0.6096 meters)
+      l_location_level_value number; -- variable to hold the location level value
+      l_location_id varchar2(20);
+      l_parameter_w_sub_param varchar2(20);
+      l_location_office_id varchar2(16);
+      l_loc_ref_t location_ref_t;
+   begin
+      if p_lock_location_code is null then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            'NULL',
+            ' Location - Lock Location must be provided to get the warning buffer value.'
+         );
+      end if;
+      declare
+         l_count number;
+      begin
+         select count(*)
+         into l_count
+         from at_physical_location
+         where location_code = p_lock_location_code;
+
+         if l_count = 0 then
+               cwms_err.raise(
+                  'ITEM_DOES_NOT_EXIST',
+                  'Lock Location Code ',
+                  p_lock_location_code
+               );
+         end if;
+      end;
+      -- get the location id from the lock location code
+      l_loc_ref_t := location_ref_t(p_lock_location_code);
+      l_location_id := l_loc_ref_t.get_location_id();
+      l_parameter_w_sub_param := c_parameter||'-'||c_sub_param;
+      l_location_office_id := l_loc_ref_t.get_office_id();
+      begin
+         cwms_level.retrieve_location_level_value(
+            p_level_value => l_location_level_value,
+            p_location_level_id => l_location_id||'.'||l_parameter_w_sub_param||'.'||c_param_type||'.'||c_duration||'.'||c_specified_level_id,
+            p_level_units => cwms_util.get_default_units('Elev'),
+            p_date => cast(systimestamp at time zone 'UTC' as date), -- use the current date
+            p_timezone_id => 'UTC',
+            p_office_id => l_location_office_id
+         );
+         -- If NULL is returned, default to 0.6096
+         if l_location_level_value is null then
+            return c_default_buffer_value;
+         end if;
+         return l_location_level_value;
+      -- Exception handling if retrieve_location_level_value raises an error
+      exception
+         when others then
+            return c_default_buffer_value;
+      end;
+end get_warning_buffer_value;
 
 function get_pool_level_value(
    p_lock_location_code in number,
@@ -299,7 +365,7 @@ function get_pool_level_value(
    return number
    is
       c_parameter varchar2(20) := 'Elev';
-      c_sub_param varchar2(20) := 'Inoperable';
+      c_sub_param varchar2(20) := 'Closure';
       c_param_type varchar2(20) := 'Inst';
       c_duration varchar2(20) := '0';
       l_location_level_value number; -- variable to hold the location level value
@@ -309,11 +375,7 @@ function get_pool_level_value(
    begin
       -- get the location id from the lock location code
       l_location_id := cwms_loc.get_location_id(p_lock_location_code);
-      select db_office_id
-         into l_location_office_id
-      from cwms_v_loc2
-      where location_code = p_lock_location_code
-         and unit_system = 'SI';
+      l_location_office_id := location_ref_t(p_lock_location_code).get_office_id();
       l_parameter_w_sub_param := c_parameter||'-'||c_sub_param;
       cwms_level.retrieve_location_level_value(
          p_level_value => l_location_level_value,
@@ -433,14 +495,14 @@ begin
         cwms_err.raise('NULL_ARGUMENT', 'P_LOCK');
     end if;
 
-   if p_lock.elev_inoperable_high_water_upper_pool is not null
-   or p_lock.elev_inoperable_high_water_lower_pool is not null
-      or p_lock.elev_inoperable_low_water_upper_pool is not null
-      or p_lock.elev_inoperable_low_water_lower_pool is not null then
+   if p_lock.elev_closure_high_water_upper_pool is not null
+   or p_lock.elev_closure_high_water_lower_pool is not null
+      or p_lock.elev_closure_low_water_upper_pool is not null
+      or p_lock.elev_closure_low_water_lower_pool is not null then
          cwms_err.raise(
             'INVALID_ITEM',
-            'Lock Pool value',
-            '- Pool values must be null for the lock store call. Pool values must be stored via the location level store call, not directly in the store of the lock object.');
+            'Non-NULL level value',
+            'level value - Pool level values must be null for the lock store call. Pool level values must be stored via the location level store call, not directly in the store of the lock object.');
    end if;
    l_lock_rec.lock_location_code := cwms_loc.store_location_f(p_lock.lock_location, 'F');
    if not cwms_loc.can_store(l_lock_rec.lock_location_code, 'LOCK') then
