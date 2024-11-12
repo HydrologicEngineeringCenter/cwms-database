@@ -1,13 +1,13 @@
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_GRP_ASSGN', null,
 '
 /**
- * Displays information ON location group membership
+ * Displays information on location group membership
  *
  * @since CWMS 2.1
  *
  * @field category_id            Location category (parent of location group)
  * @field group_id               Location group (child of location group)
- * @field location_code          Unique numeric code identfying the location
+ * @field location_code          Unique numeric code identifying the location
  * @field db_office_id           Office that owns the location
  * @field base_location_id       Base location of the location
  * @field sub_location_id        Sub-location, if any, of the location
