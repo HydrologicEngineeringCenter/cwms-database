@@ -288,6 +288,8 @@ begin
       null, -- elev_closure_high_water_lower_pool
       null, -- elev_closure_low_water_upper_pool
       null, -- elev_closure_low_water_lower_pool
+      null, -- elev_closure_high_water_upper_warning
+      null, -- elev_closure_high_water_lower_warning
       null  -- chamber location description
     );
 
@@ -372,11 +374,13 @@ function get_pool_level_value(
       l_location_id varchar2(20);
       l_parameter_w_sub_param varchar2(20);
       l_location_office_id varchar2(16);
+      l_loc_ref_t location_ref_t;
    begin
       -- get the location id from the lock location code
-      l_location_id := cwms_loc.get_location_id(p_lock_location_code);
-      l_location_office_id := location_ref_t(p_lock_location_code).get_office_id();
+      l_loc_ref_t := location_ref_t(p_lock_location_code);
+      l_location_id := l_loc_ref_t.get_location_id();
       l_parameter_w_sub_param := c_parameter||'-'||c_sub_param;
+      l_location_office_id := l_loc_ref_t.get_office_id();
       cwms_level.retrieve_location_level_value(
          p_level_value => l_location_level_value,
          p_location_level_id => l_location_id||'.'||l_parameter_w_sub_param||'.'||c_param_type||'.'||c_duration||'.'||p_specified_level_id,
@@ -404,6 +408,9 @@ is
    l_high_water_lower_pool_value   number;
    l_low_water_upper_pool_value    number;
    l_low_water_lower_pool_value    number;
+   l_warning_buffer_value number;
+   l_high_water_upper_warning_value number;
+   l_high_water_lower_warning_value number;
 begin
    p_lock := null;
    ---------------------------------------------------------------------------------
@@ -430,6 +437,7 @@ begin
             on o.office_code = g.db_office_code
       where l.lock_location_code = p_lock_location_ref.get_location_code)
    loop
+      l_warning_buffer_value := get_warning_buffer_value(rec.lock_location_code);
       -- retrieve High Water Upper Pool level using the function
       l_high_water_upper_pool_value := get_pool_level_value(
          p_lock_location_code => rec.lock_location_code,
@@ -454,6 +462,14 @@ begin
          p_specified_level_id => 'Low Water Lower Pool'
       );
 
+      if(l_high_water_upper_pool_value is not null) then
+         l_high_water_upper_warning_value := l_high_water_upper_pool_value - l_warning_buffer_value;
+      end if;
+
+      if(l_high_water_lower_pool_value is not null) then
+         l_high_water_lower_warning_value := l_high_water_lower_pool_value - l_warning_buffer_value;
+      end if;
+
       ----------------------------
       -- create the lock object --
       ----------------------------
@@ -473,6 +489,8 @@ begin
          l_high_water_lower_pool_value ,  -- High Water Lower Pool value
          l_low_water_upper_pool_value ,   -- Low Water Upper Pool value
          l_low_water_lower_pool_value ,   -- Low Water Lower Pool value
+         l_high_water_upper_warning_value, -- High Water Upper Warning value
+         l_high_water_lower_warning_value, -- High Water Lower Warning value
          lookup_type_obj_t(rec.gate_office_id, rec.chamber_type_display_value, rec.chamber_type_tooltip, rec.chamber_type_active)
       );
    end loop;
