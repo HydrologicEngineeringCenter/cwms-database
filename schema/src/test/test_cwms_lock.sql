@@ -169,6 +169,8 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
          elev_closure_high_water_lower_pool => NULL, -- Elevation for high water lower pool
          elev_closure_low_water_upper_pool => NULL,    -- Elevation for low water upper pool
          elev_closure_low_water_lower_pool => NULL,   -- Elevation for low water lower pool
+         elev_closure_high_water_upper_pool_warning => NULL,
+         elev_closure_high_water_lower_pool_warning => NULL,
          chamber_location_description => lookup_type_obj_t(
             office_id => c_office_id,                      -- Assuming you want 'Single Chamber'
             display_value => 'Single Chamber',
@@ -194,6 +196,8 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
       ut.expect(l_retrieved_lock_obj.elev_closure_high_water_lower_pool).to_equal(200.0);
       ut.expect(l_retrieved_lock_obj.elev_closure_low_water_upper_pool).to_equal(300.0);
       ut.expect(l_retrieved_lock_obj.elev_closure_low_water_lower_pool).to_equal(400.0);
+      ut.expect(l_retrieved_lock_obj.elev_closure_high_water_upper_pool_warning).to_equal(97);
+      ut.expect(l_retrieved_lock_obj.elev_closure_high_water_lower_pool_warning).to_equal(197);
       ut.expect(l_retrieved_lock_obj.chamber_location_description.display_value).to_equal(l_lock_obj.chamber_location_description.display_value);
 
       l_warning_buffer := cwms_lock.get_warning_buffer_value(l_lock_location_ref.get_location_code());
@@ -226,6 +230,8 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
          elev_closure_high_water_lower_pool => NULL, -- Elevation for high water lower pool
          elev_closure_low_water_upper_pool => NULL,    -- Elevation for low water upper pool
          elev_closure_low_water_lower_pool => NULL,   -- Elevation for low water lower pool
+         elev_closure_high_water_upper_pool_warning => NULL,
+         elev_closure_high_water_lower_pool_warning => NULL,
          chamber_location_description => lookup_type_obj_t(
             office_id => c_office_id,                      -- Assuming you want 'Single Chamber'
             display_value => 'Single Chamber',
