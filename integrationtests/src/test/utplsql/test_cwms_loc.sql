@@ -45,6 +45,8 @@ procedure cwdb_288_location_object_creation;
 procedure cwdb_290_bounding_office_overrides_lat_lon;
 --%test(CWDB-305 spk location not creating)
 procedure cwms_305_spk_location_not_creating;
+--%test(Test storing an office location group to a CWMS category)
+procedure store_loc_group_cwms_cat;
 
 procedure setup;
 procedure teardown;
@@ -2415,6 +2417,13 @@ AS
       ut.expect(l_count).to_equal(1);
 
    end cwms_305_spk_location_not_creating;
+
+   procedure store_loc_group_cwms_cat is
+   begin
+      cwms_loc.store_loc_group('Default', 'DistrictTestGroup', 'Unit Test Group',
+      'F', 'T', null, null, '&&office_id');
+      cwms_loc.delete_loc_group('Default', 'DistrictTestGroup', 'T', '&&office_id');
+   end store_loc_group_cwms_cat;
 
 END test_cwms_loc;
 /
