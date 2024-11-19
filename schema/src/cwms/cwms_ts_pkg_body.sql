@@ -9665,6 +9665,15 @@ end retrieve_existing_item_counts;
                             'Time series category',
                             cwms_util.strip(p_ts_category_id));
          ELSE
+            -------------------------------------------------------
+            -- this is OK if we're not trying to update anything --
+            -------------------------------------------------------
+            IF (l_ignore_null AND p_ts_category_desc IS NULL)
+               OR (p_ts_category_desc = l_rec.ts_category_desc)
+            THEN
+               RETURN l_rec.ts_category_code;
+            END IF;
+
             IF cwms_util.get_db_office_code not in (l_rec.db_office_code, cwms_util.db_office_code_all)
             THEN
                cwms_err.raise (
