@@ -39,6 +39,7 @@ ENV OFFICE_ID=HQ
 ENV OFFICE_EROC=Q0
 ENV INSTALLONCE=0
 ENV QUIET=0
+ENV TEST_ACCOUNT=-testaccount
 
 RUN chmod +x ./docker/install.sh
 

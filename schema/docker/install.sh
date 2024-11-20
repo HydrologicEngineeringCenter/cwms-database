@@ -49,7 +49,7 @@ sed -e "s/HOST_AND_PORT/$DB_HOST_PORT/g" \
     -e "s/BUILDUSER_PASS/$BUILDUSER_PASSWORD/g" \
     -e "s/OFFICE_ID/$OFFICE_ID/g" \
     -e "s/OFFICE_CODE/$OFFICE_EROC/g" \
-    -e "s/TEST_ACCOUNT_FLAG/-testaccount/g" \
+    -e "s/TEST_ACCOUNT_FLAG/$TEST_ACCOUNT/g" \
     -e "s/SYS_PASSWORD/$SYS_PASSWORD/g" \
     -e "s/PASSWORD/$CWMS_PASSWORD/g" teamcity_overrides.xml > /overrides.xml
  # TODO: create lookup system for office code

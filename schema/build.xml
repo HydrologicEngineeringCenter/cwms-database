@@ -1076,6 +1076,10 @@
 
    </target>
 
+   <target name="docker.imagename" depends="docker.init">
+      <echo message="${docker.props.image_name}"/>
+   </target>
+
    <target name="docker.createnetwork" depends="docker.init">
       <exec executable="docker" failonerror="false" outputproperty="networkList">
          <arg value="network"/>
@@ -1200,32 +1204,41 @@
 
    </target>
 
+   <macrodef name="getdockerport">
+      <attribute name="property"/>
+      <attribute name="container"/>
+      <sequential>
+         <echo message="Finding port for @{container}"/>
+         <exec executable="docker" outputproperty="portOutput" failonerror="true">
+            <arg value="port"/>
+            <arg value="@{container}"/>
+         </exec>
+         <echo message="Your database is listening on ${portOutput}"/>
+         <loadresource property="portLine1">
+            <propertyresource name="portOutput"/>
+            <filterchain>
+               <headfilter lines="1"/>
+            </filterchain>
+         </loadresource>
+         <exec executable="sed" outputProperty="@{property}">
+            <arg value="-e"/>
+            <arg value="s/^\(.*:\)\(.*\)$/\2/"/>
+            <redirector inputstring="${portLine1}"/>
+         </exec>
+         <echo message="Port is ${@{property}}"/>   
+      </sequential>
+   </macrodef>
+
    <target name="docker.showport" depends="docker.setupparameters">
       <!--<loadproperties srcFile="${root}/build/database.props"/>-->
-      <echo message="Finding port for ${docker.props.container_name_valid}"/>
-      <exec executable="docker" outputproperty="portOutput" failonerror="true">
-         <arg value="port"/>
-         <arg value="${docker.props.container_name_valid}"/>
-      </exec>
-      <echo message="Your database is listening on ${portOutput}"/>
-      <loadresource property="portLine1">
-         <propertyresource name="portOutput"/>
-         <filterchain>
-            <headfilter lines="1"/>
-         </filterchain>
-      </loadresource>
-      <exec executable="sed" outputProperty="docker.props.external_port">
-         <arg value="-e"/>
-         <arg value="s/^\(.*:\)\(.*\)$/\2/"/>
-         <redirector inputstring="${portLine1}"/>
-      </exec>
-      <echo message="Port is ${docker.props.external_port}"/>
+      <getdockerport property="docker.props.external_port" container="${docker.props.container_name_valid}"/>
    </target>
 
 <!--
       docker run \-\-network database_net -d \-\-name testdb -e ORACLE_PDB=$DBNAME -e ORACLE_PWD=$SYS_PASSWORD -p 1522:1521 -e enterprise oracle/database:19.3.0-ee
       docker run \-\-network database_net -e DB_HOST_PORT="testdb:1521" -e DB_NAME="/$DBNAME" -e SYS_PASSWORD=$SYS_PASSWORD cwms_db_install:latest
    -->
+
    <target name="docker.install" depends="docker.prepdb, docker.buildimage">
       <echo message="Using Docker build to install database"/>
       <exec executable="docker" failonerror="true" output="build/buildCWMS_DB.log">
@@ -1249,6 +1262,110 @@
          <arg value="OFFICE_EROC=${database.eroc}"/>
          <arg value="${docker.props.image_name}"/>
       </exec>
+   </target>
+
+   <target name="docker.prep_ready_db"  depends="docker.setupparameters,docker.stopdb,docker.createnetwork">
+      <echo message="Creating baseline docker database"/>
+      <loadproperties srcFile="${root}/build/database.props"/>
+      <property name="readydb.name" value="${docker.props.container_name_valid}_ready"/>
+      <exec executable="docker" outputproperty="containerList">
+         <arg value="container"/>
+         <arg value="ls"/>
+         <arg value="-a"/>
+      </exec>
+      <echo message="Existing Containers at time of run. Checking for ${docker.props.container_name_valid}"/>
+      <echo message="${containerList}"/>
+      <tstamp>
+         <format property="checkstart_ready" pattern="YYYY-MM-dd'T'HH:mm:ss'Z'" timezone="UTC"/>
+      </tstamp>
+      <if>
+         <matches pattern="${readydb.name}$" string="${containerList}" multiline="true"/>
+         <then>
+            <echo message="Deleting existing database."/>
+            <exec executable="docker">
+               <arg value="stop"/>
+               <arg value="${readydb.name}"/>         
+            </exec>
+            <exec executable="docker">
+               <arg value="rm"/>
+               <arg value="${readydb.name}"/>
+            </exec>
+         </then>
+      </if>
+      <echo message="Creating new database"/>
+      <exec dir="${root}" executable="docker" failonerror="true">
+         <arg value="run"/>
+         <arg value="-d"/>
+         <arg value="--network"/>
+         <arg value="${docker.props.network_name}"/>
+         <arg value="-p"/>
+         <arg value="1521"/> <!-- random external port will be assigned and stored -->
+         <arg value="--name"/>
+         <arg value="${readydb.name}"/>
+         <arg value="-e"/>
+         <arg value="ORACLE_PASSWORD=testsyspassword"/>
+         <arg value="gvenzl/oracle-free:23.5-full"/>
+      </exec>
+      <echo message="checking from ${checkstart_ready}"/>
+      <waitfor checkevery="30" checkeveryunit="second" maxwait="1" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
+         <scriptcondition language="javascript" value="false"><![CDATA[
+            var p = java.lang.Runtime.getRuntime().exec(
+               "docker logs --since " + cwms_database_schema.getProperty("checkstart_ready")
+               +" " + cwms_database_schema.getProperty("readydb.name") );
+            p.waitFor();
+            var reader = new java.io.InputStreamReader(p.getInputStream());
+            var out = org.apache.tools.ant.util.FileUtils.safeReadFully(reader);
+            var echo = cwms_database_schema.createTask("echo");
+            //echo.setMessage("got" + out);
+            //echo.perform();
+            if( out.contains("DATABASE SETUP WAS NOT SUCCESSFUL!") ){
+               throw "Database Startup or create failed";
+            }
+            self.setValue(out.contains("DATABASE IS READY TO USE"));
+            ]]>
+         </scriptcondition>
+
+      </waitfor>
+      <echo message="generating overrides for this run"/>
+<!--      <antcall target="docker.generateoverrides"/> -->
+   </target>
+
+   <target name="docker.create_ready_database" depends="docker.prep_ready_db, docker.buildimage">
+      <getdockerport property="docker.ready_database_port" container="${docker.props.container_name_valid}_ready"/>
+      <echo message="Using Docker build to install database"/>
+      <exec executable="docker" failonerror="true" output="build/buildCWMS_DB_ready.log">
+         <arg value="run"/>
+         <arg value="--rm"/>
+         <arg value="--network"/>
+         <arg value="${docker.props.network_name}"/>
+         <arg value="-e"/>
+         <arg value="DB_HOST_PORT=${readydb.name}:1521"/>
+         <arg value="-e"/>
+         <arg value="DB_NAME=/FREEPDB1"/>
+         <arg value="-e"/>
+         <arg value="SYS_PASSWORD=testsyspassword"/>
+         <arg value="-e"/>
+         <arg value="CWMS_PASSWORD=testcwmspassword"/>
+         <arg value="-e"/>
+         <arg value="BUILDUSER_PASSWORD=${database.buildpw}"/>
+         <arg value="-e"/>
+         <arg value="OFFICE_ID=HQ"/>
+         <arg value="-e"/>
+         <arg value="OFFICE_EROC=s0"/>
+         <arg value="${docker.props.image_name}"/>
+      </exec>
+      <!-- create all queues -->
+      <exec executable="docker" failonerror="true">
+         <arg value="cp"/>
+         <arg value="docker.testdb/startup_overrides.sh"/>
+         <arg value="${readydb.name}:/container-entrypoint-startdb.d"/>
+      </exec>
+      <exec executable="docker" failonerror="true">
+         <arg value="commit"/>
+         <arg value="${readydb.name}"/>
+         <arg value="cwms/database-ready:${tmp.image_version}"/>
+      </exec>
+      
    </target>
 
    <target name="docker.generateoverrides" depends="docker.showport">
