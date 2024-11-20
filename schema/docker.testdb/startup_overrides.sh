@@ -1,21 +1,31 @@
 #!/bin/bash
 
 # reset the sys password
+echo "Changing the system password"
 resetPassword ${ORACLE_PASSWORD}
 
+
+
 # reset the CWMS_20 password
-cat <<EOF > /tmp/update_user_password.sql
+cat <<EOF > /tmp/update_userpassword.sql
 ALTER SESSION SET CONTAINER=FREEPDB1;
 alter user cwms_20 identified by "${CWMS_PASSWORD}"
-
+declare 
+    user varchar(20):
+begin
+    for user in (select username from dba_users where lower(username) like 's0%'); loop
+        execute immediate 'alter user ' || user || ' identified by "${CWMS_PASSWORD}"';
+    end for;
+end
+exit
 EOF
 
+echo "Updating the CWMS_20 password"
 sqlplus / as sysdba @/tmp/update_userpassword
 
 # create users based on provided setting
 
-cat <<EOF > /tmp/create_users.sql
-ALTER SESSION SET CONTAINER=FREEPDB1;
+cat <<EOF > /tmp/create_cwms_users.sql
 DECLARE
     eroc varchar2(4) := '${OFFICE_EROC}';
     test_passwd  VARCHAR2 (50) := '${CWMS_PASSWORD}';
@@ -79,7 +89,33 @@ BEGIN
         -- webtest
         group_list := "CWMS_20"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'CWMS PD Users','TS ID Creator', 'Viewer Users');
         "CWMS_20"."CWMS_SEC"."ADD_CWMS_USER" (eroc || 'webtest', group_list, '&office_id');
-        execute immediate 'grant web_user to &eroc.webtest';        
+        execute immediate 'grant web_user to &eroc.webtest';
+exit  
 EOF
 
-sqlplus / as sysdba @/tmp/create_users.sql
+cat <<EOF > /tmp/create_oracle_users.sql
+DECLARE
+    eroc varchar2(4) := '${OFFICE_EROC}';
+    test_passwd  VARCHAR2 (50) := '${CWMS_PASSWORD}';
+begin
+    execute immediate 'create user ' || eroc || 'hectest identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_ro identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_db identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_ua identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_pu identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_dx identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_da identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_vt identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_dv identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_ccp_p identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_ccp_m identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_ccp_r identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_rdl_r identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'hectest_rdl_m identified by "${CWMS_PASSWORD}"';
+    execute immediate 'create user ' || eroc || 'webtest identified by "${CWMS_PASSWORD}"';
+END;
+EOF
+
+echo "Creating users for Office ${OFFICE_ID} with EROC ${OFFICE_EROC}"
+sqlplus sys/${ORACLE_PASSWORD}@//localhost:1521/FREEPDB1 @/tmp/create_oracle_users.sql
+sqlplus CWMS_20/${CWMS_PASSWORD}@//localhost:1521/FREEPDB1 @/tmp/create_cwms_users.sql

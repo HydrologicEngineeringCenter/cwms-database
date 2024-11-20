@@ -75,16 +75,25 @@ sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
 
 END
 
+function run_user_data()
+{
+    for f in `ls /after.install.d`; do
+        sqlplus cwms_20/$CWMS_PASSWORD@$DB_HOST_PORT$DB_NAME @$f
+    done
+}
+
 echo "Installing CWMS Schema"
 cd /cwmsdb/schema
 if [ "$INSTALLONCE" == "1" ]; then
     echo "Running only build task"
     ant -Dbuilduser.overrides=/overrides.xml build
     build_ret=$?
+    run_user_data
 else
     echo "Running clean build tasks"
     ant -Dbuilduser.overrides=/overrides.xml clean build
     build_ret=$?
+    run_user_data
 fi
 
 if [ "$QUIET" == 0 ]; then

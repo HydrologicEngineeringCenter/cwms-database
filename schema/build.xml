@@ -1333,6 +1333,9 @@
    <target name="docker.create_ready_database" depends="docker.prep_ready_db, docker.buildimage">
       <getdockerport property="docker.ready_database_port" container="${docker.props.container_name_valid}_ready"/>
       <echo message="Using Docker build to install database"/>
+      <first id="create_queues">
+         <fileset dir="docker.testdb" includes="create_queues.sql"/>
+      </first>
       <exec executable="docker" failonerror="true" output="build/buildCWMS_DB_ready.log">
          <arg value="run"/>
          <arg value="--rm"/>
@@ -1352,9 +1355,10 @@
          <arg value="OFFICE_ID=HQ"/>
          <arg value="-e"/>
          <arg value="OFFICE_EROC=s0"/>
+         <arg value="-v"/>
+         <arg value="${toString:create_queues}:/after.install.d/create_queues.sql"/>
          <arg value="${docker.props.image_name}"/>
       </exec>
-      <!-- create all queues -->
       <exec executable="docker" failonerror="true">
          <arg value="cp"/>
          <arg value="docker.testdb/startup_overrides.sh"/>
@@ -1362,10 +1366,15 @@
       </exec>
       <exec executable="docker" failonerror="true">
          <arg value="commit"/>
+         <arg value="--change"/>
+         <arg value="ENV CWMS_PASSWORD=testcwmspassword"/>
+         <arg value="--change"/>
+         <arg value="ENV OFFICE_ID=HQ"/>
+         <arg value="--change"/>
+         <arg value="ENV OFFICE_EROC=s0"/>
          <arg value="${readydb.name}"/>
          <arg value="cwms/database-ready:${tmp.image_version}"/>
       </exec>
-      
    </target>
 
    <target name="docker.generateoverrides" depends="docker.showport">
