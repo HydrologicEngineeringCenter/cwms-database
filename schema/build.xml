@@ -1267,7 +1267,7 @@
    <target name="docker.prep_ready_db"  depends="docker.setupparameters,docker.stopdb,docker.createnetwork">
       <echo message="Creating baseline docker database"/>
       <loadproperties srcFile="${root}/build/database.props"/>
-      <property name="readydb.name" value="${docker.props.container_name_valid}_ready"/>
+      <property name="ready_database.name" value="${docker.props.container_name_valid}_ready"/>
       <exec executable="docker" outputproperty="containerList">
          <arg value="container"/>
          <arg value="ls"/>
@@ -1279,16 +1279,16 @@
          <format property="checkstart_ready" pattern="YYYY-MM-dd'T'HH:mm:ss'Z'" timezone="UTC"/>
       </tstamp>
       <if>
-         <matches pattern="${readydb.name}$" string="${containerList}" multiline="true"/>
+         <matches pattern="${ready_database.name}$" string="${containerList}" multiline="true"/>
          <then>
             <echo message="Deleting existing database."/>
             <exec executable="docker">
                <arg value="stop"/>
-               <arg value="${readydb.name}"/>         
+               <arg value="${ready_database.name}"/>         
             </exec>
             <exec executable="docker">
                <arg value="rm"/>
-               <arg value="${readydb.name}"/>
+               <arg value="${ready_database.name}"/>
             </exec>
          </then>
       </if>
@@ -1301,7 +1301,7 @@
          <arg value="-p"/>
          <arg value="1521"/> <!-- random external port will be assigned and stored -->
          <arg value="--name"/>
-         <arg value="${readydb.name}"/>
+         <arg value="${ready_database.name}"/>
          <arg value="-e"/>
          <arg value="ORACLE_PASSWORD=testsyspassword"/>
          <arg value="gvenzl/oracle-free:23.5-full"/>
@@ -1311,7 +1311,7 @@
          <scriptcondition language="javascript" value="false"><![CDATA[
             var p = java.lang.Runtime.getRuntime().exec(
                "docker logs --since " + cwms_database_schema.getProperty("checkstart_ready")
-               +" " + cwms_database_schema.getProperty("readydb.name") );
+               +" " + cwms_database_schema.getProperty("ready_database.name") );
             p.waitFor();
             var reader = new java.io.InputStreamReader(p.getInputStream());
             var out = org.apache.tools.ant.util.FileUtils.safeReadFully(reader);
@@ -1331,18 +1331,19 @@
    </target>
 
    <target name="docker.create_ready_database" depends="docker.prep_ready_db, docker.buildimage">
-      <getdockerport property="docker.ready_database_port" container="${docker.props.container_name_valid}_ready"/>
+      <getdockerport property="docker.ready_database_port" container="${ready_database.name}"/>
       <echo message="Using Docker build to install database"/>
       <first id="create_queues">
-         <fileset dir="docker.testdb" includes="create_queues.sql"/>
+         <fileset dir="docker.ready_database" includes="create_queues.sql"/>
       </first>
+      <echo message="Create queues file ${toString:create_queues}"/>
       <exec executable="docker" failonerror="true" output="build/buildCWMS_DB_ready.log">
          <arg value="run"/>
          <arg value="--rm"/>
          <arg value="--network"/>
          <arg value="${docker.props.network_name}"/>
          <arg value="-e"/>
-         <arg value="DB_HOST_PORT=${readydb.name}:1521"/>
+         <arg value="DB_HOST_PORT=${ready_database.name}:1521"/>
          <arg value="-e"/>
          <arg value="DB_NAME=/FREEPDB1"/>
          <arg value="-e"/>
@@ -1359,11 +1360,13 @@
          <arg value="${toString:create_queues}:/after.install.d/create_queues.sql"/>
          <arg value="${docker.props.image_name}"/>
       </exec>
+      <echo message="Adding startup override script."/>
       <exec executable="docker" failonerror="true">
          <arg value="cp"/>
-         <arg value="docker.testdb/startup_overrides.sh"/>
-         <arg value="${readydb.name}:/container-entrypoint-startdb.d"/>
+         <arg value="docker.ready_database/startup_overrides.sh"/>
+         <arg value="${ready_database.name}:/container-entrypoint-startdb.d"/>
       </exec>
+      <echo message="Saving created database instances as new image."/>
       <exec executable="docker" failonerror="true">
          <arg value="commit"/>
          <arg value="--change"/>
@@ -1372,8 +1375,8 @@
          <arg value="ENV OFFICE_ID=HQ"/>
          <arg value="--change"/>
          <arg value="ENV OFFICE_EROC=s0"/>
-         <arg value="${readydb.name}"/>
-         <arg value="cwms/database-ready:${tmp.image_version}"/>
+         <arg value="${ready_database.name}"/>
+         <arg value="cwms/database-ready-ora-23.5:${tmp.image_version}"/>
       </exec>
    </target>
 
