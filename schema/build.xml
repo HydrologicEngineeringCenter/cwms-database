@@ -1238,30 +1238,58 @@
       docker run \-\-network database_net -d \-\-name testdb -e ORACLE_PDB=$DBNAME -e ORACLE_PWD=$SYS_PASSWORD -p 1522:1521 -e enterprise oracle/database:19.3.0-ee
       docker run \-\-network database_net -e DB_HOST_PORT="testdb:1521" -e DB_NAME="/$DBNAME" -e SYS_PASSWORD=$SYS_PASSWORD cwms_db_install:latest
    -->
+   <macrodef name="docker.install_schema">
+      <attribute name="image"/>
+      <attribute name="output-file"/>
+      <attribute name="network"/>
+      <attribute name="host-and-port"/>
+      <attribute name="database-name"/>
+      <attribute name="sys-password"/>
+      <attribute name="cwms-password"/>
+      <attribute name="builduser-password"/>
+      <attribute name="office-id"/>
+      <attribute name="office-eroc"/>
+      <element name="args"/>
+      <sequential>
+         <echo message="Using Docker build to install database"/>
+         <exec executable="docker" failonerror="true" output="@{output-file}">
+            <arg value="run"/>
+            <arg value="--rm"/>
+            <arg value="--network"/>
+            <arg value="@{network}"/>
+            <arg value="-e"/>
+            <arg value="DB_HOST_PORT=@{host-and-port}"/>
+            <arg value="-e"/>
+            <arg value="DB_NAME=/@{database-name}"/>
+            <arg value="-e"/>
+            <arg value="SYS_PASSWORD=@{sys-password}"/>
+            <arg value="-e"/>
+            <arg value="CWMS_PASSWORD=@{cwms-password}"/>
+            <arg value="-e"/>
+            <arg value="BUILDUSER_PASSWORD=@{builduser-password}"/>
+            <arg value="-e"/>
+            <arg value="OFFICE_ID=@{office-id}"/>
+            <arg value="-e"/>
+            <arg value="OFFICE_EROC=@{office-eroc}"/>
+            <args/>
+            <arg value="@{image}"/>
+         </exec>
+      </sequential>
+   </macrodef>
+
 
    <target name="docker.install" depends="docker.prepdb, docker.buildimage">
       <echo message="Using Docker build to install database"/>
-      <exec executable="docker" failonerror="true" output="build/buildCWMS_DB.log">
-         <arg value="run"/>
-         <arg value="--rm"/>
-         <arg value="--network"/>
-         <arg value="${docker.props.network_name}"/>
-         <arg value="-e"/>
-         <arg value="DB_HOST_PORT=${database.host_and_port}"/>
-         <arg value="-e"/>
-         <arg value="DB_NAME=/${database.name}"/>
-         <arg value="-e"/>
-         <arg value="SYS_PASSWORD=${database.syspw}"/>
-         <arg value="-e"/>
-         <arg value="CWMS_PASSWORD=${database.cwmspw}"/>
-         <arg value="-e"/>
-         <arg value="BUILDUSER_PASSWORD=${database.buildpw}"/>
-         <arg value="-e"/>
-         <arg value="OFFICE_ID=${database.office}"/>
-         <arg value="-e"/>
-         <arg value="OFFICE_EROC=${database.eroc}"/>
-         <arg value="${docker.props.image_name}"/>
-      </exec>
+      <docker.install_schema image="${docker.props.image_name}" output-file="build/buildCWMS_DB.log"
+         network="${docker.props.network_name}"
+         host-and-port="${database.host_and_port}"
+         database-name="${database.name}"
+         sys-password="${database.syspw}"
+         cwms-password="${database.cwmspw}"
+         builduser-password="${database.buildpw}"
+         office-id="${database.office}"
+         office-eroc="${database.eroc}"
+      />
    </target>
 
    <target name="docker.prep_ready_db"  depends="docker.setupparameters,docker.stopdb,docker.createnetwork">
@@ -1337,29 +1365,21 @@
          <fileset dir="docker.ready_database" includes="create_queues.sql"/>
       </first>
       <echo message="Create queues file ${toString:create_queues}"/>
-      <exec executable="docker" failonerror="true" output="build/buildCWMS_DB_ready.log">
-         <arg value="run"/>
-         <arg value="--rm"/>
-         <arg value="--network"/>
-         <arg value="${docker.props.network_name}"/>
-         <arg value="-e"/>
-         <arg value="DB_HOST_PORT=${ready_database.name}:1521"/>
-         <arg value="-e"/>
-         <arg value="DB_NAME=/FREEPDB1"/>
-         <arg value="-e"/>
-         <arg value="SYS_PASSWORD=testsyspassword"/>
-         <arg value="-e"/>
-         <arg value="CWMS_PASSWORD=testcwmspassword"/>
-         <arg value="-e"/>
-         <arg value="BUILDUSER_PASSWORD=${database.buildpw}"/>
-         <arg value="-e"/>
-         <arg value="OFFICE_ID=HQ"/>
-         <arg value="-e"/>
-         <arg value="OFFICE_EROC=s0"/>
-         <arg value="-v"/>
-         <arg value="${toString:create_queues}:/after.install.d/create_queues.sql"/>
-         <arg value="${docker.props.image_name}"/>
-      </exec>
+      <docker.install_schema image="${docker.props.image_name}" output-file="build/buildCWMS_DB_ready.log"
+         network="${docker.props.network_name}"
+         host-and-port="${ready_database.name}:1521"
+         database-name="FREEPDB1"
+         sys-password="testsyspassword"
+         cwms-password="testcwmspassword"
+         builduser-password="${database.buildpw}"
+         office-id="HQ"
+         office-eroc="s0"
+      >
+         <args>
+            <arg value="-v"/>
+            <arg value="${toString:create_queues}:/after.install.d/create_queues.sql"/>
+         </args>
+      </docker.install_schema>
       <echo message="Adding startup override script."/>
       <exec executable="docker" failonerror="true">
          <arg value="cp"/>
