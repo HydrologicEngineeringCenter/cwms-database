@@ -1361,6 +1361,7 @@
 
    <target name="docker.create_ready_database" depends="docker.prep_ready_db, docker.buildimage">
       <getdockerport property="docker.ready_database_port" container="${ready_database.name}"/>
+      <property name="ready_database.image_name" value="cwms/database-ready-ora-23.5"/>
       <echo message="Using Docker build to install database"/>
       <first id="create_queues">
          <fileset dir="docker.ready_database" includes="create_queues.sql"/>
@@ -1397,7 +1398,7 @@
          <arg value="--change"/>
          <arg value="ENV OFFICE_EROC=s0"/>
          <arg value="${ready_database.name}"/>
-         <arg value="cwms/database-ready-ora-23.5:${tmp.image_version}"/>
+         <arg value="${ready_database.image_name}:${tmp.image_version}"/>
       </exec>
    </target>
 
@@ -1462,10 +1463,33 @@
       <delete file="${root}/build/database.props"/>
    </target>
 
-   <target name="docker.push" depends="docker.setupparameters">
+   <macrodef name="docker.tag_image">
+      <attribute name="source"/>
+      <attribute name="target"/>
+      <sequential>
+         <exec dir="${root}" executable="docker">
+            <arg value="tag"/>
+            <arg value="@{source}"/>
+            <arg value="@{target}"/>
+         </exec>
+      </sequential>
+   </macrodef>
+
+   <macrodef name="docker.push_image">
+      <attribute name="source"/>
+      <sequential>
+         <exec dir="${root}" executable="docker">
+            <arg value="push"/>
+            <arg value="@{source}"/>
+         </exec>
+      </sequential>
+   </macrodef>
+
+   <target name="docker.push" depends="docker.setupparameters,docker.create_ready_database">
       <echo message="Pushing docker image."/>
       <property name="image_with_reg" value="${docker.registry}/${docker.props.image.basename}"/>
-      <property name="image_old_with_reg" value="${docker.registry}/${docker.props.image.basename_old}"/>
+      <property name="ready_image_with_reg" value="${docker.registry}/${ready_database.image_name}"/>
+      <property name="read_image_local_fullname" value="${ready_database.image_name}:${tmp.image_version}"/>
       <if>
          <and>
             <isset property="teamcity.branch"/>
@@ -1479,41 +1503,20 @@
                </and>
             </condition>
             <echo message="Tagging images for registry"/>
-
-            <exec dir="${root}" executable="docker">
-               <arg value="tag"/>
-               <arg value="${docker.props.image_name}"/>
-               <arg value="${image_with_reg}:${pom.version}"/>
-            </exec>
-            <exec dir="${root}" executable="docker">
-               <arg value="tag"/>
-               <arg value="${docker.props.image_name}"/>
-               <arg value="${image_with_reg}:${latest_value}"/>
-            </exec>
-
-            <echo message="Tagging images for registry with old name"/>
-            <exec dir="${root}" executable="docker">
-               <arg value="tag"/>
-               <arg value="${docker.props.image_name}"/>
-               <arg value="${image_old_with_reg}:${pom.version}"/>
-            </exec>
-            <exec dir="${root}" executable="docker">
-               <arg value="tag"/>
-               <arg value="${docker.props.image_name}"/>
-               <arg value="${image_old_with_reg}:${latest_value}"/>
-            </exec>
+            <docker.tag_name source="${docker.props.image_name}" target="${image_with_reg}:${pom.version}"/>
+            <docker.tag_name source="${docker.props.image_name}" target="${image_with_reg}:${latest_value}"/>
+            <docker.tag_name source="${ready_image_local_full_name}" target="${ready_image_with_reg}:${pom.version}"/>
+            <docker.tag_name source="${ready_image_local_full_name}" target="${ready_image_with_reg}:${latest_value}"/>
 
             <if>
                <not>
                   <equals arg1="${dryrun}" arg2="true"/>
                </not>
                <then>
-                  <exec dir="${root}" executable="docker">
-                     <arg value="image"/>
-                     <arg value="push"/>
-                     <arg value="--all-tags"/>
-                     <arg value="${image_with_reg}"/>
-                  </exec>
+                  <docker.push_image source="${image_with_reg}:${pom.version}"/>
+                  <docker.push_image source="${image_with_reg}:${latest_value}"/>
+                  <docker.push_image source="${ready_image_with_reg}:${pom.version}"/>
+                  <docker.push_image source="${ready_image_with_reg}:${latest_value}"/>
                </then>
                <else>
                   <echo message="Dry Not, not actually pushing images, just tagging."/>
