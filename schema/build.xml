@@ -1250,7 +1250,7 @@
       <attribute name="office-id"/>
       <attribute name="office-eroc"/>
       <element name="args" optional="true"
-         description="Additionla docker arguments as exec task arg elements. Values are expanded before the image is set."/>
+         description="Additional docker arguments as exec task arg elements. Values are expanded before the image is set."/>
       <sequential>
          <echo message="Using Docker build to install database"/>
          <exec executable="docker" failonerror="true" output="@{output-file}">
