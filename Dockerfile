@@ -21,7 +21,7 @@ RUN unzip instantclient-basiclite-linux.x64-19.6.0.0.0dbru.zip && \
     unzip instantclient-tools-linux.x64-19.6.0.0.0dbru.zip && \
     unzip instantclient-sqlplus-linux.x64-19.6.0.0.0dbru.zip && \
     rm *.zip
-
+RUN mkdir /after.install.d
 #RUN mkdir /opt/apex
 #WORKDIR /opt/apex
 #RUN wget https://download.oracle.com/otn_software/apex/apex_23.2_en.zip
@@ -39,6 +39,7 @@ ENV OFFICE_ID=HQ
 ENV OFFICE_EROC=Q0
 ENV INSTALLONCE=0
 ENV QUIET=0
+ENV TEST_ACCOUNT=-testaccount
 
 RUN chmod +x ./docker/install.sh
 

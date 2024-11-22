@@ -76,7 +76,7 @@
 
 	<!-- flag to create the test account -->
 
-	<property name="test.account.create" value="-testaccount"/>
+	<property name="test.account.create" value="TEST_ACCOUNT_FLAG"/>
 
 
 

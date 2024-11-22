@@ -49,7 +49,7 @@ sed -e "s/HOST_AND_PORT/$DB_HOST_PORT/g" \
     -e "s/BUILDUSER_PASS/$BUILDUSER_PASSWORD/g" \
     -e "s/OFFICE_ID/$OFFICE_ID/g" \
     -e "s/OFFICE_CODE/$OFFICE_EROC/g" \
-    -e "s/TEST_ACCOUNT_FLAG/-testaccount/g" \
+    -e "s/TEST_ACCOUNT_FLAG/$TEST_ACCOUNT/g" \
     -e "s/SYS_PASSWORD/$SYS_PASSWORD/g" \
     -e "s/PASSWORD/$CWMS_PASSWORD/g" teamcity_overrides.xml > /overrides.xml
  # TODO: create lookup system for office code
@@ -75,16 +75,29 @@ sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
 
 END
 
+function run_user_data()
+{
+    echo "Running Users Scripts"
+    for f in `ls /after.install.d/*.sql`; do
+        echo "Found: $f"
+        sqlplus cwms_20/$CWMS_PASSWORD@$DB_HOST_PORT$DB_NAME @$f
+    done
+    echo "Done running user scripts."
+}
+
 echo "Installing CWMS Schema"
 cd /cwmsdb/schema
+echo "\t Start: `date`"
 if [ "$INSTALLONCE" == "1" ]; then
     echo "Running only build task"
     ant -Dbuilduser.overrides=/overrides.xml build
     build_ret=$?
+    run_user_data
 else
     echo "Running clean build tasks"
     ant -Dbuilduser.overrides=/overrides.xml clean build
     build_ret=$?
+    run_user_data
 fi
 
 if [ "$QUIET" == 0 ]; then
