@@ -6570,19 +6570,21 @@ AS
             l_start_date := cast((cwms_util.fixup_timezone(l_timeseries_data(1).date_time) at time zone 'UTC') as date);
             l_end_date   := cast((cwms_util.fixup_timezone(l_timeseries_data(l_timeseries_data.count).date_time) at time zone 'UTC') as date);
             select tsv_type(
-                     from_tz(cast(cwms_util.change_timezone(date_time, 'UTC', l_time_zone) as timestamp), l_time_zone),
+                     from_tz(cast(date_time as timestamp), 'UTC') at time zone (l_time_zone),
                      value,
                      quality_code
-                   )
+                  )
             bulk collect
             into l_timeseries_data
             from av_tsv_dqu
             where ts_code = l_ts_code
                and unit_id = l_units
-               and start_date <= l_end_date
-               and end_date > l_start_date
+               and start_date <= date_time
+               and end_date > date_time
                and version_date = l_version_date
                and data_entry_date = l_store_date
+               and date_time between l_start_date and l_end_date
+               and aliased_item is null
                order by date_time;
          end;
       end if;
