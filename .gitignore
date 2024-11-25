@@ -61,4 +61,6 @@ schema/src/xml/hec-datatypes.xsd
 gradle.properties
 schema/rockylinux.xml
 
+schema/rockylinux.xml
+
 .vscode
