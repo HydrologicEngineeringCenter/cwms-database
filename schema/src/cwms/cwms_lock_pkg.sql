@@ -135,7 +135,17 @@ PROCEDURE cat_lock (
  */
 PROCEDURE retrieve_lock(
    p_lock OUT lock_obj_t,                   
-   p_lock_location_ref IN location_ref_t);  
+   p_lock_location_ref IN location_ref_t);
+
+function get_warning_buffer_value(
+   p_lock_location_code in number)
+   return number;
+
+function get_pool_level_value(
+   p_lock_location_code in number,
+   p_specified_level_id in varchar2)
+   return number;
+
 /**
  * Stores a lock to the database
  *
@@ -146,7 +156,8 @@ PROCEDURE retrieve_lock(
  */
 procedure store_lock(
    p_lock           IN lock_obj_t,            
-   p_fail_if_exists IN VARCHAR2 DEFAULT 'T'); 
+   p_fail_if_exists IN VARCHAR2 DEFAULT 'T');
+
 /**
  * Renames an lock in the database
  *
@@ -252,6 +263,10 @@ procedure delete_lock2(
    p_delete_location        in varchar2 default 'F',
    p_delete_location_action in varchar2 default cwms_util.delete_key,
    p_office_id              in varchar2 default null);
+
+procedure get_lock_gate_types(
+   p_lookup_type_tab out lookup_type_tab_t,
+   p_db_office_id    in  varchar2 default null);
 
 END CWMS_LOCK;
 /

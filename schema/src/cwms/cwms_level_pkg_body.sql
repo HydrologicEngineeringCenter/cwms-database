@@ -6605,9 +6605,12 @@ is
    l_timezone_id   cwms_time_zone.time_zone_name%type;
    l_date          date;
 begin
-   l_timezone_id := nvl(
-      p_timezone_id,
-      cwms_loc.get_local_timezone(cwms_util.split_text(p_location_level_id, 1, '.'), p_office_id));
+   l_timezone_id := replace(
+      nvl(
+         p_timezone_id,
+         nvl(cwms_loc.get_local_timezone(cwms_util.split_text(p_location_level_id, 1, '.'), p_office_id), 'UTC')),
+      'Unknown or Not Applicable',
+      'UTC');
    l_date := nvl(p_date, cwms_util.change_timezone(sysdate, 'UTC', l_timezone_id));
    l_loc_level_obj := retrieve_location_level(
       p_location_level_id => p_location_level_id,
@@ -6662,36 +6665,39 @@ begin
             ----------------------------------------------------------------------------------
             if l_date <= l_max_date then l_value := l_values(2); end if;
          elsif l_date_times.count =  2 then
-            if l_date_times(1) < l_date then
-               if l_date_times(2) = l_date then
-                  ---------------------------------------------------------------------------
-                  -- previous and current values, use current value if time span in range  --
-                  ---------------------------------------------------------------------------
-                  if l_date <= l_max_date then l_value := l_values(2); end if;
-               else
-                  ------------------------------
-                  -- previous and next values --
-                  ------------------------------
-                  if l_loc_level_obj.interpolate = 'T' then
-                     --------------------------------------------------
-                     -- use interpolated value if time span in range --
-                     --------------------------------------------------
-                     if l_date_times(2) <= l_max_date then
-                        l_value := l_values(1) + (l_date - l_date_times(1)) / (l_date_times(2) - l_date_times(1)) * (l_values(2) - l_values(1));
-                     end if;
-                  else
-                     ----------------------------------------------
-                     -- use previous value if time span in range --
-                     ----------------------------------------------
-                     if l_date <= l_max_date then l_value := l_values(1); end if;
+            if l_date_times(1) = l_date then
+               -------------------------------------------------------------------
+               -- current and next values, use current value if no max timespan --
+               -------------------------------------------------------------------
+               if p_max_ts_timespan is null then l_value := l_values(1); end if;
+            elsif l_date_times(2) = l_date then
+               ---------------------------------------------------------------------------
+               -- previous and current values, use current value if time span in range  --
+               ---------------------------------------------------------------------------
+               if l_date <= l_max_date then l_value := l_values(2); end if;
+            else
+               ------------------------------
+               -- previous and next values --
+               ------------------------------
+               if l_loc_level_obj.interpolate = 'T' then
+                  --------------------------------------------------
+                  -- use interpolated value if time span in range --
+                  --------------------------------------------------
+                  if l_date_times(2) <= l_max_date then
+                     l_value := l_values(1) + (l_date - l_date_times(1)) / (l_date_times(2) - l_date_times(1)) * (l_values(2) - l_values(1));
                   end if;
+               else
+                  ----------------------------------------------
+                  -- use previous value if time span in range --
+                  ----------------------------------------------
+                  if l_date <= l_max_date then l_value := l_values(1); end if;
                end if;
             end if;
-         else
-            -----------------------
-            -- not enough values --
-            -----------------------
-            null;
+         elsif l_date_times.count = 1 then
+            ---------------------------------------------------------------------
+            -- only one value, use it if time <= l_date and time span in range --
+            ---------------------------------------------------------------------
+            if l_date_times(1) <= l_date and l_date <= l_max_date then l_value := l_values(1); end if;
          end if;
       elsif l_loc_level_obj.level_value is not null then
          -------------------------------------------------

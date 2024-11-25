@@ -44,18 +44,18 @@ for arg in sys.argv[1:] :
 	if arg.find("=") != -1 : 
 		name, value = arg.split("=", 1)
 		arg = "=".join((name, '"%s"' % value))
-		exec arg
+		exec(arg)
 	elif arg.lower() in ("-force", "/force") :
 		force = True
 	elif arg.lower() in ("-restricted", "/restricted") :
                 restricted = True
 		
 if not (echo and inst and builduser and builduser_passwd and cwms_schema) :
-	print
-	print "Usage %s echo=(on|off) inst=<SID> builduser=<builduser> builduser_passwd=<password> cwms_schema=<schema> [-force]" % sys.argv[0]
-	print
-	print "The -force option keeps the script from exiting on errors."
-	print
+	print()
+	print("Usage %s echo=(on|off) inst=<SID> builduser=<builduser> builduser_passwd=<password> cwms_schema=<schema> [-force]" % sys.argv[0])
+	print()
+	print("The -force option keeps the script from exiting on errors.")
+	print()
 	sys.exit(-1)
 	
 cwms_schema = cwms_schema.upper()
@@ -89,14 +89,14 @@ f.write(sql_script.replace(prompt_block, auto_block))
 f.close()
 
 cmd = "sqlplus /nolog @%s" % auto_sqlfilename
-print cmd
+print(cmd)
 ec = os.system(cmd)
 #os.remove(auto_sqlfilename)
 
 if ec :
-	print
-	print "SQL*Plus exited with code", ec 
-	print
+	print()
+	print("SQL*Plus exited with code", ec)
+	print()
 	sys.exit(-1)
 	
 sys.exit(ec)

@@ -292,7 +292,8 @@ ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK2 FOREIGN
 ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK3 FOREIGN KEY (TIME_ZONE_CODE) REFERENCES CWMS_TIME_ZONE (TIME_ZONE_CODE);
 ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK4 FOREIGN KEY (LOCATION_KIND) REFERENCES CWMS_LOCATION_KIND (LOCATION_KIND_CODE);
 ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK5 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
-ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION_SP (FIPS_CNTRY);
+-- This completes successfully but is missing when the build finishes!!! Moved to happen later.
+-- ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION_SP (FIPS_CNTRY);
 
 CREATE UNIQUE INDEX AT_PHYSICAL_LOCATION_U1 ON AT_PHYSICAL_LOCATION (BASE_LOCATION_CODE, UPPER(SUB_LOCATION_ID))
 LOGGING
@@ -1522,6 +1523,11 @@ INSERT INTO at_specified_level VALUES(23, 53, 'Top of Inlet',                   
 INSERT INTO at_specified_level VALUES(24, 53, 'Bottom of Inlet',                   'Bottom of Inlet Level');
 INSERT INTO at_specified_level VALUES(25, 53, 'Top of Outlet',                     'Top of Outlet Level');
 INSERT INTO at_specified_level VALUES(26, 53, 'Streambed',                         'Streambed Level');
+INSERT INTO at_specified_level VALUES(27, 53, 'High Water Upper Pool',             'High Water Upper Pool Level');
+INSERT INTO at_specified_level VALUES(28, 53, 'High Water Lower Pool',             'High Water Lower Pool Level');
+INSERT INTO at_specified_level VALUES(29, 53, 'Low Water Upper Pool',              'Low Water Upper Pool Level');
+INSERT INTO at_specified_level VALUES(30, 53, 'Low Water Lower Pool',              'Low Water Lower Pool Level');
+INSERT INTO at_specified_level VALUES(31, 53, 'Warning Buffer',                    'Warning Buffer level');
 
 CREATE TABLE AT_LOCATION_LEVEL
 (
@@ -1951,6 +1957,9 @@ ALTER TABLE AT_TS_CATEGORY ADD CONSTRAINT AT_TS_CATEGORY_FK1 FOREIGN KEY (DB_OFF
 
 INSERT INTO at_ts_category VALUES (0, 'Default',        53, 'Default');
 INSERT INTO at_ts_category VALUES (1, 'Agency Aliases', 53, 'Time series aliases for various agencies');
+INSERT INTO at_ts_category VALUES (3, 'Data Dissemination', 53, 'These TS Groups are used to manage which TS Ids are streamed to various data dissemination databases.');
+INSERT INTO at_ts_category VALUES (10, 'Data Acquisition', 53, 'These TS Groups are used to manage data aquisition from other organizations');
+
 
 --------
 --------
@@ -2049,6 +2058,11 @@ ALTER TABLE at_ts_group ADD (
 /
 INSERT INTO at_ts_group VALUES (0, 0, 'Default',        'All Time Series',                           53, NULL, NULL);
 INSERT INTO at_ts_group VALUES (1, 1, 'USACE Standard', 'USACE National Standard Naming Convention', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (100, 3, 'CorpsNet Include List', 'These TS Id''s will be streamed to the National CorpsNet CWMS DB', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (101, 3, 'CorpsNet Exclude List', 'These TS Id''s will not be streamed to the National CorpsNet DB', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (102, 3, 'DMZ Include List', 'These TS Id''s will be streamed to the National DMZ CWMS DB', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (103, 3, 'DMZ Exclude List', 'These TS Id''s will not be streamed to the National DMZ CWMS DB', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (201, 10, 'USGS TS Data Acquisition', 'These TS Id''s will be used to store data acquired from the USGS', 53, NULL, NULL);
 COMMIT ;
 -----
 
@@ -3127,6 +3141,7 @@ create global temporary table at_session_info
 )
 on commit preserve rows
 /
+grant select on at_session_info to cwms_user;
 
 create table cwms_media_type (
    media_type_code    number(4)    not null,
@@ -6128,6 +6143,7 @@ create table at_streamflow_meas (
    air_temp       binary_double,
    water_temp     binary_double,
    wm_comments    varchar2(256),
+   supplemental_streamflow_meas supp_streamflow_meas_t,
    constraint     at_streamflow_meas_pk  primary key(location_code, meas_number) using index,
    constraint     at_streamflow_meas_fk1 foreign key(location_code) references at_physical_location(location_code),
    constraint     at_streamflow_meas_fk2 foreign key(agency_code) references at_entity (entity_code),
@@ -6309,5 +6325,4 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_fcst_inst
 @@./cwms/tables/at_fcst_info
 @@./cwms/tables/run_stats
-
 

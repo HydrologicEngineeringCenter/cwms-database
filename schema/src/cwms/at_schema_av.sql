@@ -157,7 +157,7 @@ END;
 @@cwms/views/av_county
 @@cwms/views/av_current_map_data
 @@cwms/views/av_cwms_media_type
-@@cwms/views/av_cwms_ts_id
+@@cwms/views/av_cwms_ts_id_dummy
 @@cwms/views/av_cwms_ts_id2
 @@cwms/views/av_data_q_changed
 @@cwms/views/av_data_q_protection

@@ -36,19 +36,19 @@ for arg in sys.argv[1:] :
 	if arg.find("=") != -1 : 
 		name, value = arg.split("=", 1)
 		arg = "=".join((name, '"%s"' % value))
-		exec arg
+		exec(arg)
 	elif arg.lower() in ("-force", "/force") :
 		force = True
-        elif arg.lower() in ("-restricted", "/restricted") :
-                restricted = True
+	elif arg.lower() in ("-restricted", "/restricted") :
+		restricted = True
 
 		
 if not (echo and inst and cwms_passwd and cwms_schema and sys_passwd and cwms_dir and ccp_passwd) :
-	print
-	print "Usage %s echo=(on|off) inst=<SID> cwms_passwd=<password> cwms_schema=<schema> sys_passwd=<system password> cwms_dir=<oracle dir>  ccp_passwd=<ccp password> [-force]" % sys.argv[0]
-	print
-	print "The -force option keeps the script from exiting on errors."
-	print
+	print()
+	print("Usage %s echo=(on|off) inst=<SID> cwms_passwd=<password> cwms_schema=<schema> sys_passwd=<system password> cwms_dir=<oracle dir>  ccp_passwd=<ccp password> [-force]" % sys.argv[0])
+	print()
+	print("The -force option keeps the script from exiting on errors.")
+	print()
 	sys.exit(-1)
 	
 cwms_schema = cwms_schema.upper()
@@ -80,26 +80,25 @@ if force :
 		"whenever sqlerror exit sql.sqlcode", 
 		"whenever sqlerror continue")
 if restricted :
-        sql_script = sql_script.replace(
-                "--EXECUTE IMMEDIATE 'ALTER SYSTEM ENABLE RESTRICTED SESSION';",
-                "EXECUTE IMMEDIATE 'ALTER SYSTEM ENABLE RESTRICTED SESSION';")
-        sql_script = sql_script.replace(
-                "--EXECUTE IMMEDIATE 'ALTER SYSTEM DISABLE RESTRICTED SESSION';",
-                "EXECUTE IMMEDIATE 'ALTER SYSTEM DISABLE RESTRICTED SESSION';")
+	sql_script = sql_script.replace(
+			"--EXECUTE IMMEDIATE 'ALTER SYSTEM ENABLE RESTRICTED SESSION';",
+			"EXECUTE IMMEDIATE 'ALTER SYSTEM ENABLE RESTRICTED SESSION';")
+	sql_script = sql_script.replace(
+			"--EXECUTE IMMEDIATE 'ALTER SYSTEM DISABLE RESTRICTED SESSION';",
+			"EXECUTE IMMEDIATE 'ALTER SYSTEM DISABLE RESTRICTED SESSION';")
 
-		
 f = open(auto_sqlfilename, "w")
 f.write(sql_script.replace(prompt_block, auto_block))
 f.close()
 
 cmd = "sqlplus /nolog @%s" % auto_sqlfilename
-print cmd
+print(cmd)
 ec = os.system(cmd)
 #os.remove(auto_sqlfilename)
 
 if ec :
 	print
-	print "SQL*Plus exited with code", ec 
+	print( "SQL*Plus exited with code", ec)
 	sys.exit(-1)
 	
 sys.exit(ec)

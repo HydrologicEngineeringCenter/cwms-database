@@ -27,6 +27,10 @@ procedure test_cwdb_234_bad_interpolation_at_end_of_seasonal_location_level_time
 procedure test_cwdb_235_exception_using_seasonal_levels_with_leap_day_value_in_non_leap_years;
 --%test(CWDB-251 Orphaned SYS_CONTEXT values cause problems in virtual location levels)
 procedure test_cwdb_251_orphaned_sys_context_values_cause_problems_in_virutal_location_levels;
+--%test(CWDB-300 Null local time zone breaks AV_LOCATION_LEVEL_CURVAL)
+procedure test_cwdb_300_null_local_time_zone_breaks_av_location_level_curval;
+--%test(CWDB-304 AV_LOCATION_LEVEL_CURVAL giving Null values at SPK)
+procedure test_cwdb_304_null_values_in_av_location_level_curval;
 
 c_office_id             varchar2(16)  := '&&office_id';
 c_location_id           varchar2(57)  := 'LocLevelTestLoc';
@@ -348,7 +352,7 @@ begin
    for i in 1..l_seasonal_values_existlevel.count loop
         l_date := cwms_util.change_timezone(
                   add_months(l_interval_origin, l_seasonal_values_existlevel(i).offset_months) +
-		  l_seasonal_values_existlevel(i).offset_minutes / CWMS_TS.min_in_dy, 
+		  l_seasonal_values_existlevel(i).offset_minutes / CWMS_TS.min_in_dy,
                   c_timezone_id, 'UTC');
     	select count(*)
          into  l_count
@@ -1414,7 +1418,7 @@ begin
         into l_elev_ts_data
         from dual
      connect by level <= l_value_count;
-   
+
       cwms_ts.store_ts(
          l_elev_tsid,
          c_elev_unit,
@@ -1439,7 +1443,7 @@ begin
         bulk collect
         into l_stor_ts_data
         from table(l_elev_ts_data);
-   
+
       cwms_ts.store_ts(
          l_stor_tsid,
          c_stor_unit,
@@ -1550,57 +1554,57 @@ begin
          ---------------------------------------------------------------------------------------------
          ut.expect(l_indicator_values(i).value).to_equal(case when i < 15 then 0 else 2 end);
       end loop;
-   
+
       select count(*)
         into l_count
         from cwms_v_location_level
        where office_id = c_office_id
          and location_level_id = l_elev_bottom_id
          and unit_system = 'EN';
-   
+
       ut.expect(l_count).to_equal(1);
-   
+
       select count(*)
         into l_count
         from cwms_v_location_level
        where office_id = c_office_id
          and location_level_id = l_elev_top_id
          and unit_system = 'EN';
-   
+
       ut.expect(l_count).to_equal(1);
-   
+
       select count(*)
         into l_count
         from cwms_v_virtual_location_level
        where office_id = c_office_id
          and location_level_id = l_stor_bottom_id;
-   
+
       ut.expect(l_count).to_equal(1);
-   
+
       select count(*)
         into l_count
         from cwms_v_virtual_location_level
        where office_id = c_office_id
          and location_level_id = l_stor_top_id;
-   
+
       ut.expect(l_count).to_equal(1);
-   
+
       select count(*)
         into l_count
         from cwms_v_loc_lvl_indicator
        where office_id = c_office_id
          and level_indicator_id = l_pct_full_ind_id;
-   
+
       ut.expect(l_count).to_equal(5);
-   
+
       select count(*)
         into l_count
         from cwms_v_loc_lvl_indicator
        where office_id = c_office_id
          and level_indicator_id = l_inflow_ind_id;
-   
+
       ut.expect(l_count).to_equal(5);
-   
+
       -------------------------------------------------------------------------------
       -- retrieve the current location levels xml for later storage and comparison --
       -------------------------------------------------------------------------------
@@ -1638,55 +1642,55 @@ begin
             p_office_id                  => c_office_id,
             p_most_recent_effective_date => 'T');
       end loop;
-   
+
       select count(*)
         into l_count
         from cwms_v_location_level
        where office_id = c_office_id
          and location_level_id = l_elev_bottom_id
          and unit_system = 'EN';
-   
+
       ut.expect(l_count).to_equal(0);
-   
+
       select count(*)
         into l_count
         from cwms_v_location_level
        where office_id = c_office_id
          and location_level_id = l_elev_top_id
          and unit_system = 'EN';
-   
+
       ut.expect(l_count).to_equal(0);
-   
+
       select count(*)
         into l_count
         from cwms_v_virtual_location_level
        where office_id = c_office_id
          and location_level_id = l_stor_bottom_id;
-   
+
       ut.expect(l_count).to_equal(0);
-   
+
       select count(*)
         into l_count
         from cwms_v_virtual_location_level
        where office_id = c_office_id
          and location_level_id = l_stor_top_id;
-   
+
       ut.expect(l_count).to_equal(0);
-   
+
       select count(*)
         into l_count
         from cwms_v_loc_lvl_indicator
        where office_id = c_office_id
          and level_indicator_id = l_pct_full_ind_id;
-   
+
       ut.expect(l_count).to_equal(0);
-   
+
       select count(*)
         into l_count
         from cwms_v_loc_lvl_indicator
        where office_id = c_office_id
          and level_indicator_id = l_inflow_ind_id;
-   
+
       ut.expect(l_count).to_equal(0);
       -----------------------------------------------------
       -- re-store the location levels via xml and verify --
@@ -1696,9 +1700,9 @@ begin
          p_xml            => l_levels_xml1,
          p_fail_if_exists => 'F',
          p_fail_on_error  => 'T');
-   
+
       ut.expect(l_errors).to_be_null;
-   
+
       l_levels_xml2 := cwms_level.retrieve_location_levels_xml_f(
          p_location_level_id_mask     => '*',
          p_attribute_id_mask          => '*',
@@ -1715,7 +1719,7 @@ begin
          p_include_level_labels       => 'T',
          p_include_level_indicators   => 'T',
          p_office_id                  => c_office_id);
-   
+
       ut.expect(l_levels_xml2).to_equal(l_levels_xml1);
    end loop;
 
@@ -2030,19 +2034,19 @@ begin
    ------------------------------------------------------------------------
    -- retrieve values for the storage location level for the time window --
    ------------------------------------------------------------------------
-   l_stor := cwms_level.retrieve_location_level_values( 
+   l_stor := cwms_level.retrieve_location_level_values(
       p_location_level_id => l_stor_level_id,
       p_level_units       => c_stor_unit,
       p_start_time        => l_start_date,
       p_end_time          => l_end_date,
       p_timezone_id       => c_timezone_id,
-      p_office_id         => c_office_id);   
+      p_office_id         => c_office_id);
 
-   ut.expect(l_stor.count).to_be_greater_than(1);      
+   ut.expect(l_stor.count).to_be_greater_than(1);
    -----------------------------------------------
    -- store the location virtual location level --
    -----------------------------------------------
-   cwms_level.store_virtual_location_level( 
+   cwms_level.store_virtual_location_level(
       p_location_level_id       => l_elev_level_id ,
       p_constituents            => cwms_t_str_tab_tab(
                                       cwms_t_str_tab('L1', 'LOCATION_LEVEL', l_stor_level_id),
@@ -2054,34 +2058,164 @@ begin
    --------------------------------------------------------------------------
    -- retrieve values for the elevation location level for the time window --
    --------------------------------------------------------------------------
-   l_elev1 := cwms_level.retrieve_location_level_values( 
+   l_elev1 := cwms_level.retrieve_location_level_values(
       p_location_level_id => l_elev_level_id,
       p_level_units       => c_elev_unit,
       p_start_time        => l_start_date,
       p_end_time          => l_end_date,
       p_timezone_id       => c_timezone_id,
-      p_office_id         => c_office_id);   
+      p_office_id         => c_office_id);
 
    ut.expect(l_elev1.count).to_equal(l_stor.count);
    ---------------------------------------------------
    -- do it again to verify CWDB-251 has been fixed --
    ---------------------------------------------------
-   l_elev2 := cwms_level.retrieve_location_level_values( 
+   l_elev2 := cwms_level.retrieve_location_level_values(
       p_location_level_id => l_elev_level_id,
       p_level_units       => c_elev_unit,
       p_start_time        => l_start_date,
       p_end_time          => l_end_date,
       p_timezone_id       => c_timezone_id,
-      p_office_id         => c_office_id);   
+      p_office_id         => c_office_id);
 
    ut.expect(l_elev2.count).to_equal(l_stor.count);
    for i in 1..l_elev2.count loop
       ut.expect(l_elev2(i).date_time).to_equal(l_stor(i).date_time);
       ut.expect(l_elev2(i).value).to_equal(l_elev1(i).value);
    end loop;
-      
-end test_cwdb_251_orphaned_sys_context_values_cause_problems_in_virutal_location_levels;
 
+end test_cwdb_251_orphaned_sys_context_values_cause_problems_in_virutal_location_levels;
+--------------------------------------------------------------------------------
+-- procedure test_cwdb_300_null_local_time_zone_breaks_av_location_level_curval
+--------------------------------------------------------------------------------
+procedure test_cwdb_300_null_local_time_zone_breaks_av_location_level_curval
+is
+   l_effective_date  date   := date '2021-01-01';
+   l_view_rec        cwms_v_location_level_curval%rowtype;
+   l_value           number := 1000;
+begin
+   teardown;
+   cwms_loc.store_location(
+      p_location_id    => c_location_id,
+      p_db_office_id   => c_office_id);
+   -------------------------------------
+   -- store a constant location level --
+   -------------------------------------
+   --
+   -- NOTE: You should still not be able to store a NEW location level without:
+   --       1. Specifying  a time zone for the effective and expiriation dates, or
+   --       2. Storing to a location that has a non-null local time zone
+   --
+   -- CWDB-300 only covers location levels stored prior to this requirement
+   --
+   begin
+      cwms_level.store_location_level4(
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_level_value       => l_value,
+         p_level_units       => c_elev_unit,
+         p_effective_date    => l_effective_date,
+         p_timezone_id       => null,
+         p_expiration_date   => null,
+         p_office_id         => c_office_id);
+      cwms_err.raise('Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+Location .+ must be assigned a time zone before calling this routine.+', 'mn')).to_be_true;
+   end;
+   cwms_level.store_location_level4(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_value       => l_value,
+      p_level_units       => c_elev_unit,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => 'UTC',
+      p_expiration_date   => null,
+      p_office_id         => c_office_id);
+
+   select *
+     into l_view_rec
+     from cwms_v_location_level_curval
+    where office_id = c_office_id
+      and location_level_id = c_top_of_normal_elev_id
+      and attribute_id is null;
+
+   ut.expect(round(to_number(l_view_rec.current_value_en), 9)).to_equal(l_value);
+   ut.expect(l_view_rec.value_unit_en).to_equal(c_elev_unit);
+   ut.expect(l_view_rec.effective_date_local).to_equal(l_effective_date);
+   ut.expect(l_view_rec.local_time_zone).to_equal('UTC');
+
+end test_cwdb_300_null_local_time_zone_breaks_av_location_level_curval;
+--------------------------------------------------------------------------------
+-- procedure test_cwdb_304_null_values_in_av_location_level_curval
+--------------------------------------------------------------------------------
+
+procedure test_cwdb_304_null_values_in_av_location_level_curval
+is
+   l_ts_data    cwms_t_ztsv_array := cwms_t_ztsv_array();
+   l_ts_id      cwms_v_ts_id.cwms_ts_id%type;
+   l_loc_lvl_id cwms_v_location_level.location_level_id%type;
+   l_now        date;
+   l_value      number;
+begin
+   teardown;
+   cwms_loc.store_location(
+      p_location_id    => c_location_id,
+      p_time_zone_id   => c_timezone_id,
+      p_db_office_id   => c_office_id);
+   -------------------------------------------------------------------
+   -- store a time series that ends 1 day prior to the current time --
+   -------------------------------------------------------------------
+   l_ts_id := c_location_id||'.Elev.Inst.~1Day.0.Test';
+   l_now := trunc(sysdate, 'dd');
+   for i in -5..-1 loop
+      l_ts_data.extend;
+      l_ts_data(l_ts_data.count) := cwms_t_ztsv(l_now+i, 1000+i, 0);
+   end loop;
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_ts_id,
+      p_units           => 'ft',
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id);
+   ------------------------------------------------
+   -- store a location level for the time series --
+   ------------------------------------------------
+   l_loc_lvl_id := c_location_id||'.Elev.Inst.0.Top of Normal';
+   cwms_level.store_location_level4(
+      p_location_level_id => l_loc_lvl_id,
+      p_level_value       => null,
+      p_level_units       => 'ft',
+      p_tsid              => l_ts_id,
+      p_office_id         => c_office_id);
+   --------------------------------------------------------------------------------
+   -- verify the latest level value doesn't show up with a short max_ts_timespan --
+   --------------------------------------------------------------------------------
+   l_value := cwms_level.retrieve_loc_lvl_value_ex(
+      p_location_level_id => l_loc_lvl_id,
+      p_level_units       => 'ft',
+      p_date              => sysdate,
+      p_max_ts_timespan   => 'PT12H',
+      p_office_id         => c_office_id);
+   ut.expect(l_value).to_be_null;
+   ----------------------------------------------------------------------------
+   -- verify the latest level value does show up with a long max_ts_timespan --
+   ----------------------------------------------------------------------------
+   l_value := cwms_level.retrieve_loc_lvl_value_ex(
+      p_location_level_id => l_loc_lvl_id,
+      p_level_units       => 'ft',
+      p_date              => sysdate,
+      p_max_ts_timespan   => 'P7D',
+      p_office_id         => c_office_id);
+   ut.expect(round(to_number(l_value), 9)).to_equal(999.0);
+   ----------------------------------------------------------------------------
+   -- verify the latest level value does show up in av_location_level_curval --
+   ----------------------------------------------------------------------------
+   select current_value_en
+     into l_value
+     from cwms_v_location_level_curval
+    where office_id = c_office_id
+      and location_level_id = l_loc_lvl_id;
+   ut.expect(round(to_number(l_value), 9)).to_equal(999.0);
+end test_cwdb_304_null_values_in_av_location_level_curval;
 
 end test_cwms_level;
 /

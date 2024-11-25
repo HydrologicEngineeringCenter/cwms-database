@@ -1906,7 +1906,6 @@ AS
 			--
 			--- The "i" loop extracts the VT data from the p_template_set array...
 			--
-			cwms_apex.aa1 ('i= ' || i);
 
 			INSERT
 			  INTO	at_tr_template_set (template_code,
@@ -1984,7 +1983,7 @@ AS
 				--
 				--- The "j" loop extracts the ts masks from the imbedded array_of_masks...
 				--
-				cwms_apex.aa1 ('i= ' || i || ' j= ' || j);
+
 				cwms_ts.parse_ts (p_template_set (i).array_of_masks (j),
 										l_base_location_id,
 										l_sub_location_id,
@@ -1995,12 +1994,6 @@ AS
 										l_duration_id,
 										l_version_id
 									  );
-				cwms_apex.aa1 (
-						'base param: '
-					|| l_base_parameter_id
-					|| ' subparam: '
-					|| l_sub_parameter_id
-				);
 
 				IF UPPER (l_base_parameter_id) = '{PARAMETER}'
 				THEN
@@ -2014,8 +2007,6 @@ AS
 							p_create 				 => 'F'
 						);
 				END IF;
-
-				cwms_apex.aa1 ('param_code: ' || l_parameter_code);
 
 				INSERT
 				  INTO	at_tr_ts_mask (template_code,

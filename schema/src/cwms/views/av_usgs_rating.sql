@@ -33,11 +33,9 @@ create or replace force view av_usgs_rating(
    rating_spec_code)
 as
    select o.office_id,
-          bl.base_location_id || substr('-', length(pl.sub_location_id)) || pl.sub_location_id as location_id,
+          bl.base_location_id||nvl2(pl.sub_location_id,'-',null)||pl.sub_location_id as location_id,
           lga.loc_alias_id as usgs_site,
-          bl.base_location_id
-          || substr('-', length(pl.sub_location_id))
-          || pl.sub_location_id
+          bl.base_location_id||nvl2(pl.sub_location_id,'-',null)||pl.sub_location_id
           || '.' || rt.parameters_id
           || '.' || rt.version
           || '.' || rs.version as rating_spec,

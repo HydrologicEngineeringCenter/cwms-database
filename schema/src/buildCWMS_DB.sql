@@ -76,7 +76,6 @@ exec dbms_output.put_line('Creating tables.');
 @@cwms/at_schema_tr
 @@cwms/at_schema_sec_2
 @@cwms/at_schema_sec
-@@cwms/at_schema_apex_debug
 @@cwms/at_schema_cma
 @@cwms/tables/at_api_keys
 
@@ -203,7 +202,7 @@ end;
 alter session set current_schema = &builduser
 
 -- create CWMS service user
-begin execute immediate 'create user ' || cwms_sec.cac_service_user || ' PROFILE CWMS_PROF IDENTIFIED BY values ''FEDCBA9876543210'' '; end; 
+begin execute immediate 'create user ' || cwms_sec.cac_service_user || ' PROFILE CWMS_PROF IDENTIFIED BY "FEDCBA9876543210" '; end; 
 /
 -- Replace connect to role with create session/set container for RDS compatibility
 begin execute immediate 'grant create session to ' || cwms_sec.cac_service_user; end; 
@@ -236,6 +235,8 @@ set define on
 @@cwms/tables/at_tsv_count
 
 @@cwms/views/mv_location_level_curval
+-- replace previous dummy view
+@@cwms/views/av_cwms_ts_id
 @@cwms/tables/at_clob_index.sql
 @@cwms/tables/indexes_for_spatial_data.sql
 --------------------------------------------------
@@ -387,6 +388,19 @@ begin
    end loop;
 end;
 /
+
+----------------------------------------------------------------------------------------------------------------------------
+-- I hate having this here, but for some reason this SAYS it works when in AT_SCHEMA, but the constraint is missing after --
+-- the build finishes, so do it here (ugh!!!) Also, I had to wrap in a PL/SQL block to keep it from forcing an exit 255!  --
+----------------------------------------------------------------------------------------------------------------------------
+prompt ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION_SP (FIPS_CNTRY);
+begin
+   execute immediate ('ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION_SP (FIPS_CNTRY)');
+exception
+   when others then raise;
+end;
+/
+
 --
 -- all done
 --

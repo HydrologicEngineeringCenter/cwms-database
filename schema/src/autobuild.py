@@ -44,9 +44,9 @@ for arg in sys.argv[1:] :
 	if arg.find("=") != -1 :
 		name, value = arg.split("=", 1)
 		arg = "=".join((name, '"%s"' % value))
-		exec arg
+		exec(arg)
 	elif arg.lower() in ("-restricted", "/restricted") :
-                restricted = True
+		restricted = True
 
 
 if not (echo and inst and builduser and builduser_passwd and cwms_schema and cwms_passwd and pd_passwd and test_passwd) :
@@ -63,7 +63,7 @@ f = open(manual_sqlfilename, "r")
 sql_script = f.read()
 f.close()
 if restricted :
-        sql_script = sql_script.replace(
+	sql_script = sql_script.replace(
                 "--ALTER SYSTEM ENABLE RESTRICTED SESSION;",
                 "ALTER SYSTEM ENABLE RESTRICTED SESSION;")
 	sql_script = sql_script.replace(
@@ -349,4 +349,3 @@ for loaderFilename in sorted(ctlFiles) :
 #	if os.path.exists(filename) :
 #	   try    : os.remove(filename)
 #	   except : pass
-

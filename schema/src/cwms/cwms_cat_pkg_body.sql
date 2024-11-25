@@ -4183,7 +4183,6 @@ IS
                ||'}');
             l_data := regexp_replace(l_data, '\{("offices":\[)', l_data2||',\1', 1, 1);
          when l_format in ('tab', 'csv') then
-            cwms_util.append(l_data2, '#Processed At'     ||l_tab||utl_inaddr.get_host_name ||':'||l_name||l_nl);
             cwms_util.append(l_data2, '#Time Of Query'    ||l_tab||to_char(l_query_time, 'dd-Mon-yyyy hh24:mi')||' UTC'||l_nl);
             cwms_util.append(l_data2, '#Process Query'    ||l_tab||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' Milliseconds'||l_nl);
             cwms_util.append(l_data2, '#Format Output'    ||l_tab||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' Milliseconds'||l_nl);
@@ -4343,7 +4342,6 @@ IS
                ||'}');
             l_data := regexp_replace(l_data, '\{("time-zones":\[)', l_data2||',\1', 1, 1);
          when l_format in ('tab', 'csv') then
-            cwms_util.append(l_data2, '#Processed At'        ||l_tab||utl_inaddr.get_host_name ||':'||l_name||l_nl);
             cwms_util.append(l_data2, '#Time Of Query'       ||l_tab||to_char(l_query_time, 'dd-Mon-yyyy hh24:mi')||' UTC'||l_nl);
             cwms_util.append(l_data2, '#Process Query'       ||l_tab||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' Milliseconds'||l_nl);
             cwms_util.append(l_data2, '#Format Output'       ||l_tab||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' Milliseconds'||l_nl);
@@ -4583,7 +4581,6 @@ IS
                ||'}');
             l_data := regexp_replace(l_data, '\{"units":\[', l_data2||','||'"units":[', 1, 1);
          when l_format in ('tab', 'csv') then
-            cwms_util.append(l_data2, '#Processed At'          ||l_tab||utl_inaddr.get_host_name ||':'||l_name||l_nl);
             cwms_util.append(l_data2, '#Time Of Query'         ||l_tab||to_char(l_query_time, 'dd-Mon-yyyy hh24:mi')||' UTC'||l_nl);
             cwms_util.append(l_data2, '#Process Query'         ||l_tab||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' Milliseconds'||l_nl);
             cwms_util.append(l_data2, '#Format Output'         ||l_tab||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' Milliseconds'||l_nl);
@@ -4807,7 +4804,6 @@ IS
                ||'}');
             l_data := regexp_replace(l_data, '\{("parameters":\[)', l_data2||',\1', 1, 1);
          when l_format in ('tab', 'csv') then
-            cwms_util.append(l_data2, '#Processed At'         ||l_tab||utl_inaddr.get_host_name ||':'||l_name||l_nl);
             cwms_util.append(l_data2, '#Time Of Query'        ||l_tab||to_char(l_query_time, 'dd-Mon-yyyy hh24:mi')||' UTC'||l_nl);
             cwms_util.append(l_data2, '#Process Query'        ||l_tab||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' Milliseconds'||l_nl);
             cwms_util.append(l_data2, '#Format Output'        ||l_tab||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' Milliseconds'||l_nl);

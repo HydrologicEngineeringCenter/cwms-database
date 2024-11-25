@@ -16,7 +16,7 @@ progDir    = os.path.normpath(progDir)
 buildVer   = os.path.split(progDir)[1]
 
 if (len(argv) == 2): 
-	outFile = argv[1]	
+	outFile = argv[1]
 elif (len(argv) < 2):
 	sys.stderr.write("Usage: python build_db_parameters_def.py <output file>\n")
 	sys.stderr.write("Ex:    python build_db_parameters_def.py build/resources/cwms/data/db_parameter_units.def")
@@ -47,12 +47,9 @@ try:
 	teamcity_build_info = "(Build %s, #%s)" % (build,build_number)
 except:
 	pass # we aren't in TEAMCITY so these don't exist
-f.write("// Generated from cwms_database:" + git_branch + " " + teamcity_build_info + " on " + date_str + "\n" )
+f.write("// Generated from cwms_database:" + str(git_branch) + " " + str(teamcity_build_info) + " on " + str(date_str) + "\n" )
 f.write("=PARAMETER/UNIT\n")
 f.write("#position=100\n\n")
 for param_id, si_unit, en_unit in params :
 	f.write(format % (param_id, si_unit, en_unit))
 f.close()
-
-
-

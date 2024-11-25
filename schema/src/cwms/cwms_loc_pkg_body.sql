@@ -615,17 +615,18 @@ AS
                end;
             end if;
          end if;
-         l_bounding_office_code := get_bounding_ofc_code(p_latitude, p_longitude);
-         if l_bounding_office_code = 0 and p_bounding_office_id is not null then
-            begin
-               select office_code
-                 into l_bounding_office_code
-                 from cwms_office
-                where office_id = upper (p_bounding_office_id);
-            exception
+         if p_bounding_office_id is not null then
+            BEGIN
+               SELECT   office_code
+                 INTO   l_bounding_office_code
+                 FROM   cwms_office
+                WHERE   office_id = UPPER (p_bounding_office_id);
+            EXCEPTION
                   when no_data_found then
                      cwms_err.raise ('INVALID_ITEM', p_bounding_office_id, 'office id');
-            end;
+               END;
+         else
+            l_bounding_office_code := get_bounding_ofc_code(p_latitude, p_longitude);
          end if;
          l_nearest_city := nvl(get_nearest_city(p_latitude, p_longitude)(1), p_nearest_city);
       else
@@ -2583,7 +2584,7 @@ AS
       -- remove old names from the location code and id caches --
       -----------------------------------------------------------
       cwms_cache.remove(g_location_code_cache, l_db_office_code||'/'||upper(l_location_id_old));
-      cwms_cache.remove_by_value(g_location_id_cache, l_db_office_id||'/'||upper(l_location_id_old));
+      cwms_cache.remove_by_value(g_location_id_cache, l_location_id_old, p_match_case => 'F');
       if l_old_loc_is_base_loc then
          ---------------------------------------------------------------------
          -- we have to check the value of every key for a matching base_loc --
@@ -2605,10 +2606,10 @@ AS
             ---------------------------
             -- the location id cache --
             ---------------------------
-            l_partial_val := l_db_office_id||'/'||upper(l_location_id_old)||'-';
+            l_partial_val := upper(l_location_id_old)||'-';
             l_keys        := cwms_cache.keys(g_location_id_cache);
             for i in 1..l_keys.count loop
-               if instr(cwms_cache.get(g_location_id_cache, l_keys(i)), l_partial_val) = 1 then
+               if instr(upper(cwms_cache.get(g_location_id_cache, l_keys(i))), l_partial_val) = 1 then
                   cwms_cache.remove(g_location_id_cache, l_keys(i));
                end if;
             end loop;
@@ -5840,7 +5841,7 @@ end unassign_loc_groups;
                                 rec.published_longitude,
                                 rec.bounding_office_id,
                                 rec.bounding_office_name,
-                                rec.long_name,
+                                rec.nation_id,
                                 rec.nearest_city
                                );
       END LOOP;
@@ -5920,7 +5921,7 @@ end unassign_loc_groups;
                                 p_location.published_latitude,
                                 p_location.published_longitude,
                                 p_location.bounding_office_id,
-                                p_location.long_name,
+                                p_location.nation_id,
                                 p_location.nearest_city,
                                 'T',
                                 p_location.location_ref.get_office_id

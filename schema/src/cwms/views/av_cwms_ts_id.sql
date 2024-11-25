@@ -69,16 +69,19 @@ CREATE OR REPLACE FORCE VIEW av_cwms_ts_id
     time_zone_id
 )
 AS
-    SELECT db_office_id,
-           case
-           when 'T' = (select 'T'
-                         from dual
-                        where exists(select str_value
-                                       from at_session_info
-                                      where item_name = 'USE_NEW_LRTS_ID_FORMAT'
-                                        and bitand(num_value, 4) = 4
-                                    )
-                      )
+   with function get_lrts return number DETERMINISTIC is
+      l_code number := 0;
+   begin
+      select nvl((select bitand(num_value,4)
+                    from cwms_20.at_session_info
+                   where item_name = 'USE_NEW_LRTS_ID_FORMAT'),
+                  0 )
+        into l_code
+        from dual;
+      return l_code;
+   end;
+   SELECT  db_office_id,
+           case when get_LRTS = 4
            then
               ----------------------------
               -- use new LRTS ID format --
@@ -115,15 +118,7 @@ AS
            sub_parameter_id,
            parameter_id,
            parameter_type_id,
-           case
-           when 'T' = (select 'T'
-                         from dual
-                        where exists(select str_value
-                                       from at_session_info
-                                      where item_name = 'USE_NEW_LRTS_ID_FORMAT'
-                                        and bitand(num_value, 4) = 4
-                                    )
-                      )
+           case when get_LRTS = 4
            then
               ----------------------------
               -- use new LRTS ID format --
@@ -162,15 +157,5 @@ AS
            parameter_code,
            historic_flag,
            time_zone_id
-      FROM at_cwms_ts_id
+      FROM at_cwms_ts_id;
 /
-
-begin
-	execute immediate 'grant select on av_cwms_ts_id to cwms_user';
-exception
-	when others then null;
-end;
-/
-
-
-create or replace public synonym cwms_v_ts_id for av_cwms_ts_id;

@@ -67,9 +67,6 @@
 @@cwms_sec_pkg
 @@cwms_sec_pkg_body
 
-@@cwms_apex_pkg
-@@cwms_apex_pkg_body
-
 @@cwms_rounding_pkg
 @@cwms_rounding_pkg_body
 
@@ -137,9 +134,6 @@
 
 @@cwms_doc_pkg
 @@cwms_doc_pkg_body
-
-@@cwms_cma_pkg
-@@cwms_cma_pkg_body
 
 @@cwms_data_dissem_pkg
 @@cwms_data_dissem_pkg_body

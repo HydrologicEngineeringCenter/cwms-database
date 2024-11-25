@@ -290,8 +290,7 @@ order  by q1.office_id,
           q1.level_date,
           q1.unit_system,
           q1.attribute_value,
-          q1.interval_origin + q1.calendar_offset_ + q1.time_offset_
-;
+          q1.interval_origin + q1.calendar_offset_ + q1.time_offset_;
 /
 
 

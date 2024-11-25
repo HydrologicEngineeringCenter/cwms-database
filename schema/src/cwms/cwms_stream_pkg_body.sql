@@ -318,7 +318,7 @@ as
             ||' (location kind = '
             ||l_location_kind_id
             ||' )');
-      l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_stream_id, p_office_id); -- revert-to kind            
+      l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_stream_id, p_office_id); -- revert-to kind
       end if;
       -------------------------------------------
       -- delete the child records if specified --
@@ -605,12 +605,12 @@ as
          select *
            into l_stream_rec
            from at_stream
-          where stream_location_code = l_rec.stream_location_code; 
+          where stream_location_code = l_rec.stream_location_code;
       else
          select *
            into l_stream_rec
            from at_stream
-          where stream_location_code = cwms_loc.get_location_code(l_office_id, p_stream_id); 
+          where stream_location_code = cwms_loc.get_location_code(l_office_id, p_stream_id);
       end if;
       l_zero_station := l_stream_rec.zero_station;
       ----------------------------------------------------
@@ -620,7 +620,7 @@ as
       begin
          select location_code,
                 stream_location_code,
-                station 
+                station
            into l_us_stream_location_code,
                 l_us_stream_code,
                 l_us_stream_location_station
@@ -693,8 +693,8 @@ as
             -- us location code is on diverting stream --
             ---------------------------------------------
             if l_zero_station = 'DS' then
-               l_us_stream_location_station := 1e38; 
-            else 
+               l_us_stream_location_station := 1e38;
+            else
                l_us_stream_location_station := 0;
          end if;
          end if;
@@ -718,8 +718,8 @@ as
             -- ds location code is on receiving stream --
             ---------------------------------------------
             if l_zero_station = 'DS' then
-               l_us_stream_location_station := 0; 
-            else 
+               l_us_stream_location_station := 0;
+            else
                l_us_stream_location_station := 1e38;
             end if;
          end if;
@@ -741,7 +741,7 @@ as
                  )
       loop
          select stream_location_code,
-                station 
+                station
            into l_us_stream_code,
                 l_us_stream_location_station2
            from at_stream_location
@@ -755,7 +755,7 @@ as
                ||cwms_loc.get_location_id(rec.upstream_location_code)
                ||' does not have a stream station');
          end if;
-         if l_us_stream_location_station2 between l_ds_stream_location_station and l_us_stream_location_station and 
+         if l_us_stream_location_station2 between l_ds_stream_location_station and l_us_stream_location_station and
             l_us_stream_location_station2 not in (l_ds_stream_location_station, l_us_stream_location_station)
          then
             cwms_err.raise(
@@ -764,7 +764,7 @@ as
                ||cwms_loc.get_location_id(rec.stream_reach_location_code));
          end if;
          select stream_location_code,
-                station 
+                station
            into l_ds_stream_code,
                 l_ds_stream_location_station2
            from at_stream_location
@@ -778,7 +778,7 @@ as
                ||cwms_loc.get_location_id(rec.downstream_location_code)
                ||' does not have a stream station');
       end if;
-         if l_ds_stream_location_station2 between l_ds_stream_location_station and l_us_stream_location_station and 
+         if l_ds_stream_location_station2 between l_ds_stream_location_station and l_us_stream_location_station and
             l_ds_stream_location_station2 not in (l_ds_stream_location_station, l_us_stream_location_station)
          then
             cwms_err.raise(
@@ -881,15 +881,15 @@ as
          p_downstream_location       := cwms_util.get_location_id(l_office_id, l_rec.downstream_location_code);
          p_configuration_id          := cwms_configuration.get_configuration_id(l_rec.configuration_code);
          p_comments                  := l_rec.comments;
-         p_stream_id                 := cwms_loc.get_location_id(l_rec.stream_location_code); 
+         p_stream_id                 := cwms_loc.get_location_id(l_rec.stream_location_code);
          select cwms_util.convert_units(station, 'km', nvl(cwms_util.get_unit_id(p_station_unit), 'km'))
            into p_upstream_station
            from at_stream_location
-          where stream_location_code = l_rec.upstream_location_code; 
+          where stream_location_code = l_rec.upstream_location_code;
          select cwms_util.convert_units(station, 'km', nvl(cwms_util.get_unit_id(p_station_unit), 'km'))
            into p_downstream_station
            from at_stream_location
-          where stream_location_code = l_rec.downstream_location_code; 
+          where stream_location_code = l_rec.downstream_location_code;
       exception
       when no_data_found then
          cwms_err.raise( 'ITEM_DOES_NOT_EXIST', 'CWMS stream reach ', l_office_id ||'/' ||p_reach_id) ;
@@ -1003,23 +1003,23 @@ as
                     and bl.base_location_code = pl.base_location_code
                     and o.office_code = bl.db_office_code
                     and c.configuration_code = sr.configuration_code
-                ) q1 
+                ) q1
                 left outer join
                 (select location_code,
                         stream_location_code,
                         cwms_loc.get_location_id(location_code) as location_id,
                         cwms_util.convert_units(station, 'km', p_station_unit) as station
                    from at_stream_location
-                ) q2 on q2.location_code = q1.upstream_location_code 
+                ) q2 on q2.location_code = q1.upstream_location_code
                     and q2.stream_location_code = q1.stream_location_code
                 left outer join
                 (select stream_location_code,
                         downstream_location_code,
                         configuration_code,
                         cwms_loc.get_location_id(stream_reach_location_code) as location_id
-                   from at_stream_reach     
-                ) q3 on q3.stream_location_code = q1.stream_location_code 
-                    and q3.configuration_code = q1.configuration_code 
+                   from at_stream_reach
+                ) q3 on q3.stream_location_code = q1.stream_location_code
+                    and q3.configuration_code = q1.configuration_code
                     and q3.downstream_location_code = q1.upstream_location_code
                 left outer join
                 (select location_code,
@@ -1027,16 +1027,16 @@ as
                         cwms_loc.get_location_id(location_code) as location_id,
                         cwms_util.convert_units(station, 'km', p_station_unit) as station
                    from at_stream_location
-                ) q4 on q4.location_code = q1.downstream_location_code 
+                ) q4 on q4.location_code = q1.downstream_location_code
                     and q4.stream_location_code = q1.stream_location_code
                 left outer join
                 (select stream_location_code,
                         upstream_location_code,
                         configuration_code,
                         cwms_loc.get_location_id(stream_reach_location_code) as location_id
-                   from at_stream_reach     
-                ) q5 on q5.stream_location_code = q1.stream_location_code 
-                    and q5.configuration_code = q1.configuration_code 
+                   from at_stream_reach
+                ) q5 on q5.stream_location_code = q1.stream_location_code
+                    and q5.configuration_code = q1.configuration_code
                     and q5.upstream_location_code = q1.downstream_location_code
           order by 1, 2, 3, 9;
    end cat_stream_reaches;
@@ -2369,7 +2369,7 @@ as
          l_qualities.extend;
          l_qualities(l_qualities.count) := '@';
       end if;
-      select distinct 
+      select distinct
              sm.location_code,
              sm.meas_number bulk collect
              into l_loc_tab,
@@ -2379,7 +2379,7 @@ as
        where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
          and v2.location_id like l_location_id_mask escape '\'
          and sm.location_code = v2.location_code
-         and sm.date_time between 
+         and sm.date_time between
                 case
                 when p_min_date is null
                 then date '1000-01-01'
@@ -2408,7 +2408,7 @@ as
                  else cwms_util.convert_units(p_max_height, l_height_unit, 'm')
                  end
          and sm.flow between
-                case    
+                case
                 when p_min_flow is null
                 then sm.flow
                 else cwms_util.convert_units(p_min_flow, l_flow_unit, 'cms')
@@ -2423,11 +2423,11 @@ as
          and nvl(sm.agency_code, 1) in
              (select entity_code
                 from at_entity
-               where entity_id in 
+               where entity_id in
                      (select *
                         from table(case
                                    when l_agencies is null then str_tab_t(entity_id)
-                                   else l_agencies 
+                                   else l_agencies
                                    end
                                   )
                      )
@@ -2489,6 +2489,216 @@ as
       end if;
       return l_clob;
    end retrieve_streamflow_meas_xml;
+
+--------------------------------------------------------------------------------
+-- store_meas_xml
+--------------------------------------------------------------------------------
+    procedure store_meas_xml(
+        p_xml            in clob,
+        p_fail_if_exists in varchar2)
+    is
+        l_xml xmltype;
+        l_xml_tab xml_tab_t;
+        l_meas streamflow_meas2_t;
+    begin
+        l_xml := xmltype(p_xml) ;
+        case l_xml.getrootelement
+            when 'measurement' then
+                ------------------------
+                -- single measurement --
+                ------------------------
+                l_meas := streamflow_meas2_t(l_xml) ;
+                l_meas.store(p_fail_if_exists) ;
+            when 'measurements' then
+                --------------------------------------
+                -- multiple measurements (possibly) --
+                --------------------------------------
+                l_xml_tab := cwms_util.get_xml_nodes(l_xml, '/*/measurement') ;
+                for i in 1..l_xml_tab.count loop
+                    l_meas := streamflow_meas2_t(l_xml_tab(i)) ;
+                    l_meas.store(p_fail_if_exists) ;
+                end loop;
+            else
+                cwms_err.raise( 'ERROR', 'Expected <measurement> or <measurements> as document root, got <'||l_xml.getrootelement||'>') ;
+        end case;
+    end store_meas_xml;
+--------------------------------------------------------------------------------
+-- function retrieve_meas_objs
+--------------------------------------------------------------------------------
+   function retrieve_meas_objs(
+         p_location_id_mask in varchar2,
+         p_unit_system      in varchar2 default 'EN',
+         p_min_date         in date default null,
+         p_max_date         in date default null,
+         p_min_height       in number default null,
+         p_max_height       in number default null,
+         p_min_flow         in number default null,
+         p_max_flow         in number default null,
+         p_min_num          in varchar2 default null,
+         p_max_num          in varchar2 default null,
+         p_agencies         in varchar2 default null,
+         p_qualities        in varchar2 default null,
+         p_time_zone        in varchar2 default null,
+         p_office_id_mask   in varchar2 default null)
+      return streamflow_meas2_tab_t
+    is
+        l_loc_tab number_tab_t;
+        l_meas_num_tab str_tab_t;
+        l_meas_tab streamflow_meas2_tab_t;
+        l_location_id_mask varchar2(256) := cwms_util.normalize_wildcards(p_location_id_mask) ;
+        l_office_id_mask   varchar2(64)  := cwms_util.normalize_wildcards(p_office_id_mask) ;
+        l_height_unit      varchar2(16) ;
+        l_flow_unit        varchar2(16) ;
+        l_area_unit        varchar2(16) ;
+        l_velocity_unit    varchar2(16) ;
+        l_agencies str_tab_t;
+        l_qualities str_tab_t;
+    begin
+        l_height_unit := cwms_util.get_default_units('Stage', upper(trim(p_unit_system))) ;
+        l_flow_unit   := cwms_util.get_default_units('Flow', upper(trim(p_unit_system))) ;
+        l_area_unit := cwms_util.get_default_units('Area', upper(trim(p_unit_system))) ;
+        if upper(trim(p_unit_system)) = 'EN' then
+            l_velocity_unit := 'FPS';
+        else
+            l_velocity_unit := 'MPS';
+        end if;
+        if p_agencies is not null then
+            select trim(upper(column_value)) bulk collect
+            into l_agencies
+            from table(cwms_util.split_text(p_agencies, ',')) ;
+            l_agencies.extend;
+            l_agencies(l_agencies.count) := '@';
+        end if;
+        if p_qualities is not null then
+            select substr(trim(upper(column_value)), 1, 1) bulk collect
+            into l_qualities
+            from table(cwms_util.split_text(p_qualities, ',')) ;
+            l_qualities.extend;
+            l_qualities(l_qualities.count) := '@';
+        end if;
+        select distinct
+            sm.location_code,
+            sm.meas_number bulk collect
+        into l_loc_tab,
+            l_meas_num_tab
+        from at_streamflow_meas sm,
+             av_loc2 v2
+        where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
+            and v2.location_id like l_location_id_mask escape '\'
+            and sm.location_code = v2.location_code
+            and sm.date_time between
+                case
+                    when p_min_date is null
+                        then date '1000-01-01'
+                    when p_time_zone is null
+                         then cwms_util.change_timezone(p_min_date, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
+                    else cwms_util.change_timezone(p_min_date, p_time_zone)
+                end
+                and
+                case
+                when p_max_date is null
+                        then date '3000-01-01'
+                     when p_time_zone is null
+                        then cwms_util.change_timezone(p_max_date, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
+                    else cwms_util.change_timezone(p_max_date, p_time_zone)
+                end
+            and sm.gage_height between
+                case
+                    when p_min_height is null
+                        then sm.gage_height
+                    else cwms_util.convert_units(p_min_height, l_height_unit, 'm')
+                end
+                and
+                case
+                    when p_max_height is null
+                        then sm.gage_height
+                    else cwms_util.convert_units(p_max_height, l_height_unit, 'm')
+                end
+            and sm.flow between
+                case
+                    when p_min_flow is null
+                        then sm.flow
+                    else cwms_util.convert_units(p_min_flow, l_flow_unit, 'cms')
+                end
+                and
+                case
+                    when p_max_flow is null
+                        then sm.flow
+                    else cwms_util.convert_units(p_max_flow, l_flow_unit, 'cms')
+                end
+            and sm.meas_number between
+                nvl(p_min_num, sm.meas_number)
+                and nvl(p_max_num, sm.meas_number)
+                and nvl(sm.agency_code, 1) in
+                    (select entity_code
+                        from at_entity
+                        where entity_id in
+                            (select * from table(case
+                                when l_agencies is null
+                                    then
+                                        str_tab_t(entity_id)
+                                    else
+                                        l_agencies
+                                end)
+                            )
+                    )
+                and nvl(sm.quality, '@') in
+                    (select *
+                        from table(case
+                            when l_qualities is not null
+                                then
+                                    l_qualities
+                                else
+                                    str_tab_t(nvl(sm.quality, '@'))
+                            end)
+                    )
+                    order by 1, 2;
+                    if l_loc_tab  is not null then
+                        l_meas_tab := streamflow_meas2_tab_t() ;
+                        l_meas_tab.extend(l_loc_tab.count) ;
+                        for i in 1..l_loc_tab.count loop
+                            l_meas_tab(i) := streamflow_meas2_t(location_ref_t(l_loc_tab(i)), l_meas_num_tab(i)) ;
+                        end loop;
+                    end if;
+        return l_meas_tab;
+    end retrieve_meas_objs;
+--------------------------------------------------------------------------------
+-- function retrieve_meas_xml
+--------------------------------------------------------------------------------
+    function retrieve_meas_xml(
+        p_location_id_mask in varchar2,
+        p_unit_system      in varchar2 default 'EN',
+        p_min_date         in date default null,
+        p_max_date         in date default null,
+        p_min_height       in number default null,
+        p_max_height       in number default null,
+        p_min_flow         in number default null,
+        p_max_flow         in number default null,
+        p_min_num          in varchar2 default null,
+        p_max_num          in varchar2 default null,
+        p_agencies         in varchar2 default null,
+        p_qualities        in varchar2 default null,
+        p_time_zone        in varchar2 default null,
+        p_office_id_mask   in varchar2 default null)
+        return clob
+    is
+        l_clob clob;
+        l_meas_tab streamflow_meas2_tab_t;
+    begin
+        l_meas_tab := retrieve_meas_objs( p_location_id_mask, p_unit_system, p_min_date, p_max_date, p_min_height, p_max_height, p_min_flow, p_max_flow, p_min_num, p_max_num, p_agencies, p_qualities, p_time_zone, p_office_id_mask) ;
+        dbms_lob.createtemporary(l_clob, true) ;
+        if l_meas_tab is null or l_meas_tab.count = 0 then
+            cwms_util.append(l_clob, '<measurements/>'||chr(10)) ;
+        else
+            cwms_util.append(l_clob, '<measurements>'||chr(10)) ;
+            for i in 1..l_meas_tab.count loop
+                cwms_util.append(l_clob, l_meas_tab(i) .to_string1||chr(10)) ;
+            end loop;
+            cwms_util.append(l_clob, '</measurements>'||chr(10)) ;
+        end if;
+        return l_clob;
+    end retrieve_meas_xml;
+
 --------------------------------------------------------------------------------
 -- procedure delete_streamflow_meas
 --------------------------------------------------------------------------------

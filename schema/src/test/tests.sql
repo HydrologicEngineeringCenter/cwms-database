@@ -17,6 +17,8 @@ end;
 /
 
 @test_cwms_stream;
+@test_cwms_measurements.sql;
+@test_cwms_lock.sql;
 @test_cwms_prop.sql;
 @test_cwms_msg.sql;
 @test_aaa.sql;
@@ -32,6 +34,8 @@ show errors;
 @test_cwms_util.sql;
 @test_cwms_err.sql;
 @test_cwms_loc.sql;
+@test_cwms_loc_normal_user.sql;
+@test_cwms_project.sql;
 @test_cwms_ts.sql;
 @test_cwms_rating.sql;
 @test_cwms_pool.sql;
@@ -48,6 +52,10 @@ show errors;
 @test_cwms_cache.sql;
 @test_aq_user.sql;
 @test_webuser_abilities.sql;
+@test_cwms_ts_profile.sql
+@test_cwms_outlet.sql
+@views/test_av_ts_grp_assgn.sql;
+@views/test_av_loc_grp_assgn.sql;
 show errors;
 @test_multiple_office_perms.sql;
 show errors;

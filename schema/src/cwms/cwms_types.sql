@@ -162,9 +162,14 @@ end;
 @@cwms/types/vert_datum_offset_t
 @@cwms/types/vert_datum_offset_tab_t
 @@cwms/types/xml_tab_t
+@@cwms/types/supp_streamflow_meas_t
+@@cwms/types/supp_streamflow_meas_t-body
 @@cwms/types/streamflow_meas_t
 @@cwms/types/streamflow_meas_tab_t
 @@cwms/types/streamflow_meas_t-body
+@@cwms/types/streamflow_meas2_t
+@@cwms/types/streamflow_meas2_tab_t
+@@cwms/types/streamflow_meas2_t-body
 @@cwms/types/abs_logic_expr_t
 @@cwms/types/abs_logic_expr_t-body
 @@cwms/types/logic_expr_t

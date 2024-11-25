@@ -77,8 +77,9 @@ as
                   gage_code,
                   gage_location_code as location_code
              from at_gage ag, cwms_gage_type gt, av_loc lv
-            where gt.gage_type_code = ag.gage_type_code and lv.location_code = ag.gage_location_code) a
-          left outer join (select location_code, location_id from av_loc) b on b.location_code = a.associated_location_code;
+            where gt.gage_type_code = ag.gage_type_code and lv.location_code = ag.gage_location_code
+             AND lv.unit_system ='EN') a
+          left outer join (select location_code, location_id from av_loc WHERE unit_system ='EN') b on b.location_code = a.associated_location_code;
 SHOW ERRORS;
 
 create or replace public synonym cwms_v_gage for av_gage;

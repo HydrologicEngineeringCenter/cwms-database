@@ -28,7 +28,8 @@ AS
     BEGIN
         test_cwms_msg.teardown; 
         test_cwms_prop.teardown; 
-        test_cwms_loc.teardown; 
+        test_cwms_loc.teardown;
+        test_cwms_project.teardown;
         test_cwms_rating.teardown; 
         test_cwms_ts.teardown; 
         test_cwms_util.teardown;
@@ -41,6 +42,7 @@ AS
         test_timeseries_snapping.teardown;
         test_cwms_cat.teardown;
         test_cwms_stream.teardown;
+        test_cwms_lock.teardown;
         test_cwms_data_dissem.teardown;
         test_cwms_fcst.teardown;
         test_cwms_forecast.teardown;

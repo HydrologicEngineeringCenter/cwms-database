@@ -20,6 +20,7 @@ create unique index at_fcst_spec_idx2 on at_fcst_spec (
 @@cwms/views/av_log_message.sql
 @@cwms/views/av_stream.sql
 @@cwms/views/av_stream_location.sql
+@@cwms/views/av_stream_reach.sql
 @@cwms/views/av_ts_alias.sql
 @@cwms/views/av_ts_grp_assgn.sql
 @@cwms/views/av_ts_cat_grp.sql

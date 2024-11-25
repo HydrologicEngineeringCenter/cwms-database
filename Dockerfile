@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 LABEL MAINTAINER="CWMS DB Team"
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -7,7 +7,7 @@ RUN apt-get -y update && \
     apt-get -y install wget git \
                zip unzip \
                openjdk-8-jdk \
-               libaio1 python python3 \
+               libaio1 python2 python3 \
                ant
 
 RUN ln -s /usr/lib/jvm-1.8.0.openjdk-amd64 /usr/lib/jvm/java
@@ -21,12 +21,12 @@ RUN unzip instantclient-basiclite-linux.x64-19.6.0.0.0dbru.zip && \
     unzip instantclient-tools-linux.x64-19.6.0.0.0dbru.zip && \
     unzip instantclient-sqlplus-linux.x64-19.6.0.0.0dbru.zip && \
     rm *.zip
-
-RUN mkdir /opt/apex
-WORKDIR /opt/apex
-RUN wget https://download.oracle.com/otn_software/apex/apex_21.1_en.zip
-RUN unzip apex_21.1_en.zip && \
-    rm *.zip
+RUN mkdir /after.install.d
+#RUN mkdir /opt/apex
+#WORKDIR /opt/apex
+#RUN wget https://download.oracle.com/otn_software/apex/apex_23.2_en.zip
+#RUN unzip apex_23.2_en.zip && \
+#    rm *.zip
 
 COPY . /cwmsdb
 
@@ -39,6 +39,7 @@ ENV OFFICE_ID=HQ
 ENV OFFICE_EROC=Q0
 ENV INSTALLONCE=0
 ENV QUIET=0
+ENV TEST_ACCOUNT=-testaccount
 
 RUN chmod +x ./docker/install.sh
 

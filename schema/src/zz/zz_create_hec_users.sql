@@ -62,9 +62,9 @@ BEGIN
          l_execute   :=
                ' create user '
             || l_username (i)
-            || ' identified by values '''
+            || ' identified by values "'
             || l_hash
-            || ''' default tablespace cwms_20data
+            || "' default tablespace cwms_20data
                  temporary tablespace temp
                  profile CWMS_PROF
                  account unlock';

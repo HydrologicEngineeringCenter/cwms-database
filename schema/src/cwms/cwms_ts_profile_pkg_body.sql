@@ -1926,9 +1926,12 @@ begin
    -- delete the instance record --
    --------------------------------
    delete
-     from at_ts_profile_instance
-    where location_code = l_inst_rec.location_code
-     and key_parameter_code = l_inst_rec.key_parameter_code;
+   from at_ts_profile_instance
+   where location_code = l_inst_rec.location_code
+     and key_parameter_code = l_inst_rec.key_parameter_code
+     and upper(version_id) = upper(p_version_id)
+     and first_date_time = l_first_time
+     and version_date = l_version_date;
 end delete_ts_profile_instance;
 --------------------------------------------------------------------------------
 -- procedure cat_ts_profile_instance
@@ -2513,15 +2516,15 @@ procedure cat_ts_profile_parser(
 is
 begin
    open p_profile_parser_rc for
-      select co.office_id,
-             cwms_loc.get_location_id(tsp.location_code) as location_id,
-             cwms_util.get_parameter_id(tsp.key_parameter_code) as key_paramter_id,
-             tsp.record_delimiter,
-             tsp.field_delimiter,
-             tsp.time_field,
-             tsp.time_col_start as time_start_col,
-             tsp.time_col_end as time_end_col,
-             tsp.time_format,
+      select cwms_util.get_db_office_id(loc.office_code),
+             cwms_loc.get_location_id(tspp.location_code) as location_id,
+             cwms_util.get_parameter_id(tspp.key_parameter_code) as key_paramter_id,
+             tspp.record_delimiter,
+             tspp.field_delimiter,
+             tspp.time_field,
+             tspp.time_col_start as time_start_col,
+             tspp.time_col_end as time_end_col,
+             tspp.time_format,
              ctz.time_zone_name as time_zone,
              cursor (select cwms_util.get_parameter_id(parameter_code) as parameter_id,
                             cwms_util.get_unit_id2(parameter_unit) as unit,
@@ -2529,17 +2532,20 @@ begin
                             parameter_col_start as start_col,
                             parameter_col_end as end_col
                        from at_ts_profile_parser_param
-                      where location_code = tsp.location_code
-                        and key_parameter_code = tsp.key_parameter_code
+                      where location_code = tspp.location_code
+                        and key_parameter_code = tspp.key_parameter_code
                       order by nvl(parameter_field, parameter_col_start)
                     ) as parameter_info
-        from at_ts_profile_parser tsp,
-             cwms_office co,
-             cwms_time_zone ctz
-       where cwms_loc.get_location_id(tsp.location_code) like cwms_util.normalize_wildcards(p_location_id_mask) escape '\'
-         and cwms_util.get_parameter_id(tsp.key_parameter_code) like cwms_util.normalize_wildcards(p_key_parameter_id_mask) escape '\'
-         and co.office_id like cwms_util.normalize_wildcards(nvl(p_office_id_mask, cwms_util.get_db_office_id)) escape '\'
-         and ctz.time_zone_code = tsp.time_zone_code;
+             from at_ts_profile_parser tspp
+                 inner join at_ts_profile tsp on (tspp.location_code = tsp.location_code AND tspp.key_parameter_code = tsp.key_parameter_code)
+                 inner join at_physical_location loc on (tspp.location_code = loc.location_code)
+                 inner join cwms_time_zone ctz on (tspp.time_zone_code = ctz.time_zone_code)
+                 inner join at_parameter param on (tspp.key_parameter_code = param.parameter_code)
+             where cwms_loc.get_location_id(tspp.location_code) like cwms_util.normalize_wildcards(nvl(p_location_id_mask, '*')) escape '\'
+                 and cwms_util.get_db_office_id(loc.office_code) like cwms_util.normalize_wildcards(nvl(p_office_id_mask, '*')) escape '\'
+                 and cwms_util.get_parameter_id(tspp.key_parameter_code) like cwms_util.normalize_wildcards(nvl(p_key_parameter_id_mask, '*')) escape '\'
+                 and param.db_office_code in (loc.office_code, cwms_util.db_office_code_all)
+                 and ctz.time_zone_code = tspp.time_zone_code;
 end cat_ts_profile_parser;
 --------------------------------------------------------------------------------
 -- function cat_ts_profile_parser_f

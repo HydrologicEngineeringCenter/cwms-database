@@ -549,6 +549,11 @@ AS
         l_count      NUMBER;
         l_username   VARCHAR2 (64);
     BEGIN
+        IF (p_username is null)
+        THEN
+          cwms_err.raise('NULL_ARGUMENT', 'p_user_id');
+        END IF;
+
         l_username := UPPER (TRIM (p_username));
 
         SELECT COUNT (*)

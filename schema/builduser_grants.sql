@@ -23,5 +23,8 @@ grant select on sys.v_$latch to &builduser with grant option;
 grant select on sys.v_$mystat to &builduser with grant option;
 grant select on sys.v_$statname to &builduser with grant option;
 grant select on sys.v_$timer to &builduser with grant option;
+grant ctxapp to &builduser with admin option;
+grant execute on ctxsys.ctx_ddl to &builduser with grant option;
+grant execute on ctxsys.ctx_doc to &builduser with grant option;
 
 grant execute any procedure to &builduser;

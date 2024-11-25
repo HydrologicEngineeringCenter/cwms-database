@@ -363,6 +363,14 @@ AS
     PROCEDURE confirm_pd_or_schema_user (p_user VARCHAR2);
 
     PROCEDURE confirm_cwms_schema_user;
+
+    /**
+     * Validates parameterized username to ensure user is CWMS User.
+     * raises error with code -20999 otherwise.
+     *
+     * @param p_username  Name of the user to validate
+     */
+    PROCEDURE confirm_cwms_user (p_username IN VARCHAR2);
 END cwms_sec;
 /
 
