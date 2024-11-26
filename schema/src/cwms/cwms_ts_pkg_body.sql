@@ -4732,13 +4732,18 @@ AS
       l_updated  boolean := false;
 
    begin
-      -- Compare p_ts_extents_rec with current TS extents,
-      -- If changes, then UPDATE else INSERT new extents
+      -- Compare p_ts_extents_rec with current TS extents. If changes found,
+      -- then UPDATE. If new TS extents entry and not a forecast then INSERT.
+      -- If existing forecast entry is now empty (no data), then DELETE.
       --
       -- Procedure update_ts_extents may pass a negative ts_code indicating
-      -- a forced update without comparing with the current values.
-      -- This would better be an optional parameter but I didn't want to change
-      -- the package spec at this time.
+      -- a complete replacement of current values with the new values.
+      --
+      -- When doing a complete replacement and no data was found from the POR
+      -- scan, then LAST_UPDATE will be null.
+      --
+      -- Alternately, one could use an optional parameter to force a complete
+      -- update but I didn't want to change the package spec at this time.
 
       p_rec         := p_ts_extents_rec;
       p_rec.ts_code := abs(p_rec.ts_code);
@@ -4756,10 +4761,22 @@ AS
             FOR UPDATE;
 
          if p_ts_extents_rec.ts_code < 0 then
-            -- force a complete update
-            l_rec := p_rec;
-            l_updated := TRUE;
+            -- complete update
+            if p_rec.version_time > cwms_util.non_versioned and
+               p_rec.last_update is null then
+               -- versioned (forecast) and no data
+               -- delete the extents for this version_time
+               delete at_ts_extents
+                where ts_code      = p_rec.ts_code
+                  and version_time = p_rec.version_time;
+               l_updated := FALSE;
+            else
+               -- complete update, replace current extents with new extents
+               l_rec := p_rec;
+               l_updated := TRUE;
+            end if;
          else
+            -- partial update, merge new extents with current extents
             l_updated := update_ts_extents_rec (p_rec, l_rec);
          end if;
 
@@ -4771,11 +4788,13 @@ AS
          end if;
 
       exception when NO_DATA_FOUND then
-         -- New entry in the extents table
-         insert into at_ts_extents
-         values p_rec;
-
-         l_updated := TRUE;
+         if p_rec.version_time = cwms_util.non_versioned then
+            -- add a new non-versioned entry to the extents table
+            p_rec.last_update := systimestamp;
+            insert into at_ts_extents
+            values p_rec;
+            l_updated := TRUE;
+         end if;
       end;
 
       -- release the lock
@@ -4799,10 +4818,6 @@ AS
       p_ts_code      in integer default null,
       p_version_date in date default null)
    is
-      -- Minimize lock contention
-      -- Don't commit the parent transaction
-      PRAGMA AUTONOMOUS_TRANSACTION;
-
       l_rec           at_ts_extents%rowtype;
 
       l_updated       boolean;
@@ -5016,19 +5031,16 @@ AS
       -- Use function update_ts_extents and force a complete update by setting
       -- ts_code=-ts_code
 
-      if (l_rec2.ts_code is null) then
-         -- when no data, insert a record with NULL extents
-         -- need to set ts_code and version_time
-         l_rec2.ts_code := p_ts_code;
-         l_rec2.version_time := nvl(p_version_date, cwms_util.non_versioned);
-         l_rec2.last_update := systimestamp;
-         insert into at_ts_extents values l_rec2;
-         commit work WRITE BATCH;
-      else
-         -- -ts_code forces a complete update of the TS extents
-         l_rec2.ts_code := -l_rec2.ts_code;
-         l_updated  := update_ts_extents (l_rec2);
-      end if;
+      -- when no data, insert a record with NULL extents
+      -- need to set ts_code and version_time
+
+      l_rec2.ts_code := p_ts_code;
+      l_rec2.version_time := nvl(p_version_date, cwms_util.non_versioned);
+
+      -- -ts_code forces a complete update of the TS extents
+
+      l_rec2.ts_code := -l_rec2.ts_code;
+      l_updated  := update_ts_extents (l_rec2);
 
    end update_ts_extents;
 
@@ -5302,7 +5314,7 @@ AS
    begin
       DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.store_ts',
                                         'get tscode from ts_id');
-      
+
       -- set default values, don't be fooled by NULL as an actual argument
 
 
@@ -14368,6 +14380,29 @@ end retrieve_existing_item_counts;
    begin
       v_package_log_prop_text := nvl(p_text, sys_context('userenv', 'sid'));
    end set_package_log_property_text;
+
+   procedure get_latest_utx_job_details(
+      p_details      in out nocopy all_scheduler_job_run_details%rowtype,
+      p_ts_code      in integer,
+      p_version_date in date)
+   is
+      l_job_name varchar2(34);
+   begin
+      l_job_name := 'UTX_'||p_ts_code||to_char(p_version_date, '_yyyymmdd_hh24miss');
+      begin
+         select *
+           into p_details
+           from all_scheduler_job_run_details
+          where job_name = l_job_name
+            and log_date = (select max(log_date)
+                              from all_scheduler_job_run_details
+                             where job_name = l_job_name
+                           );
+      exception
+         when no_data_found then
+            p_details.log_id := null;
+      end;
+   end get_latest_utx_job_details;
 
 begin
    g_ts_code_cache.name     := 'cwms_ts.g_ts_code_cache';
