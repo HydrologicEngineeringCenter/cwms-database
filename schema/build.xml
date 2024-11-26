@@ -1489,7 +1489,7 @@
       <echo message="Pushing docker image."/>
       <property name="image_with_reg" value="${docker.registry}/${docker.props.image.basename}"/>
       <property name="ready_image_with_reg" value="${docker.registry}/${ready_database.image_name}"/>
-      <property name="read_image_local_fullname" value="${ready_database.image_name}:${tmp.image_version}"/>
+      <property name="ready_image_local_fullname" value="${ready_database.image_name}:${tmp.image_version}"/>
       <if>
          <and>
             <isset property="teamcity.branch"/>
