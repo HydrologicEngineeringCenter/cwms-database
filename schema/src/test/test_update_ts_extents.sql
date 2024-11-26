@@ -916,7 +916,7 @@ begin
         p_db_office_id         => c_office_id);
     commit;
 
-    while systimestamp - l_timestamp < interval '0 00:00:30' day to second loop
+    while systimestamp - l_timestamp < interval '30' second loop
         cwms_ts.get_latest_utx_job_details(l_log_rec, l_ts_code, cwms_util.non_versioned);
         exit when l_log_rec.log_date >= l_timestamp;
         dbms_session.sleep(.1);
