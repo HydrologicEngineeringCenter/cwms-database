@@ -4372,6 +4372,18 @@ AS
       return varchar2;
 
    /**
+    * Returns the most recent scheduler details view entry for the specified time series.
+    *
+    * @param p_details      The details record. If no record is found the log_id field will be null.
+    * @param p_ts_code      The ts code of the time series to retrieve details for
+    * @param p_version_date The version date of the time series to retrieve details for
+    */
+   procedure get_latest_utx_job_details(
+      p_details      in out nocopy all_scheduler_job_run_details%rowtype,
+      p_ts_code      in integer,
+      p_version_date in date);
+
+   /**
     * Retreives time series in a number of formats for a combination time window, timezone, formats, and vertical datums
     *
     * @param p_results        The time series, in the specified time zones, formats, and vertical datums
