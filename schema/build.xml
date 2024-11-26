@@ -1505,8 +1505,8 @@
             <echo message="Tagging images for registry"/>
             <docker.tag_image source="${docker.props.image_name}" target="${image_with_reg}:${pom.version}"/>
             <docker.tag_image source="${docker.props.image_name}" target="${image_with_reg}:${latest_value}"/>
-            <docker.tag_image source="${ready_image_local_full_name}" target="${ready_image_with_reg}:${pom.version}"/>
-            <docker.tag_image source="${ready_image_local_full_name}" target="${ready_image_with_reg}:${latest_value}"/>
+            <docker.tag_image source="${ready_image_local_fullname}" target="${ready_image_with_reg}:${pom.version}"/>
+            <docker.tag_image source="${ready_image_local_fullname}" target="${ready_image_with_reg}:${latest_value}"/>
 
             <if>
                <not>
