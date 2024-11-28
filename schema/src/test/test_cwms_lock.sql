@@ -10,6 +10,9 @@ CREATE OR REPLACE PACKAGE test_cwms_lock AS
    --%test(Test roundtrip store and retrieve with lock data)
    PROCEDURE test_store_and_retrieve;
 
+   --%test(Test roundtrip store and retrieve with lock data with no pool levels)
+   PROCEDURE test_store_and_retrieve_no_pool_levels;
+
    --%throws(-20019)
    PROCEDURE test_invalid_pool_values;
    --%throws(-20019)
@@ -74,6 +77,32 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
             p_nearest_city => null,
             p_ignorenulls => 'T',
             p_db_office_id => 'SPK');
+         commit;
+         cwms_loc.store_location2(
+               p_location_id => 'TestLockLocation1234',
+               p_location_type => null,
+               p_elevation => null,
+               p_elev_unit_id => null,
+               p_vertical_datum => null,
+               p_latitude => null,
+               p_longitude => null,
+               p_horizontal_datum => null,
+               p_public_name => null,
+               p_long_name => null,
+               p_description => null,
+               p_time_zone_id => 'CST6CDT',
+               p_county_name => null,
+               p_state_initial => null,
+               p_active => null,
+               p_location_kind_id => null,
+               p_map_label => null,
+               p_published_latitude => null,
+               p_published_longitude => null,
+               p_bounding_office_id => null,
+               p_nation_id => null,
+               p_nearest_city => null,
+               p_ignorenulls => 'T',
+               p_db_office_id => 'SPK');
          commit;
          cwms_project.store_project(project_obj_t(
                cwms_t_location_obj(cwms_t_location_ref('ReqLock1', 'SPK')),
@@ -206,7 +235,63 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
       --get warning buffer for a location that doesn't have a location level warning buffer
       l_warning_buffer := cwms_lock.get_warning_buffer_value(location_ref_t('ReqLock1', 'SPK').get_location_code());
       ut.expect(l_warning_buffer).to_equal(0.6096);
+
    END test_store_and_retrieve;
+
+   PROCEDURE test_store_and_retrieve_no_pool_levels IS
+      l_lock_obj           lock_obj_t;
+      l_retrieved_lock_obj lock_obj_t;
+      l_lock_location_ref  location_ref_t := location_ref_t('TestLockLocation1234', 'SPK');
+      c_office_id          CONSTANT VARCHAR2(16) := 'SPK';
+      proj_location_id     CONSTANT VARCHAR2(16) := 'ReqLock1';
+   BEGIN
+
+      setup();
+
+      -- Populate lock_obj_t object with required values
+      l_lock_obj := lock_obj_t(
+            project_location_ref => location_ref_t(proj_location_id, c_office_id),
+            lock_location => location_obj_t(cwms_loc.get_location_code(c_office_id, l_lock_location_ref.get_location_id())),
+            volume_per_lockage => 100.0,               -- Volume per lockage
+            volume_units_id   => 'm3',                  -- Volume units
+            lock_width        => 10.0,                  -- Lock width
+            lock_length       => 20.0,                  -- Lock length
+            minimum_draft     => 5.0,                   -- Minimum draft
+            normal_lock_lift  => 15.0,                  -- Normal lock lift
+            units_id          => 'm',                    -- Units for width, length, draft, and lift
+            maximum_lock_lift => 25.0,                  -- Maximum lock lift
+            elev_units_id     => 'm',                    -- Units for elevation
+            elev_closure_high_water_upper_pool => NULL, -- Elevation for high water upper pool
+            elev_closure_high_water_lower_pool => NULL, -- Elevation for high water lower pool
+            elev_closure_low_water_upper_pool => NULL,    -- Elevation for low water upper pool
+            elev_closure_low_water_lower_pool => NULL,   -- Elevation for low water lower pool
+            elev_closure_high_water_upper_pool_warning => NULL,
+            elev_closure_high_water_lower_pool_warning => NULL,
+            chamber_location_description => NULL
+         );
+
+      cwms_lock.store_lock(p_lock => l_lock_obj);
+
+      -- Retrieve the lock object using the location reference
+      cwms_lock.retrieve_lock(p_lock => l_retrieved_lock_obj, p_lock_location_ref => l_lock_location_ref);
+
+      ut.expect(l_retrieved_lock_obj.volume_per_lockage).to_equal(l_lock_obj.volume_per_lockage);
+      ut.expect(l_retrieved_lock_obj.units_id).to_equal(l_lock_obj.units_id);
+      ut.expect(l_retrieved_lock_obj.lock_width).to_equal(l_lock_obj.lock_width);
+      ut.expect(l_retrieved_lock_obj.lock_length).to_equal(l_lock_obj.lock_length);
+      ut.expect(l_retrieved_lock_obj.minimum_draft).to_equal(l_lock_obj.minimum_draft);
+      ut.expect(l_retrieved_lock_obj.normal_lock_lift).to_equal(l_lock_obj.normal_lock_lift);
+      ut.expect(l_retrieved_lock_obj.maximum_lock_lift).to_equal(l_lock_obj.maximum_lock_lift);
+      ut.expect(l_retrieved_lock_obj.elev_units_id).to_equal(l_lock_obj.elev_units_id);
+      ut.expect(l_retrieved_lock_obj.elev_closure_high_water_upper_pool).to_be_null();
+      ut.expect(l_retrieved_lock_obj.elev_closure_high_water_lower_pool).to_be_null();
+      ut.expect(l_retrieved_lock_obj.elev_closure_low_water_upper_pool).to_be_null();
+      ut.expect(l_retrieved_lock_obj.elev_closure_low_water_lower_pool).to_be_null();
+      ut.expect(l_retrieved_lock_obj.elev_closure_high_water_upper_pool_warning).to_be_null();
+      ut.expect(l_retrieved_lock_obj.elev_closure_high_water_lower_pool_warning).to_be_null();
+      ut.expect(l_retrieved_lock_obj.chamber_location_description.display_value).to_equal(l_lock_obj.chamber_location_description.display_value);
+
+   END test_store_and_retrieve_no_pool_levels;
 
    PROCEDURE test_invalid_pool_values IS
       l_lock_obj           lock_obj_t;

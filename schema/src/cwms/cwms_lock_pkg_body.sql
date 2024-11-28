@@ -375,24 +375,39 @@ function get_pool_level_value(
       l_parameter_w_sub_param varchar2(20);
       l_location_office_id varchar2(16);
       l_loc_ref_t location_ref_t;
+      l_err_no_pool_level varchar2(32) := 'ITEM_DOES_NOT_EXIST'; -- Error name to match
+      l_err_code number;
    begin
       -- get the location id from the lock location code
       l_loc_ref_t := location_ref_t(p_lock_location_code);
       l_location_id := l_loc_ref_t.get_location_id();
       l_parameter_w_sub_param := c_parameter||'-'||c_sub_param;
       l_location_office_id := l_loc_ref_t.get_office_id();
-      cwms_level.retrieve_location_level_value(
-         p_level_value => l_location_level_value,
-         p_location_level_id => l_location_id||'.'||l_parameter_w_sub_param||'.'||c_param_type||'.'||c_duration||'.'||p_specified_level_id,
-         p_level_units => cwms_util.get_default_units('Elev'),
-         p_date => cast(systimestamp at time zone 'UTC' as date), -- use the current date
-         p_timezone_id => 'UTC',
-         p_office_id => l_location_office_id
-      );
-      return l_location_level_value;
-   exception
-      when no_data_found then
-         return null; -- if no data found, return null
+      begin
+         cwms_level.retrieve_location_level_value(
+            p_level_value => l_location_level_value,
+            p_location_level_id => l_location_id||'.'||l_parameter_w_sub_param||'.'||c_param_type||'.'||c_duration||'.'||p_specified_level_id,
+            p_level_units => cwms_util.get_default_units('Elev'),
+            p_date => cast(systimestamp at time zone 'UTC' as date), -- use the current date
+            p_timezone_id => 'UTC',
+            p_office_id => l_location_office_id
+         );
+         return l_location_level_value;
+      exception
+         when others then
+            -- Retrieve the error code for the specific error name
+            select err_code
+               into l_err_code
+            from cwms_error
+            where err_name = l_err_no_pool_level
+               and rownum = 1; -- Ensure only one row is fetched
+            -- Match against the dynamic error code
+            if sqlcode = l_err_code then
+               return null; -- Return null for this specific error
+            else
+               raise; -- Re-raise the exception for any other errors
+            end if;
+      end;
 end get_pool_level_value;
 
 PROCEDURE retrieve_lock(
@@ -411,6 +426,7 @@ is
    l_warning_buffer_value number;
    l_high_water_upper_warning_value number;
    l_high_water_lower_warning_value number;
+   l_chamber_desc lookup_type_obj_t := null;
 begin
    p_lock := null;
    ---------------------------------------------------------------------------------
@@ -470,6 +486,18 @@ begin
          l_high_water_lower_warning_value := l_high_water_lower_pool_value - l_warning_buffer_value;
       end if;
 
+      -- Create lookup_type_obj_t if data exists
+      if rec.gate_office_id is not null and rec.chamber_type_display_value is not null then
+         l_chamber_desc := lookup_type_obj_t(
+               rec.gate_office_id,
+               rec.chamber_type_display_value,
+               rec.chamber_type_tooltip,
+               rec.chamber_type_active
+            );
+      else
+         l_chamber_desc := null;
+      end if;
+
       ----------------------------
       -- create the lock object --
       ----------------------------
@@ -491,7 +519,7 @@ begin
          l_low_water_lower_pool_value ,   -- Low Water Lower Pool value
          l_high_water_upper_warning_value, -- High Water Upper Warning value
          l_high_water_lower_warning_value, -- High Water Lower Warning value
-         lookup_type_obj_t(rec.gate_office_id, rec.chamber_type_display_value, rec.chamber_type_tooltip, rec.chamber_type_active)
+         l_chamber_desc -- Chamber location description
       );
    end loop;
 end retrieve_lock;
@@ -656,35 +684,37 @@ begin
       values l_lock_rec;
    end if;
 
-   -- update the chamber_location_description in at_lock_gate_type
-   begin
-      -- Retrieve the chamber_type_code from at_lock_gate_type based on the office_id and display_value
-      select chamber_type_code
-      into l_lock_rec.chamber_location_description_code
-      from at_lock_gate_type
-      where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_lock.chamber_location_description.office_id))
-         and upper(chamber_type_display_value) = upper(p_lock.chamber_location_description.display_value);
+    if p_lock.chamber_location_description is not null then
+      -- update the chamber_location_description in at_lock_gate_type
+      begin
+         -- Retrieve the chamber_type_code from at_lock_gate_type based on the office_id and display_value
+         select chamber_type_code
+         into l_lock_rec.chamber_location_description_code
+         from at_lock_gate_type
+         where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_lock.chamber_location_description.office_id))
+            and upper(chamber_type_display_value) = upper(p_lock.chamber_location_description.display_value);
 
-      -- if a match is found, update the chamber_location_description_code in the at_lock table
-      update at_lock
-         set chamber_location_description_code = l_lock_rec.chamber_location_description_code
-      where lock_location_code = l_lock_rec.lock_location_code;
+         -- if a match is found, update the chamber_location_description_code in the at_lock table
+         update at_lock
+            set chamber_location_description_code = l_lock_rec.chamber_location_description_code
+         where lock_location_code = l_lock_rec.lock_location_code;
 
-   -- Exception handling in case no match is found
-   exception
-      when no_data_found then
-         cwms_err.raise(
-            'ERROR',
-            'Specified chamber type ('
-            || p_lock.chamber_location_description.office_id
-            || '/'
-            || p_lock.chamber_location_description.display_value
-            || ') does not exist for lock location'
-            || p_lock.lock_location.location_ref.get_office_id
-            || '/'
-            || p_lock.lock_location.location_ref.get_location_id
-         );
-   end;
+      -- Exception handling in case no match is found
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ERROR',
+               'Specified chamber type ('
+               || p_lock.chamber_location_description.office_id
+               || '/'
+               || p_lock.chamber_location_description.display_value
+               || ') does not exist for lock location'
+               || p_lock.lock_location.location_ref.get_office_id
+               || '/'
+               || p_lock.lock_location.location_ref.get_location_id
+            );
+      end;
+   end if;
 end store_lock;
 
 
