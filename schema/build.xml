@@ -19,6 +19,7 @@
    <!-- Allow for now but this should've always been grouped under cwms. -->
    <property name="docker.props.image.basename_old" value="cwms_schema_installer"/>
    <property name="docker.registry" value="registry.hecdev.net"/>
+   <property name="docker.registry_public" value="registry-public.hecdev.net"/>
    <property name="dryrun" value="false"/>
 
    <target name="version">
@@ -1488,8 +1489,11 @@
    <target name="docker.push" depends="docker.setupparameters,docker.create_ready_database">
       <echo message="Pushing docker image."/>
       <property name="image_with_reg" value="${docker.registry}/${docker.props.image.basename}"/>
+      <property name="image_with_reg_public" value="${docker.registry_public}/${docker.props.image.basename}"/>
       <property name="ready_image_with_reg" value="${docker.registry}/${ready_database.image_name}"/>
+      <property name="ready_image_with_reg_public" value="${docker.registry_public}/${ready_database.image_name}"/>
       <property name="ready_image_local_fullname" value="${ready_database.image_name}:${tmp.image_version}"/>
+
       <if>
          <and>
             <isset property="teamcity.branch"/>
@@ -1505,8 +1509,12 @@
             <echo message="Tagging images for registry"/>
             <docker.tag_image source="${docker.props.image_name}" target="${image_with_reg}:${pom.version}"/>
             <docker.tag_image source="${docker.props.image_name}" target="${image_with_reg}:${latest_value}"/>
+            <docker.tag_image source="${docker.props.image_name}" target="${image_with_reg_public}:${pom.version}"/>
+            <docker.tag_image source="${docker.props.image_name}" target="${image_with_reg_public}:${latest_value}"/>
             <docker.tag_image source="${ready_image_local_fullname}" target="${ready_image_with_reg}:${pom.version}"/>
             <docker.tag_image source="${ready_image_local_fullname}" target="${ready_image_with_reg}:${latest_value}"/>
+            <docker.tag_image source="${ready_image_local_fullname}" target="${ready_image_with_reg_public}:${pom.version}"/>
+            <docker.tag_image source="${ready_image_local_fullname}" target="${ready_image_with_reg_public}:${latest_value}"/>
 
             <if>
                <not>
@@ -1517,6 +1525,10 @@
                   <docker.push_image source="${image_with_reg}:${latest_value}"/>
                   <docker.push_image source="${ready_image_with_reg}:${pom.version}"/>
                   <docker.push_image source="${ready_image_with_reg}:${latest_value}"/>
+                  <docker.push_image source="${image_with_reg_public}:${pom.version}"/>
+                  <docker.push_image source="${image_with_reg_public}:${latest_value}"/>
+                  <docker.push_image source="${ready_image_with_reg_public}:${pom.version}"/>
+                  <docker.push_image source="${ready_image_with_reg_public}:${latest_value}"/>
                </then>
                <else>
                   <echo message="Dry Not, not actually pushing images, just tagging."/>
