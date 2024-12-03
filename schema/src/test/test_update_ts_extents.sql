@@ -23,6 +23,8 @@ procedure cwdb_213_utx_job_delays_5_seconds;
 procedure cwdb_220_null_in_subquery_affects_update_ts_extents;
 --%test(Add HAS_NON_ZERO_QUALITY field to TS extents [Jira issue CWDB-200])
 procedure cwdb_200_ts_extents_has_field_for_non_zero_quality;
+--%test(TS Extents problems with existing time series without data [Jira issues CWDB-313 and CWDB-314])
+procedure test_cwdb_313_314_ts_extents_with_ts_with_no_values;
 
 procedure setup;
 procedure teardown;
@@ -861,6 +863,81 @@ begin
    cwms_ts.update_ts_extents;
 
 end cwdb_200_ts_extents_has_field_for_non_zero_quality;
+
+--------------------------------------------------------------------------------
+-- procedure test_cwdb_313_314_ts_extents_with_ts_with_no_values
+--------------------------------------------------------------------------------
+procedure test_cwdb_313_314_ts_extents_with_ts_with_no_values
+is
+    l_ts_data       cwms_t_ztsv_array            := cwms_t_ztsv_array();
+    l_ts_code       integer;
+    l_timestamp     timestamp with time zone;
+    l_log_rec       all_scheduler_job_run_details%rowtype;
+begin
+    for i in 1..20 loop
+        l_ts_data.extend;
+        l_ts_data(i) := cwms_t_ztsv(c_base_start_date + i / 24, i, 0);
+    end loop;
+    begin
+        cwms_loc.delete_location (
+            p_location_id   => c_location_id,
+            p_delete_action => cwms_util.delete_all,
+            p_db_office_id  => c_office_id);
+    exception
+        when others then null;
+    end;
+
+    cwms_loc.store_location (
+        p_location_id  => c_location_id,
+        p_db_office_id => c_office_id);
+
+    cwms_ts.zstore_ts (
+        p_cwms_ts_id      => c_ts_id,
+        p_units           => c_units,
+        p_timeseries_data => l_ts_data,
+        p_store_rule      => cwms_util.replace_all,
+        p_version_date    => cwms_util.non_versioned,
+        p_office_id       => c_office_id);
+    commit;
+
+    l_ts_code := cwms_ts.get_ts_code(c_ts_id, c_office_id);
+    l_timestamp := systimestamp;
+
+    cwms_ts.delete_ts(
+        p_cwms_ts_id           => c_ts_id,
+        p_override_protection  => 'F',
+        p_start_time           => l_ts_data(1).date_time,
+        p_end_time             => l_ts_data(l_ts_data.count).date_time,
+        p_start_time_inclusive => 'T',
+        p_end_time_inclusive   => 'T',
+        p_version_date         => cwms_util.non_versioned,
+        p_time_zone            => 'UTC',
+        p_ts_item_mask         => cwms_util.ts_values,
+        p_db_office_id         => c_office_id);
+    commit;
+
+    while systimestamp - l_timestamp < interval '30' second loop
+        cwms_ts.get_latest_utx_job_details(l_log_rec, l_ts_code, cwms_util.non_versioned);
+        exit when l_log_rec.log_date >= l_timestamp;
+        dbms_session.sleep(.1);
+    end loop;
+    ut.expect(l_log_rec.log_id).to_be_not_null;
+    ut.expect(l_log_rec.log_date).to_be_greater_thaN(l_timestamp);
+    -- without fix:
+    --      FAILURE
+    --      Actual: 'FAILED' (varchar2) was expected to equal: 'SUCCEEDED' (varchar2)
+    --      at "anonymous block", line 67
+    --      FAILURE
+    --      Actual: (varchar2)
+    --          'ORA-00001: unique constraint (CWMS_20.AT_TS_EXTENTS_PK) violated
+    --          ORA-06512: at "CWMS_20.CWMS_TS", line 5022
+    --          ORA-06512: at line 1
+    --          '
+    --      was expected to be null
+    ut.expect(l_log_rec.status).to_equal('SUCCEEDED');
+    ut.expect(l_log_rec.additional_info).to_be_null;
+
+end test_cwdb_313_314_ts_extents_with_ts_with_no_values;
 
 end test_update_ts_extents;
 /
