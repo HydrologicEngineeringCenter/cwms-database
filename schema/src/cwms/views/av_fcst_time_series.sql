@@ -3,10 +3,10 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_FCST_TIME_SERIES
 /**
  * Information about forecast time series.
  *
- * @field office_id        The office that owns the forecast
+ * @field office_id       The office that owns the forecast
  * @field fcst_spec_id    "Main name" of the forecast specification
  * @field fcst_designator "Sub-name" of the forecast specification, if any
- * @field tsid            The text ID of this time series
+ * @field cwms_ts_id      The text ID of this time series
  * @field office_code     Numerical code of office that owns specification
  * @field fcst_spec_code  UUID of specification
  * @field ts_code         Numerical code of time series

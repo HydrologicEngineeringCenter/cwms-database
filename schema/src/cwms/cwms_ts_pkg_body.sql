@@ -7198,6 +7198,7 @@ AS
          delete from at_ts_group_assignment where l_ts_code in (ts_code, ts_ref_code);
          delete from at_location_level where ts_code = l_ts_code;
          delete from at_forecast_ts where ts_code = l_ts_code;
+         delete from at_fcst_time_series where ts_code = l_ts_code;
          delete from at_xchg_dss_ts_mappings where cwms_ts_code = l_ts_code;
          delete from at_screening where ts_code = l_ts_code;
          delete from at_shef_decode where ts_code = l_ts_code;

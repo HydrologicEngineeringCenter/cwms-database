@@ -19,7 +19,7 @@ create or replace view av_fcst_location (
    location_id,
    office_code,
    fcst_spec_code,
-   location_code_code)
+   location_code)
 as
 select o.office_id,
        fs.fcst_spec_id,

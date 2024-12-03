@@ -179,8 +179,6 @@ begin
          ) b
       on
          (a.fcst_spec_code = b.fcst_spec_code and a.primary_location_code = b.location_code)
-      when matched then
-         update set a.primary_location_code = l_location_code
       when not matched then
          insert values (l_rec.fcst_spec_code, l_location_code);
    end if;
@@ -239,12 +237,12 @@ begin
    else
       l_office_id_mask := cwms_util.normalize_wildcards(p_office_id_mask);
    end if;
-   -- 1 office_id        varchar2(16)
-   -- 2 fcst_spec_id     varchar2(32)
-   -- 3 fcst_desnator_id varchar2(57)
-   -- 4 entity_id        varchar2(32)
-   -- 5 entity_name      varchar2(32)
-   -- 6 description      varchar2(256)
+   -- 1 office_id          varchar2(16)
+   -- 2 fcst_spec_id       varchar2(32)
+   -- 3 fcst_designator_id varchar2(57)
+   -- 4 entity_id          varchar2(32)
+   -- 5 entity_name        varchar2(32)
+   -- 6 description        varchar2(256)
    -- 7 times_series_ids sys_refcursor 7.1 time_series_id varchar2(193)
    open p_cursor for
       select o.office_id,
@@ -433,6 +431,12 @@ begin
       -- delete key --
       ----------------
       delete
+        from at_fcst_location
+       where fcst_spec_code = l_fcst_spec_code;
+      delete
+        from at_fcst_time_series
+       where fcst_spec_code = l_fcst_spec_code;
+      delete
         from at_fcst_spec
        where fcst_spec_code = l_fcst_spec_code;
    end if;
@@ -464,9 +468,9 @@ is
    l_fail_if_exists  boolean;
    l_ignore_nulls    boolean;
    l_fcst_inst_rec   at_fcst_inst%rowtype;
-   l_key_value_info  cwms_util.json_value_tab_t;
-   l_key             cwms_util.json_value_t;
-   l_value           cwms_util.json_value_rec_t;
+   l_json_obj        json_object_t;
+   l_keys            json_key_list;
+   l_value           varchar2(4000);
 begin
    -------------------
    -- sanity checks --
@@ -548,30 +552,24 @@ begin
    -- update at_fcst_info table --
    -------------------------------
    if p_fcst_info is not null then
-      l_key_value_info := cwms_util.parse_json(p_fcst_info);
-      l_key := l_key_value_info.first;
-      while l_key is not null loop
-         l_value := l_key_value_info(l_key);
-         l_value.value := case l_value.type
-                          when cwms_util.json_type_string then '"'||l_value.value||'"'
-                          when cwms_util.json_type_null then null
-                          else l_value.value
-                          end;
+      l_json_obj := json_object_t.parse(p_fcst_info);
+      l_keys := l_json_obj.get_keys;
+      for i in 1..l_keys.count loop
+         l_value := l_json_obj.get(l_keys(i)).to_string;
          merge into
             at_fcst_info a
          using
             (select
                 l_fcst_inst_rec.fcst_inst_code as fcst_inst_code,
-                l_key as key
+                l_keys(i) as key
              from dual
             ) b
          on
             (a.fcst_inst_code = b.fcst_inst_code and a.key = b.key)
          when matched then
-            update set value = l_value.value
+            update set value = l_value
          when not matched then
-            insert values (l_fcst_inst_rec.fcst_inst_code, l_key, l_value.value);
-         l_key := l_key_value_info.next(l_key);
+            insert values (l_fcst_inst_rec.fcst_inst_code, l_keys(i), l_value);
       end loop;
    end if;
 end store_fcst;
@@ -590,6 +588,7 @@ procedure store_fcst_file(
 is
    l_fcst_spec_code  at_fcst_spec.fcst_spec_code%type;
    l_fcst_inst_code  at_fcst_inst.fcst_inst_code%type;
+   l_office_id       cwms_office.office_id%type;
    l_office_code     cwms_office.office_code%type;
    l_time_zone_id    cwms_time_zone.time_zone_name%type;
    l_fcst_time_utc   date;
@@ -621,13 +620,24 @@ begin
       l_fcst_time_utc  := cwms_util.change_timezone(p_forecast_date_time, l_time_zone_id, 'UTC');
       l_issue_time_utc := cwms_util.change_timezone(p_issue_date_time, l_time_zone_id, 'UTC');
    end if;
-   ---------------------------
-   -- get the instance code --
-   ---------------------------
+   --------------------------------------
+   -- get the instance code and record --
+   --------------------------------------
    l_fcst_inst_code := get_fcst_inst_code(l_fcst_spec_code, l_fcst_time_utc, l_issue_time_utc, 'T');
+   select * into l_fcst_inst_rec from at_fcst_inst where fcst_inst_code = l_fcst_inst_code;
    -------------------------------------------
    -- store the file in the instance record --
    -------------------------------------------
+   if l_fail_if_exists and l_fcst_inst_rec.blob_file is not null then
+      l_office_id := cwms_util.get_db_office_id(l_office_code);
+      cwms_err.raise(
+         'ERROR',
+         'Forecast instance '
+         ||l_office_id||'/'||p_fcst_spec_id||'/'||p_fcst_designator
+         ||'/'||to_char(l_fcst_time_utc, 'yyyy-mm-dd"T"hh24:mi:ss"Z"')
+         ||'/'||to_char(l_issue_time_utc, 'yyyy-mm-dd"T"hh24:mi:ss"Z"')
+         ||' already has a forecast file');
+   end if;
    update
       at_fcst_inst
    set
@@ -716,6 +726,7 @@ begin
             when (sysdate - fi.issue_date_time) * 24 > fi.max_age then 'F'
             else 'T'
          end as valid,
+         fi.notes,
          case when fi.blob_file is null then null else fi.blob_file.filename end as file_name,
          case when fi.blob_file is null then null else dbms_lob.getlength(fi.blob_file.the_blob )end as file_size,
          case when fi.blob_file is null then null else fi.blob_file.media_type end as file_media_type,
@@ -888,6 +899,7 @@ begin
    if l_fcst_info is not null then
       l_fcst_info := l_fcst_info||'}';
    end if;
+   p_fcst_info := l_fcst_info;
    -------------------------
    -- get the time series --
    -------------------------
@@ -906,21 +918,25 @@ begin
               )
    loop
       l_exists := 'F';
-      select 'T'
-        into l_exists
-        from dual
-       where exists (select
-                       ts_code
-                     from
-                        av_tsv
-                     where
-                        ts_code = rec.ts_code
-                        and version_date = l_issue_time_utc
-                        and date_time  >= case when l_start_time is null then date_time else l_start_time end
-                        and date_time  <= case when l_end_time is null then date_time else l_end_time end
-                        and start_date <= case when l_end_time is null then date_time else l_end_time end
-                        and end_date   >  case when l_start_time is null then date_time else l_start_time end
-                    );
+      begin
+         select 'T'
+         into l_exists
+         from dual
+         where exists (select
+                        ts_code
+                        from
+                           av_tsv
+                        where
+                           ts_code = rec.ts_code
+                           and version_date = l_issue_time_utc
+                           and date_time  >= case when l_start_time is null then date_time else l_start_time end
+                           and date_time  <= case when l_end_time is null then date_time else l_end_time end
+                           and start_date <= case when l_end_time is null then date_time else l_end_time end
+                           and end_date   >  case when l_start_time is null then date_time else l_start_time end
+                     );
+      exception
+         when no_data_found then null;
+      end;
       if l_exists = 'T' then
          l_tsids.extend;
          l_tsids(l_tsids.count) := rec.cwms_ts_id;

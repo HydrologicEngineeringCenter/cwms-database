@@ -1,3 +1,4 @@
+delete from at_clob where id = '/VIEWDOCS/AV_FCST_INST';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_FCST_INST', null,
 '
 /**
@@ -20,7 +21,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_FCST_INST', null
 create or replace view av_fcst_inst (
    office_id,
    fcst_spec_id,
-   location_id,
+   fcst_designator,
    fcst_date_time_utc,
    issue_date_time_utc,
    valid_hours,
