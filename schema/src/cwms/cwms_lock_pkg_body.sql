@@ -489,11 +489,11 @@ begin
       -- Create lookup_type_obj_t if data exists
       if rec.gate_office_id is not null and rec.chamber_type_display_value is not null then
          l_chamber_desc := lookup_type_obj_t(
-               rec.gate_office_id,
-               rec.chamber_type_display_value,
-               rec.chamber_type_tooltip,
-               rec.chamber_type_active
-            );
+            rec.gate_office_id,
+            rec.chamber_type_display_value,
+            rec.chamber_type_tooltip,
+            rec.chamber_type_active
+         );
       else
          l_chamber_desc := null;
       end if;
@@ -684,7 +684,7 @@ begin
       values l_lock_rec;
    end if;
 
-    if p_lock.chamber_location_description is not null then
+   if p_lock.chamber_location_description is not null then
       -- update the chamber_location_description in at_lock_gate_type
       begin
          -- Retrieve the chamber_type_code from at_lock_gate_type based on the office_id and display_value
