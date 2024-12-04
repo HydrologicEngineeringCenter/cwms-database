@@ -27,7 +27,7 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
    PROCEDURE setup IS
       BEGIN
          cwms_loc.store_location2(
-            p_location_id => 'ReqLock1',
+            p_location_id => 'CDSO2',
             p_location_type => null,
             p_elevation => null,
             p_elev_unit_id => null,
@@ -53,7 +53,7 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
             p_db_office_id => 'SPK');
          commit;
          cwms_loc.store_location2(
-            p_location_id => 'TestLockLocation123',
+            p_location_id => 'NEWT-Lock',
             p_location_type => null,
             p_elevation => null,
             p_elev_unit_id => null,
@@ -79,7 +79,7 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
             p_db_office_id => 'SPK');
          commit;
          cwms_loc.store_location2(
-               p_location_id => 'TestLockLocation1234',
+               p_location_id => 'ROBE-Lock',
                p_location_type => null,
                p_elevation => null,
                p_elev_unit_id => null,
@@ -105,7 +105,7 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
                p_db_office_id => 'SPK');
          commit;
          cwms_project.store_project(project_obj_t(
-               cwms_t_location_obj(cwms_t_location_ref('ReqLock1', 'SPK')),
+               cwms_t_location_obj(cwms_t_location_ref('CDSO2', 'SPK')),
                null,
                null,
                null,
@@ -129,18 +129,18 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
       BEGIN
          COMMIT;
 
-         cwms_project.DELETE_PROJECT(p_project_id => 'ReqLock1',
+         cwms_project.DELETE_PROJECT(p_project_id => 'CDSO2',
             p_delete_action => cwms_util.delete_all,
             p_db_office_id => 'SPK');
          COMMIT;
          cwms_loc.delete_location(
-            p_location_id   => 'ReqLock1',
+            p_location_id   => 'CDSO2',
             p_delete_action => cwms_util.delete_all,
             p_db_office_id  => 'SPK');
          COMMIT;
 
          cwms_loc.delete_location(
-            p_location_id   => 'TestLockLocation123',
+            p_location_id   => 'NEWT-Lock',
             p_delete_action => cwms_util.delete_all,
             p_db_office_id  => 'SPK');
          COMMIT;
@@ -149,11 +149,11 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
    PROCEDURE test_store_and_retrieve IS
       l_lock_obj           lock_obj_t;
       l_retrieved_lock_obj lock_obj_t;
-      l_lock_location_ref  location_ref_t := location_ref_t('TestLockLocation123', 'SPK');
+      l_lock_location_ref  location_ref_t := location_ref_t('NEWT-Lock', 'SPK');
       l_warning_buffer     number;
       c_office_id          CONSTANT VARCHAR2(16) := 'SPK';
-      proj_location_id     CONSTANT VARCHAR2(16) := 'ReqLock1';
-      c_location_id        CONSTANT VARCHAR2(57) := 'TestLockLocation123';
+      proj_location_id     CONSTANT VARCHAR2(16) := 'CDSO2';
+      c_location_id        CONSTANT VARCHAR2(57) := 'NEWT-Lock';
       c_parameter          CONSTANT VARCHAR2(49) := 'Elev-Closure';
       c_param_type         CONSTANT VARCHAR2(16) := 'Inst';
       c_duration           CONSTANT VARCHAR2(16) := '0';
@@ -233,7 +233,7 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
       ut.expect(l_warning_buffer).to_equal(3.0);
 
       --get warning buffer for a location that doesn't have a location level warning buffer
-      l_warning_buffer := cwms_lock.get_warning_buffer_value(location_ref_t('ReqLock1', 'SPK').get_location_code());
+      l_warning_buffer := cwms_lock.get_warning_buffer_value(location_ref_t('CDSO2', 'SPK').get_location_code());
       ut.expect(l_warning_buffer).to_equal(0.6096);
 
    END test_store_and_retrieve;
@@ -241,9 +241,9 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
    PROCEDURE test_store_and_retrieve_no_pool_levels IS
       l_lock_obj           lock_obj_t;
       l_retrieved_lock_obj lock_obj_t;
-      l_lock_location_ref  location_ref_t := location_ref_t('TestLockLocation1234', 'SPK');
+      l_lock_location_ref  location_ref_t := location_ref_t('ROBE-Lock', 'SPK');
       c_office_id          CONSTANT VARCHAR2(16) := 'SPK';
-      proj_location_id     CONSTANT VARCHAR2(16) := 'ReqLock1';
+      proj_location_id     CONSTANT VARCHAR2(16) := 'CDSO2';
    BEGIN
 
       setup();
@@ -295,9 +295,9 @@ CREATE OR REPLACE PACKAGE BODY test_cwms_lock AS
 
    PROCEDURE test_invalid_pool_values IS
       l_lock_obj           lock_obj_t;
-      l_lock_location_ref  location_ref_t := location_ref_t('TestLockLocation123', 'SPK');
+      l_lock_location_ref  location_ref_t := location_ref_t('NEWT-Lock', 'SPK');
       c_office_id          CONSTANT VARCHAR2(16) := 'SPK';
-      proj_location_id     CONSTANT VARCHAR2(16) := 'ReqLock1';
+      proj_location_id     CONSTANT VARCHAR2(16) := 'CDSO2';
    BEGIN
       l_lock_obj := lock_obj_t(
          project_location_ref => location_ref_t(proj_location_id,c_office_id),
