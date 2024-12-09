@@ -56,6 +56,27 @@ PROMPT VERIFYING EXPECTED VERSION
 select systimestamp from dual;
 @@./24_12_04/verify_db_version
 
+
+
+PROMPT ################################################################################
+PROMPT REMOVING REMOVE_DEAD_SUBSCRIBERS JOB
+select systimestamp from dual;
+begin
+    dbms_scheduler.drop_job(job_name => '&cwms_schema..remove_dead_subscribers_job',
+                            defer => false,
+                            force => true);
+exception
+   when others then
+      dbms_output.put_line(sqlerrm);
+end;
+/
+
+PROMPT ################################################################################
+PROMPT SAVING PRE-UPDATE PRIVILEGES
+select systimestamp from dual;
+@@./util/preupdate_privs.sql;
+
+
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING COLUMN-TYPE SPECIFICATIONS
 select systimestamp from dual;
@@ -213,6 +234,8 @@ begin
    end loop;
 end;
 /
+PROMPT ################################################################################
+PROMPT RESTORING PRE-UPDATE PRIVILEGES
 @@./util/restore_privs
 
 PROMPT ################################################################################
