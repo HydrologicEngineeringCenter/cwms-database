@@ -96,11 +96,13 @@ drop type lock_obj_t force;
 
 @../cwms/types/lock_obj_t
 
-@../cwms/types/streamflow_meas2_t-body
-@../cwms/types/streamflow_meas2_t
-@../cwms/types/streamflow_meas2_tab_t
-@../cwms/types/supp_streamflow_meas_t-body
 @../cwms/types/supp_streamflow_meas_t
+@../cwms/types/supp_streamflow_meas_t-body
+@../cwms/types/streamflow_meas2_t
+@../cwms/types/streamflow_meas2_t-body
+@../cwms/types/streamflow_meas2_tab_t
+
+
 
 
 PROMPT ################################################################################
