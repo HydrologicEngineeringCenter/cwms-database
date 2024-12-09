@@ -82,8 +82,6 @@ INSERT INTO at_specified_level VALUES(29, 53, 'Low Water Upper Pool',           
 INSERT INTO at_specified_level VALUES(30, 53, 'Low Water Lower Pool',              'Low Water Lower Pool Level');
 INSERT INTO at_specified_level VALUES(31, 53, 'Warning Buffer',                    'Warning Buffer level');
 
-alter table at_streamflow_meas add supplemental_streamflow_meas supp_streamflow_meas_t;
-
 @./24_12_04/data_acquisition
 
 update CWMS_COUNTY set COUNTY_NAME =  'LaMoure' where COUNTY_CODE = 38045;
@@ -103,7 +101,7 @@ drop type lock_obj_t force;
 @../cwms/types/streamflow_meas2_tab_t
 
 
-
+alter table at_streamflow_meas add supplemental_streamflow_meas supp_streamflow_meas_t;
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING VIEWS
