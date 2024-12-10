@@ -161,6 +161,7 @@ select systimestamp from dual;
 
 @../cwms/cwms_cache_pkg_body
 @../cwms/cwms_cat_pkg_body
+@../cwms/cwms_cma_pkg_body
 @../cwms/cwms_level_pkg_body
 @../cwms/cwms_loc_pkg_body
 @../cwms/cwms_lock_pkg_body
