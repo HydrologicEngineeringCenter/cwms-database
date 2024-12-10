@@ -5596,23 +5596,24 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
                                   p_db_office_id));
 
             lock_obj :=
-               lock_obj_t (lock_project_id --:P36_PROJECT_LOCATION_ID --project_location_ref
-                                          ,
-                           lock_loc_obj --:P36_LOCATION_ID_EDIT    --lock_location
-                                       ,
-                           p_lock_vol_per_lockage         --volume_per_lockage
-                                                 ,
-                           p_lock_vol_units_id               --volume_units_id
-                                              ,
-                           p_lock_lock_width                      --lock_width
-                                            ,
-                           p_lock_lock_length                    --lock_length
-                                             ,
-                           p_lock_min_draft                    --minimum_draft
-                                           ,
-                           p_lock_norm_lock_lift            --normal_lock_lift
-                                                ,
-                           p_lock_units_id                          --units_id
+               lock_obj_t (lock_project_id, --:P36_PROJECT_LOCATION_ID -- project_location_ref
+                           lock_loc_obj,    --:P36_LOCATION_ID_EDIT    -- lock_location
+                           p_lock_vol_per_lockage,                     -- volume_per_lockage
+                           p_lock_vol_units_id,                        -- volume_units_id
+                           p_lock_lock_width,                          -- lock_width
+                           p_lock_lock_length,                         -- lock_length
+                           p_lock_min_draft,                           -- minimum_draft
+                           p_lock_norm_lock_lift,                      -- normal_lock_lift
+                           p_lock_units_id,                            -- length units_id                              ,
+                           null,                                       -- maximum lock lift
+                           null,                                       -- elev units
+                           null,                                       -- elev_closure_high_water_upper_pool
+                           null,                                       -- elev_closure_high_water_lower_pool
+                           null,                                       -- elev_closure_low_water_upper_pool
+                           null,                                       -- elev_closure_low_water_lower_pool
+                           null,                                       -- elev_closure_high_water_upper_warning
+                           null,                                       -- elev_closure_high_water_lower_warning
+                           null                                        -- chamber location description                     
                                           );
 
             cwms_lock.store_lock (p_lock             => lock_obj,

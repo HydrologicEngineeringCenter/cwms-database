@@ -2063,6 +2063,10 @@ INSERT INTO at_ts_group VALUES (101, 3, 'CorpsNet Exclude List', 'These TS Id''s
 INSERT INTO at_ts_group VALUES (102, 3, 'DMZ Include List', 'These TS Id''s will be streamed to the National DMZ CWMS DB', 53, NULL, NULL);
 INSERT INTO at_ts_group VALUES (103, 3, 'DMZ Exclude List', 'These TS Id''s will not be streamed to the National DMZ CWMS DB', 53, NULL, NULL);
 INSERT INTO at_ts_group VALUES (201, 10, 'USGS TS Data Acquisition', 'These TS Id''s will be used to store data acquired from the USGS', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (202, 10, 'ECCC TS Data Acquisition', 'These TS Id''s will be used to store data acquired from Environment and Climate Change Canada', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (203, 10, 'SHEF Data Acquisition', 'These TS Id''s will be used to store SHEF data', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (204, 10, 'NRCS Data Acquisition', 'These TS Id''s will be used to grab SNOTEL data from the NRCS', 53, NULL, NULL);
+
 COMMIT ;
 -----
 

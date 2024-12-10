@@ -2325,7 +2325,7 @@ counties = [
     [38039, 'Griggs'],
     [38041, 'Hettinger'],
     [38043, 'Kidder'],
-    [38045, 'La Moure'],
+    [38045, 'LaMoure'],
     [38047, 'Logan'],
     [38049, 'McHenry'],
     [38051, 'McIntosh'],
