@@ -7,8 +7,7 @@ create table at_fcst_spec (
    description     varchar2(256),
    constraint at_fsct_spec_pk  primary key (fcst_spec_code),
    constraint at_fcst_spec_fk1 foreign key (office_code) references cwms_office (office_code),
-   constraint at_fcst_spec_fk2 foreign key (source_entity) references at_entity (entity_code),
-   constraint at_fcst_spec_ck1 check (fcst_spec_id = upper(fcst_spec_id))
+   constraint at_fcst_spec_fk2 foreign key (source_entity) references at_entity (entity_code)
 ) tablespace cwms_20at_data;
 
 create unique index at_fcst_spec_idx1 on at_fcst_spec (office_code, upper(fcst_spec_id), upper(nvl(fcst_designator, '~')));

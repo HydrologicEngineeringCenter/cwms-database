@@ -6,13 +6,16 @@ create or replace type blob_file_t
  */
 under file_t (
    the_blob blob,
-   
+
+   constructor function blob_file_t(filename varchar2, media_type varchar2, quality_code integer, description varchar2, the_blob blob)
+      return self as result,
+
    constructor function blob_file_t(filename varchar2, media_type varchar2, quality_code integer, the_blob blob)
       return self as result,
- 
+
    overriding map member function to_string
       return varchar2,
-   
+
    overriding member procedure validate_obj
 )
 final;
