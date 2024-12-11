@@ -1,5 +1,29 @@
 create or replace type body blob_file_t as
- 
+
+   /**
+    * Constructor
+    *
+    * @param filename     The name of the file object - extension must be valid for media type
+    * @param media_type   The media type code - must be a valid blob media type
+    * @param quality_code A QUALTITY_CODE value from CWMS_DATA_QUALITY table
+    * @param description  Description of file content
+    * @param the_blob     The blob content of the file
+    * @return             The constructed and validiated objecct
+    */
+   constructor function blob_file_t(filename varchar2, media_type varchar2, quality_code integer, description varchar2, the_blob blob)
+      return self as result
+   is
+   begin
+      self.filename := filename;
+      self.media_type := media_type;
+      self.quality_code := nvl(quality_code, 0);
+      self.data_entry_date := systimestamp; -- CWMS systems must run in UTC
+      self.description := description;
+      self.the_blob := the_blob;
+      validate_obj;
+      return;
+   end blob_file_t;
+
    /**
     * Constructor
     *
@@ -93,7 +117,7 @@ create or replace type body blob_file_t as
         from dual
        where exists (select quality_code
                       from cwms_data_quality
-                     where quality_code = self.quality_code 
+                     where quality_code = self.quality_code
                     );
       if l_flag = 'F' then
          cwms_err.raise('INVALID_ITEM', self.quality_code, 'CWMS data quality code');

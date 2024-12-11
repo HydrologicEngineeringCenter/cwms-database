@@ -6,10 +6,13 @@ create or replace type text_file_t
  */
 under file_t (
    the_text clob,
-   
+
+   constructor function text_file_t(filename varchar2, media_type varchar2, quality_code integer, description varchar2, the_text clob)
+      return self as result,
+
    constructor function text_file_t(filename varchar2, media_type varchar2, quality_code integer, the_text clob)
       return self as result,
- 
+
    overriding map member function to_string
       return varchar2,
 

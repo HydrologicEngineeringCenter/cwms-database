@@ -19,14 +19,24 @@ c_iso_format_tz   constant varchar2(29)                       := 'yyyy-mm-dd"T"h
 c_office_id       constant cwms_office.office_id%type         := '&&office_id';
 c_location_id     constant at_cwms_ts_id.location_id%type     := 'FcstTestLoc';
 c_time_zone_id    constant cwms_time_zone.time_zone_name%type := 'US/Pacific';
-c_fcst_spec_id    constant at_fcst_spec.fcst_spec_id%type     := 'TEST';
+c_fcst_spec_id    constant at_fcst_spec.fcst_spec_id%type     := 'Test';
 c_fcst_designator constant at_fcst_spec.fcst_designator%type  := 'Designator';
 c_fcst_date       constant date            := to_date('2024-11-22T08:00:00', c_iso_format);
 c_end_date        constant date            := c_fcst_date + 7;
 c_issue_date      constant date            := to_date('2024-11-22T12:00:00', c_iso_format);
 c_max_age         constant binary_integer  := 12;
 c_fcst_notes      constant varchar2(32767) := 'Questionable stage reading at Elm Stree Bridge';
-c_fcst_info       constant varchar2(32767) := '{"startTime": "<start>", "endTime": "<end>", "userId": "<user>", "complex": {"a":1,"b":[123],"c":true,"d":false,"e":null}}';
+c_fcst_info       constant varchar2(32767) := '{
+   "startTime": "<start>",
+   "endTime"  : "<end>",
+   "userId"   : "<user>",
+   "number"   : 0.25,
+   "flag1"    : true,
+   "flag2"    : false,
+   "flag3"    :null,
+   "array"    : [1,2,"abc"],
+   "object"   : {"a":1,"b":[123],"c":true,"d":false,"e":null}
+}';
 end test_cwms_fcst;
 /
 show errors
@@ -195,11 +205,27 @@ begin
                p_entity_id       => 'CE'||c_office_id,
                p_description     => 'Test forecast spec',
                p_location_id     => l_location_id,
+               p_timeseries_ids  => substr(l_timeseries_ids, 1, instr(l_timeseries_ids, chr(10))-1),
+               p_fail_if_exists  => 'F',
+               p_ignore_nulls    => 'T',
+               p_office_id       => c_office_id);
+             -----------------------------------------------------------------
+             -- store with different spec_id case and addtional time series --
+             -----------------------------------------------------------------
+            cwms_fcst.store_fcst_spec(
+               p_fcst_spec_id    => upper(c_fcst_spec_id),
+               p_fcst_designator => l_fcst_designator,
+               p_entity_id       => 'CE'||c_office_id,
+               p_description     => 'Test forecast spec',
+               p_location_id     => l_location_id,
                p_timeseries_ids  => l_timeseries_ids,
                p_fail_if_exists  => 'F',
                p_ignore_nulls    => 'T',
                p_office_id       => c_office_id);
             begin
+               --------------------------------------
+               -- store with p_fail_if_exists == T --
+               --------------------------------------
                cwms_fcst.store_fcst_spec(
                   p_fcst_spec_id    => c_fcst_spec_id,
                   p_fcst_designator => l_fcst_designator,
@@ -410,6 +436,12 @@ begin
             else
                ut.expect(l_timeseries_ids_out).to_be_null;
             end if;
+            if has_designator = 1 and has_location = 1 and has_timeseries = 1 then
+               cwms_loc.delete_location(
+                  p_location_id   => l_location_id,
+                  p_delete_action => cwms_util.delete_all,
+                  p_db_office_id  => c_office_id);
+            end if;
             -----------------
             -- delete spec --
             -----------------
@@ -482,6 +514,7 @@ is
    l_fcst_info          varchar2(32767);
    l_client_userid      varchar2(100);
    l_file_contents      clob;
+   l_file_description   cwms_t_blob_file.description%type;
    l_blob_file          cwms_t_blob_file;
    l_fcst_date_utc      date := cwms_util.change_timezone(c_fcst_date, c_time_zone_id, 'UTC');
    l_issue_date_utc     date := cwms_util.change_timezone(c_issue_date, c_time_zone_id, 'UTC');
@@ -545,6 +578,7 @@ begin
    for rec in (select text from user_source where name = 'CWMS_FCST' and type = 'PACKAGE' order by line) loop
       l_file_contents := l_file_contents || rec.text;
    end loop;
+   l_file_description := "The text of the CWMS_FCST package specification";
    for has_info in 0..1 loop
       ---------------------------
       -- set the forecast info --
@@ -571,6 +605,7 @@ begin
                filename     => 'fcst.txt',
                media_type   => 'text/plain',
                quality_code => 0,
+               description  => l_file_description,
                the_blob     => clob_to_blob(l_file_contents));
          else
             l_blob_file := null;
@@ -595,8 +630,26 @@ begin
             p_fail_if_exists     => 'T' ,
             p_ignore_nulls       => 'F' ,
             p_office_id          => c_office_id);
-         commit;
+         -----------------------------------------------
+         -- store with fcst_spec_id in different case --
+         -----------------------------------------------
+         cwms_fcst.store_fcst(
+            p_fcst_spec_id       => upper(c_fcst_spec_id),
+            p_fcst_designator    => c_fcst_designator,
+            p_forecast_date_time => c_fcst_date,
+            p_issue_date_time    => c_issue_date,
+            p_time_zone          => c_time_zone_id,
+            p_max_age            => c_max_age,
+            p_notes              => c_fcst_notes,
+            p_fcst_info          => l_fcst_info,
+            p_fcst_file          => l_blob_file,
+            p_fail_if_exists     => 'F' ,
+            p_ignore_nulls       => 'F' ,
+            p_office_id          => c_office_id);
          begin
+            -------------------------------------
+            -- store with p_fail_if_exists = T --
+            -------------------------------------
             cwms_fcst.store_fcst(
                p_fcst_spec_id       => c_fcst_spec_id,
                p_fcst_designator    => c_fcst_designator,
@@ -669,7 +722,7 @@ begin
                   and fcst_date_time_utc = l_fcst_date_utc
                   and issue_date_time_utc = l_issue_date_utc
                   and key = l_keys(i);
-               ut.expect(l_info_rec.value).to_equal(l_json_obj.get(l_keys(i)).to_string());
+               ut.expect(l_info_rec.value).to_equal(trim('"' from l_json_obj.get(l_keys(i)).to_string()));
             end loop;
          else
             ut.expect(l_count).to_equal(0);
@@ -736,7 +789,7 @@ begin
                          l_value_str;
                   exit when l_info_crsr%notfound;
                   l_count2 := l_count2 + 1;
-                  ut.expect(l_value_str).to_equal(l_json_obj.get(l_key).to_string());
+                  ut.expect(l_value_str).to_equal(trim('"' from l_json_obj.get(l_key).to_string()));
                end loop;
                ut.expect(l_count2).to_equal(l_keys.count);
             else
@@ -798,6 +851,7 @@ begin
             ut.expect(l_blob_file.filename).to_equal('fcst.txt');
             ut.expect(l_blob_file.media_type).to_equal('text/plain');
             ut.expect(l_blob_file.quality_code).to_equal(0);
+            ut.expect(l_blob_file.description).to_equal(l_file_description);
             ut.expect(blob_to_clob(l_blob_file.the_blob)).to_equal(l_file_contents);
          else
             ut.expect(l_has_file).to_equal('F');
@@ -855,7 +909,6 @@ begin
             p_forecast_date_time	=> l_fcst_date_utc,
             p_issue_date_time	   => l_issue_date_utc,
             p_office_id	         => c_office_id);
-         commit;
          select count(*)
            into l_count
            from cwms_v_fcst_inst

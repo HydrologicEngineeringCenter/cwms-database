@@ -6,6 +6,30 @@ create or replace type body text_file_t as
     * @param filename     The name of the file object - extension must be valid for media type
     * @param media_type   The media type code - must be a valid text media type
     * @param quality_code A QUALTITY_CODE value from CWMS_DATA_QUALITY table
+    * @param description  Description of file content
+    * @param the_text     The text content of the file
+    * @return             The and validated constructed objecct
+    */
+   constructor function text_file_t(filename varchar2, media_type varchar2, quality_code integer, description varchar2, the_text clob)
+      return self as result
+   is
+   begin
+      self.filename := filename;
+      self.media_type := media_type;
+      self.quality_code := nvl(quality_code, 0);
+      self.data_entry_date := systimestamp; -- CWMS systems must run in UTC
+      self.description := description;
+      self.the_text := the_text;
+      validate_obj;
+      return;
+   end text_file_t;
+
+   /**
+    * Constructor
+    *
+    * @param filename     The name of the file object - extension must be valid for media type
+    * @param media_type   The media type code - must be a valid text media type
+    * @param quality_code A QUALTITY_CODE value from CWMS_DATA_QUALITY table
     * @param the_text     The text content of the file
     * @return             The and validated constructed objecct
     */

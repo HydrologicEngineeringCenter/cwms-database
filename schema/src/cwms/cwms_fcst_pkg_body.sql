@@ -555,7 +555,7 @@ begin
       l_json_obj := json_object_t.parse(p_fcst_info);
       l_keys := l_json_obj.get_keys;
       for i in 1..l_keys.count loop
-         l_value := l_json_obj.get(l_keys(i)).to_string;
+         l_value := trim('"' from l_json_obj.get(l_keys(i)).to_string);
          merge into
             at_fcst_info a
          using
@@ -822,6 +822,7 @@ is
    l_end_time        date;
    l_tsids           str_tab_t;
    l_exists          varchar2(1);
+   l_json_value      varchar2(32767);
 begin
    -------------------
    -- sanity checks --
@@ -876,13 +877,13 @@ begin
    for rec in (select key, value from at_fcst_info where fcst_inst_code = l_fcst_inst_code order by key) loop
       if rec.key = 'startTime' then
          begin
-            l_start_time := cwms_util.to_timestamp(trim('"' from rec.value));
+            l_start_time := cwms_util.to_timestamp(rec.value);
          exception
             when others then null;
          end;
       elsif rec.key = 'endTime' then
          begin
-            l_end_time := cwms_util.to_timestamp(trim('"' from rec.value));
+            l_end_time := cwms_util.to_timestamp(rec.value);
          exception
             when others then null;
          end;
@@ -892,9 +893,20 @@ begin
       else
          l_fcst_info := l_fcst_info||',';
       end if;
-      l_fcst_info := l_fcst_info
-      ||'"'||rec.key||'":'
-      ||case when rec.value is null then 'null' else rec.value end;
+      begin
+         l_json_value := to_number(rec.value);
+      exception
+         when others then
+            case
+            when rec.value in ('true', 'false', 'null') then
+               l_json_value := rec.value;
+            when substr(rec.value, 1, 1) in ('{', '[') then
+               l_json_value := rec.value;
+            else
+               l_json_value := '"'||rec.value||'"';
+            end case;
+      end;
+      l_fcst_info := l_fcst_info||'"'||rec.key||'":'||l_json_value;
    end loop;
    if l_fcst_info is not null then
       l_fcst_info := l_fcst_info||'}';
