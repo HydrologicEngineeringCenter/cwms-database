@@ -215,11 +215,13 @@ create or replace function random_uuid
 return varchar2
 as language java
 name 'RandomUUID.create() return java.lang.String';
+/
 
 create unique index at_fcst_spec_idx2 on at_fcst_spec (
    &cwms_schema..cwms_util.get_db_office_id_from_code(office_code),
    fcst_spec_id,
    fcst_designator);
+/
 
 PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
