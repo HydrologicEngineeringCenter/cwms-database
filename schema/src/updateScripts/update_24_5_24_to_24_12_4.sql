@@ -81,6 +81,10 @@ PROMPT #########################################################################
 PROMPT CREATING AND ALTERING COLUMN-TYPE SPECIFICATIONS
 select systimestamp from dual;
 @../cwms/column-types/supplemental_streamflow_meas_t
+@../cwms/column-types/blob_file_t
+@../cwms/column-types/file_t
+@../cwms/column-types/text_file_t
+@../cwms/column-types/uuid_t
 
 PROMPT ################################################################################
 PROMPT ALTERING TABLES
@@ -120,9 +124,28 @@ drop type lock_obj_t force;
 @../cwms/types/streamflow_meas2_t
 @../cwms/types/streamflow_meas2_t-body
 @../cwms/types/streamflow_meas2_tab_t
+@../cwms/types/blob_file_t-body
+@../cwms/types/fcst_file_t
+@../cwms/types/fcst_file_tab_t
+@../cwms/types/file_t-body
+@../cwms/types/text_file_t-body
+@../cwms/types/uuid_t-body
 
 
 alter table at_streamflow_meas add supplemental_streamflow_meas supp_streamflow_meas_t;
+
+PROMPT ################################################################################
+PROMPT CREATING NEW TABLES
+@../cwms/tables/at_fcst_info
+@../cwms/tables/at_fcst_inst
+@../cwms/tables/at_fcst_location
+@../cwms/tables/at_fcst_spec
+@../cwms/tables/at_fcst_time_series
+
+create unique index at_fcst_spec_idx2 on at_fcst_spec (
+   &cwms_schema..cwms_util.get_db_office_id_from_code(office_code),
+   fcst_spec_id,
+   fcst_designator);
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING VIEWS
@@ -142,6 +165,11 @@ delete from at_clob where id = '/VIEWDOCS/AV_USGS_RATING';
 @../cwms/views/av_usgs_rating
 
 @../cwms/views/av_stream_reach
+@../cwms/views/av_fcst_info
+@../cwms/views/av_fcst_inst
+@../cwms/views/av_fcst_location
+@../cwms/views/av_fcst_spec
+@../cwms/views/av_fcst_time_series
 
 PROMPT ################################################################################
 PROMPT UPDATING PACKAGE
@@ -152,8 +180,8 @@ PROMPT UPDATING PACKAGE
 @../cwms/cwms_sec_pkg
 @../cwms/cwms_stream_pkg
 @../cwms/cwms_ts_pkg
-
-
+@../cwms/cwms_fcst_pkg
+@../cwms/cwms_util_pkg
 
 PROMPT ################################################################################
 PROMPT UPDATING PACKAGE BODIES
@@ -175,6 +203,19 @@ select systimestamp from dual;
 @../cwms/cwms_util_pkg_body
 @../cwms/cwms_vt_pkg_body
 @../cwms/cwms_water_supply_pkg_body
+@../cwms/cwms_fcst_pkg_body
+
+create or replace and compile java source named "random_uuid" as
+public class RandomUUID {
+    public static String create() {
+        return java.util.UUID.randomUUID().toString();
+    }
+}
+/
+create or replace function random_uuid
+return varchar2
+as language java
+name 'RandomUUID.create() return java.lang.String';
 
 PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
