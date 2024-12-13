@@ -2698,12 +2698,11 @@ AS
       l_cursor               SYS_REFCURSOR;
       l_this_is_a_base_loc   BOOLEAN := FALSE;
       --
-      l_count_ts              NUMBER := 0;
       l_cwms_ts_id           VARCHAR2(191);
       l_ts_code              NUMBER;
       --
       l_location_codes        number_tab_t;
-      l_location_ids         str_tab_t;
+      l_location_ids          str_tab_t;
       l_location_id           varchar2(57);
       l_location_id_cache_val varchar2(256);
       l_clob_codes            number_tab_t;
@@ -2771,69 +2770,6 @@ AS
       THEN
          l_this_is_a_base_loc := TRUE;
       END IF;
-
-      ----------------------------------------------------------------
-      -- Handle the times series separately since there are special --
-      -- delete actions just for time series  --
-      ----------------------------------------------------------------
-      IF l_this_is_a_base_loc
-      THEN
-         OPEN l_cursor FOR
-            SELECT   cwms_ts_id
-              FROM   at_cwms_ts_id
-             WHERE   base_location_code = l_base_location_code;
-      ELSE
-         OPEN l_cursor FOR
-            SELECT   cwms_ts_id
-              FROM   at_cwms_ts_id
-             WHERE   location_code = l_location_code;
-      END IF;
-      LOOP
-         FETCH l_cursor
-         INTO l_cwms_ts_id;
-
-         EXIT WHEN l_cursor%NOTFOUND;
-
-         IF l_delete_action IN (cwms_util.delete_key, cwms_util.delete_loc)
-         THEN
-            CLOSE l_cursor;
-
-            cwms_err.raise ('CAN_NOT_DELETE_LOC_1', p_location_id);
-         END IF;
-
-         CASE
-            WHEN l_delete_action IN
-                    (cwms_util.delete_data,
-                     cwms_util.delete_all,
-                     cwms_util.delete_loc_cascade,
-                     cwms_util.delete_ts_cascade)
-            THEN
-               cwms_ts.delete_ts (l_cwms_ts_id,
-                                  cwms_util.delete_ts_cascade,
-                                  l_db_office_code
-                                 );
-            WHEN l_delete_action = cwms_util.delete_ts_id
-            THEN
-               cwms_ts.delete_ts (l_cwms_ts_id,
-                                  cwms_util.delete_ts_id,
-                                  l_db_office_code
-                                 );
-            WHEN l_delete_action = cwms_util.delete_ts_data
-            THEN
-               cwms_ts.delete_ts (l_cwms_ts_id,
-                                  cwms_util.delete_ts_data,
-                                  l_db_office_code
-                                 );
-            ELSE
-               cwms_err.raise ('INVALID_DELETE_ACTION', p_delete_action);
-         END CASE;
-
-         --
-         l_count_ts := l_count_ts + 1;
-      END LOOP;
-
-      --
-      CLOSE l_cursor;
 
       ----------------------------
       -- collect location codes --
@@ -3079,6 +3015,11 @@ AS
          ---------------
          -- forecasts --
          ---------------
+         -- AT_FCST_xxx
+            delete
+              from at_fcst_location
+             where primary_location_code in (select * from table (l_location_codes));
+         -- AT_FORECAST_xxx
          select clob_code
            bulk collect
            into l_clob_codes
@@ -3092,6 +3033,12 @@ AS
                   where target_location_code in (select * from table (l_location_codes))
                      or source_location_code in (select * from table (l_location_codes)))
                );
+         delete
+           from at_forecast_ts
+          where ts_code in (select ts_code
+                              from at_cwms_ts_spec
+                             where location_code in (select * from table (l_location_codes))
+                           );
          delete
            from at_forecast_text
           where forecast_spec_code in
@@ -3178,6 +3125,67 @@ AS
            from at_a2w_ts_codes_by_loc
           where location_code in (select * from table (l_location_codes));
       end if;
+      ----------------------------------------------------------------
+      -- Handle the times series separately since there are special --
+      -- delete actions just for time series  --
+      ----------------------------------------------------------------
+      IF l_this_is_a_base_loc
+      THEN
+         OPEN l_cursor FOR
+            SELECT   cwms_ts_id
+              FROM   at_cwms_ts_id
+             WHERE   base_location_code = l_base_location_code;
+      ELSE
+         OPEN l_cursor FOR
+            SELECT   cwms_ts_id
+              FROM   at_cwms_ts_id
+             WHERE   location_code = l_location_code;
+      END IF;
+      LOOP
+         FETCH l_cursor
+         INTO l_cwms_ts_id;
+
+         EXIT WHEN l_cursor%NOTFOUND;
+
+         IF l_delete_action IN (cwms_util.delete_key, cwms_util.delete_loc)
+         THEN
+            CLOSE l_cursor;
+
+            cwms_err.raise ('CAN_NOT_DELETE_LOC_1', p_location_id);
+         END IF;
+
+         CASE
+            WHEN l_delete_action IN
+                    (cwms_util.delete_data,
+                     cwms_util.delete_all,
+                     cwms_util.delete_loc_cascade,
+                     cwms_util.delete_ts_cascade)
+            THEN
+               cwms_ts.delete_ts (l_cwms_ts_id,
+                                  cwms_util.delete_ts_cascade,
+                                  l_db_office_code
+                                 );
+            WHEN l_delete_action = cwms_util.delete_ts_id
+            THEN
+               cwms_ts.delete_ts (l_cwms_ts_id,
+                                  cwms_util.delete_ts_id,
+                                  l_db_office_code
+                                 );
+            WHEN l_delete_action = cwms_util.delete_ts_data
+            THEN
+               cwms_ts.delete_ts (l_cwms_ts_id,
+                                  cwms_util.delete_ts_data,
+                                  l_db_office_code
+                                 );
+            ELSE
+               cwms_err.raise ('INVALID_DELETE_ACTION', p_delete_action);
+         END CASE;
+
+         --
+      END LOOP;
+
+      --
+      CLOSE l_cursor;
 
       --------------------------------------------------------------
       -- finally, delete the actual location records if specified --

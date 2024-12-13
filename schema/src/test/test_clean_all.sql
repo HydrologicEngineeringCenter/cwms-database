@@ -44,6 +44,7 @@ AS
         test_cwms_stream.teardown;
         test_cwms_lock.teardown;
         test_cwms_data_dissem.teardown;
+        test_cwms_fcst.teardown;
         test_cwms_forecast.teardown;
         test_cwms_xchg.teardown;
         test_cwms_cache.teardown;

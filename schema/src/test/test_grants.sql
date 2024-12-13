@@ -26,6 +26,7 @@ GRANT EXECUTE ON &cwms_schema..test_cwms_data_dissem to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_forecast to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_xchg to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_cache to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_fcst to &1;
 GRANT EXECUTE ON &cwms_schema..test_av_ts_grp_assgn to &1;
 GRANT EXECUTE ON &cwms_schema..test_av_loc_grp_assgn to &1;
 --GRANT EXECUTE any procedure to &1;

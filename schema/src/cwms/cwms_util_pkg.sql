@@ -997,7 +997,7 @@ AS
     *
     */
    FUNCTION get_db_office_id_from_code (p_db_office_code IN NUMBER)
-      RETURN VARCHAR2;
+      RETURN VARCHAR2 DETERMINISTIC;
    /**
     * Replace glob wildcard chars (?,*) with SQL ones (_,%), using '\\' as an
     * escape character.
@@ -2766,15 +2766,6 @@ AS
       p_table  in str_tab_tab_t,
       p_column in pls_integer)
       return str_tab_t;
-   /**
-    * Converts an XML document fragment into the equivalent JSON object
-    *
-    * @param p_xml the XML to convert
-    * @return the equivalen JSON object
-    */
-   function to_json(
-      p_xml in xmltype)
-      return clob;
    /**
     * Returns true if the interval code is irregular otherwise return false
     *
