@@ -136,11 +136,12 @@ alter table at_streamflow_meas add supplemental_streamflow_meas supp_streamflow_
 
 PROMPT ################################################################################
 PROMPT CREATING NEW TABLES
-@../cwms/tables/at_fcst_info
-@../cwms/tables/at_fcst_inst
-@../cwms/tables/at_fcst_location
+
 @../cwms/tables/at_fcst_spec
+@../cwms/tables/at_fcst_location
 @../cwms/tables/at_fcst_time_series
+@../cwms/tables/at_fcst_inst
+@../cwms/tables/at_fcst_info
 
 create unique index at_fcst_spec_idx2 on at_fcst_spec (
    &cwms_schema..cwms_util.get_db_office_id_from_code(office_code),
