@@ -1,0 +1,1 @@
+The types defined here may be used in tables and need to be defined before anything else

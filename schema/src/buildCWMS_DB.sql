@@ -55,6 +55,11 @@ alter session set current_schema = &cwms_schema;
 -- structure that can be built without the CWMS API,
 -- even if it results in invalid objects
 --
+exec dbms_output.put_line('Creating initial types.');
+@@cwms/column_types/file_t
+@@cwms/column_types/text_file_t
+@@cwms/column_types/blob_file_t
+exec dbms_output.put_line('Creating tables.');
 @@py_BuildCwms
 @@cwms/cwms_types
 @@cwms/at_schema
@@ -84,6 +89,19 @@ alter session set current_schema = &cwms_schema;
 --
 -- CWMS API
 --
+exec dbms_output.put_line('Creating Java stored routines.');
+create or replace and compile java source named "random_uuid" as
+public class RandomUUID {
+    public static String create() {
+        return java.util.UUID.randomUUID().toString();
+    }
+}
+/
+create or replace function random_uuid
+return varchar2
+as language java
+name 'RandomUUID.create() return java.lang.String';
+/
 @@cwms/api
 -- Context needs to be created after the package is created
 @@cwms/at_schema_env

@@ -46,6 +46,7 @@ show errors;
 @test_cwms_level.sql;
 @test_cwms_display.sql;
 @test_cwms_data_dissem.sql;
+@test_cwms_fcst.sql;
 @test_cwms_forecast.sql;
 @test_cwms_xchg.sql;
 @test_cwms_cache.sql;
