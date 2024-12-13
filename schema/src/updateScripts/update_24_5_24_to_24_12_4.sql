@@ -143,10 +143,7 @@ PROMPT CREATING NEW TABLES
 @../cwms/tables/at_fcst_inst
 @../cwms/tables/at_fcst_info
 
-create unique index at_fcst_spec_idx2 on at_fcst_spec (
-   &cwms_schema..cwms_util.get_db_office_id_from_code(office_code),
-   fcst_spec_id,
-   fcst_designator);
+
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING VIEWS
@@ -205,6 +202,12 @@ select systimestamp from dual;
 @../cwms/cwms_vt_pkg_body
 @../cwms/cwms_water_supply_pkg_body
 @../cwms/cwms_fcst_pkg_body
+
+create unique index at_fcst_spec_idx2 on at_fcst_spec (
+   &cwms_schema..cwms_util.get_db_office_id_from_code(office_code),
+   fcst_spec_id,
+   fcst_designator);
+
 
 create or replace and compile java source named "random_uuid" as
 public class RandomUUID {
