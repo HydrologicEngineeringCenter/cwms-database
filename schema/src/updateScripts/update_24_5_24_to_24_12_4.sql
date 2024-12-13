@@ -81,10 +81,10 @@ PROMPT #########################################################################
 PROMPT CREATING AND ALTERING COLUMN-TYPE SPECIFICATIONS
 select systimestamp from dual;
 @../cwms/column-types/supplemental_streamflow_meas_t
-@../cwms/column-types/blob_file_t
-@../cwms/column-types/file_t
-@../cwms/column-types/text_file_t
-@../cwms/column-types/uuid_t
+@../cwms/column_types/blob_file_t
+@../cwms/column_types/file_t
+@../cwms/column_types/text_file_t
+@../cwms/column_types/uuid_t
 
 PROMPT ################################################################################
 PROMPT ALTERING TABLES
