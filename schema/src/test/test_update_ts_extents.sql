@@ -25,6 +25,8 @@ procedure cwdb_220_null_in_subquery_affects_update_ts_extents;
 procedure cwdb_200_ts_extents_has_field_for_non_zero_quality;
 --%test(TS Extents problems with existing time series without data [Jira issues CWDB-313 and CWDB-314])
 procedure test_cwdb_313_314_ts_extents_with_ts_with_no_values;
+--%test (TS extents not updating for new versioned time series)
+procedure test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts;
 
 procedure setup;
 procedure teardown;
@@ -91,7 +93,7 @@ begin
    cwms_loc.store_location(
       p_location_id  => c_location_id,
       p_db_office_id => c_office_id);
-
+   commit;
    cwms_ts.create_ts(
       p_cwms_ts_id        => c_ts_id,
       p_utc_offset        => null,
@@ -938,6 +940,95 @@ begin
     ut.expect(l_log_rec.additional_info).to_be_null;
 
 end test_cwdb_313_314_ts_extents_with_ts_with_no_values;
+
+--------------------------------------------------------------------------------
+-- procedure test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts
+--------------------------------------------------------------------------------
+procedure test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts
+is
+   l_ts_code                at_cwms_ts_id.ts_code%type;
+   l_earliest_time          date;
+   l_earliest_non_null_time date;
+   l_latest_time            date;
+   l_latest_non_null_time   date;
+   l_version_date           date := c_base_start_date + 10;
+begin
+   -----------------------------
+   -- store un-versioned data --
+   -----------------------------
+   cwms_ts.zstore_ts (
+      p_cwms_ts_id      => c_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => c_base_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id);
+
+   l_ts_code := cwms_ts.get_ts_code(c_ts_id, c_office_id);
+   ----------------------
+   -- check ts-extents --
+   ----------------------
+   begin
+      select earliest_time,
+            earliest_non_null_time,
+            latest_time,
+            latest_non_null_time
+      into l_earliest_time,
+            l_earliest_non_null_time,
+            l_latest_time,
+            l_latest_non_null_time
+      from cwms_v_ts_extents_utc
+      where ts_code = l_ts_code
+         and version_time is null;
+   exception
+      when others then cwms_err.raise('ERROR', sqlcode||': '||sqlerrm);
+   end;
+
+   ut.expect(l_earliest_time).to_equal(c_base_ts_data(1).date_time);
+   ut.expect(l_earliest_non_null_time).to_equal(c_base_ts_data(2).date_time);
+   ut.expect(l_latest_time).to_equal(c_base_ts_data(24).date_time);
+   ut.expect(l_latest_non_null_time).to_equal(c_base_ts_data(23).date_time);
+   --------------------------
+   -- store versioned data --
+   --------------------------
+   cwms_ts.set_tsid_versioned(
+      p_cwms_ts_id      => c_ts_id,
+      p_versioned       => 'T',
+      p_db_office_id    => c_office_id);
+   cwms_ts.zstore_ts (
+      p_cwms_ts_id      => c_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => c_base_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_version_date    => l_version_date,
+      p_office_id       => c_office_id);
+
+   l_ts_code := cwms_ts.get_ts_code(c_ts_id, c_office_id);
+   ----------------------
+   -- check ts-extents --
+   ----------------------
+   begin
+      select earliest_time,
+            earliest_non_null_time,
+            latest_time,
+            latest_non_null_time
+      into l_earliest_time,
+            l_earliest_non_null_time,
+            l_latest_time,
+            l_latest_non_null_time
+      from cwms_v_ts_extents_utc
+      where ts_code = l_ts_code
+         and version_time = l_version_date;
+   exception
+      when others then cwms_err.raise('ERROR', sqlcode||': '||sqlerrm);
+   end;
+
+   ut.expect(l_earliest_time).to_equal(c_base_ts_data(1).date_time);
+   ut.expect(l_earliest_non_null_time).to_equal(c_base_ts_data(2).date_time);
+   ut.expect(l_latest_time).to_equal(c_base_ts_data(24).date_time);
+   ut.expect(l_latest_non_null_time).to_equal(c_base_ts_data(23).date_time);
+end test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts;
+
 
 end test_update_ts_extents;
 /
