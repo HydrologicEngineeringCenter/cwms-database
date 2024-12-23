@@ -4769,10 +4769,10 @@ AS
          end if;
 
       exception when NO_DATA_FOUND then
-         -- New entry in the extents table
+         -- add a new entry to the extents table
+         p_rec.last_update := systimestamp;
          insert into at_ts_extents
          values p_rec;
-
          l_updated := TRUE;
       end;
 
