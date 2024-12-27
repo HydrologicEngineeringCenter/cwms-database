@@ -1,4 +1,3 @@
-drop type uuid_t force;
 create or replace type uuid_t
 /** 
  * Creates and holds UUIDs
