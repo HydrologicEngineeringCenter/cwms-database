@@ -4788,13 +4788,11 @@ AS
          end if;
 
       exception when NO_DATA_FOUND then
-         if p_rec.version_time = cwms_util.non_versioned then
-            -- add a new non-versioned entry to the extents table
-            p_rec.last_update := systimestamp;
-            insert into at_ts_extents
-            values p_rec;
-            l_updated := TRUE;
-         end if;
+         -- add a new entry to the extents table
+         p_rec.last_update := systimestamp;
+         insert into at_ts_extents
+         values p_rec;
+         l_updated := TRUE;
       end;
 
       -- release the lock
