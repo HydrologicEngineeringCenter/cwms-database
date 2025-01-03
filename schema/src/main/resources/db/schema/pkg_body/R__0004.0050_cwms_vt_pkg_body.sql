@@ -1,12 +1,3 @@
-/* Formatted on 2008/06/26 15:28 (Formatter Plus v4.8.8) */
-/* Formatted on 2008/07/14 11:42 (Formatter Plus v4.8.8) */
-/* Formatted on 2008/07/17 07:58 (Formatter Plus v4.8.8) */
-
-/* Formatted on 7/7/2011 3:34:16 PM (QP5 v5.163.1008.3004) */
-
-/* Formatted on 8/12/2011 2:24:32 PM (QP5 v5.163.1008.3004) */
-/*<TOAD_FILE_CHUNK>*/
-
 CREATE OR REPLACE PACKAGE BODY cwms_vt
 AS
 	/******************************************************************************
@@ -793,8 +784,7 @@ AS
 		l_rate_change_interval_code	NUMBER;
 		l_to_unit_code 					NUMBER;
 		l_abstract_param_code			NUMBER;
-		l_factor 							NUMBER;
-		l_offset 							NUMBER;
+		l_function 						cwms_unit_conversion.function%type;
 		--
 		l_range_active_flag				VARCHAR2 (1)
 			:= p_screening_control.range_active_flag;
@@ -877,8 +867,8 @@ AS
 											 WHERE	screening_code = l_screening_code)
 					AND cbp.base_parameter_code = ap.base_parameter_code;
 
-		SELECT	factor, offset
-		  INTO	l_factor, l_offset
+		SELECT	function
+		  INTO	l_function
 		  FROM	cwms_unit_conversion
 		 WHERE	from_unit_id = p_unit_id AND to_unit_code = l_to_unit_code;
 
@@ -916,14 +906,14 @@ AS
 							l_screening_code,
 							l_sc_rec.season_start_day
 							+ (l_sc_rec.season_start_month - 1) * 30,
-							l_sc_rec.range_reject_lo * l_factor + l_offset,
-							l_sc_rec.range_reject_hi * l_factor + l_offset,
-							l_sc_rec.range_question_lo * l_factor + l_offset,
-							l_sc_rec.range_question_hi * l_factor + l_offset,
-							l_sc_rec.rate_change_reject_rise * l_factor + l_offset,
-							l_sc_rec.rate_change_reject_fall * l_factor + l_offset,
-							l_sc_rec.rate_change_quest_rise * l_factor + l_offset,
-							l_sc_rec.rate_change_quest_fall * l_factor + l_offset,
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.range_reject_lo)), l_sc_rec.range_reject_lo),
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.range_reject_hi)), l_sc_rec.range_reject_hi),
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.range_question_lo)), l_sc_rec.range_question_lo),
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.range_question_hi)), l_sc_rec.range_question_hi),
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.rate_change_reject_rise)), l_sc_rec.rate_change_reject_rise),
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.rate_change_reject_fall)), l_sc_rec.rate_change_reject_fall),
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.rate_change_quest_rise)), l_sc_rec.rate_change_quest_rise),
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.rate_change_quest_fall)), l_sc_rec.rate_change_quest_fall),
 							CASE
 								WHEN l_sc_rec.const_reject_duration_id IS NOT NULL
 								THEN
@@ -936,8 +926,8 @@ AS
 								ELSE
 									NULL
 							END,
-							l_sc_rec.const_reject_min * l_factor + l_offset,
-							l_sc_rec.const_reject_tolerance * l_factor + l_offset,
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.const_reject_min)), l_sc_rec.const_reject_min),
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.const_reject_tolerance)), l_sc_rec.const_reject_tolerance),
 							l_sc_rec.const_reject_n_miss,
 							CASE
 								WHEN l_sc_rec.const_quest_duration_id IS NOT NULL
@@ -951,8 +941,8 @@ AS
 								ELSE
 									NULL
 							END,
-							l_sc_rec.const_quest_min * l_factor + l_offset,
-							l_sc_rec.const_quest_tolerance * l_factor + l_offset,
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.const_quest_min)), l_sc_rec.const_quest_min),
+							nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.const_quest_tolerance)), l_sc_rec.const_quest_tolerance),
 							l_sc_rec.const_quest_n_miss,
 							l_sc_rec.estimate_expression
 						);
@@ -987,14 +977,10 @@ AS
 													 UPPER (
 														 l_sc_rec.dur_mag_array (i).duration_id
 													 )),
-									l_sc_rec.dur_mag_array (i).reject_lo * l_factor
-									+ l_offset,
-									l_sc_rec.dur_mag_array (i).reject_hi * l_factor
-									+ l_offset,
-									l_sc_rec.dur_mag_array (i).question_lo * l_factor
-									+ l_offset,
-									l_sc_rec.dur_mag_array (i).question_hi * l_factor
-									+ l_offset
+									nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.dur_mag_array(i).reject_lo)),   l_sc_rec.dur_mag_array(i).reject_lo),
+									nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.dur_mag_array(i).reject_hi)),   l_sc_rec.dur_mag_array(i).reject_hi),
+									nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.dur_mag_array(i).question_lo)), l_sc_rec.dur_mag_array(i).question_lo),
+									nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_sc_rec.dur_mag_array(i).question_hi)), l_sc_rec.dur_mag_array(i).question_hi)
 								);
 				END LOOP;
 			END IF;

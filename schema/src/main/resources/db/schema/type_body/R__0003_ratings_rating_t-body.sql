@@ -1019,8 +1019,7 @@ as
       l_units         str_tab_t;
       l_tokens        str_tab_t;
       l_connections   str_tab_t;
-      l_factor        binary_double;
-      l_offset        binary_double;
+      l_function      cwms_unit_conversion.function%type;
       l_unconnected   text_hash_t;
       l_input         varchar2(2);
    begin
@@ -1174,10 +1173,8 @@ as
                         'Native units specification contains invalid unit: '||cwms_util.parse_unit(l_units(i)));
                end;
                begin
-                  select factor,
-                         offset
-                    into l_factor,
-                         l_offset
+                  select function
+                    into l_function
                     from cwms_unit_conversion
                    where to_unit_id = cwms_util.get_default_units(l_params(i), 'SI')
                      and from_unit_id = cwms_util.parse_unit(l_units(i));
@@ -1464,16 +1461,14 @@ as
                   str_tab_t(),     -- ind_params
                   null,            -- dep_param
                   str_tab_t(),     -- units
-                  double_tab_t(),  -- factors
-                  double_tab_t()); -- offsets
+                  str_tab_t());    -- functions
                if l_is_rating(i) then
                   l_count := cwms_rating.get_ind_parameter_count(self.source_ratings(i));
                else
                   l_count := rating_expr_ind_param_count(self.source_ratings(i));
                end if;
                self.connections_map(i).ind_params.extend(l_count);
-               self.connections_map(i).factors.extend(l_count+1);
-               self.connections_map(i).offsets.extend(l_count+1);
+               self.connections_map(i).functions.extend(l_count+1);
                self.connections_map(i).units := cwms_util.split_text(
                   replace(l_units_parts(i), cwms_rating.separator2, cwms_rating.separator3),
                   cwms_rating.separator3);
@@ -1742,9 +1737,9 @@ as
                   self.native_units := self.native_units||','||l_units(i);
                end if;
             end loop;
-            ---------------------------------------------------------
-            -- populate the internal connection conversion factors --
-            ---------------------------------------------------------
+            -------------------------------------------------------
+            -- populate the internal connection unit conversions --
+            -------------------------------------------------------
             for i in 1..self.connections_map.count loop
                for j in 1..self.connections_map(i).ind_params.count loop
                   if self.connections_map(i).ind_params(j) is not null and substr(self.connections_map(i).ind_params(j), 1, 1) != 'I' then
@@ -1758,18 +1753,12 @@ as
                               l_to_unit := self.connections_map(l_rating).units(l_ind_param);
                            end if;
                         end if;
-                        select factor,
-                               offset
-                          into self.connections_map(i).factors(j),
-                               self.connections_map(i).offsets(j)
+                        select nvl(function, 'ARG1')
+                          into self.connections_map(i).functions(j)
                           from cwms_unit_conversion
                          where from_unit_id = cwms_util.get_unit_id(l_from_unit, self.office_id)
                            and to_unit_id = cwms_util.get_unit_id(l_to_unit, self.office_id);
 
-                        if self.connections_map(i).factors(j) is null
-                        or self.connections_map(i).offsets(j) is null then
-                           cwms_err.raise('ERROR', 'Null conversion factor');
-                        end if;
                      exception
                         when others then
                            cwms_err.raise(
@@ -1807,18 +1796,12 @@ as
                            l_to_unit := self.connections_map(l_rating).units(l_ind_param);
                         end if;
                      end if;
-                     select factor,
-                            offset
-                       into self.connections_map(i).factors(self.connections_map(i).factors.count),
-                            self.connections_map(i).offsets(self.connections_map(i).offsets.count)
+                     select nvl(function, 'ARG1')
+                       into self.connections_map(i).functions(self.connections_map(i).functions.count)
                        from cwms_unit_conversion
                       where from_unit_id = cwms_util.get_unit_id(l_from_unit, self.office_id)
                         and to_unit_id = cwms_util.get_unit_id(l_to_unit, self.office_id);
 
-                     if self.connections_map(i).factors(self.connections_map(i).factors.count) is null
-                     or self.connections_map(i).offsets(self.connections_map(i).offsets.count) is null then
-                        cwms_err.raise('ERROR', 'Null conversion factor');
-                     end if;
                   exception
                      when others then
                         cwms_err.raise(
@@ -2896,8 +2879,7 @@ as
       l_count               pls_integer;
       l_rating_part         varchar2(500);
       l_units_part          varchar2(50);
-      l_factor              binary_double;
-      l_offset              binary_double;
+      l_function            cwms_unit_conversion.function%type;
       l_tokens              str_tab_t;
       l_results             double_tab_t;
    begin
@@ -2962,10 +2944,8 @@ as
                if l_rating < i then
                   if l_rating = 0 then
                      begin
-                        select factor,
-                               offset
-                          into l_factor,
-                               l_offset
+                        select function
+                          into l_function
                           from cwms_unit_conversion
                          where from_unit_id = cwms_util.get_unit_id(p_units(l_ind_val), self.office_id)
                            and to_unit_id = cwms_util.get_unit_id(self.connections_map(i).units(j));
@@ -2976,22 +2956,20 @@ as
                               'Cannot convert from input '||l_ind_val||' unit of '||p_units(l_ind_val)
                               ||' to rating '||i||' independent parameter '||j||' unit of '||self.connections_map(i).units(j));
                      end;
-                     select column_value * l_factor + l_offset
+                     select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                        bulk collect
                        into l_rating_values(i).ind_vals(j)
                        from table(p_values(l_ind_val));
                   else
                      if l_ind_val = 0 then
-                        l_factor := self.connections_map(l_rating).factors(self.connections_map(l_rating).factors.count);
-                        l_offset := self.connections_map(l_rating).offsets(self.connections_map(l_rating).offsets.count);
-                        select column_value * l_factor + l_offset
+                        l_function := self.connections_map(l_rating).functions(self.connections_map(l_rating).functions.count);
+                        select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                           bulk collect
                           into l_rating_values(i).ind_vals(j)
                           from table(l_rating_values(l_rating).dep_vals);
                      else
-                        l_factor := self.connections_map(l_rating).factors(l_ind_val);
-                        l_offset := self.connections_map(l_rating).offsets(l_ind_val);
-                        select column_value * l_factor + l_offset
+                        l_function := self.connections_map(l_rating).functions(l_ind_val);
+                        select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                           bulk collect
                           into l_rating_values(i).ind_vals(j)
                           from table(l_rating_values(l_rating).ind_vals(l_ind_val));
@@ -3018,10 +2996,8 @@ as
             if l_rating < i then
                if l_rating = 0 then
                   begin
-                     select factor,
-                            offset
-                       into l_factor,
-                            l_offset
+                     select function
+                       into l_function
                        from cwms_unit_conversion
                       where from_unit_id = cwms_util.get_unit_id(p_units(l_ind_val), self.office_id)
                         and to_unit_id = cwms_util.get_unit_id(self.connections_map(i).units(self.connections_map(i).units.count));
@@ -3032,22 +3008,20 @@ as
                            'Cannot convert from input '||l_ind_val||' unit of '||p_units(l_ind_val)
                            ||' to rating '||i||' dependent parameter unit of '||self.connections_map(i).units(self.connections_map(i).units.count));
                   end;
-                  select column_value * l_factor + l_offset
+                  select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                     bulk collect
                     into l_rating_values(i).dep_vals
                     from table(p_values(l_ind_val));
                else
                   if l_ind_val = 0 then
-                     l_factor := self.connections_map(l_rating).factors(self.connections_map(l_rating).factors.count);
-                     l_offset := self.connections_map(l_rating).offsets(self.connections_map(l_rating).offsets.count);
-                     select column_value * l_factor + l_offset
+                     l_function := self.connections_map(l_rating).functions(self.connections_map(l_rating).functions.count);
+                     select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                        bulk collect
                        into l_rating_values(i).dep_vals
                        from table(l_rating_values(l_rating).dep_vals);
                   else
-                     l_factor := self.connections_map(l_rating).factors(l_ind_val);
-                     l_offset := self.connections_map(l_rating).offsets(l_ind_val);
-                     select column_value * l_factor + l_offset
+                     l_function := self.connections_map(l_rating).functions(l_ind_val);
+                     select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                        bulk collect
                        into l_rating_values(i).dep_vals
                        from table(l_rating_values(l_rating).ind_vals(l_ind_val));
@@ -3144,28 +3118,24 @@ as
       ------------------------------------------------------
       l_count := self.connections_map.count;
       if self.connections_map(self.source_ratings.count).dep_param is null then
-         select factor,
-                offset
-           into l_factor,
-                l_offset
+         select function
+           into l_function
            from cwms_unit_conversion
           where from_unit_id = cwms_util.get_unit_id(self.connections_map(l_count).units(self.connections_map(l_count).units.count))
             and to_unit_id = cwms_util.get_unit_id(p_units(p_units.count));
 
-         select column_value * l_factor + l_offset
+         select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
            bulk collect
            into l_results
            from table(l_rating_values(l_count).dep_vals);
       else
-         select factor,
-                offset
-           into l_factor,
-                l_offset
+         select function
+           into l_function
            from cwms_unit_conversion
           where from_unit_id = cwms_util.get_unit_id(self.connections_map(l_count).units(1))
             and to_unit_id = cwms_util.get_unit_id(p_units(p_units.count));
 
-         select column_value * l_factor + l_offset
+         select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
            bulk collect
            into l_results
            from table(l_rating_values(l_count).ind_vals(1));
@@ -3568,8 +3538,7 @@ as
       l_count               pls_integer;
       l_rating_part         varchar2(500);
       l_units_part          varchar2(50);
-      l_factor              binary_double;
-      l_offset              binary_double;
+      l_function            cwms_unit_conversion.function%type;
       l_results             double_tab_t;
    begin
       -------------------
@@ -3627,10 +3596,8 @@ as
          when self.connections_map(i).ind_params(1) is null then
             if i = self.source_ratings.count then
                begin
-                  select factor,
-                         offset
-                    into l_factor,
-                         l_offset
+                  select function
+                    into l_function
                     from cwms_unit_conversion
                    where from_unit_id = cwms_util.get_unit_id(p_units(2), self.office_id)
                      and to_unit_id = cwms_util.get_unit_id(self.connections_map(i).units(1), self.office_id);
@@ -3641,7 +3608,7 @@ as
                         'Cannot convert from input unit of '||p_units(2)
                         ||' to rating '||i||' independent parameter unit of '||self.connections_map(i).units(1));
                end;
-               select column_value * l_factor + l_offset
+               select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                  bulk collect
                  into l_rating_values(i).ind_vals
                  from table(p_values);
@@ -3656,16 +3623,14 @@ as
             parse_connection_part(l_rating, l_ind_val, self.connections_map(i).ind_params(1));
             if l_rating > i then
                if l_ind_val = 0 then
-                  l_factor := self.connections_map(l_rating).factors(2);
-                  l_offset := self.connections_map(l_rating).offsets(2);
-                  select column_value * l_factor + l_offset
+                  l_function := self.connections_map(l_rating).functions(2);
+                  select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                     bulk collect
                     into l_rating_values(i).ind_vals
                     from table(l_rating_values(l_rating).dep_vals);
                else
-                  l_factor := self.connections_map(l_rating).factors(1);
-                  l_offset := self.connections_map(l_rating).offsets(1);
-                  select column_value * l_factor + l_offset
+                  l_function := self.connections_map(l_rating).functions(1);
+                  select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                     bulk collect
                     into l_rating_values(i).ind_vals
                     from table(l_rating_values(l_rating).ind_vals);
@@ -3688,10 +3653,8 @@ as
          when self.connections_map(i).dep_param is null then
             if i = self.source_ratings.count then
                begin
-                  select factor,
-                         offset
-                    into l_factor,
-                         l_offset
+                  select function
+                    into l_function
                     from cwms_unit_conversion
                    where from_unit_id = cwms_util.get_unit_id(p_units(2), self.office_id)
                      and to_unit_id = cwms_util.get_unit_id(self.connections_map(i).units(2));
@@ -3702,7 +3665,7 @@ as
                         'Cannot convert from input unit of '||p_units(2)
                         ||' to rating '||i||' dependent parameter unit of '||cwms_util.get_unit_id(self.connections_map(i).units(2)));
                end;
-               select column_value * l_factor + l_offset
+               select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                  bulk collect
                  into l_rating_values(i).dep_vals
                  from table(p_values);
@@ -3716,16 +3679,14 @@ as
          else
             parse_connection_part(l_rating, l_ind_val, self.connections_map(i).dep_param);
             if l_ind_val = 0 then
-               l_factor := self.connections_map(l_rating).factors(2);
-               l_offset := self.connections_map(l_rating).offsets(2);
-               select column_value * l_factor + l_offset
+               l_function := self.connections_map(l_rating).functions(2);
+               select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                  bulk collect
                  into l_rating_values(i).dep_vals
                  from table(l_rating_values(l_rating).dep_vals);
             else
-               l_factor := self.connections_map(l_rating).factors(1);
-               l_offset := self.connections_map(l_rating).offsets(2);
-               select column_value * l_factor + l_offset
+               l_function := self.connections_map(l_rating).functions(1);
+               select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
                  bulk collect
                  into l_rating_values(i).dep_vals
                  from table(l_rating_values(l_rating).ind_vals);
@@ -3788,28 +3749,24 @@ as
       -- put the results in the requested unit and return --
       ------------------------------------------------------
       if self.connections_map(1).dep_param = 'I1' then
-         select factor,
-                offset
-           into l_factor,
-                l_offset
+         select function
+           into l_function
            from cwms_unit_conversion
           where from_unit_id = cwms_util.get_unit_id(self.connections_map(1).units(2))
             and to_unit_id = cwms_util.get_unit_id(p_units(1));
 
-         select column_value * l_factor + l_offset
+         select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
            bulk collect
            into l_results
            from table(l_rating_values(l_count).dep_vals);
       else
-         select factor,
-                offset
-           into l_factor,
-                l_offset
+         select function
+           into l_function
            from cwms_unit_conversion
           where from_unit_id = cwms_util.get_unit_id(self.connections_map(1).units(1))
             and to_unit_id = cwms_util.get_unit_id(p_units(1));
 
-         select column_value * l_factor + l_offset
+         select nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(column_value)), column_value)
            bulk collect
            into l_results
            from table(l_rating_values(l_count).ind_vals);

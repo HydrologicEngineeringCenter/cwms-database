@@ -129,7 +129,7 @@ begin
              pl.latitude,
              pl.longitude,
              pl.horizontal_datum,
-             pl.elevation * uc.factor + uc.offset as elevation,
+             nvl(cwms_util.eval_rpn_expression(uc.function, double_tab_t(pl.elevation)), pl.elevation) as elevation,
              uc.to_unit_id as elev_unit_id,
              pl.vertical_datum,
              pl.public_name,

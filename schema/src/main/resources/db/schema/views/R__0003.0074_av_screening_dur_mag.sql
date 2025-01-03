@@ -64,10 +64,10 @@ AS
           bpdu.unit_system,
           cuc.to_unit_id unit_id,
           cd2.duration_id dur_mag_duration_id,
-          atsdm.reject_lo * cuc.factor + cuc.offset reject_lo,
-          atsdm.reject_hi * cuc.factor + cuc.offset reject_hi,
-          atsdm.question_lo * cuc.factor + cuc.offset question_lo,
-          atsdm.question_hi * cuc.factor + cuc.offset question_hi
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(atsdm.reject_lo)), atsdm.reject_lo) reject_lo,
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(atsdm.reject_hi)), atsdm.reject_hi) reject_hi,
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(atsdm.question_lo)), atsdm.question_lo) question_lo,
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(atsdm.question_hi)), atsdm.question_hi) question_hi
      FROM at_screening_id atsi,
           cwms_office co,
           at_parameter atp,

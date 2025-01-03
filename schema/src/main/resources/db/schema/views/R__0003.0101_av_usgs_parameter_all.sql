@@ -10,12 +10,12 @@
  * @member parameter_id           The corrseponding full CWMS parameter id
  * @member parameter_type_id      The corresponding CWMS parameter type
  * @member unit_id                The corrseponding CWMS unit id
- * @member cwms_conversion_factor Factor in CWMS = USGS * factor + offset
- * @member cwms_conversion_offset Offset in CWMS = USGS * factor + offset
+ * @member cwms_conversion_factor Factor in CWMS = nvl(cwms_util.eval_rpn_expression(function, double_tab_t(USGS)), USGS)
+ * @member cwms_conversion_offset Offset in CWMS = nvl(cwms_util.eval_rpn_expression(function, double_tab_t(USGS)), USGS)
  * @member shef_physical_element  The corresponding SHEF PE code, if any
  * @member shef_unit_is_english   Whether the SHEF unit is english (T = /DUE (optional), F = /DUS (required))
- * @member shef_conversion_factor Factor in SHEF = USGS * factor + offset
- * @member shef_conversion_offset Offset in SHEF = USGS * factor + offset
+ * @member shef_conversion_factor Factor in SHEF = nvl(cwms_util.eval_rpn_expression(function, double_tab_t(USGS)), USGS)
+ * @member shef_conversion_offset Offset in SHEF = nvl(cwms_util.eval_rpn_expression(function, double_tab_t(USGS)), USGS)
  * @member usgs_parameter_name    The parameter name as specified by the USGS
  * @member cwms_parameter_name    The parameter name according to the CWMS base parameter description + sub-parameter id
  */

@@ -1,5 +1,3 @@
-/* Formatted on 4/8/2011 8:39:45 AM (QP5 v5.139.911.3011) */
-
 CREATE OR REPLACE PACKAGE BODY cwms_cat
 IS
    -------------------------------------------------------------------------------
@@ -1362,8 +1360,7 @@ IS
                                                := NVL (p_elevation_unit, 'm');
       l_from_code        cwms_unit.unit_code%TYPE;
       l_to_code          cwms_unit.unit_code%TYPE;
-      l_factor           cwms_unit_conversion.factor%TYPE;
-      l_offset           cwms_unit_conversion.offset%TYPE;
+      l_function         cwms_unit_conversion.function%TYPE;
       l_office_id        cwms_office.office_id%TYPE;
       l_db_office_id     cwms_office.office_id%TYPE;
       l_db_office_code    NUMBER;
@@ -1398,9 +1395,9 @@ IS
          );
       END IF;
 
-      ------------------------------------------
-      -- get the conversion factor and offset --
-      ------------------------------------------
+      ------------------------------
+      -- get the unit conversion  --
+      ------------------------------
       SELECT   unit_code
         INTO   l_from_code
         FROM   cwms_unit
@@ -1411,8 +1408,8 @@ IS
         FROM   cwms_unit
        WHERE   unit_id = l_to_id;
 
-      SELECT   factor, offset
-        INTO   l_factor, l_offset
+      SELECT   function
+        INTO   l_function
         FROM   cwms_unit_conversion
        WHERE   from_unit_code = l_from_code AND to_unit_code = l_to_code;
 
@@ -1432,7 +1429,7 @@ IS
                           apl.sub_location_id, cs.state_initial, cc.county_name,
                           ctz.time_zone_name, apl.location_type, apl.latitude,
                           apl.longitude, apl.horizontal_datum,
-                          apl.elevation * cuc.factor + cuc.offset elevation,
+                          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(apl.elevation)), apl.elevation) elevation,
                           cuc.to_unit_id elev_unit_id, apl.vertical_datum,
                           apl.public_name, apl.long_name, apl.description,
                           apl.active_flag
@@ -1469,7 +1466,7 @@ IS
                           apl.sub_location_id, cs.state_initial, cc.county_name,
                           ctz.time_zone_name, apl.location_type, apl.latitude,
                           apl.longitude, apl.horizontal_datum,
-                          apl.elevation * cuc.factor + cuc.offset elevation,
+                          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(apl.elevation)), apl.elevation) elevation,
                           cuc.to_unit_id elev_unit_id, apl.vertical_datum,
                           apl.public_name, apl.long_name, apl.description,
                           apl.active_flag
@@ -1508,7 +1505,7 @@ IS
                           apl.sub_location_id, cs.state_initial, cc.county_name,
                           ctz.time_zone_name, apl.location_type, apl.latitude,
                           apl.longitude, apl.horizontal_datum,
-                          apl.elevation * cuc.factor + cuc.offset elevation,
+                          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(apl.elevation)), apl.elevation) elevation,
                           cuc.to_unit_id elev_unit_id, apl.vertical_datum,
                           apl.public_name, apl.long_name, apl.description,
                           apl.active_flag
@@ -1541,7 +1538,7 @@ IS
                           apl.sub_location_id, cs.state_initial, cc.county_name,
                           ctz.time_zone_name, apl.location_type, apl.latitude,
                           apl.longitude, apl.horizontal_datum,
-                          apl.elevation * cuc.factor + cuc.offset elevation,
+                          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(apl.elevation)), apl.elevation) elevation,
                           cuc.to_unit_id elev_unit_id, apl.vertical_datum,
                           apl.public_name, apl.long_name, apl.description,
                           apl.active_flag
@@ -1650,8 +1647,7 @@ IS
       l_to_id            cwms_unit.unit_id%TYPE := NVL (p_elevation_unit, 'm');
       l_from_code        cwms_unit.unit_code%TYPE;
       l_to_code          cwms_unit.unit_code%TYPE;
-      l_factor           cwms_unit_conversion.factor%TYPE;
-      l_offset           cwms_unit_conversion.offset%TYPE;
+      l_function         cwms_unit_conversion.function%TYPE;
       l_office_id        cwms_office.office_id%TYPE;
       l_db_office_id     cwms_office.office_id%TYPE;
       l_db_office_code   NUMBER;
@@ -1688,9 +1684,9 @@ IS
             );
       END IF;
 
-------------------------------------------
--- get the conversion factor and offset --
-------------------------------------------
+-----------------------------
+-- get the unit conversion --
+-----------------------------
       SELECT unit_code
         INTO l_from_code
         FROM cwms_unit
@@ -1701,8 +1697,8 @@ IS
         FROM cwms_unit
        WHERE unit_id = l_to_id;
 
-      SELECT factor, offset
-        INTO l_factor, l_offset
+      SELECT function
+        INTO l_function
         FROM cwms_unit_conversion
        WHERE from_unit_code = l_from_code AND to_unit_code = l_to_code;
 
@@ -1752,7 +1748,7 @@ IS
                                apl.latitude,
                                apl.longitude,
                                apl.horizontal_datum,
-                               apl.elevation * cuc.factor + cuc.offset as elevation,
+                               nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(apl.elevation)), apl.elevation) as elevation,
                                cuc.to_unit_id as elev_unit_id,
                                apl.vertical_datum,
                                apl.public_name,
@@ -1840,7 +1836,7 @@ IS
                                apl.latitude,
                                apl.longitude,
                                apl.horizontal_datum,
-                               apl.elevation * cuc.factor + cuc.offset as elevation,
+                               nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(apl.elevation)), apl.elevation) as elevation,
                                cuc.to_unit_id as elev_unit_id,
                                apl.vertical_datum,
                                apl.public_name,
@@ -1930,7 +1926,7 @@ IS
                                apl.latitude,
                                apl.longitude,
                                apl.horizontal_datum,
-                               apl.elevation * cuc.factor + cuc.offset as elevation,
+                               nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(apl.elevation)), apl.elevation) as elevation,
                                cuc.to_unit_id as elev_unit_id,
                                apl.vertical_datum,
                                apl.public_name,
@@ -2015,7 +2011,7 @@ IS
                                apl.latitude,
                                apl.longitude,
                                apl.horizontal_datum,
-                               apl.elevation * cuc.factor + cuc.offset as elevation,
+                               nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(apl.elevation)), apl.elevation) as elevation,
                                cuc.to_unit_id as elev_unit_id,
                                apl.vertical_datum,
                                apl.public_name,
@@ -2118,8 +2114,7 @@ IS
       l_to_id           cwms_unit.unit_id%TYPE := NVL (p_elevation_unit, 'm');
       l_from_code      cwms_unit.unit_code%TYPE;
       l_to_code        cwms_unit.unit_code%TYPE;
-      l_factor         cwms_unit_conversion.factor%TYPE;
-      l_offset         cwms_unit_conversion.offset%TYPE;
+      l_function       cwms_unit_conversion.function%TYPE;
       l_office_id      cwms_office.office_id%TYPE;
       l_db_office_id   cwms_office.office_id%TYPE;
    BEGIN
@@ -2139,9 +2134,9 @@ IS
        WHERE   o1.office_id = l_office_id
                AND o2.office_code = o1.db_host_office_code;
 
-      ------------------------------------------
-      -- get the conversion factor and offset --
-      ------------------------------------------
+      -----------------------------
+      -- get the unit conversion --
+      -----------------------------
       SELECT   unit_code
         INTO   l_from_code
         FROM   cwms_unit
@@ -2152,8 +2147,8 @@ IS
         FROM   cwms_unit
        WHERE   unit_id = l_to_id;
 
-      SELECT   factor, offset
-        INTO   l_factor, l_offset
+      SELECT   function
+        INTO   l_function
         FROM   cwms_unit_conversion
        WHERE   from_unit_code = l_from_code AND to_unit_code = l_to_code;
 
@@ -2163,7 +2158,7 @@ IS
       OPEN p_cwms_cat FOR
            SELECT   db_office_id, base_location_id, state_initial, county_name,
                     time_zone_name, location_type, latitude, longitude,
-                    elevation * l_factor + l_offset AS elevation,
+                    nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(elevation)), elevation) AS elevation,
                     l_to_id AS elev_unit_id, vertical_datum, public_name,
                     long_name, description
              FROM   av_loc alv

@@ -529,12 +529,10 @@ as
       p_parameters_id in varchar2,
       p_units_id      in varchar2)
    is
-      l_ind_factor              binary_double;
-      l_ind_offset              binary_double;
+      l_ind_function            cwms_unit_conversion.function%type;
       l_ind_param_id            varchar2(49);
       l_ind_unit_id             varchar2(16);
-      l_dep_factor              binary_double;
-      l_dep_offset              binary_double;
+      l_dep_function            cwms_unit_conversion.function%type;
       l_dep_param_id            varchar2(49);
       l_dep_unit_id             varchar2(16);
       l_parts                   str_tab_t;
@@ -553,10 +551,8 @@ as
             l_ind_unit_id := cwms_util.get_unit_id(l_parts(1));
             l_dep_unit_id := cwms_util.get_unit_id(l_parts(2));
             begin
-            select factor,
-                   offset
-              into l_dep_factor,
-                   l_dep_offset
+            select function
+              into l_dep_function
               from cwms_base_parameter bp,
                    cwms_unit_conversion uc
                 where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(l_dep_param_id))
@@ -580,10 +576,8 @@ as
             l_remaining_units_id := substr(p_units_id, instr(p_units_id, cwms_rating.separator3) + 1);
          end if;
          begin
-         select factor,
-                offset
-           into l_ind_factor,
-                l_ind_offset
+         select function
+           into l_ind_function
            from cwms_base_parameter bp,
                 cwms_unit_conversion uc
              where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(l_ind_param_id))
@@ -600,10 +594,10 @@ as
          end;
          for i in 1..self.rating_values.count loop
             self.rating_values(i).ind_value :=
-               self.rating_values(i).ind_value * l_ind_factor + l_ind_offset;
+               nvl(cwms_util.eval_rpn_expression(l_ind_function, double_tab_t(self.rating_values(i).ind_value)), self.rating_values(i).ind_value);
             if l_deepest then
                self.rating_values(i).dep_value :=
-                  self.rating_values(i).dep_value * l_dep_factor + l_dep_offset;
+                  nvl(cwms_util.eval_rpn_expression(l_dep_function, double_tab_t(self.rating_values(i).dep_value)), self.rating_values(i).dep_value);
             else
                self.rating_values(i).dep_rating_ind_param.convert_to_database_units(
                   l_remaining_parameters_id,
@@ -613,10 +607,10 @@ as
          if self.extension_values is not null then
             for i in 1..self.extension_values.count loop
                self.extension_values(i).ind_value :=
-                  self.extension_values(i).ind_value * l_ind_factor + l_ind_offset;
+                  nvl(cwms_util.eval_rpn_expression(l_ind_function, double_tab_t(self.extension_values(i).ind_value)), self.extension_values(i).ind_value);
                if l_deepest then
                   self.extension_values(i).dep_value :=
-                     self.extension_values(i).dep_value * l_dep_factor + l_dep_offset;
+                     nvl(cwms_util.eval_rpn_expression(l_dep_function, double_tab_t(self.extension_values(i).dep_value)), self.extension_values(i).dep_value);
                else
                   self.extension_values(i).dep_rating_ind_param.convert_to_database_units(
                      l_remaining_parameters_id,
@@ -633,12 +627,10 @@ as
       p_parameters_id in varchar2,
       p_units_id      in varchar2)
    is
-      l_ind_factor              binary_double;
-      l_ind_offset              binary_double;
+      l_ind_function            cwms_unit_conversion.function%type;
       l_ind_param_id            varchar2(49);
       l_ind_unit_id             varchar2(16);
-      l_dep_factor              binary_double;
-      l_dep_offset              binary_double;
+      l_dep_function            cwms_unit_conversion.function%type;
       l_dep_param_id            varchar2(49);
       l_dep_unit_id             varchar2(16);
       l_parts                   str_tab_t;
@@ -655,10 +647,8 @@ as
             l_parts := cwms_util.split_text(p_units_id, cwms_rating.separator2);
             l_ind_unit_id := l_parts(1);
             l_dep_unit_id := l_parts(2);
-            select factor,
-                   offset
-              into l_dep_factor,
-                   l_dep_offset
+            select function
+              into l_dep_function
               from cwms_base_parameter bp,
                    cwms_unit_conversion uc
              where bp.base_parameter_id = cwms_util.get_base_id(l_dep_param_id)
@@ -672,10 +662,8 @@ as
             l_remaining_parameters_id := substr(p_parameters_id, instr(p_parameters_id, cwms_rating.separator3) + 1);
             l_remaining_units_id := substr(p_units_id, instr(p_units_id, cwms_rating.separator3) + 1);
          end if;
-         select factor,
-                offset
-           into l_ind_factor,
-                l_ind_offset
+         select function
+           into l_ind_function
            from cwms_base_parameter bp,
                 cwms_unit_conversion uc
           where bp.base_parameter_id = cwms_util.get_base_id(l_ind_param_id)
@@ -683,10 +671,10 @@ as
             and uc.to_unit_id = l_ind_unit_id;
          for i in 1..self.rating_values.count loop
             self.rating_values(i).ind_value :=
-               cwms_rounding.round_dd_f(self.rating_values(i).ind_value * l_ind_factor + l_ind_offset, '9999999999');
+               cwms_rounding.round_dd_f(nvl(cwms_util.eval_rpn_expression(l_ind_function, double_tab_t(self.rating_values(i).ind_value)), self.rating_values(i).ind_value), '9999999999');
             if l_deepest then
                self.rating_values(i).dep_value :=
-                  cwms_rounding.round_dd_f(self.rating_values(i).dep_value * l_dep_factor + l_dep_offset, '9999999999');
+                  cwms_rounding.round_dd_f(nvl(cwms_util.eval_rpn_expression(l_dep_function, double_tab_t(self.rating_values(i).dep_value)), self.rating_values(i).dep_value), '9999999999');
             else
                self.rating_values(i).dep_rating_ind_param.convert_to_native_units(
                   l_remaining_parameters_id,
@@ -696,10 +684,10 @@ as
          if self.extension_values is not null then
             for i in 1..self.extension_values.count loop
                self.extension_values(i).ind_value :=
-                  cwms_rounding.round_dd_f(self.extension_values(i).ind_value * l_ind_factor + l_ind_offset, '9999999999');
+                  cwms_rounding.round_dd_f(nvl(cwms_util.eval_rpn_expression(l_ind_function, double_tab_t(self.extension_values(i).ind_value)), self.extension_values(i).ind_value), '9999999999');
                if l_deepest then
                   self.extension_values(i).dep_value :=
-                     cwms_rounding.round_dd_f(self.extension_values(i).dep_value * l_dep_factor + l_dep_offset, '9999999999');
+                     cwms_rounding.round_dd_f(nvl(cwms_util.eval_rpn_expression(l_dep_function, double_tab_t(self.extension_values(i).dep_value)), self.extension_values(i).dep_value), '9999999999');
                else
                   self.extension_values(i).dep_rating_ind_param.convert_to_native_units(
                      l_remaining_parameters_id,

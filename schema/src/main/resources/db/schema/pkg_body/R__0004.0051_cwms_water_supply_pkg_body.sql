@@ -1,13 +1,12 @@
-
+CREATE OR REPLACE
+PACKAGE BODY cwms_water_supply
+AS
 --------------------------------------------------------------------------------
 -- package cwms_water_supply.
 -- used to manipulate the tables at_water_user, at_water_user_contract,
 -- at_wat_usr_contract_accounting, at_xref_wat_usr_contract_docs.
 -- also manipulates at_document.
 --------------------------------------------------------------------------------
-CREATE OR REPLACE
-PACKAGE BODY cwms_water_supply
-AS
 --------------------------------------------------------------------------------
 -- procedure cat_water_user
 -- returns a catalog of water users.
@@ -348,12 +347,12 @@ BEGIN
    p_contracts := water_user_contract_tab_t();
    FOR rec IN (
       SELECT wuc.contract_name,
-             wuc.contracted_storage * uc.factor + uc.offset AS contracted_storage,
+             nvl(cwms_util.eval_rpn_expression(uc.function, double_tab_t(wuc.contracted_storage)), wuc.contracted_storage) AS contracted_storage,
              wuc.water_supply_contract_type,
              wuc.ws_contract_effective_date,
              wuc.ws_contract_expiration_date,
-             wuc.initial_use_allocation * uc.factor + uc.offset AS initial_use_allocation,
-             wuc.future_use_allocation * uc.factor + uc.offset AS future_use_allocation,
+             nvl(cwms_util.eval_rpn_expression(uc.function, double_tab_t(wuc.initial_use_allocation)), wuc.initial_use_allocation) AS initial_use_allocation,
+             nvl(cwms_util.eval_rpn_expression(uc.function, double_tab_t(wuc.future_use_allocation)), wuc.future_use_allocation) AS future_use_allocation,
              wuc.future_use_percent_activated,
              wuc.total_alloc_percent_activated,
              wuc.pump_out_location_code,
@@ -445,8 +444,7 @@ IS
       p_rec IN out nocopy at_water_user_contract%rowtype,
       p_obj IN            water_user_contract_obj_t)
    IS
-      l_factor              binary_double;
-      l_offset              BINARY_DOUBLE;
+      l_function            cwms_unit_conversion.function%type;
       l_contract_type_code  NUMBER(14);
       l_storage_unit_code   number(14);
       l_water_user_code     number(14);
@@ -455,11 +453,9 @@ IS
       ----------------------------------
       -- get the unit conversion info --
       ----------------------------------
-      SELECT uc.factor,
-             uc.offset,
+      SELECT uc.function,
              uc.from_unit_code
-        INTO l_factor,
-             l_offset,
+        INTO l_function,
              l_storage_unit_code
         FROM cwms_base_parameter bp,
              cwms_unit_conversion uc
@@ -479,7 +475,7 @@ IS
       ---------------------------
       -- set the record fields --
       ---------------------------
-      p_rec.contracted_storage := p_obj.contracted_storage * l_factor + l_offset;
+      p_rec.contracted_storage := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(p_obj.contracted_storage)), p_obj.contracted_storage);
       p_rec.water_supply_contract_type := l_contract_type_code;
       IF p_obj.ws_contract_effective_date IS NOT NULL OR NOT l_ignore_nulls
       THEN
@@ -491,11 +487,11 @@ IS
       END IF;
       IF p_obj.initial_use_allocation IS NOT NULL OR NOT l_ignore_nulls
       THEN
-         p_rec.initial_use_allocation := p_obj.initial_use_allocation * l_factor + l_offset;
+         p_rec.initial_use_allocation := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(p_obj.initial_use_allocation)), p_obj.initial_use_allocation);
       END IF;
       IF p_obj.future_use_allocation IS NOT NULL OR NOT l_ignore_nulls
       THEN
-         p_rec.future_use_allocation := p_obj.future_use_allocation * l_factor + l_offset;
+         p_rec.future_use_allocation := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(p_obj.future_use_allocation)), p_obj.future_use_allocation);
       END IF;
       IF p_obj.future_use_percent_activated IS NOT NULL OR NOT l_ignore_nulls
       THEN
@@ -1223,8 +1219,7 @@ BEGIN
           limited_wuca.transfer_start_datetime,
           limited_wuca.pump_flow,
           -- u.unit_id AS units_id,
-          uc.factor,
-          uc.offset,
+          uc.function,
           o.office_id AS transfer_type_office_id,
           ptt.phys_trans_type_display_value,
           ptt.phys_trans_type_tooltip,
@@ -1254,7 +1249,7 @@ BEGIN
           rec.phys_trans_type_display_value,
           rec.phys_trans_type_tooltip,
           rec.phys_trans_type_active),
-        rec.pump_flow * rec.factor + rec.offset,
+        nvl(cwms_util.eval_rpn_expression(rec.function, double_tab_t(rec.pump_flow)), rec.pump_flow),
         -- rec.units_id,
         cwms_util.change_timezone(
            rec.transfer_start_datetime,
@@ -1301,8 +1296,7 @@ IS
     l_project_loc_code NUMBER(14);
     l_contract_code NUMBER(14);
 
-    l_factor         BINARY_DOUBLE;
-    l_offset         BINARY_DOUBLE;
+    l_function       cwms_unit_conversion.function%type;
     l_time_zone      varchar2(28) := nvl(p_time_zone, 'UTC');
 --    l_count number;
 BEGIN
@@ -1362,14 +1356,11 @@ BEGIN
 
     -- dbms_output.put_line('wuc code: '|| l_contract_code);
 
-    --get the offset and factor
     ----------------------------------
     -- get the unit conversion info --
     ----------------------------------
-    SELECT uc.factor,
-          uc.offset
-     INTO l_factor,
-          l_offset
+    SELECT uc.function
+     INTO l_function
      from cwms_base_parameter bp,
           cwms_unit_conversion uc,
           cwms_unit u
@@ -1377,8 +1368,6 @@ BEGIN
       and uc.to_unit_code = bp.unit_code
       and uc.from_unit_code = u.unit_code
       and u.unit_id = nvl(p_flow_unit_id,'cms');
-
-    -- dbms_output.put_line('unit conv: '|| l_factor ||', '||l_offset);
 
 --    select count(*) into l_count from at_wat_usr_contract_accounting;
 --    dbms_output.put_line('row count: '|| l_count);
@@ -1427,7 +1416,7 @@ BEGIN
             l_contract_code contract_code,
             acct_tab.pump_location_ref.get_location_code('F') pump_code,
             ptt.phys_trans_type_code xfer_code,
-            acct_tab.pump_flow * l_factor + l_offset flow,
+            nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(acct_tab.pump_flow)), acct_tab.pump_flow) flow,
             cwms_util.change_timezone(
                   acct_tab.transfer_start_datetime,
                   l_time_zone,

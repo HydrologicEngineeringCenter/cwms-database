@@ -34,8 +34,8 @@ AS
                             COALESCE (r1.native_dep_value, r2.native_dep_value, r3.native_dep_value, r4.native_dep_value, r5.native_dep_value) AS dep_value
       FROM    (SELECT     rip.rating_code, rip.rating_ind_param_code,
                              rv.other_ind_hash, rv.ind_value, rv.dep_value,
-                             cwms_rounding.round_dd_f (rv.ind_value * uc1.factor + uc1.offset, '8888888888') AS native_ind_value,
-                             cwms_rounding.round_dd_f (rv.dep_value * uc2.factor + uc2.offset, '8888888888') AS native_dep_value,
+                             cwms_rounding.round_dd_f (nvl(cwms_util.eval_rpn_expression(uc1.function, double_tab_t(rv.ind_value)), rv.ind_value), '8888888888') AS native_ind_value,
+                             cwms_rounding.round_dd_f (nvl(cwms_util.eval_rpn_expression(uc2.function, double_tab_t(rv.dep_value)), rv.dep_value), '8888888888') AS native_dep_value,
                              rv.dep_rating_ind_param_code
                     FROM     at_parameter p1,
                              cwms_base_parameter bp1,
@@ -78,8 +78,8 @@ AS
                 LEFT OUTER JOIN (SELECT   rip.rating_ind_param_code,
                                                   rv.other_ind_hash, rv.ind_value,
                                                   rv.dep_value,
-                                                  cwms_rounding.round_dd_f (rv.ind_value * uc1.factor + uc1.offset, '8888888888') AS native_ind_value,
-                                                  cwms_rounding.round_dd_f (rv.dep_value * uc2.factor + uc2.offset, '8888888888') AS native_dep_value,
+                                                  cwms_rounding.round_dd_f (nvl(cwms_util.eval_rpn_expression(uc1.function, double_tab_t(rv.ind_value)), rv.ind_value), '8888888888') AS native_ind_value,
+                                                  cwms_rounding.round_dd_f (nvl(cwms_util.eval_rpn_expression(uc2.function, double_tab_t(rv.dep_value)), rv.dep_value), '8888888888') AS native_dep_value,
                                                   rv.dep_rating_ind_param_code
                                          FROM   at_parameter p1,
                                                   cwms_base_parameter bp1,
@@ -172,8 +172,8 @@ AS
                 LEFT OUTER JOIN (SELECT   rip.rating_ind_param_code,
                                                   rv.other_ind_hash, rv.ind_value,
                                                   rv.dep_value,
-                                                  cwms_rounding.round_dd_f (rv.ind_value * uc1.factor + uc1.offset, '8888888888') AS native_ind_value,
-                                                  cwms_rounding.round_dd_f (rv.dep_value * uc2.factor + uc2.offset, '8888888888') AS native_dep_value,
+                                                  cwms_rounding.round_dd_f (nvl(cwms_util.eval_rpn_expression(uc1.function, double_tab_t(rv.ind_value)), rv.ind_value), '8888888888') AS native_ind_value,
+                                                  cwms_rounding.round_dd_f (nvl(cwms_util.eval_rpn_expression(uc2.function, double_tab_t(rv.dep_value)), rv.dep_value), '8888888888') AS native_dep_value,
                                                   rv.dep_rating_ind_param_code
                                          FROM   at_parameter p1,
                                                   cwms_base_parameter bp1,
@@ -266,8 +266,8 @@ AS
                 LEFT OUTER JOIN (SELECT   rip.rating_ind_param_code,
                                                   rv.other_ind_hash, rv.ind_value,
                                                   rv.dep_value,
-                                                  cwms_rounding.round_dd_f (rv.ind_value * uc1.factor + uc1.offset, '8888888888') AS native_ind_value,
-                                                  cwms_rounding.round_dd_f (rv.dep_value * uc2.factor + uc2.offset, '8888888888') AS native_dep_value,
+                                                  cwms_rounding.round_dd_f (nvl(cwms_util.eval_rpn_expression(uc1.function, double_tab_t(rv.ind_value)), rv.ind_value), '8888888888') AS native_ind_value,
+                                                  cwms_rounding.round_dd_f (nvl(cwms_util.eval_rpn_expression(uc2.function, double_tab_t(rv.dep_value)), rv.dep_value), '8888888888') AS native_dep_value,
                                                   rv.dep_rating_ind_param_code
                                          FROM   at_parameter p1,
                                                   cwms_base_parameter bp1,
@@ -360,8 +360,8 @@ AS
                 LEFT OUTER JOIN (SELECT   rip.rating_ind_param_code,
                                                   rv.other_ind_hash, rv.ind_value,
                                                   rv.dep_value,
-                                                  cwms_rounding.round_dd_f (rv.ind_value * uc1.factor + uc1.offset, '8888888888') AS native_ind_value,
-                                                  cwms_rounding.round_dd_f (rv.dep_value * uc2.factor + uc2.offset, '8888888888') AS native_dep_value,
+                                                  cwms_rounding.round_dd_f (nvl(cwms_util.eval_rpn_expression(uc1.function, double_tab_t(rv.ind_value)), rv.ind_value), '8888888888') AS native_ind_value,
+                                                  cwms_rounding.round_dd_f (nvl(cwms_util.eval_rpn_expression(uc2.function, double_tab_t(rv.dep_value)), rv.dep_value), '8888888888') AS native_dep_value,
                                                   rv.dep_rating_ind_param_code
                                          FROM   at_parameter p1,
                                                   cwms_base_parameter bp1,

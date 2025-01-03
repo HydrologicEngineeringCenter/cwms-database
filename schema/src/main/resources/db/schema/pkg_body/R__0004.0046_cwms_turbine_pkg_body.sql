@@ -857,14 +857,12 @@ is
    l_db_elev_unit          varchar2(16);
    l_db_flow_unit          varchar2(16);
    l_db_power_unit         varchar2(16);
-   l_elev_factor           binary_double;
-   l_elev_offset           binary_double;
+   l_elev_function         cwms_unit_conversion.function%type;
    l_elev_pool             binary_double;
    l_elev_tailwater        binary_double;
    l_elev_unit             varchar2(16);
    l_end_time              date;
-   l_flow_factor           binary_double;
-   l_flow_offset           binary_double;
+   l_flow_function         cwms_unit_conversion.function%type;
    l_flow_unit             varchar2(16);
    l_max_item_count        integer;
    l_new_discharge         binary_double;
@@ -956,18 +954,14 @@ begin
    l_db_elev_unit  := cwms_util.get_default_units('Elev');
    l_db_flow_unit  := cwms_util.get_default_units('Flow');
    l_db_power_unit := cwms_util.get_default_units('Power');
-   select factor,
-          offset
-     into l_elev_factor,
-          l_elev_offset
+   select function
+     into l_elev_function
      from cwms_unit_conversion
     where from_unit_id = l_db_elev_unit
       and to_unit_id = l_elev_unit;
 
-   select factor,
-          offset
-     into l_flow_factor,
-          l_flow_offset
+   select function
+     into l_flow_function
      from cwms_unit_conversion
     where from_unit_id = l_db_flow_unit
       and to_unit_id = l_flow_unit;
@@ -993,34 +987,50 @@ begin
                 abl.base_location_id,
                 apl.sub_location_id,
                 cast(from_tz(cast(atc.turbine_change_datetime as timestamp), 'UTC') at time zone (l_time_zone) as date),
-                (atc.elev_pool + nvl(cwms_loc.get_vertical_datum_offset(
-                    ap.project_location_code,
-                    nvl(l_vert_datum1, '@'),
-                    nvl(l_vert_datum2, '@'),
-                    atc.turbine_change_datetime,
-                    'm'), 0)
-                ) * l_elev_factor + l_elev_offset,
-                (atc.elev_tailwater + nvl(cwms_loc.get_vertical_datum_offset(
-                    ap.project_location_code,
-                    nvl(l_vert_datum1, '@'),
-                    nvl(l_vert_datum2, '@'),
-                    atc.turbine_change_datetime,
-                    'm'), 0)
-                ) * l_elev_factor + l_elev_offset,
+                nvl(
+                   cwms_util.eval_rpn_expression(
+                       l_elev_function,
+                       double_tab_t(atc.elev_pool + nvl(cwms_loc.get_vertical_datum_offset(
+                           ap.project_location_code,
+                           nvl(l_vert_datum1, '@'),
+                           nvl(l_vert_datum2, '@'),
+                           atc.turbine_change_datetime,
+                           'm'), 0))),
+                   atc.elev_pool + nvl(cwms_loc.get_vertical_datum_offset(
+                       ap.project_location_code,
+                       nvl(l_vert_datum1, '@'),
+                       nvl(l_vert_datum2, '@'),
+                       atc.turbine_change_datetime,
+                       'm'), 0)),
+                nvl(
+                   cwms_util.eval_rpn_expression(
+                       l_elev_function,
+                       double_tab_t(atc.elev_tailwater + nvl(cwms_loc.get_vertical_datum_offset(
+                           ap.project_location_code,
+                           nvl(l_vert_datum1, '@'),
+                           nvl(l_vert_datum2, '@'),
+                           atc.turbine_change_datetime,
+                           'm'), 0))),
+                   atc.elev_tailwater + nvl(cwms_loc.get_vertical_datum_offset(
+                       ap.project_location_code,
+                       nvl(l_vert_datum1, '@'),
+                       nvl(l_vert_datum2, '@'),
+                       atc.turbine_change_datetime,
+                       'm'), 0)),
                 atsr.turb_set_reason_display_value,
                 atsr.turb_set_reason_tooltip,
                 atsr.turb_set_reason_active,
                 atcc.turbine_comp_display_value,
                 atcc.turbine_comp_tooltip,
                 atcc.turbine_comp_active,
-                atc.old_total_discharge_override  * l_flow_factor + l_flow_offset,
-                atc.new_total_discharge_override  * l_flow_factor + l_flow_offset,
+                nvl(cwms_util.eval_rpn_expression(l_flow_function, double_tab_t(atc.old_total_discharge_override)), atc.old_total_discharge_override),
+                nvl(cwms_util.eval_rpn_expression(l_flow_function, double_tab_t(atc.new_total_discharge_override)), atc.new_total_discharge_override),
                 atc.turbine_change_notes,
                 atc.protected,
                 cursor (select bl.base_location_id,
                                pl.sub_location_id,
-                               old_discharge * l_flow_factor + l_flow_offset,
-                               new_discharge * l_flow_factor + l_flow_offset,
+                               nvl(cwms_util.eval_rpn_expression(l_flow_function, double_tab_t(old_discharge)), old_discharge),
+                               nvl(cwms_util.eval_rpn_expression(l_flow_function, double_tab_t(new_discharge)), new_discharge),
                                scheduled_load,
                                real_power
                           from at_turbine_setting ats,
@@ -1057,34 +1067,50 @@ begin
                 abl.base_location_id,
                 apl.sub_location_id,
                 cast(from_tz(cast(atc.turbine_change_datetime as timestamp), 'UTC') at time zone (l_time_zone) as date),
-                (atc.elev_pool + nvl(cwms_loc.get_vertical_datum_offset(
-                    ap.project_location_code,
-                    nvl(l_vert_datum1, '@'),
-                    nvl(l_vert_datum2, '@'),
-                    atc.turbine_change_datetime,
-                    'm'), 0)
-                ) * l_elev_factor + l_elev_offset,
-                (atc.elev_tailwater + nvl(cwms_loc.get_vertical_datum_offset(
-                    ap.project_location_code,
-                    nvl(l_vert_datum1, '@'),
-                    nvl(l_vert_datum2, '@'),
-                    atc.turbine_change_datetime,
-                    'm'), 0)
-                ) * l_elev_factor + l_elev_offset,
+                nvl(
+                   cwms_util.eval_rpn_expression(
+                       l_elev_function,
+                       double_tab_t(atc.elev_pool + nvl(cwms_loc.get_vertical_datum_offset(
+                           ap.project_location_code,
+                           nvl(l_vert_datum1, '@'),
+                           nvl(l_vert_datum2, '@'),
+                           atc.turbine_change_datetime,
+                           'm'), 0))),
+                   atc.elev_pool + nvl(cwms_loc.get_vertical_datum_offset(
+                       ap.project_location_code,
+                       nvl(l_vert_datum1, '@'),
+                       nvl(l_vert_datum2, '@'),
+                       atc.turbine_change_datetime,
+                       'm'), 0)),
+                nvl(
+                   cwms_util.eval_rpn_expression(
+                       l_elev_function,
+                       double_tab_t(atc.elev_tailwater + nvl(cwms_loc.get_vertical_datum_offset(
+                           ap.project_location_code,
+                           nvl(l_vert_datum1, '@'),
+                           nvl(l_vert_datum2, '@'),
+                           atc.turbine_change_datetime,
+                           'm'), 0))),
+                   atc.elev_tailwater + nvl(cwms_loc.get_vertical_datum_offset(
+                       ap.project_location_code,
+                       nvl(l_vert_datum1, '@'),
+                       nvl(l_vert_datum2, '@'),
+                       atc.turbine_change_datetime,
+                       'm'), 0)),
                 atsr.turb_set_reason_display_value,
                 atsr.turb_set_reason_tooltip,
                 atsr.turb_set_reason_active,
                 atcc.turbine_comp_display_value,
                 atcc.turbine_comp_tooltip,
                 atcc.turbine_comp_active,
-                atc.old_total_discharge_override  * l_flow_factor + l_flow_offset,
-                atc.new_total_discharge_override  * l_flow_factor + l_flow_offset,
+                nvl(cwms_util.eval_rpn_expression(l_flow_function, double_tab_t(atc.old_total_discharge_override)), atc.old_total_discharge_override),
+                nvl(cwms_util.eval_rpn_expression(l_flow_function, double_tab_t(atc.new_total_discharge_override)), atc.new_total_discharge_override),
                 atc.turbine_change_notes,
                 atc.protected,
                 cursor (select bl.base_location_id,
                                pl.sub_location_id,
-                               old_discharge * l_flow_factor + l_flow_offset,
-                               new_discharge * l_flow_factor + l_flow_offset,
+                               nvl(cwms_util.eval_rpn_expression(l_flow_function, double_tab_t(old_discharge)), old_discharge),
+                               nvl(cwms_util.eval_rpn_expression(l_flow_function, double_tab_t(new_discharge)), new_discharge),
                                scheduled_load,
                                real_power
                           from at_turbine_setting ats,

@@ -30,9 +30,8 @@ create type loc_lvl_indicator_cond_t
  * @member rate_comparison_value_2    The second comparison value used to compare with the rate expression if two rate comparisons are used
  * @member rate_interval              The time interval used in computing the rate of change
  * @member description                A description of the location level indicator
- * @member factor                     The unit conversion factor for absolute magnitude comparison values to convert from specified units to database storage units. <bold>Transient</bold>
- * @member offset                     The unit conversion offset for absolute magnitude comparison values to convert from specified units to database storage units. <bold>Transient</bold>
- * @member rate_factor                The unit conversion factor for rate of change comparison values to convert from specified units to database storage units. <bold>Transient</bold>
+ * @member function                   The unit conversion function for absolute magnitude comparison values to convert from specified units to database storage units. <bold>Transient</bold>
+ * @member rate_function              The unit conversion function for rate of change comparison values to convert from specified units to database storage units. <bold>Transient</bold>
  * @member rate_offset                The unit conversion offset for rate of change comparison values to convert from specified units to database storage units. <bold>Transient</bold>
  * @member interval_factor            A conversion factor to convert from data interval to the specified rate interval. <bold>Transient</bold>
  * @member uses_reference             A flag (T or F) that specifes whether the indicator references a second location level. <bold>Transient</bold>
@@ -58,9 +57,8 @@ is object
    rate_comparison_value_2    binary_double,
    rate_interval              interval day(3) to second(0),
    description                varchar2(256),
-   factor                     binary_double,
-   offset                     binary_double,
-   rate_factor                binary_double,
+   function                   varchar2(64),
+   rate_function              varchar2(64),
    rate_offset                binary_double,
    interval_factor            binary_double,
    uses_reference             varchar2(1),
@@ -135,13 +133,6 @@ is object
     */
    member procedure store(
       p_level_indicator_code in number),  
-   -----------------------------------------------------------------------------
-   -- member fields factor and offset must previously be set to provide any
-   -- necessary units conversion for the comparison
-   --
-   -- p_rate must be specified for the interval indicated in the member field
-   -- rate_interval
-   -----------------------------------------------------------------------------
    /**
     * Evaluates the condition's expression and returns the result
     *

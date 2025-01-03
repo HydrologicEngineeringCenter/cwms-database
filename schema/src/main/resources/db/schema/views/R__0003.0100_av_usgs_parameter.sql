@@ -8,8 +8,8 @@
  * @member parameter_id        The CWMS Parameter
  * @member parameter_type_id   The CWMS Parameter Type
  * @member unit_id             The CWMS Unit
- * @member factor              CWMS = USGS * factor + offset
- * @member offset              CWMS = USGS * factor + offset
+ * @member factor              CWMS = nvl(cwms_util.eval_rpn_expression(function, double_tab_t(USGS)), USGS)
+ * @member offset              CWMS = nvl(cwms_util.eval_rpn_expression(function, double_tab_t(USGS)), USGS)
  */
 create or replace force view av_usgs_parameter(
    office_id,

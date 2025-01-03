@@ -293,8 +293,7 @@ PROCEDURE retrieve_lock(
                                            -- the office id if null will default to the connected user's office
 is
    l_lock_loc location_obj_t;
-   l_unit                varchar2(16);
-   l_factor              number;
+   l_unit     varchar2(16);
 begin
    p_lock := null;
 
@@ -335,10 +334,8 @@ procedure store_lock(
 is
    l_lock_rec         at_lock%rowtype;
    l_exists           boolean;
-   l_length_factor    binary_double;
-   l_length_offset    binary_double;
-   l_volume_factor    binary_double;
-   l_volume_offset    binary_double;
+   l_length_function  cwms_unit_conversion.function%type;
+   l_volume_function  cwms_unit_conversion.function%type;
 begin
    if p_lock is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_LOCK');
@@ -392,23 +389,19 @@ begin
             ||'/'
             ||p_lock.project_location_ref.get_location_id);
    end;
-   --------------------------------
-   -- get the conversion factors --
-   --------------------------------
-   select factor,
-          offset
-     into l_length_factor,
-          l_length_offset
+   ------------------------------
+   -- get the unit conversions --
+   ------------------------------
+   select function
+     into l_length_function
      from cwms_unit_conversion uc,
           cwms_base_parameter bp
     where uc.from_unit_id = p_lock.units_id
       and bp.base_parameter_id = 'Length'
       and uc.to_unit_code = bp.unit_code;
 
-   select factor,
-          offset
-     into l_volume_factor,
-          l_volume_offset
+   select function
+     into l_volume_function
      from cwms_unit_conversion uc,
           cwms_base_parameter bp
     where uc.from_unit_id = p_lock.volume_units_id
@@ -421,27 +414,27 @@ begin
    l_lock_rec.lock_width :=
       case p_lock is null
          when true  then l_lock_rec.lock_width
-         when false then p_lock.lock_width * l_length_factor + l_length_offset
+         when false then nvl(cwms_util.eval_rpn_expression(l_length_function, double_tab_t(p_lock.lock_width)), p_lock.lock_width)
       end;
    l_lock_rec.lock_length :=
       case p_lock is null
          when true  then l_lock_rec.lock_length
-         when false then p_lock.lock_length * l_length_factor + l_length_offset
+         when false then nvl(cwms_util.eval_rpn_expression(l_length_function, double_tab_t(p_lock.lock_length)), p_lock.lock_length)
       end;
    l_lock_rec.volume_per_lockage :=
       case p_lock is null
          when true  then l_lock_rec.volume_per_lockage
-         when false then p_lock.volume_per_lockage * l_volume_factor + l_volume_offset
+         when false then nvl(cwms_util.eval_rpn_expression(l_volume_function, double_tab_t(p_lock.volume_per_lockage)), p_lock.volume_per_lockage)
       end;
    l_lock_rec.minimum_draft :=
       case p_lock is null
          when true  then l_lock_rec.minimum_draft
-         when false then p_lock.minimum_draft * l_length_factor + l_length_offset
+         when false then nvl(cwms_util.eval_rpn_expression(l_length_function, double_tab_t(p_lock.minimum_draft)), p_lock.minimum_draft)
       end;
    l_lock_rec.normal_lock_lift :=
       case p_lock is null
          when true  then l_lock_rec.normal_lock_lift
-         when false then p_lock.normal_lock_lift * l_length_factor + l_length_offset
+         when false then nvl(cwms_util.eval_rpn_expression(l_length_function, double_tab_t(p_lock.normal_lock_lift)), p_lock.normal_lock_lift)
       end;
    ---------------------------------
    -- insert or update the record --

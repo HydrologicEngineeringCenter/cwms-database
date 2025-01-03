@@ -286,10 +286,8 @@ as
       rate_comparison_value_2    := p_rate_comparison_value_2;
       rate_interval              := p_rate_interval;
       description                := l_description;
-      factor                     := 1.0;
-      offset                     := 0.0;
-      rate_factor                := 1.0;
-      rate_offset                := 0.0;
+      function                   := 'ARG1';
+      rate_function              := 'ARG1';
       interval_factor            := 1.0;
       expression_tokens          := tokenize_expression(expression, false);
       rate_expression_tokens     := tokenize_expression(rate_expression, true);
@@ -330,9 +328,6 @@ as
    end store;
 
    -----------------------------------------------------------------------------
-   -- member fields factor and offset must previously be set to provide any
-   -- necessary units conversion for the comparison
-   --
    -- p_rate must be specified for the interval indicated in the member field
    -- rate_interval
    -----------------------------------------------------------------------------
@@ -349,9 +344,9 @@ as
       -------------------------------------------------
       l_arguments := new double_tab_t();
       l_arguments.extend(4);
-      l_arguments(1) :=  p_value   * factor + offset;
-      l_arguments(2) :=  p_level   * factor + offset;
-      l_arguments(3) :=  p_level_2 * factor + offset;
+      l_arguments(1) :=  nvl(cwms_util.eval_rpn_expression(function, double_tab_t(p_value)), p_value);
+      l_arguments(2) :=  nvl(cwms_util.eval_rpn_expression(function, double_tab_t(p_level)), p_level);
+      l_arguments(3) :=  nvl(cwms_util.eval_rpn_expression(function, double_tab_t(p_level_2)), p_level_2);
       return cwms_util.eval_tokenized_expression(expression_tokens, l_arguments); -- may return null
    end eval_expression;
 
@@ -363,7 +358,7 @@ as
    begin
       l_arguments := new double_tab_t();
       l_arguments.extend(4);
-      l_arguments(4) := (p_rate * rate_factor + rate_offset) * interval_factor;
+      l_arguments(4) := (nvl(cwms_util.eval_rpn_expression(rate_function, double_tab_t(p_rate)), p_rate)) * interval_factor;
       return cwms_util.eval_tokenized_expression(rate_expression_tokens, l_arguments); -- may return null
    end eval_rate_expression;
 
@@ -385,10 +380,10 @@ as
       -------------------------------------------------
       l_arguments := new double_tab_t();
       l_arguments.extend(4);
-      l_arguments(1) :=  p_value   * factor + offset;
-      l_arguments(2) :=  p_level   * factor + offset;
-      l_arguments(3) :=  p_level_2 * factor + offset;
-      l_arguments(4) := (p_rate    * rate_factor + rate_offset) * interval_factor;
+      l_arguments(1) :=  nvl(cwms_util.eval_rpn_expression(function, double_tab_t(p_value)), p_value);
+      l_arguments(2) :=  nvl(cwms_util.eval_rpn_expression(function, double_tab_t(p_level)), p_level);
+      l_arguments(3) :=  nvl(cwms_util.eval_rpn_expression(function, double_tab_t(p_level_2)), p_level_2);
+      l_arguments(4) := (nvl(cwms_util.eval_rpn_expression(rate_function, double_tab_t(p_rate)), p_rate)) * interval_factor;
       l_result := round(cwms_util.eval_tokenized_expression(expression_tokens, l_arguments), 9); -- may return null
       -----------------------------------
       -- evaluate the first comparison --

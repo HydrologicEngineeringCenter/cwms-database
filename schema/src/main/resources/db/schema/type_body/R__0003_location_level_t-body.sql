@@ -211,7 +211,7 @@ as
            from cwms_duration d
           where upper(d.duration_id) = upper(l_clone.attribute_duration_id);
 
-         select cwms_rounding.round_f(l_clone.attribute_value * factor + offset, 12)
+         select cwms_rounding.round_f(nvl(cwms_util.eval_rpn_expression(function, double_tab_t(l_clone.attribute_value)), l_clone.attribute_value), 12)
            into l_attribute_value
            from cwms_unit_conversion cuc
           where from_unit_id = attribute_units_id

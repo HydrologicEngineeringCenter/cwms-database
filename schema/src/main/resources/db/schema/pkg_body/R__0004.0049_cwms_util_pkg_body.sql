@@ -2912,7 +2912,7 @@ as
       --
       IF p_value_in IS NOT NULL
       THEN
-         SELECT p_value_in * cuc.factor + cuc.offset
+         SELECT nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(p_value_in)), p_value_in)
            INTO p_value_out
            FROM cwms_unit_conversion cuc, cwms_base_parameter bp
           WHERE     bp.base_parameter_code = l_base_parameter_code
@@ -3112,21 +3112,20 @@ as
                                  p_unit_id        IN VARCHAR2)
       RETURN BINARY_DOUBLE
    IS
-      l_factor   BINARY_DOUBLE;
-      l_offset   BINARY_DOUBLE;
+      l_function cwms_unit_conversion.function%type;
    BEGIN
       if p_value is null or p_parameter_id is null or p_unit_id is null then
          return null;
       end if;
 
-      SELECT uc.factor, uc.offset
-        INTO l_factor, l_offset
+      SELECT uc.function
+        INTO l_function
         FROM cwms_unit_conversion uc, cwms_base_parameter bp
        WHERE     bp.base_parameter_id = get_base_id (p_parameter_id)
              AND uc.to_unit_code = bp.unit_code
              AND uc.from_unit_id = p_unit_id;
 
-      RETURN p_value * l_factor + l_offset;
+      RETURN nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(p_value)), p_value);
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
@@ -3138,27 +3137,6 @@ as
             || p_unit_id
             || ' to database unit.');
    END convert_to_db_units;
-
-   /**
-    * @Deprecated, do not use
-    *
-    */
-   FUNCTION get_factor_and_offset (p_from_unit_id   IN VARCHAR2,
-                                   p_to_unit_id     IN VARCHAR2)
-      RETURN double_tab_t
-   IS
-      l_factor_and_offset   double_tab_t := double_tab_t ();
-   BEGIN
-      l_factor_and_offset.EXTEND (2);
-
-      SELECT factor, offset
-        INTO l_factor_and_offset (1), l_factor_and_offset (2)
-        FROM cwms_unit_conversion
-       WHERE from_unit_id = get_unit_id (p_from_unit_id)
-             AND to_unit_id = get_unit_id (p_to_unit_id);
-
-      RETURN l_factor_and_offset;
-   END get_factor_and_offset;
 
    /**
     * Convert a given value with provided from and to unit names
@@ -3194,29 +3172,19 @@ as
       p_to_unit_code     in number)
       return binary_double
    is
-      l_factor    cwms_unit_conversion.factor%type;
-      l_offset    cwms_unit_conversion.offset%type;
       l_function  cwms_unit_conversion.function%type;
       l_converted binary_double;
    begin
       if p_from_unit_code = p_to_unit_code or p_value is null then
          return p_value;
       else
-         select factor,
-                offset,
-                function
-           into l_factor,
-                l_offset,
-                l_function
+         select function
+           into l_function
            from cwms_unit_conversion
           where from_unit_code = p_from_unit_code
             and to_unit_code = p_to_unit_code;
 
-         if l_factor is null then
-            l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
-         else
-            l_converted := p_value * l_factor + l_offset;
-         end if;
+        l_converted := cwms_util.eval_rpn_expression(l_function, double_tab_t(p_value));
       end if;
       return l_converted;
    exception

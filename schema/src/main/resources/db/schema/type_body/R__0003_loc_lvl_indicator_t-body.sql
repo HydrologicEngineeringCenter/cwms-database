@@ -113,8 +113,7 @@ as
       l_obj         zloc_lvl_indicator_t := new zloc_lvl_indicator_t;
       l_sub_id      varchar2(48);
       l_id          varchar2(256);
-      l_factor      binary_double;
-      l_offset      binary_double;
+      l_function    cwms_unit_conversion.function%type;
    begin
       l_parts := cwms_util.split_text(location_id, '-', 1);
       l_sub_id := case l_parts.count
@@ -193,10 +192,8 @@ as
            from cwms_duration
           where upper(duration_id) = upper(attr_duration_id);
 
-         select factor,
-                offset
-           into l_factor,
-                l_offset
+         select function
+           into l_function
            from cwms_unit_conversion
           where from_unit_id = attr_units_id
             and to_unit_id = cwms_util.get_default_units(attr_parameter_id);
@@ -214,8 +211,8 @@ as
       end if;
 
       l_obj.level_indicator_id := level_indicator_id;
-      l_obj.attr_value         := cwms_rounding.round_f(attr_value * l_factor + l_offset, 12);
-      l_obj.ref_attr_value     := cwms_rounding.round_f(ref_attr_value * l_factor + l_offset, 12);
+      l_obj.attr_value         := cwms_rounding.round_f(nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(attr_value)), attr_value), 12);
+      l_obj.ref_attr_value     := cwms_rounding.round_f(nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(ref_attr_value)), ref_attr_value), 12);
       l_obj.minimum_duration   := minimum_duration;
       l_obj.maximum_age        := maximum_age;
       l_obj.conditions         := conditions;

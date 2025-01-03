@@ -203,12 +203,12 @@ select q1.office_id,
        q1.parm_user_units                               as level_unit,
        case
        when q1.attr_function is null
-       then q1.attribute_value * q1.attr_factor + q1.attr_offset
+       then nvl(cwms_util.eval_rpn_expression(q1.attr_function, double_tab_t(q1.attribute_value)), q1.attribute_value)
        else cwms_util.eval_expression(q1.attr_function, double_tab_t(q1.attribute_value))
        end                                              as attribute_value,
        case
        when q1.function is null
-       then q1.constant_level * q1.factor + q1.offset
+       then nvl(cwms_util.eval_rpn_expression(q1.function, double_tab_t(q1.constant_level)), q1.constant_level)
        else cwms_util.eval_expression(q1.function, double_tab_t(q1.attribute_value))
        end                                              as constant_level,
        q1.interval_origin,
@@ -219,7 +219,7 @@ select q1.office_id,
        substr (q1.time_offset_, 2)                      as time_offset,
        case
        when q1.function is null
-       then q1.seasonal_level * q1.factor + q1.offset
+       then nvl(cwms_util.eval_rpn_expression(q1.function, double_tab_t(q1.seasonal_level)), q1.seasonal_level)
        else cwms_util.eval_expression(q1.function, double_tab_t(q1.seasonal_level))
        end                                              as seasonal_level,
        q1.tsid,

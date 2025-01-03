@@ -7,8 +7,7 @@ as object(
    ind_params str_tab_t, 
    dep_param  varchar2(4),
    units      str_tab_t,
-   factors    double_tab_t,
-   offsets    double_tab_t
+   functions  str_tab_t
 );
 /
 

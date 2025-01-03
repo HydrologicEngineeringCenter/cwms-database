@@ -303,8 +303,7 @@ end validate_specified_level_input;
 -- PRIVATE PROCEDURE get_units_conversion
 --------------------------------------------------------------------------------
 procedure get_units_conversion(
-   p_factor         out binary_double,
-   p_offset         out binary_double,
+   p_function       out cwms_unit_conversion.function%type,
    p_to_cwms        in  boolean,
    p_units          in  varchar2,
    p_parameter_code in  number)
@@ -319,8 +318,7 @@ begin
          'Parameter p_to_cwms must be true (To CWMS) or false (From CWMS)');
    end if;
    if p_units is null then
-      p_factor := 1;
-      p_offset := 0;
+      p_function := 'ARG1';
    else
       l_unit := cwms_util.parse_unit(p_units);
       begin
@@ -328,10 +326,8 @@ begin
             -------------
             -- TO CWMS --
             -------------
-            select factor,
-                   offset
-              into p_factor,
-                   p_offset
+            select function
+              into p_function
               from cwms_unit_conversion uc,
                    cwms_base_parameter bp,
                    at_parameter ap
@@ -343,10 +339,8 @@ begin
             ---------------
             -- FROM CWMS --
             ---------------
-            select factor,
-                   offset
-              into p_factor,
-                   p_offset
+            select function
+              into p_function
               from cwms_unit_conversion uc,
                    cwms_base_parameter bp,
                    at_parameter ap
@@ -417,8 +411,7 @@ is
    l_sub_parameter_id   varchar2(32) := null;
    l_office_id          varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
    l_office_code        number(14)   := cwms_util.get_office_code(l_office_id);
-   l_factor             binary_double;
-   l_offset             binary_double;
+   l_function           cwms_unit_conversion.function%type;
    l_attribute_value    number := null;
    l_level_precedence   varchar2(2);
    l_base_query         varchar2(32767);
@@ -3231,8 +3224,7 @@ is
    l_parameter_code            number(14);
    l_parameter_type_code       number(14);
    l_duration_code             number(14);
-   l_factor                    binary_double;
-   l_offset                    binary_double;
+   l_function                  cwms_unit_conversion.function%type;
    l_date                      date;
    l_match_date                boolean := cwms_util.return_true_or_false(p_match_date);
    l_office_code               number := cwms_util.get_office_code(p_office_id);
@@ -3301,8 +3293,7 @@ begin
    -- get the units conversion --
    ------------------------------
    get_units_conversion(
-      l_factor,
-      l_offset,
+      l_function,
       false, -- From CWMS
       p_level_units,
       l_parameter_code);
@@ -3340,14 +3331,14 @@ begin
             new seasonal_value_t(
                cwms_util.yminterval_to_months(rec.calendar_offset),
                cwms_util.dsinterval_to_minutes(rec.time_offset),
-               rec.value * l_factor + l_offset);
+               nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(rec.value)), rec.value));
       end loop;
    else
       --------------------
       -- constant value --
       --------------------
       p_seasonal_values := null;
-      p_level_value := l_rec.location_level_value * l_factor + l_offset;
+      p_level_value := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_rec.location_level_value)), l_rec.location_level_value);
    end if;
 end retrieve_location_level4;
 --------------------------------------------------------------------------------
@@ -4587,8 +4578,7 @@ is
    l_duration_code             number(14);
    l_effective_date            date;
    l_expiration_date           date;
-   l_factor                    binary_double;
-   l_offset                    binary_double;
+   l_function                  cwms_unit_conversion.function%type;
    l_vert_datum_offset         binary_double;
    l_office_code               number := cwms_util.get_office_code(p_office_id);
    l_office_id                 varchar2(16) := cwms_util.get_db_office_id(p_office_id);
@@ -4601,8 +4591,7 @@ is
    l_attribute_parameter_code  number(14);
    l_attribute_param_type_code number(14);
    l_attribute_duration_code   number(14);
-   l_attribute_factor          binary_double := null;
-   l_attribute_offset          binary_double := null;
+   l_attribute_function        cwms_unit_conversion.function%type := null;
    l_unit                      varchar2(16);
    l_undefined_times           date2_tab_t;
    l_is_defined                boolean;
@@ -5108,19 +5097,17 @@ begin
       -------------------------------
       l_unit := cwms_util.get_unit_id(cwms_util.parse_unit(p_level_units), l_office_id);
       get_units_conversion(
-         l_factor,
-         l_offset,
+         l_function,
          false, -- From CWMS
          l_unit,
          l_parameter_code);
       if p_attribute_value is not null then
          get_units_conversion(
-            l_attribute_factor,
-            l_attribute_offset,
+            l_attribute_function,
             true, -- To CWMS
             p_attribute_units,
             l_attribute_parameter_code);
-         l_attribute_value := cwms_rounding.round_f(p_attribute_value * l_attribute_factor + l_attribute_offset, 12);
+         l_attribute_value := cwms_rounding.round_f(nvl(cwms_util.eval_rpn_expression(l_attribute_function, double_tab_t(p_attribute_value)), p_attribute_value), 12);
          if instr(upper(p_parameter_id), 'ELEV') = 1 and not p_in_recursion then
             l_vert_datum_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_level_units);
             l_attribute_value := l_attribute_value - l_vert_datum_offset;
@@ -5187,7 +5174,7 @@ begin
             'BEFORE',
             'UTC');
          if l_date_prev = l_start_time_utc then
-            l_value := l_value_prev * l_factor + l_offset;
+            l_value := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_prev)), l_value_prev);
          else
             --------------------------------------------------------
             -- find the nearest date/value on or after start time --
@@ -5200,7 +5187,7 @@ begin
                'AFTER',
                'UTC');
             if l_date_next = l_start_time_utc then
-               l_value := l_value_next * l_factor + l_offset;
+               l_value := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_next)), l_value_next);
             else
                -----------------------------
                -- compute the level value --
@@ -5210,9 +5197,9 @@ begin
                      l_value_prev +
                      (l_start_time_utc - l_date_prev) /
                      (l_date_next - l_date_prev) *
-                     (l_value_next - l_value_prev)) * l_factor + l_offset;
+                     nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_next - l_value_prev)), l_value_next - l_value_prev));
                else
-                  l_value := l_value_prev * l_factor + l_offset;
+                  l_value := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_prev)), l_value_prev);
                end if;
             end if;
          end if;
@@ -5242,7 +5229,7 @@ begin
                   -- on or before end of time window --
                   -------------------------------------
                   l_level_values(l_level_values.count) :=
-                     new ztsv_type(l_date_next, l_value_next * l_factor + l_offset, case when l_rec.interpolate = 'T' then 1 else 0 end);
+                     new ztsv_type(l_date_next, nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_next)), l_value_next), case when l_rec.interpolate = 'T' then 1 else 0 end);
                else
                   -------------------------------
                   -- beyond end of time window --
@@ -5254,7 +5241,7 @@ begin
                      l_level_values(l_level_values.count-1).value +
                      (l_end_time_utc - l_level_values(l_level_values.count-1).date_time) /
                      (l_date_next - l_level_values(l_level_values.count-1).date_time) *
-                     ((l_value_next * l_factor + l_offset) - l_level_values(l_level_values.count-1).value));
+                     ((nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_next)), l_value_next)) - l_level_values(l_level_values.count-1).value));
                   l_level_values(l_level_values.count) :=
                      new ztsv_type(l_end_time_utc, l_value, case when l_rec.interpolate = 'T' then 1 else 0 end);
                end if;
@@ -5344,7 +5331,7 @@ begin
          --------------------
          -- constant value --
          --------------------
-         l_value := l_rec.location_level_value * l_factor + l_offset;
+         l_value := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_rec.location_level_value)), l_rec.location_level_value);
          l_level_values.extend;
          l_level_values(1) := new ztsv_type(l_start_time_utc, l_value, case when l_rec.interpolate = 'T' then 1 else 0 end);
          if l_end_time_utc is not null then
@@ -9061,9 +9048,9 @@ begin
        round(
           case
           when attr_base_parameter_id =  ''Elev'' then
-             attribute_value * factor + offset + cwms_loc.get_vertical_datum_offset(location_code, attribute_unit_id)
+             nvl(cwms_util.eval_rpn_expression(function, double_tab_t(attribute_value)), attribute_value) + cwms_loc.get_vertical_datum_offset(location_code, attribute_unit_id)
           else
-             attribute_value * factor + offset
+             nvl(cwms_util.eval_rpn_expression(function, double_tab_t(attribute_value)), attribute_value)
           end,
           9) as attribute_value,
        attribute_unit_id as attribute_unit,
@@ -9143,8 +9130,7 @@ begin
                    cu.to_unit_id as attribute_unit_id,
                    d2.duration_code as attr_duration_code2,
                    d2.duration_id as attribute_duration_id,
-                   cu.factor as factor,
-                   cu.offset as offset
+                   cu.function as function
               from cwms_base_parameter bp2,
                    at_parameter p2,
                    cwms_parameter_type pt2,
@@ -9289,8 +9275,7 @@ is
    l_office_code              number(14) := cwms_util.get_office_code(upper(p_office_id));
    l_cwms_office_code         number(14) := cwms_util.get_office_code('CWMS');
    l_loc_lvl_indicator_code   number(14);
-   l_factor                   number := 1.;
-   l_offset                   number := 0.;
+   l_function                 cwms_unit_conversion.function%type := 'ARG1';
    l_has_attribute            boolean;
    l_attr_value               number;
    l_ref_attr_value           number;
@@ -9439,10 +9424,8 @@ begin
                'Duration',
                p_attr_duration_id);
       end;
-      select factor,
-             offset
-        into l_factor,
-             l_offset
+      select function
+        into l_function
         from cwms_unit_conversion
        where from_unit_id = p_attr_units_id
          and to_unit_id = cwms_util.get_default_units(p_attr_parameter_id);
@@ -9466,13 +9449,13 @@ begin
    ------------------------------------
    if p_attr_value is not null then
       if instr(upper(p_attr_parameter_id), 'ELEV') = 1 then
-         l_attr_value := cwms_rounding.round_f(p_attr_value * l_factor + l_offset - cwms_loc.get_vertical_datum_offset(l_location_code, p_attr_units_id), 12);
+         l_attr_value := cwms_rounding.round_f(nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(p_attr_value)), p_attr_value) - cwms_loc.get_vertical_datum_offset(l_location_code, p_attr_units_id), 12);
       else
-         l_attr_value := cwms_rounding.round_f(p_attr_value * l_factor + l_offset, 12);
+         l_attr_value := cwms_rounding.round_f(nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(p_attr_value)), p_attr_value), 12);
       end if;
    end if;
    if p_ref_attr_value is not null then
-      l_ref_attr_value := cwms_rounding.round_f(p_ref_attr_value * l_factor + l_offset, 12);
+      l_ref_attr_value := cwms_rounding.round_f(nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(p_ref_attr_value)), p_ref_attr_value), 12);
    end if;
    begin
       select level_indicator_code
@@ -10563,8 +10546,7 @@ begin
                  || substr('-', 1, length(p.sub_parameter_id))
                  || p.sub_parameter_id as attr_parameter_id,
                  p.parameter_code,
-                 cuc.offset as offset,
-                 cuc.factor as factor
+                 cuc.function as function
             from cwms_office o,
                  at_parameter p,
                  cwms_base_parameter bp,
@@ -10606,11 +10588,11 @@ begin
              attr_parameter_type_id,
              attr_duration_id,
              cwms_util.get_default_units(attr_parameter_id, p_unit_system) as attr_units_id,
-             cwms_rounding.round_f(attr_value * attr_param.factor + attr_param.offset, 9) as attr_value,
+             cwms_rounding.round_f(nvl(cwms_util.eval_rpn_expression(attr_param.function, double_tab_t(attr_value)), attr_value), 9) as attr_value,
              minimum_duration,
              maximum_age,
              ref_specified_level_id,
-             cwms_rounding.round_f(ref_attr_value * attr_param.factor + attr_param.offset, 9) as ref_attr_value,
+             cwms_rounding.round_f(nvl(cwms_util.eval_rpn_expression(attr_param.function, double_tab_t(ref_attr_value)), ref_attr_value), 9) as ref_attr_value,
                  cursor (
                     select level_indicator_value,
                            expression,
@@ -10948,8 +10930,7 @@ procedure retrieve_loc_lvl_indicator(
    p_office_id              in  varchar2 default null)
 is
    l_loc_lvl_indicator_code number(14);
-   l_level_factor           number := 1.;
-   l_level_offset           number := 0.;
+   l_level_function         cwms_unit_conversion.function%type := 'ARG1';
    l_location_id            varchar2(57);
    l_parameter_id           varchar2(49);
    l_parameter_type_id      varchar2(16);
@@ -10975,10 +10956,8 @@ begin
             l_specified_level_id,
             l_level_indicator_id,
             p_loc_lvl_indicator_id);
-         select factor,
-                offset
-           into l_level_factor,
-                l_level_offset
+         select function
+           into l_level_function
            from cwms_unit_conversion
           where from_unit_id = cwms_util.get_default_units(l_parameter_id)
             and to_unit_id = p_level_units_id;
@@ -11581,7 +11560,7 @@ begin
                 o.attr_parameter_id,
                 o.attr_parameter_type_id,
                 o.attr_duration_id) as attribute_id,
-             cwms_rounding.round_f(o.attr_value * cuc.factor + cuc.offset, 9) as attribute_value,
+             cwms_rounding.round_f(nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(o.attr_value)), o.attr_value), 9) as attribute_value,
              cuc.to_unit_id as attribute_units,
              o.get_indicator_values(
                 l_ts,
@@ -11782,7 +11761,7 @@ begin
                 o.attr_parameter_id,
                 o.attr_parameter_type_id,
                 o.attr_duration_id) as attribute_id,
-             cwms_rounding.round_f(o.attr_value * cuc.factor + cuc.offset, 9) as attribute_value,
+             cwms_rounding.round_f(nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(o.attr_value)), o.attr_value), 9) as attribute_value,
              cuc.to_unit_id as attribute_units,
              o.get_max_indicator_values(
                 l_ts,

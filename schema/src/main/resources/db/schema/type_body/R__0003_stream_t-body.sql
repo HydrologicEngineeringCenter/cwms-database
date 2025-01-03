@@ -118,20 +118,18 @@ as
    member procedure convert_to_unit(
       p_unit in varchar2)
    is
-      l_factor binary_double;
-      l_offset binary_double;
+      l_function cwms_unit_conversion.function%type;
    begin
-      select factor, offset
-        into l_factor, 
-             l_offset
+      select function
+        into l_function
         from cwms_unit_conversion
        where from_unit_id = cwms_util.get_unit_id (self.unit)
          and to_unit_id = cwms_util.get_unit_id (p_unit);
       
    
-      self.flows_into_station   := self.flows_into_station   * l_factor + l_offset;          
-      self.diverts_from_station := self.diverts_from_station * l_factor + l_offset;
-      self.length               := self.length               * l_factor + l_offset;
+      self.flows_into_station   := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(self.flows_into_station)), self.flows_into_station);          
+      self.diverts_from_station := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(self.diverts_from_station)), self.diverts_from_station);
+      self.length               := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(self.length)), self.length);
    end convert_to_unit;
    
    member procedure store(

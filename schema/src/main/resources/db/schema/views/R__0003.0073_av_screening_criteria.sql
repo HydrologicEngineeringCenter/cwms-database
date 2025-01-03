@@ -98,17 +98,17 @@ AS
              season_start_month,
           bpdu.unit_system,
           cuc.to_unit_id unit_id,
-          avsc.range_reject_lo * cuc.factor + cuc.offset range_reject_lo,
-          avsc.range_reject_hi * cuc.factor + cuc.offset range_reject_hi,
-          avsc.range_question_lo * cuc.factor + cuc.offset range_question_lo,
-          avsc.range_question_hi * cuc.factor + cuc.offset range_question_hi,
-          avsc.rate_change_reject_rise * cuc.factor + cuc.offset
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.range_reject_lo)), avsc.range_reject_lo) range_reject_lo,
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.range_reject_hi)), avsc.range_reject_hi) range_reject_hi,
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.range_question_lo)), avsc.range_question_lo) range_question_lo,
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.range_question_hi)), avsc.range_question_hi) range_question_hi,
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.rate_change_reject_rise)), avsc.rate_change_reject_rise)
              rate_change_reject_rise,
-          avsc.rate_change_reject_fall * cuc.factor + cuc.offset
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.rate_change_reject_fall)), avsc.rate_change_reject_fall)
              rate_change_reject_fall,
-          avsc.rate_change_quest_rise * cuc.factor + cuc.offset
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.rate_change_quest_rise)), avsc.rate_change_quest_rise)
              rate_change_quest_rise,
-          avsc.rate_change_quest_fall * cuc.factor + cuc.offset
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.rate_change_quest_fall)), avsc.rate_change_quest_fall)
              rate_change_quest_fall,
           CASE
              WHEN asctl.rate_change_disp_interval_code IS NULL
@@ -130,8 +130,8 @@ AS
                   WHERE duration_code = avsc.const_reject_duration_code)
           END
              const_reject_duration,
-          avsc.const_reject_min * cuc.factor + cuc.offset const_reject_min,
-          avsc.const_reject_tolerance * cuc.factor + cuc.offset
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.const_reject_min)), avsc.const_reject_min) const_reject_min,
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.const_reject_tolerance)), avsc.const_reject_tolerance)
              const_reject_tolerance,
           avsc.const_reject_n_miss,
           CASE
@@ -144,8 +144,8 @@ AS
                   WHERE duration_code = avsc.const_quest_duration_code)
           END
              const_quest_duration,
-          avsc.const_quest_min * cuc.factor + cuc.offset const_quest_min,
-          avsc.const_quest_tolerance * cuc.factor + cuc.offset
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.const_quest_min)), avsc.const_quest_min) const_quest_min,
+          nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(avsc.const_quest_tolerance)), avsc.const_quest_tolerance)
              const_quest_tolerance,
           avsc.const_quest_n_miss,
           avsc.estimate_expression,
