@@ -34,7 +34,7 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:2.15.2"
     implementation 'commons-io:commons-io:2.11.0'
     //implementation 'java-algebra-system:JMCAS:3.0'
-    implementation 'org.opendcs:java-algebra-system:0.0.1-SNAPSHOT'
+    implementation 'org.opendcs:java-algebra-system:0.0.1'
     compile "org.flywaydb:flyway-core:10.0.0"
     flywayMigration "com.oracle.database.jdbc:ojdbc11:$ORACLE_JDBC_VERSION"
     flywayMigration "org.flywaydb:flyway-database-oracle:10.0.0"

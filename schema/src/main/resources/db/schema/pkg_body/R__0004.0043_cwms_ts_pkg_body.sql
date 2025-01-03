@@ -5171,11 +5171,6 @@ AS
    IS
       l_override_prot   VARCHAR2 (1);
    BEGIN
-      cwms_apex.aa1 (
-            TO_CHAR (SYSDATE, 'YYYY-MM-DD HH24:MI')
-         || 'store_ts(1.4): '
-         || p_cwms_ts_id);
-
       IF p_override_prot IS NULL OR p_override_prot = cwms_util.false_num
       THEN
          l_override_prot := 'F';
@@ -5305,11 +5300,6 @@ AS
    begin
       DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.store_ts',
                                         'get tscode from ts_id');
-      cwms_apex.aa1 (
-            TO_CHAR (SYSDATE, 'YYYY-MM-DD HH24:MI')
-         || 'store_ts: '
-         || p_cwms_ts_id);
-
       -- set default values, don't be fooled by NULL as an actual argument
 
 
