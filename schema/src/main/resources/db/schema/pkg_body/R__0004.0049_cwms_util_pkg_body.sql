@@ -2687,7 +2687,7 @@ as
             SELECT unit_code
               INTO l_unit_code
               FROM av_unit
-             WHERE unit_id = TRIM (p_unit_id)
+             WHERE unit_id = parse_unit(p_unit_id)
                    AND db_office_code IN (l_db_office_code, 53);
          EXCEPTION
             WHEN NO_DATA_FOUND
@@ -2868,6 +2868,7 @@ as
       l_office_code           NUMBER := get_db_office_code (p_office_id);
       l_unit_code             NUMBER;
       l_base_parameter_code   NUMBER;
+      l_db_unit_code          NUMBER;
    BEGIN
       p_unit_id := NULL;
       p_value_out := NULL;
@@ -2907,17 +2908,33 @@ as
         FROM cwms_unit
        WHERE unit_code = l_unit_code;
 
+      select unit_code
+        into l_db_unit_code
+        from cwms_base_parameter
+       where base_parameter_code = l_base_parameter_code;
+
       --
       -- convert the specified value from storage unit
       --
       IF p_value_in IS NOT NULL
       THEN
-         SELECT nvl(cwms_util.eval_rpn_expression(cuc.function, double_tab_t(p_value_in)), p_value_in)
-           INTO p_value_out
-           FROM cwms_unit_conversion cuc, cwms_base_parameter bp
-          WHERE     bp.base_parameter_code = l_base_parameter_code
-                AND cuc.from_unit_code = bp.unit_code
-                AND cuc.to_unit_code = l_unit_code;
+         BEGIN
+            SELECT nvl(cwms_util.eval_rpn_expression(function, double_tab_t(p_value_in)), p_value_in)
+              INTO p_value_out
+              FROM cwms_unit_conversion
+             WHERE from_unit_code = l_db_unit_code
+               AND to_unit_code = l_unit_code;
+         EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+               IF l_unit_code = l_db_unit_code THEN
+                  p_value_out := p_value_in;
+               ELSE
+                  RAISE;
+               END IF;
+            WHEN OTHERS THEN
+               RAISE;
+
+         END;
       END IF;
    END user_display_unit;
 
@@ -3140,7 +3157,7 @@ as
 
    /**
     * Convert a given value with provided from and to unit names
-    * 
+    *
     * Prefered function for conversion
     *
     * @See convert_units(binary_double,number,number) for more information
@@ -4698,6 +4715,12 @@ as
       return binary_double
    is
    begin
+      if p_rpn_expr is null or p_args is null or p_args.count = 0 then
+        return null;
+      end if;
+      if p_rpn_expr = 'ARG1' then
+        return p_args(1);
+      end if;
       return eval_tokenized_expression(
                 tokenize_rpn(p_rpn_expr),
                 p_args,

@@ -47,7 +47,7 @@ public class UnitConversionTest {
 
     @ParameterizedTest /*(name="[{index}] {arguments}")*/
     @CsvFileSource(resources = "/units/conversions_to_test.csv",useHeadersInDisplayName = true)
-    public void test_units(String from, String to, double in, double expected, double delta) {
+    public void test_units(String from, String to, double in, double expected, double delta, double inverseDelta) {
         var fromUnit = getUnit(from);
         var toUnit = getUnit(to);
         var conversion = getConversion(fromUnit,toUnit);
@@ -57,11 +57,11 @@ public class UnitConversionTest {
 
         log.finest(()->"Forward conversion " + conversion.toString());
         double forward = SimpleInfixCalculator.calculate(infix, in);
-        assertEquals(expected,forward, delta, () -> "Unable to perform forward conversion using " + conversion.toString());
+        assertEquals(expected,forward, delta, () -> "Unable to perform forward conversion using " + conversion.toString() + " within " + delta);
 
         log.finest(()->"Inverse conversion " + inverseConversion.toString());
         double inverse = SimpleInfixCalculator.calculate(inverseInfix, expected);
-        assertEquals(in,inverse, delta, () -> "Unable to perform inverse conversion using " + inverseConversion.toString());
+        assertEquals(in,inverse, inverseDelta, () -> "Unable to perform inverse conversion using " + inverseConversion.toString() + " within " + inverseDelta);
     }
 
     private Conversion getConversion(Unit from, Unit to) {

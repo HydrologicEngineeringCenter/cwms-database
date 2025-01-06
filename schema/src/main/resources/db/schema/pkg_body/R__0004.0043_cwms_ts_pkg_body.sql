@@ -5743,11 +5743,7 @@ AS
       l_units := cwms_util.get_unit_id(p_units, l_office_id);
       if l_units is null then l_units := p_units; end if;
       l_units := cwms_util.get_valid_unit_id (l_units, l_base_parameter_id);
-      if l_value_offset is not null and l_units != 'm' then
-         l_value_offset := cwms_util.convert_units(l_value_offset, 'm',l_units);
-      else
-         l_value_offset := 0;
-      end if;
+      l_value_offset := nvl(l_value_offset, 0);
 
       DBMS_APPLICATION_INFO.set_action ('check for unit conversion factors');
 

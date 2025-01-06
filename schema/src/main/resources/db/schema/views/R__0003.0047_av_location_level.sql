@@ -132,11 +132,7 @@ parameters as
 )
 , factors as
 (  select  t.*,
-          c_cuc1.factor,
-          c_cuc1.offset,
           c_cuc1.function,
-          c_cuc2.factor   as attr_factor,
-          c_cuc2.offset   as attr_offset,
           c_cuc2.function as attr_function
    from   units                     t                                                      left join
           cwms_unit_conversion c_cuc1 on (c_cuc1.from_unit_id = t.parm_def_units and
@@ -206,11 +202,7 @@ select q1.office_id,
        then nvl(cwms_util.eval_rpn_expression(q1.attr_function, double_tab_t(q1.attribute_value)), q1.attribute_value)
        else cwms_util.eval_expression(q1.attr_function, double_tab_t(q1.attribute_value))
        end                                              as attribute_value,
-       case
-       when q1.function is null
-       then nvl(cwms_util.eval_rpn_expression(q1.function, double_tab_t(q1.constant_level)), q1.constant_level)
-       else cwms_util.eval_expression(q1.function, double_tab_t(q1.attribute_value))
-       end                                              as constant_level,
+       nvl(cwms_util.eval_rpn_expression(q1.function, double_tab_t(q1.constant_level)), q1.constant_level) as constant_level,
        q1.interval_origin,
        substr (q1.calendar_interval_, 2)                as calendar_interval,
        q1.time_interval,

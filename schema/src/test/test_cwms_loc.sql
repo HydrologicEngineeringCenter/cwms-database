@@ -2167,7 +2167,7 @@ AS
              location_level_id = l_loc_lvl_id and
              time_offset       = to_dsinterval('00 00:00:00');
 
-      ut.expect (l_test_level).to_equal (l_level);
+      ut.expect (round(l_level, 9)).to_equal (round(l_test_level, 9));
 
       -- TEST A SEASIONAL LOCATION LEVEL IN SI UNITS SYSTEM
 
@@ -2182,7 +2182,7 @@ AS
              location_level_id = l_loc_lvl_id and
              time_offset       = to_dsinterval('00 00:00:00');
 
-      ut.expect (l_test_level).to_equal (l_level);
+      ut.expect (round(l_level, 9)).to_equal (round(l_test_level, 9));
 
    end test_cwmsvue_442_location_level_performance_re_write;
 

@@ -1843,7 +1843,7 @@ begin
         values(p_location_level_code,
                cwms_util.months_to_yminterval(l_offset_months),
                cwms_util.minutes_to_dsinterval(l_offset_minutes),
-               cwms_util.convert_units(p_seasonal_values(i).value + p_vertical_datum_offset, p_from_units, p_to_units));
+               cwms_util.convert_units(p_seasonal_values(i).value - nvl(p_vertical_datum_offset, 0), p_from_units, p_to_units));
      end loop;
 end;
 --------------------------------------------------------------------------------
@@ -2264,7 +2264,7 @@ begin
                    cwms_util.months_to_yminterval(l_offset_months),
                    cwms_util.minutes_to_dsinterval(l_offset_minutes),
                    cwms_util.convert_units(
-                              p_seasonal_values(i).value+l_level_vert_datum_offset,
+                              p_seasonal_values(i).value-l_level_vert_datum_offset,
                               p_level_units,
                               l_level_store_units
                    )
