@@ -1,6 +1,18 @@
 create or replace package body cwms_cache
 as
 --------------------------------------------------------------------------------
+-- procedure set_session_global_output_level
+--------------------------------------------------------------------------------
+procedure set_session_global_output_level(
+   p_output_level in binary_integer)
+is
+begin
+   if p_output_level not in (g_output_level_none, g_output_level_dbms_output, g_output_level_call_stack) then
+      cwms_err.raise('INVALID_ITEM', p_output_level, 'session global cache output level');
+   end if;
+   g_session_global_output_level := p_output_level;
+end;
+--------------------------------------------------------------------------------
 -- procedure output_call_stack
 --------------------------------------------------------------------------------
 procedure output_call_stack
@@ -12,24 +24,6 @@ begin
       end loop;
 end;
 --------------------------------------------------------------------------------
--- procedure trim_oldest
---------------------------------------------------------------------------------
-procedure trim_oldest(
-   p_cache in out nocopy str_str_cache_t)
-is
-   l_time varchar2(16);
-   l_key  varchar2(32767);
-begin
-   l_time := p_cache.key_by_time.first;
-   if l_time is null then
-      cwms_err.raise('ERROR', 'Cache '||p_cache.name||': cannont trim oldest while empty');
-   end if;
-   l_key := p_cache.key_by_time(l_time);
-   p_cache.payload_by_key.delete(l_key);
-   p_cache.key_by_time.delete(l_time);
-   p_cache.trim_count := p_cache.trim_count + 1;
-end trim_oldest;
---------------------------------------------------------------------------------
 -- function count
 --------------------------------------------------------------------------------
 function count(
@@ -39,39 +33,6 @@ is
 begin
    return p_cache.payload_by_key.count;
 end count;
---------------------------------------------------------------------------------
--- function get_capacity
---------------------------------------------------------------------------------
-function get_capacity(
-   p_cache in out nocopy str_str_cache_t)
-   return binary_integer
-is
-begin
-   return p_cache.capacity;
-end get_capacity;
---------------------------------------------------------------------------------
--- procedure set_capacity
---------------------------------------------------------------------------------
-procedure set_capacity(
-   p_cache    in out nocopy str_str_cache_t,
-   p_capacity in binary_integer)
-is
-begin
-   if p_cache.enabled then
-      case
-      when p_capacity < 1 then
-         cwms_err.raise('ERROR', 'Invalid cache capacity: '||p_capacity);
-      when nvl(p_capacity, 0) = 0 then
-         clear(p_cache);
-         p_cache.capacity := 0;
-      else
-         while cwms_cache.count(p_cache) > p_capacity loop
-            trim_oldest(p_cache);
-         end loop;
-         p_cache.capacity := p_capacity;
-      end case;
-   end if;
-end set_capacity;
 --------------------------------------------------------------------------------
 -- function contains_key
 --------------------------------------------------------------------------------
@@ -101,9 +62,9 @@ begin
    end if;
    p_cache.get_count := p_cache.get_count + 1;
    if p_key is null then
-      if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
+      if p_cache.dbms_output or g_session_global_output_level > 0 then
          dbms_output.put_line('Cache '||p_cache.name||': miss (<NULL>, ???)');
-         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
+         if p_cache.output_call_stack or g_session_global_output_level > 1 then
             output_call_stack;
          end if;
       end if;
@@ -116,18 +77,17 @@ begin
       when no_data_found then null;
    end;
    if l_payload.value is not null then
-      if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
+      if p_cache.dbms_output or g_session_global_output_level > 0 then
          dbms_output.put_line('Cache '||p_cache.name||': hit ('||p_key||', '||l_payload.value||')');
-         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
+         if p_cache.output_call_stack or g_session_global_output_level > 1 then
             output_call_stack;
          end if;
       end if;
-      l_payload.access_time := cwms_util.current_micros;
       p_cache.hit_count := p_cache.hit_count + 1;
    else
-      if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
+      if p_cache.dbms_output or g_session_global_output_level > 0 then
          dbms_output.put_line('Cache '||p_cache.name||': miss ('||p_key||', ???)');
-         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
+         if p_cache.output_call_stack or g_session_global_output_level > 1 then
             output_call_stack;
          end if;
       end if;
@@ -143,25 +103,19 @@ procedure put(
    p_key   in varchar2,
    p_val   in varchar2)
 is
-   l_time varchar2(16);
 begin
    if p_cache.enabled then
       if p_key is null then
          cwms_err.raise('ERROR', 'Cache '||p_cache.name||': Attempt to store a NULL key');
       end if;
-      l_time := cwms_util.current_micros;
-      if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
+      if p_cache.dbms_output or g_session_global_output_level > 0 then
          dbms_output.put_line('Cache '||p_cache.name||': putting ('||p_key||', '||p_val||')');
-         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
+         if p_cache.output_call_stack or g_session_global_output_level > 1 then
             output_call_stack;
          end if;
       end if;
-      p_cache.payload_by_key(p_key) := str_payload_t(p_val, l_time);
-      p_cache.key_by_time(l_time) := p_key;
+      p_cache.payload_by_key(p_key) := str_payload_t(p_val);
       p_cache.put_count := p_cache.put_count + 1;
-      while cwms_cache.count(p_cache) > p_cache.capacity loop
-         trim_oldest(p_cache);
-      end loop;
    end if;
 end put;
 --------------------------------------------------------------------------------
@@ -172,22 +126,13 @@ procedure remove(
    p_key   in varchar2)
 is
    l_val  varchar2(32767);
-   l_time varchar2(16);
 begin
    if p_cache.enabled then
       p_cache.remove_count := p_cache.remove_count + 1;
-      begin
-         l_time := p_cache.payload_by_key(p_key).access_time;
-      exception
-         when no_data_found then null;
-      end;
-      if l_time is not null and p_cache.key_by_time.exists(l_time) then
-         p_cache.key_by_time.delete(l_time);
-      end if;
       if p_cache.payload_by_key.exists(p_key) then
-         if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
+         if p_cache.dbms_output or g_session_global_output_level > 0 then
             dbms_output.put_line('Cache '||p_cache.name||': removing ('||p_key||', '||p_cache.payload_by_key(p_key).value||')');
-         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
+         if p_cache.output_call_stack or g_session_global_output_level > 1 then
             output_call_stack;
          end if;
          end if;
@@ -237,14 +182,13 @@ procedure clear(
 is
 begin
    if p_cache.enabled then
-      if p_cache.dbms_output or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 0 then
+      if p_cache.dbms_output or g_session_global_output_level > 0 then
          dbms_output.put_line('Cache '||p_cache.name||': clearing cache');
-         if p_cache.output_call_stack or cwms_util.get_session_info_num('OUTPUT_LEVEL_ALL_CACHES') > 1 then
+         if p_cache.output_call_stack or g_session_global_output_level > 1 then
             output_call_stack;
          end if;
       end if;
       p_cache.payload_by_key.delete;
-      p_cache.key_by_time.delete;
       p_cache.get_count := 0;
       p_cache.hit_count := 0;
       p_cache.miss_count := 0;
