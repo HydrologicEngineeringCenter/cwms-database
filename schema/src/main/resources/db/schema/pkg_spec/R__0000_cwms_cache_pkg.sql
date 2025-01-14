@@ -9,28 +9,25 @@ as
  */
 g_default_capacity constant binary_integer := 1000;
 
+g_output_level_none        constant binary_integer := 0;
+g_output_level_dbms_output constant binary_integer := 1;
+g_output_level_call_stack  constant binary_integer := 2;
+
+g_session_global_output_level binary_integer := g_output_level_none;
+
 type str_payload_t
 /**
  * Payload type for varchar2 values or values implicitly convertable to/from varchar2
  *
- * @member value       The payload value
- * @member access_time The last accessed time of the payload, in microseconds of the Unix epoch converted to string
+ * @member value  The payload value
  */
-is record(
-   value       varchar2(32767),
-   access_time varchar2(16));
+is record(value  varchar2(32767));
 
 type str_payload_by_str_t
 /**
  * Table of str_payload_t indexed by string
  */
 is table of str_payload_t index by varchar2(32767);
-
-type str_key_by_time_t
-/**
- * Table of varchar2 keys indexed by access time, in microseconds of the Unix epoch converted to string
- */
-is table of varchar2(32767) index by varchar2(16);
 
 type str_str_cache_t
 /**
@@ -41,7 +38,6 @@ type str_str_cache_t
  * @member dbms_output       A flag specifying whether cache operations will be output to dbms_output
  * @member output_call_stack A flag specifying whether the call stack will be included when outputting cache operations
  * @member payloads_by_key   The table of payloads indexed by keys for this cache
- * @member keys_by_time      The table of keys indexed by access time for this cache
  * @member capacity          The current capacity of this cache
  * @member get_count         The number of times get() has been called on this chache since it was created, enabled, or had its capacity changed
  * @member hit_count         The number of cache hits on this chache since it was created, enabled, or had its capacity changed
@@ -56,7 +52,6 @@ is record(
    dbms_output       boolean := false,
    output_call_stack boolean := false,
    payload_by_key    str_payload_by_str_t,
-   key_by_time       str_key_by_time_t,
    capacity          binary_integer := g_default_capacity,
    get_count         binary_integer := 0,
    hit_count         binary_integer := 0,
@@ -65,6 +60,19 @@ is record(
    remove_count      binary_integer := 0,
    trim_count        binary_integer := 0);
 /**
+ * Sets the session global output level for all caches. Overrides the output level of any cache if it exceeds the cache level
+ *
+ * @parameter p_output_level The global output level for all caches. Must be one of 
+ * <table>
+ * <tr><td>cwms_cache.g_output_level_none</td><td>Session global setting is no output for cache operations</td></tr>
+ * <tr><td>cwms_cache.g_output_level_dbms_output</td><td>Session global setting is output cache operations</td></tr>
+ * <tr><td>cwms_cache.g_output_level_call_stack</td><td>Session global setting is output cache operations with call stack</td></tr>
+ * </table>
+ */
+procedure set_session_global_output_level(
+   p_output_level in binary_integer);
+   
+/**
  * @param p_cache The cache variable
  * @return The current number of cached key/payload pairs
  */
@@ -72,21 +80,7 @@ function count(
    p_cache in out nocopy str_str_cache_t)
    return binary_integer;
 /**
- * @param p_cache The cache variable
- * @return The current capacity
- */
-function get_capacity(
-   p_cache in out nocopy str_str_cache_t)
-   return binary_integer;
-/**
- * Sets the current capacity if the cache is currently enabled. Resets counts to zero.
- * @param p_cache The cache variable
- */
-procedure set_capacity(
-   p_cache    in out nocopy str_str_cache_t,
-   p_capacity in binary_integer);
-/**
- * Tests whether a key is cached. Any associated payload access time is not updated.
+ * Tests whether a key is cached.
  * @param p_cache The cache variable
  * @param p_key   The key to test
  * @return Whether the specified key is cached.
@@ -97,7 +91,6 @@ function contains_key(
    return boolean;
 /**
  * Retrieves the value associated with a key if the cache is enabled, otherwise returns NULL.
- * If the key is already cached, the payload access time is updated, otherwise NULL is returned.
  * @param p_cache The cache variable
  * @param p_key   The key for the value to retieve
  * @return The value associated with p_key, or NULL if none.
@@ -110,7 +103,7 @@ function get(
    return varchar2;
 /**
  * Stores a key/payload pair to the cache if the cache is enabled.
- * If the key is already cached, it's associated payload value and access time will be updated, otherwise a new payload will be created.
+ * If the key is already cached, it's associated payload value will be updated, otherwise a new payload will be created.
  * @param p_cache The cache variable
  * @param p_key   The key for the value
  * @param p_val   The associated payload value
