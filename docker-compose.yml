@@ -1,14 +1,13 @@
+# NOTE: Expect issues at this time, this not commonly used directly and likely needs more updates.
 services:
   database:
-    image: registry.hecdev.net/oracle/database:19.3.0-ee
+    image: gvenzl/oracle-free:23.6-full
     container_name: cwms-dev-db
     restart: always
     volumes:
       - cwms-dev-oracle:/opt/oracle/oradata:rw
     environment:
-      - ORACLE_PDB=CWMSDEV
-      - ORACLE_PWD=password
-      - ORACLE_EDITION=enterprise
+      - ORACLE_PASSWORD=password
     ports:
       - "1521:1521"
   schema:
@@ -17,33 +16,15 @@ services:
     container_name: cwms-dev-schema
     environment:
       - DB_HOST_PORT=cwms-dev-db:1521
-      - DB_NAME=/CWMSDEV
+      - DB_NAME=/FREEPDB1
       - CWMS_USER=s0hectest
       - SYS_PASSWORD=password
       - CWMS_PASSWORD=password
       - BUILDUSER_PASSWORD=password
       - OFFICE_ID=HQ
       - OFFICE_EROC=S0
+      # With installonce set to 0 the schema will be removed (equivalent to ant clean build) each time this runs.
       - INSTALLONCE=0
-      - QUIET=0
-  cwms-data:
-    build:
-      context: cwmsdata
-    depends_on:
-      - database
-    container_name: cwms-dev-data
-    command:
-      - "usgs-sites"
-      - "usgs-ts"
-    environment:
-      - DB_HOST_PORT=cwms-dev-db:1521
-      - DB_NAME=/CWMSDEV
-      - CWMS_USER=s0hectest
-      - CWMS_PASSWORD=password
-      - OFFICE_ID=HQ
-      - OFFICE_EROC=S0
-      - USGS_HUC_CODES="05130101 05130102 05130103"
-      - USGS_PARAMETER_CODES="00060 00065"
-      - USGS_PERIOD="P1D"
+      - QUIET=0  
 volumes:
   cwms-dev-oracle:
