@@ -1005,7 +1005,7 @@
          <isset property="oracle.image"/>
       </condition>
 
-      <condition property="docker.props.oracle-fast-start" value="true">
+      <condition property="docker.props.oracle.is-fast-start" value="true">
          <matches string="${docker.props.oracle.image}" pattern="^.*faststart$" casesensitive="false"/>
       </condition>
 
