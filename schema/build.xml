@@ -532,8 +532,8 @@
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_pd.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pd.xml" />
-         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
-            <arg value="-d"/><arg value="-D"/><arg value="-s"/>
+            <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+            <arg value="-d"/><arg value="-D"/><arg value="-s"/><arg value="-c"/>
          <arg value="${office.primary.code}cwmspd/${oracle.cwmspd.password}@${oracle.cwms.instance}" />
 
         </exec>
@@ -1001,7 +1001,7 @@
          <isset property="database.eroc"/>
       </condition>
 
-      <condition property="docker.props.oracle.image" value="${oracle.image}" else="gvenzl/oracle-free:23.4-full">
+      <condition property="docker.props.oracle.image" value="${oracle.image}" else="gvenzl/oracle-free:23.6-full">
          <isset property="oracle.image"/>
       </condition>
 
@@ -1016,7 +1016,7 @@
 
       <!-- Check for faststart which already has a database setup. -->
       <condition property="docker.props.db_name" value="FREEPDB1" else="CWMS">
-         <isset property="docker.props.oracle-fast-start"/>
+         <isset property="docker.props.oracle.is-fast-start"/>
       </condition>
 
 
@@ -1155,6 +1155,9 @@
          </then>
          <else>
             <echo message="Creating new database"/>
+            <if>
+               <not><isset property="docker.props.oracle.is-fast-start"/></not>
+            </if>
             <exec dir="${root}" executable="docker" failonerror="true" unless:set="docker.props.oracle.is-fast-start">
                <arg value="volume"/>
                <arg value="create"/>
@@ -1169,8 +1172,8 @@
                <arg value="1521"/> <!-- random external port will be assigned and stored -->
                <arg value="--name"/>
                <arg value="${docker.props.container_name_valid}"/>
-               <arg value="-e"/>
-               <arg value="ORACLE_DATABASE=${database.name}"/>
+               <arg value="-e" unless:set="docker.props.oracle.is-fast-start"/>
+               <arg value="ORACLE_DATABASE=${database.name}" unless:set="docker.props.oracle.is-fast-start"/>
                <arg value="-e"/>
                <arg value="ORACLE_PASSWORD=${database.syspw}"/>
                <arg value="-v" unless:set="docker.props.oracle.is-fast-start"/>
@@ -1180,7 +1183,7 @@
          </else>
       </if>
       <echo message="checking from ${checkstart}"/>
-      <waitfor checkevery="1" checkeveryunit="minute" maxwait="2" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
+      <waitfor checkevery="15" checkeveryunit="second" maxwait="2" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
          <scriptcondition language="javascript" value="false"><![CDATA[
             var p = java.lang.Runtime.getRuntime().exec(
                "docker logs --since " + cwms_database_schema.getProperty("checkstart")
@@ -1188,7 +1191,7 @@
             p.waitFor();
             var reader = new java.io.InputStreamReader(p.getInputStream());
             var out = org.apache.tools.ant.util.FileUtils.safeReadFully(reader);
-            var echo = cwms_database_schema.createTask("echo");
+            //var echo = cwms_database_schema.createTask("echo");
             //echo.setMessage("got" + out);
             //echo.perform();
             if( out.contains("DATABASE SETUP WAS NOT SUCCESSFUL!") ){
