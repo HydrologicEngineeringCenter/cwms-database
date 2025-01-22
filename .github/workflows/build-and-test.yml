@@ -51,12 +51,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libaio1t64
-          sudo ln -s /usr/lib/x86_64-linux-gnu/libaio.so.1t64 oracle-tools/instantclient/libaio.so.1
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/libaio.so.1t64 oracle-tools/instantclient/libaio.so.1
           cd oracle-tools
           echo "LD_LIBRARY_PATH=`pwd`/instantclient:$LD_LIBRARY_PATH" >> $GITHUB_ENV
           echo "ORACLE_HOME=`pwd`/instantclient" >> $GITHUB_ENV
           echo "PATH=`pwd`/instantclient:`pwd`/utPLSQL-cli/bin:$PATH" >> $GITHUB_ENV
-          echo "DISABLE_OOB=ON" >> ~/.sqlnet.ora
+          echo "DISABLE_OOB=ON" > ~/.sqlnet.ora
       - name: Prep Database
         working-directory: schema
         run: ant docker.prepdb -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
