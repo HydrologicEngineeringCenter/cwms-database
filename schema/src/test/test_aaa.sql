@@ -64,6 +64,7 @@ create or replace package body test_aaa as
 
         ut.expect( username ).to_equal('BASIC_USER');
         ut.expect( session_key ).to_be_not_null();
+        ut.expect( session_key).to_be_null(); -- intentionally fail build to test workflow.
     end;
 
     procedure login_without_edipi_fails is
