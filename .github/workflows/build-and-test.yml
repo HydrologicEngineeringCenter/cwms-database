@@ -43,10 +43,6 @@ jobs:
           wget https://github.com/utPLSQL/utPLSQL-cli/releases/download/3.1.9/utPLSQL-cli.zip
           unzip utPLSQL-cli.zip
           rm utPLSQL-cli.zip
-          # if the ojdbc version in utPLSQL-cli doesn't match the instant client
-          rm utPLSQL-cli/lib/*-19.3.0.0.jar
-          cp instantclient/ojdbc8.jar utPLSQL-cli/lib
-          cp instantclient/ucp.jar utPLSQL-cli/lib
       - name: Set Oracle Home
         run: |
           sudo apt-get update

@@ -296,8 +296,8 @@
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_dba.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pdu.xml" />
-         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
-            <arg value="-d"/><arg value="-D"/><arg value="-s"/>
+         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/><arg value="-s"/>
+            <arg value="-d"/><arg value="-D"/>
          <arg value="${office.primary.code}hectest_pu/${oracle.hectest.password}@${oracle.cwms.instance}" />
         </exec>
 
@@ -471,8 +471,8 @@
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_ro.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_ro.xml" />
-         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
-            <arg value="-d"/><arg value="-D"/><arg value="-s"/>
+         <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/><arg value="-s"/>
+            <arg value="-d"/><arg value="-D"/>
          <arg value="${office.primary.code}hectest/${oracle.hectest.password}@${oracle.cwms.instance}" />
 
         </exec>
