@@ -1276,6 +1276,8 @@
             <arg value="OFFICE_ID=@{office-id}"/>
             <arg value="-e"/>
             <arg value="OFFICE_EROC=@{office-eroc}"/>
+            <arg value="-e"/>
+            <arg value="INSTALL_ONCE=0"/>
             <args/>
             <arg value="@{image}"/>
          </exec>
