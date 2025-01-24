@@ -22,6 +22,11 @@ begin
    count(DML_FLUSH);
 end flush;
 
+procedure reset is
+begin
+   delete from at_tsv_count;
+end reset;
+
 procedure count (p_dml IN number) is
 
    -- Increment the posting counters (values/minute).

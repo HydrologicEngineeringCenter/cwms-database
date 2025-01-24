@@ -2193,6 +2193,7 @@ AS
       -----------------------------------
       -- wait until top of next minute --
       -----------------------------------
+      cwms_tsv.reset;
       dbms_session.sleep(60 - extract(second from systimestamp));
       l_time := trunc(systimestamp, 'MI') + interval '000 00:01:00' day to second;
       for test_streaming in 0..1 loop

@@ -14,5 +14,8 @@ IS
    -- Save the results in the at_tsv_count table.
    procedure count (p_dml IN number);
 
+   -- Allow tests to reset counters to zero.
+   procedure reset;
+
 END cwms_tsv;
 /
