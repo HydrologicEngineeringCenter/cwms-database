@@ -9,6 +9,7 @@
 package cwms.units;
 
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -206,13 +208,25 @@ public class ConversionGraph {
         });
         if( queues.isEmpty() ) throw new NoConversionFound("No conversion found from " + from + " to " + to );        
         // got through each path and select the shortest.
-        Queue<Conversion> shortest = queues.stream().sorted( (l,r) -> {
+        final AtomicInteger shortestLength = new AtomicInteger(-1);
+        Comparator<Queue<Conversion>> sorter = (var l, var r) -> {
             if( l.size() < r.size() ) return -1;
             else if ( l.size() == r.size() ) return 0;
             else return 1;
-        }).findFirst().get();
-        return shortest;//.stream().map( q -> q.getMethod() ).collect(Collectors.toCollection(LinkedList::new));
-                
+        };
+        return queues.stream()
+                     .sorted(sorter)
+                     // prep for future work to also filter by weight of
+                     // size, in-same-unit-family, other?
+                     // maybe that should be part of the sorting somehow?
+                     .takeWhile(q -> {
+                        if (shortestLength.get() == -1) {
+                            shortestLength.set(q.size());
+                        }
+                        return q.size() == shortestLength.get();
+                      })
+                     .findFirst()
+                     .orElse(new ArrayDeque<>());
     }
 
     public HashSet<Conversion> generateConversions(){
