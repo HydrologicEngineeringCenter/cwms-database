@@ -63,6 +63,7 @@ jobs:
         working-directory: schema
         run: ant  test -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
       - name: Remove database container
+        if: success() || failure() # always run even if the previous step fails
         working-directory: schema
         run: ant docker.killdb -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
       - name: Publish Test Report
