@@ -16,12 +16,15 @@ import io.herrmann.generator.Generator;
 
 import java.io.InputStream;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.CRC32;
 
 public class R__0001_quality extends BaseJavaMigration implements CwmsMigration {
@@ -67,79 +70,47 @@ public class R__0001_quality extends BaseJavaMigration implements CwmsMigration 
     public void migrate(Context context) throws Exception {
         log.info("Merging Quality Information");
 
-        this.load_data();
-
+        var rows = this.load_data();
+        log.info("Quality Data loaded.");
+        final long start = System.currentTimeMillis();
         try(
             PreparedStatement qualityInsert = context.getConnection()
                                                      .prepareStatement(expandPlaceHolders(query,context));
         ) {
-            qualityInsert.setLong(1, 0); // always unscreened
-            qualityInsert.setString(2,screenedData.getValues().get(0).getName());
-            qualityInsert.setString(3,validityData.getValues().get(0).getName());
-            qualityInsert.setString(4,valueRangeData.getValues().get(0).getName());
-            qualityInsert.setString(5,differentData.getValues().get(0).getName());
-            qualityInsert.setString(6,replacementCauseData.getValues().get(0).getName());
-            qualityInsert.setString(7,replacementMethodData.getValues().get(0).getName());
-            qualityInsert.setString(8,testFailedData.getValues().get(0).getName());
-            qualityInsert.setString(9,protectionData.getValues().get(0).getName());
-            qualityInsert.addBatch();
-            int count = 1;
-            int batchSize = 100;
-            for( QualityBitDescription validity: validityData.getValues()){
-                for( QualityBitDescription range: valueRangeData.getValues()){
-                    for( QualityBitDescription different: differentData.getValues() ) {
-                        for( QualityBitDescription replacementCause: replacementCauseData.getValues()) {
-                            if( (different.getValue() > 0) != (replacementCause.getValue() > 0) ) {
-                                continue;
-                            }
-                            for( QualityBitDescription replacementMethod: replacementMethodData.getValues() ) {
-                                if( (different.getValue() > 0) != (replacementMethod.getValue() > 0)) {
-                                    continue;
-                                }
-                                for( QualityBitDescription testFailed: testFailedData.getValues() ) {
-                                    for( QualityBitDescription protection: protectionData.getValues() ) {
-                                        long qualityCode = 0L
-                                                    | (screenedData.getValues().get(1).getValue() << screenedData.getShift())
-                                                    | (validity.getValue() << validityData.getShift() )
-                                                    | (range.getValue() << valueRangeData.getShift() )
-                                                    | (different.getValue() << differentData.getShift() )
-                                                    | (replacementCause.getValue() << replacementCauseData.getShift() )
-                                                    | (replacementMethod.getValue() << replacementMethodData.getShift() )
-                                                    | (testFailed.getValue() << testFailedData.getShift() )
-                                                    | (protection.getValue() << protectionData.getShift() );
+            AtomicInteger count = new AtomicInteger(1);
+            int batchSize = 500;
+            rows.forEach(row -> {
+                try {
+                    qualityInsert.setLong(1, row.qualityCode);
+                    qualityInsert.setString(2, row.screening);
+                    qualityInsert.setString(3, row.validity);
+                    qualityInsert.setString(4, row.range);
+                    qualityInsert.setString(5, row.different);
+                    qualityInsert.setString(6, row.replacementCause);
+                    qualityInsert.setString(7, row.replacementMethod);
+                    qualityInsert.setString(8, row.testFailed);
+                    qualityInsert.setString(9, row.protection);
 
-                                        qualityInsert.setLong(1, qualityCode);
-                                        qualityInsert.setString(2,screenedData.getValues().get(1).getName()); // always screened
-                                        qualityInsert.setString(3,validity.getName());
-                                        qualityInsert.setString(4,range.getName());
-                                        qualityInsert.setString(5,different.getName());
-                                        qualityInsert.setString(6,replacementCause.getName());
-                                        qualityInsert.setString(7,replacementMethod.getName());
-                                        qualityInsert.setString(8,testFailed.getName());
-                                        qualityInsert.setString(9,protection.getName());
-                                        qualityInsert.addBatch();
-                                        count++;
-                                        if( count % batchSize == 0 ){
-                                            qualityInsert.executeBatch();
-                                        }
-                                    }
-                                }
-                            }
-
-                        }
+                    qualityInsert.addBatch();
+                    if( count.incrementAndGet() % batchSize == 0 ){
+                        qualityInsert.executeBatch();
                     }
+                } catch (SQLException ex) {
+                    throw new RuntimeException("unable to add element to batch or execute batch.", ex);
                 }
-            }
+                
+            });
             qualityInsert.executeBatch();
-
         }
+        final long end = System.currentTimeMillis();
+        log.info(() -> String.format("Quality data loading took %d milliseconds", (end-start)));
 
 
     }
 
 
 
-    private void load_data() throws Exception {
+    private Stream<QualityRow> load_data() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
 
         JsonNode tmp = mapper.readTree(getData("db/custom/quality/screened.json"));
@@ -160,6 +131,62 @@ public class R__0001_quality extends BaseJavaMigration implements CwmsMigration 
                  testFailedData.getValues()
                     .stream().map(QualityBitDescription::toString)
                     .collect( Collectors.joining("\n")));
+        final String screenedName = screenedData.getValues().get(1).getName();// always screened
+        List<QualityRow> rows = new ArrayList<>();
+
+        // always unscreened
+        rows.add(
+            new QualityRow(0,
+            screenedData.getValues().get(0).getName(),
+            validityData.getValues().get(0).getName(),
+            valueRangeData.getValues().get(0).getName(),
+            differentData.getValues().get(0).getName(),
+            replacementCauseData.getValues().get(0).getName(),
+            replacementMethodData.getValues().get(0).getName(),
+            testFailedData.getValues().get(0).getName(),
+            protectionData.getValues().get(0).getName()
+            ));
+
+        for( QualityBitDescription validity: validityData.getValues()){
+            for( QualityBitDescription range: valueRangeData.getValues()){
+                for( QualityBitDescription different: differentData.getValues() ) {
+                    for( QualityBitDescription replacementCause: replacementCauseData.getValues()) {
+                        if( (different.getValue() > 0) != (replacementCause.getValue() > 0) ) {
+                            continue;
+                        }
+                        for( QualityBitDescription replacementMethod: replacementMethodData.getValues() ) {
+                            if( (different.getValue() > 0) != (replacementMethod.getValue() > 0)) {
+                                continue;
+                            }
+                            for( QualityBitDescription testFailed: testFailedData.getValues() ) {
+                                for( QualityBitDescription protection: protectionData.getValues() ) {
+                                    long qualityCode = 0L
+                                                | (screenedData.getValues().get(1).getValue() << screenedData.getShift())
+                                                | (validity.getValue() << validityData.getShift() )
+                                                | (range.getValue() << valueRangeData.getShift() )
+                                                | (different.getValue() << differentData.getShift() )
+                                                | (replacementCause.getValue() << replacementCauseData.getShift() )
+                                                | (replacementMethod.getValue() << replacementMethodData.getShift() )
+                                                | (testFailed.getValue() << testFailedData.getShift() )
+                                                | (protection.getValue() << protectionData.getShift() );
+                                    rows.add(
+                                        new QualityRow(qualityCode,
+                                                       screenedName,
+                                                       validity.getName(),
+                                                       range.getName(),
+                                                       different.getName(),
+                                                       replacementCause.getName(),
+                                                       replacementMethod.getName(),
+                                                       testFailed.getName(),
+                                                        protection.getName()));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return rows.stream();
     }
 
     private void fillTestFailedData(Quality failedData) {
@@ -301,5 +328,32 @@ public class R__0001_quality extends BaseJavaMigration implements CwmsMigration 
 
         }
 
+    }
+
+    private static class QualityRow {
+        public final long qualityCode;
+        public final String screening;
+        public final String validity;
+        public final String range;
+        public final String different;
+        public final String replacementCause;
+        public final String replacementMethod;
+        public final String testFailed;
+        public final String protection;
+
+        public QualityRow(long qualityCode, String screening, String validity, String range,
+                          String different, String replacementCause, String replacementMethod,
+                          String testFailed, String protection) {
+            this.qualityCode = qualityCode;
+            this.screening = screening;
+            this.validity = validity;
+            this.range = range;
+            this.different = different;
+            this.replacementCause = replacementCause;
+            this.replacementMethod = replacementMethod;
+            this.testFailed = testFailed;
+            this.protection = protection;
+        }
+        
     }
 }
