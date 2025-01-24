@@ -72,4 +72,4 @@ jobs:
         with:
           annotate_only: true
           include_passed: true
-          report_paths: '**/build/test_*.xml'
+          report_paths: 'schema/build/test*.xml'
