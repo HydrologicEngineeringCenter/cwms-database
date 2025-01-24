@@ -48,6 +48,8 @@ flyway {
     user = build_user
     mixed = true
     schemas = [cwms_schema_name,'CWMS_DBA']
+    baselineOnMigrate = true
+    baselineVersion = 0
     placeholders = [
         "CWMS_SCHEMA": cwms_schema_name,
         "CWMS_SCHEMA_AUTH": "no authentication", // override on commandline with identified by portion if needed.

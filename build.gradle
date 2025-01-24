@@ -24,15 +24,6 @@ subprojects {
         maven {
             url = "https://www.hec.usace.army.mil/nexus/repository/maven-public"
         }
-        ivy {
-            url 'https://github.com/JiachenRen'
-            patternLayout {
-                artifact '[organisation]/releases/download/[revision]/[artifact](-[classifier])(.[ext])'
-            }
-            metadataSources {
-                artifact()
-            }        
-        }
         mavenLocal()
     }
 
