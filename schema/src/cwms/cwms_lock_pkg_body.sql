@@ -395,18 +395,7 @@ function get_pool_level_value(
          return l_location_level_value;
       exception
          when others then
-            -- Retrieve the error code for the specific error name
-            select err_code
-               into l_err_code
-            from cwms_error
-            where err_name = l_err_no_pool_level
-               and rownum = 1; -- Ensure only one row is fetched
-            -- Match against the dynamic error code
-            if sqlcode = l_err_code then
-               return null; -- Return null for this specific error
-            else
-               raise; -- Re-raise the exception for any other errors
-            end if;
+            return null;
       end;
 end get_pool_level_value;
 
