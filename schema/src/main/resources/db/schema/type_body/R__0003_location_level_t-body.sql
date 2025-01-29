@@ -95,6 +95,7 @@ as
          self.seasonal_values := new seasonal_value_tab_t();
          for i in 1..p_obj.seasonal_level_values.count loop
             self.seasonal_values.extend;
+            dbms_output.put_line('Seasonal Cal_offset: ' || p_obj.seasonal_level_values(i).calendar_offset);
             self.seasonal_values(i) := seasonal_value_t(
                p_obj.seasonal_level_values(i).calendar_offset,
                p_obj.seasonal_level_values(i).time_offset,

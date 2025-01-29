@@ -5190,11 +5190,12 @@ begin
                -- compute the level value --
                -----------------------------
                if l_rec.interpolate = 'T' then
-                  l_value := (
-                     l_value_prev +
-                     (l_start_time_utc - l_date_prev) /
-                     (l_date_next - l_date_prev) * cwms_util.convert_units((l_value_next - l_value_prev),l_db_unit_code, l_unit)
-                  );
+                  l_value := cwms_util.convert_units(
+                        l_value_prev +
+                        (l_start_time_utc - l_date_prev) /
+                        (l_date_next - l_date_prev) * (l_value_next - l_value_prev),
+                        l_db_unit_code, l_unit);
+                  
                else
                   l_value := cwms_util.convert_units( l_value_prev, l_db_unit_code, l_unit);
                end if;
