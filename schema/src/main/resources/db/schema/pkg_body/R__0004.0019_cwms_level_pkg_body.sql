@@ -2035,8 +2035,8 @@ begin
    if p_tsid is not null then
       l_ts_code := cwms_ts.get_ts_code(p_tsid, l_office_code);
    end if;
-   
-   
+
+
    -- get storage units --
    l_level_store_units := cwms_util.get_default_units(p_parameter_id,'SI'); -- storage units are always SI
 
@@ -4593,6 +4593,7 @@ is
    l_attribute_duration_code   number(14);
    l_attribute_function        cwms_unit_conversion.function%type := null;
    l_unit                      varchar2(16);
+   l_db_unit_code              cwms_unit_conversion.from_unit_code%type;
    l_undefined_times           date2_tab_t;
    l_is_defined                boolean;
    l_virtual_level_values      ztsv_array;
@@ -5095,12 +5096,8 @@ begin
       -------------------------------
       -- get the units conversions --
       -------------------------------
+      l_db_unit_code := cwms_util.get_db_unit_code(l_parameter_code);
       l_unit := cwms_util.get_unit_id(cwms_util.parse_unit(p_level_units), l_office_id);
-      get_units_conversion(
-         l_function,
-         false, -- From CWMS
-         l_unit,
-         l_parameter_code);
       if p_attribute_value is not null then
          get_units_conversion(
             l_attribute_function,
@@ -5174,7 +5171,7 @@ begin
             'BEFORE',
             'UTC');
          if l_date_prev = l_start_time_utc then
-            l_value := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_prev)), l_value_prev);
+            l_value := cwms_util.convert_units(l_value_prev, l_db_unit_code, l_unit);
          else
             --------------------------------------------------------
             -- find the nearest date/value on or after start time --
@@ -5187,7 +5184,7 @@ begin
                'AFTER',
                'UTC');
             if l_date_next = l_start_time_utc then
-               l_value := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_next)), l_value_next);
+               l_value := cwms_util.convert_units( l_value_next, l_db_unit_code, l_unit);
             else
                -----------------------------
                -- compute the level value --
@@ -5196,10 +5193,10 @@ begin
                   l_value := (
                      l_value_prev +
                      (l_start_time_utc - l_date_prev) /
-                     (l_date_next - l_date_prev) *
-                     nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_next - l_value_prev)), l_value_next - l_value_prev));
+                     (l_date_next - l_date_prev) * cwms_util.convert_units((l_value_next - l_value_prev),l_db_unit_code, l_unit)
+                  );
                else
-                  l_value := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_prev)), l_value_prev);
+                  l_value := cwms_util.convert_units( l_value_prev, l_db_unit_code, l_unit);
                end if;
             end if;
          end if;
@@ -5229,7 +5226,7 @@ begin
                   -- on or before end of time window --
                   -------------------------------------
                   l_level_values(l_level_values.count) :=
-                     new ztsv_type(l_date_next, nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_next)), l_value_next), case when l_rec.interpolate = 'T' then 1 else 0 end);
+                     new ztsv_type(l_date_next, cwms_util.convert_units(l_value_next, l_db_unit_code, l_unit), case when l_rec.interpolate = 'T' then 1 else 0 end);
                else
                   -------------------------------
                   -- beyond end of time window --
@@ -5241,7 +5238,7 @@ begin
                      l_level_values(l_level_values.count-1).value +
                      (l_end_time_utc - l_level_values(l_level_values.count-1).date_time) /
                      (l_date_next - l_level_values(l_level_values.count-1).date_time) *
-                     ((nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_value_next)), l_value_next)) - l_level_values(l_level_values.count-1).value));
+                     ((cwms_util.convert_units(l_value_next, l_db_unit_code, l_unit)) - l_level_values(l_level_values.count-1).value));
                   l_level_values(l_level_values.count) :=
                      new ztsv_type(l_end_time_utc, l_value, case when l_rec.interpolate = 'T' then 1 else 0 end);
                end if;
@@ -5331,7 +5328,7 @@ begin
          --------------------
          -- constant value --
          --------------------
-         l_value := nvl(cwms_util.eval_rpn_expression(l_function, double_tab_t(l_rec.location_level_value)), l_rec.location_level_value);
+         l_value := cwms_util.convert_units(l_rec.location_level_value, l_db_unit_code, l_unit);
          l_level_values.extend;
          l_level_values(1) := new ztsv_type(l_start_time_utc, l_value, case when l_rec.interpolate = 'T' then 1 else 0 end);
          if l_end_time_utc is not null then

@@ -47,7 +47,7 @@ public class UnitConversionTest {
 
     @ParameterizedTest /*(name="[{index}] {arguments}")*/
     @CsvFileSource(resources = "/units/conversions_to_test.csv",useHeadersInDisplayName = true)
-    public void test_units(String from, String to, double in, double expected, double delta, double inverseDelta) {
+    void test_units(String from, String to, double in, double expected, double delta, double inverseDelta) {
         var fromUnit = getUnit(from);
         var toUnit = getUnit(to);
         var conversion = getConversion(fromUnit,toUnit);

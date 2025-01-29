@@ -74,10 +74,8 @@ as
             ------------------------------------------------------------------------
             -- set factor and offset to convert from db units to comparison units --
             ------------------------------------------------------------------------
-            select factor,
-                   offset
-              into conditions(conditions.count).factor,
-                   conditions(conditions.count).offset
+            select function
+              into conditions(conditions.count).function
               from at_parameter p,
                    cwms_base_parameter bp,
                    cwms_unit_conversion uc
@@ -91,10 +89,9 @@ as
                ----------------------------------------------------------------------------------
                -- set rate_factor and rate_offset to convert from db units to comparison units --
                ----------------------------------------------------------------------------------
-               select factor,
+               select function,
                       offset
-                 into conditions(conditions.count).rate_factor,
-                      conditions(conditions.count).rate_offset
+                 into conditions(conditions.count).rate_function
                  from at_parameter p,
                       cwms_base_parameter bp,
                       cwms_unit_conversion uc

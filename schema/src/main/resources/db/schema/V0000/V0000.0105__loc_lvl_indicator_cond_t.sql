@@ -180,4 +180,3 @@ is object
 
 
 create or replace public synonym cwms_t_loc_lvl_indicator_cond for loc_lvl_indicator_cond_t;
-
