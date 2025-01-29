@@ -15,7 +15,7 @@
 	[ "1000 m2",		"m2",		"linear: 1000 0"],
 	["1000 m2",     "m2",          "linear: unit_per_kilo 0"],
 	//["m3",     "ac-ft",      	   "function: (i/(m_per_ft^3))/ft2_per_acre"],
-	["ac-ft",  "m3",			   "linear: 1233.4818375475 0"],
+	//["ac-ft",  "m3",			   "linear: 1233.48183754752 0"],
 	["m3",	   "gal",			   "linear: m3_per_gal 0"],
 	// ["1000 m3",     "dsf",         "*_per_k*[m3]/[1000 m3] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3]"],
 	// ["1000 m3",     "ft3",         "*_per_k*[m3]/[1000 m3] | [ft3]/m_per_ft^3[m3]"],
