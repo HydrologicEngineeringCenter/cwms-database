@@ -43,20 +43,16 @@ jobs:
           wget https://github.com/utPLSQL/utPLSQL-cli/releases/download/3.1.9/utPLSQL-cli.zip
           unzip utPLSQL-cli.zip
           rm utPLSQL-cli.zip
-          # if the ojdbc version in utPLSQL-cli doesn't match the instant client
-          rm utPLSQL-cli/lib/*-19.3.0.0.jar
-          cp instantclient/ojdbc8.jar utPLSQL-cli/lib
-          cp instantclient/ucp.jar utPLSQL-cli/lib
       - name: Set Oracle Home
         run: |
           sudo apt-get update
           sudo apt-get install -y libaio1t64
-          sudo ln -s /usr/lib/x86_64-linux-gnu/libaio.so.1t64 oracle-tools/instantclient/libaio.so.1
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/libaio.so.1t64 oracle-tools/instantclient/libaio.so.1
           cd oracle-tools
           echo "LD_LIBRARY_PATH=`pwd`/instantclient:$LD_LIBRARY_PATH" >> $GITHUB_ENV
           echo "ORACLE_HOME=`pwd`/instantclient" >> $GITHUB_ENV
           echo "PATH=`pwd`/instantclient:`pwd`/utPLSQL-cli/bin:$PATH" >> $GITHUB_ENV
-          echo "DISABLE_OOB=ON" >> ~/.sqlnet.ora
+          echo "DISABLE_OOB=ON" > ~/.sqlnet.ora
       - name: Prep Database
         working-directory: schema
         run: ant docker.prepdb -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
@@ -66,9 +62,14 @@ jobs:
       - name: Run Tests
         working-directory: schema
         run: ant  test -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
+      - name: Remove database container
+        if: success() || failure() # always run even if the previous step fails
+        working-directory: schema
+        run: ant docker.killdb -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v5
         if: success() || failure() # always run even if the previous step fails
         with:
           annotate_only: true
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+          include_passed: true
+          report_paths: 'schema/build/test*.xml'
