@@ -509,8 +509,9 @@ is
     l_results       cwms_t_double_tab;
     l_rating_spec   cwms_v_rating.rating_id%type;
     l_errors        clob;
-    l_pool_elev     cwms_t_double_tab := cwms_t_double_tab(392.0);
-    l_expected_area cwms_t_double_tab := cwms_t_double_tab(12.0);
+    l_ts_in         cwms_t_tsv_array;
+    l_ts_out        cwms_t_tsv_array;
+    l_expected_vals double_tab_t;
     l_xml           varchar2(32767) := '
         <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
           <rating-template office-id="&&office_id">
@@ -610,8 +611,32 @@ begin
             p_units       => cwms_t_str_tab('ft', 'ft2'),
             p_round       => 'F',
             p_office_id   => '&&office_id');
+            
+   ut.expect(l_result).to_equal(12.0 * 43560);         
+   ------------------------
+   -- rate a time series --
+   ------------------------
+   l_ts_in := cwms_t_tsv_array();
+   l_ts_in.extend(9);
+   for i in 1..9 loop
+      l_ts_in(i) := cwms_t_tsv(from_tz(cast(date '2025-02-06' + 1/24 * i as timestamp), 'UTC'), 390.0 + i, 3);
+   end loop;
+   l_expected_vals := double_tab_t(10.D, 12.D, 14.D, 18.D, 20.D, 22.D, 25.D, 27.D, 29.D);
+   cwms_rating.rate(
+      p_results     => l_ts_out,
+      p_rating_spec => l_rating_spec,
+      p_values      => l_ts_in,
+      p_units       => cwms_t_str_tab('ft', 'acre'),
+      p_round       => 'F',
+      p_office_id   => '&&office_id');
 
-    ut.expect(l_result).to_equal(12.0 * 43560);
+   ut.expect(l_ts_out.count).to_equal(l_ts_in.count);
+   if l_ts_out.count = l_ts_in.count then
+      for i in 1..l_ts_out.count loop
+         ut.expect(round(l_ts_out(i).value, 9)).to_equal(round(l_expected_vals(i), 9));
+      end loop;
+   end if;
+
 end test_table_rating;
 
 end test_cwms_rating;
