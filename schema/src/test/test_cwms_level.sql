@@ -47,6 +47,8 @@ is
    exc_location_id_not_found exception;
    pragma exception_init(exc_location_id_not_found, -20025);
 begin
+   --dbms_output.put_line('Skipping');
+
    cwms_loc.delete_location(
       p_location_id   => c_location_id,
       p_delete_action => cwms_util.delete_all,
@@ -228,7 +230,7 @@ is
    l_seasonal_values_existlevel cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
       cwms_t_seasonal_value( 0,  0 * CWMS_TS.min_in_dy, 1020),  -- 01 Jan
       cwms_t_seasonal_value( 3, 14 * CWMS_TS.min_in_dy, 1010),  -- 15 April
-      cwms_t_seasonal_value(9,  1 * CWMS_TS.min_in_dy, 1000)); -- 02 Oct
+      cwms_t_seasonal_value( 9,  1 * CWMS_TS.min_in_dy, 1000)); -- 02 Oct
    l_seasonal_values cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
       cwms_t_seasonal_value( 0,  0 * CWMS_TS.min_in_dy, 1000),  -- 01 Jan
       cwms_t_seasonal_value( 2, 14 * CWMS_TS.min_in_dy, 1010),  -- 15 Mar

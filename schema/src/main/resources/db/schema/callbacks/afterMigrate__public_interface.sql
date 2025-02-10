@@ -220,14 +220,20 @@ BEGIN
 
 	FOR i IN 1 .. l_view_names.COUNT
 	LOOP
+		
 		l_sql_statement :=
 				'GRANT SELECT ON ${CWMS_SCHEMA}'
 			|| '.'
 			|| l_view_names (i)
 			|| ' TO CWMS_USER';
-		--DBMS_OUTPUT.put_line ('-- ' || l_sql_statement);
+		begin
+			EXECUTE IMMEDIATE l_sql_statement;
+		exception
+		when others then
+			DBMS_OUTPUT.put_line ('Error on-- ' || l_sql_statement || ' ' || sqlerrm);
+		end;
 
-		EXECUTE IMMEDIATE l_sql_statement;
+		
 	END LOOP;
 END;
 /

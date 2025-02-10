@@ -1838,6 +1838,7 @@ begin
            l_offset_months := l_offset_months - 1;
            l_offset_minutes := round((l_seasonal_date_utc - add_months(p_interval_origin, l_offset_months)) * CWMS_TS.min_in_dy, 9);
         end if;
+        dbms_output.put_line('cwms_level::store_seasonal_location_level -> Input Months' || p_seasonal_values(i).offset_months || ', Months ' || l_offset_months || ', yminterval ' || cwms_util.months_to_yminterval(l_offset_months));
         insert
           into at_seasonal_location_level
         values(p_location_level_code,
@@ -2258,6 +2259,8 @@ begin
                l_offset_months := l_offset_months - 1;
                l_offset_minutes := round((l_seasonal_date_utc - add_months(l_interval_origin, l_offset_months)) * 1440, 9);
             end if;
+            dbms_output.put_line('cwms_level::update_seasonal_location_level -> Input Months' || p_season_values(i).offset_months || ', Months ' || l_offset_months || ', yminterval ' || cwms_util.months_to_yminterval(l_offset_months));
+
             insert
               into at_seasonal_location_level
             values(l_location_level_code,

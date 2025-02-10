@@ -1,5 +1,6 @@
 begin
    dbms_utility.compile_schema('${CWMS_SCHEMA}',false);
+   for count in 1..2 loop
    FOR cur IN (
 			   SELECT OBJECT_NAME, OBJECT_TYPE, owner, 
 			        (select count(1) from all_dependencies ad
@@ -18,6 +19,7 @@ begin
       EXCEPTION
       WHEN OTHERS THEN NULL; 
       END;
+   end loop;
    end loop;
 end;
 /
