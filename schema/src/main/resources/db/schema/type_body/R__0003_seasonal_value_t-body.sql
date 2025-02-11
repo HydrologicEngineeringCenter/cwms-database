@@ -25,4 +25,12 @@ as
       value          := p_value;
    end init;
 
+   member function to_string
+      return varchar2
+   is
+      ret varchar2(300) := '';
+   begin
+      ret := 'SeasonalValue{Months=' || offset_months || ', Minutes=' || offset_minutes || ', value=' || value || '}';
+      return ret;
+   end to_string;
 end;

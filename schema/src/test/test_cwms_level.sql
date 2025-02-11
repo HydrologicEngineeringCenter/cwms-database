@@ -317,7 +317,10 @@ begin
    ---------------------------------------
    -- store the seasonal location level to level already created--
    ---------------------------------------
-
+   for i in 1..l_seasonal_values_existlevel.count 
+   loop
+      dbms_output.put_line('[' || i || '] -> ' || l_seasonal_values_existlevel(i).to_string());
+   end loop;
    cwms_level.store_location_level3(
       p_location_level_id => c_top_of_normal_elev_id,
       p_level_value       => null,
