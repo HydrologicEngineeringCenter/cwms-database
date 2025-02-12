@@ -115,17 +115,17 @@ as
             -- replace V, L, L1, L2, R with ARG1, ARG2, ARG2, ARG3, ARG4 --
             ---------------------------------------------------------------
             if p_is_rate then
-               if regexp_instr(p_expr, '(^|\(|[[:space:]])(-?)(V|L[12]?)([[:space:]]|\)|$)') > 0 then
+               if regexp_instr(p_expr, '(^|\W)V|L[12]?(\W|$)') > 0 then
                   cwms_err.raise('ERROR', 'Cannot reference variables V, L, L1, or L2 in rate expression');
                end if;
-               l_expr := regexp_replace(l_expr, '(^|\(|[[:space:]])(-?)R([[:space:]]|\)|$)',   '\1\2ARG4\3');
+               l_expr := regexp_replace(l_expr, '(^|\W)R(\W|$)', '\1ARG4\2');
             else
-               if regexp_instr(p_expr, '(^|\(|[[:space:]])(-?)R([[:space:]]|\)|$)') > 0 then
+               if regexp_instr(p_expr, '(^|\W)R(\W|$)') > 0 then
                   cwms_err.raise('ERROR', 'Cannot reference variable R in non-rate expression');
                end if;
-               l_expr := regexp_replace(p_expr, '(^|\(|[[:space:]])(-?)V([[:space:]]|\)|$)',   '\1\2ARG1\3');
-               l_expr := regexp_replace(l_expr, '(^|\(|[[:space:]])(-?)L1?([[:space:]]|\)|$)', '\1\2ARG2\3');
-               l_expr := regexp_replace(l_expr, '(^|\(|[[:space:]])(-?)L2([[:space:]]|\)|$)',  '\1\2ARG3\3');
+               l_expr := regexp_replace(p_expr, '(^|\W)V(\W|$)', '\1ARG1\2');
+               l_expr := regexp_replace(l_expr, '(^|\W)L1?(\W|$)', '\1ARG2\2');
+               l_expr := regexp_replace(l_expr, '(^|\W)L2(\W|$)', '\1ARG3\2');
             end if;
             -------------------------------
             -- tokenize algebraic or RPN --
