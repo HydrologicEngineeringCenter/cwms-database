@@ -28,7 +28,7 @@ AS
 
     TYPE cat_user_rec_t IS RECORD
     (
-        username    VARCHAR2 (31),
+        username    at_sec_cwms_users.userid%type,
         fullname    VARCHAR2 (96),
         phone       VARCHAR2 (24),
         office      VARCHAR2 (16),
@@ -42,7 +42,7 @@ AS
 
     TYPE cat_locked_users_rec_t IS RECORD
     (
-        username          VARCHAR2 (32),
+        username          at_sec_cwms_users.userid%type,
         account_status    VARCHAR2 (32),
         lock_date         DATE,
         expiry_date       DATE
@@ -66,7 +66,7 @@ AS
 
     TYPE cat_priv_groups_rec_t IS RECORD
     (
-        username            VARCHAR2 (31),
+        username            at_sec_cwms_users.userid%type,
         db_office_id        VARCHAR2 (16),
         user_group_type     VARCHAR2 (24),
         user_group_owner    VARCHAR2 (16),
@@ -373,4 +373,3 @@ AS
     PROCEDURE confirm_cwms_user (p_username IN VARCHAR2);
 END cwms_sec;
 /
-

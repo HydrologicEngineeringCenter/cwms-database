@@ -21,8 +21,13 @@ AS
     -- %test(Can set USER context by API key)
     procedure can_set_context_user_by_key;
 
+    -- %test(CWDB-326 test cwbi cwms user)
+    PROCEDURE test_create_cwms_cwbi_user;
+
     multioffice_user varchar(255) := '&&multiuser2';
+    l_test_keycloak_userid  at_sec_cwms_users.userid%type := 'NEILSON.MICHAEL.ALLAN.1238295242';
 END;
+
 /
 
 /* Formatted on 2/24/2022 3:11:58 PM (QP5 v5.381) */
@@ -30,9 +35,11 @@ CREATE OR REPLACE PACKAGE BODY &cwms_schema..test_webuser_abilities
 AS
     procedure setup_users_webuser is
     begin
+        teardown_users_webuser;
         dbms_output.put_line('Setup:-');
         cwms_cache.clear(cwms_util.g_office_id_cache);
         cwms_cache.clear(cwms_util.g_office_code_cache);
+        
         /*
         Need to review permissions check and environment
            until there is time for that I've moved the user creation to the test
@@ -48,13 +55,16 @@ AS
     procedure teardown_users_webuser is
     begin
         dbms_output.put_line('Teardown:Dropping keys');
-        /* See setup_users_webuser comment for status of below code
-
         cwms_20.cwms_env.set_session_user_direct('&eroc.hectest_db','&&office_id');
-        cwms_20.cwms_sec.delete_user_from_all_offices(multioffice_user);
-              cwms_20.cwms_env.set_session_user_direct('&eroc.webtest','&&office_id');
-        */
+        
+        -- See setup_users_webuser comment for status of below code
+
         delete from cwms_20.at_api_keys;
+        --cwms_20.cwms_sec.delete_user_from_all_offices(multioffice_user);
+        cwms_20.cwms_env.set_session_user_direct('&eroc.webtest','&&office_id');
+        
+       
+        cwms_sec.delete_user(l_test_keycloak_userid);
     end;
 
 
@@ -68,7 +78,7 @@ AS
     procedure can_set_context_users is
         l_normal_user varchar2(255) := '&&eroc.hectest';
         l_web_user varchar2(255) := '&&eroc.webtest';
-        l_userid varchar2(32);
+        l_userid varchar2(128);
         l_session_key varchar2(128); -- used to check connection permissions
 
         l_users char_32_array_type := char_32_array_type(l_normal_user,multioffice_user);
@@ -107,7 +117,7 @@ AS
     end;
 
     procedure can_interact_with_api_keys_table_and_view is
-        l_userid varchar(32) := upper('&eroc.hectest');
+        l_userid varchar(128) := upper('&eroc.hectest');
         l_testkey cwms_20.at_api_keys.apikey%type := 'A simple test key';
         l_testkey_name cwms_20.at_api_keys.key_name%type := 'A test key';
         l_testkey_name_out cwms_20.at_api_keys.key_name%type;
@@ -123,8 +133,8 @@ AS
     procedure can_set_context_user_by_key is
         l_testkey1 cwms_20.at_api_keys.apikey%type := 'User 1 Test Key';
         l_testkey2 cwms_20.at_api_keys.apikey%type := 'User 2 Test Key';
-        l_user1 varchar2(32) := upper('&eroc.hectest');
-        l_user2 varchar2(32) := upper('&eroc.hectest_ro');
+        l_user1 varchar2(128) := upper('&eroc.hectest');
+        l_user2 varchar2(128) := upper('&eroc.hectest_ro');
         l_priv varchar2(255);
     begin
         insert into cwms_20.at_api_keys(userid,key_name,apikey)
@@ -145,9 +155,30 @@ AS
         */
         cwms_env.set_session_user_direct(upper('&eroc.webtest'),'&&office_id');
 
-
-
     end;
+
+    PROCEDURE test_create_cwms_cwbi_user
+    IS
+        l_count number;
+        l_session_user_id at_sec_cwms_users.userid%type;
+    BEGIN
+        cwms_20.cwms_env.set_session_user_direct('&eroc.hectest_db','&&office_id');
+        cwms_sec.add_cwms_user(l_test_keycloak_userid, null, null);
+        cwms_upass.update_user_data(l_test_keycloak_userid, 'test name', null, null, null, 'test@example.com','issuer::subject');
+
+        select count(*)
+          into l_count
+          from cwms_20.at_sec_cwms_users
+         where userid=l_test_keycloak_userid;
+
+        ut.expect(l_count).to_equal(1);
+
+        cwms_env.set_session_user_direct(l_test_keycloak_userid);
+        l_session_user_id := cwms_util.get_user_id;
+        ut.expect(l_session_user_id).to_equal(l_test_keycloak_userid);
+        cwms_env.clear_session_privileges;
+    END;    
+
 
 END;
 /

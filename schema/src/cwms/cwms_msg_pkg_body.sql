@@ -388,8 +388,8 @@ is
    lf            constant varchar2(1) := chr(10);
    l_msg_level   integer := nvl(p_msg_level, msg_level_normal);
    l_publish     boolean := nvl(p_publish, true);
-   l_username    varchar2(30);
-   l_osuser      varchar2(30);
+   l_username    at_sec_cwms_users.userid%type;
+   l_osuser      at_sec_cwms_users.userid%type;
    l_process     varchar2(24);
    l_program     varchar2(64);
    l_machine     varchar2(64);
@@ -1684,7 +1684,7 @@ end trim_log;
 procedure start_trim_log_job
 is
    l_count        binary_integer;
-   l_user_id      varchar2(30);
+   l_user_id      at_sec_cwms_users.userid%type;
    l_job_id       varchar2(30)  := 'TRIM_LOG_JOB';
    l_run_interval varchar2(8);
    l_comment      varchar2(256);
@@ -2080,7 +2080,7 @@ procedure start_remove_subscribers_job(
    p_interval_minutes in integer default null)
 is
    l_count        binary_integer;
-   l_user_id      varchar2(30);
+   l_user_id      at_sec_cwms_users.userid%type;
    l_job_id       varchar2(30)  := 'REMOVE_DEAD_SUBSCRIBERS_JOB';
    l_run_interval varchar2(8);
    l_comment      varchar2(256);

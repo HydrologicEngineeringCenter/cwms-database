@@ -688,6 +688,7 @@ begin
    ------------------------------------------------------------------
    -- store some data so we have some to delete with DELETE INSERT --
    ------------------------------------------------------------------
+   cwms_ts.set_filter_duplicates_ofc('F', c_office_id);
    cwms_ts.zstore_ts(
       p_cwms_ts_id      => c_ts_id,
       p_units           => c_units,
@@ -710,6 +711,7 @@ begin
       p_version_date    => cwms_util.non_versioned,
       p_office_id       => c_office_id);
    commit;
+   cwms_ts.set_filter_duplicates_ofc('T', c_office_id);
    -----------------------------------------
    -- verify the utx job delays 5 seconds --
    -----------------------------------------

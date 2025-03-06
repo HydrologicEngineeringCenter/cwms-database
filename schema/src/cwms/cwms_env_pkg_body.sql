@@ -72,7 +72,7 @@ AS
       l_office_code cwms_office.office_code%type;
       --
       l_cnt         NUMBER;
-      l_username    VARCHAR2 (31) := CWMS_UTIL.get_user_id();
+      l_username    at_sec_cwms_users.userid%type := CWMS_UTIL.get_user_id();
    BEGIN
       BEGIN
          pause_office_caching;
@@ -126,7 +126,7 @@ AS
 
    PROCEDURE set_session_user(p_session_key VARCHAR2)
    IS
-    l_userid VARCHAR2(32);
+    l_userid at_sec_cwms_users.userid%type;
    BEGIN
     SELECT USERID
     INTO l_userid
@@ -139,7 +139,7 @@ AS
 
    PROCEDURE set_session_user_direct(p_user VARCHAR2, p_office VARCHAR2)
    IS
-      l_userid VARCHAR2(32);
+      l_userid at_sec_cwms_users.userid%type;
       l_role varchar2(32) := null;
       l_msg varchar(2048);
       l_from_ip varchar(255) := SYS_CONTEXT('USERENV','IP_ADDRESS');
@@ -168,7 +168,7 @@ AS
 
    PROCEDURE set_session_user_apikey(p_apikey VARCHAR2, p_office VARCHAR2)
    IS
-      l_userid VARCHAR2(32) := null;
+      l_userid at_sec_cwms_users.userid%type := null;
    BEGIN
       select userid into l_userid from cwms_20.av_active_api_keys where apikey = p_apikey;
       set_session_user_direct(l_userid,p_office);
@@ -177,7 +177,7 @@ AS
    PROCEDURE set_session_privileges
    IS
       l_office_id   VARCHAR2 (16);
-      l_username    VARCHAR2 (32);
+      l_username    at_sec_cwms_users.userid%type;
       l_canwrite    BOOLEAN;
       l_canlogin    BOOLEAN;
       l_cnt         NUMBER;

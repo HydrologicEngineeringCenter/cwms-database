@@ -7,8 +7,8 @@
 CREATE TABLE at_sec_locked_users
 (
 	db_office_code 					NUMBER,
-	username 							VARCHAR2 (31 BYTE),
-	is_locked							VARCHAR2 (1 BYTE)
+	username 						VARCHAR2(128),
+	is_locked						VARCHAR2 (1 BYTE)
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED 0
@@ -231,7 +231,7 @@ CREATE TABLE at_sec_users
 (
 	db_office_code 					NUMBER,
 	user_group_code					NUMBER,
-	username								VARCHAR2 (31 BYTE)
+	username						VARCHAR2(128)
 )
 tablespace CWMS_20AT_DATA
 PCTUSED 0

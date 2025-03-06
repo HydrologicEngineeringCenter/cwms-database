@@ -31,8 +31,10 @@ create or replace package test_av_loc_grp_assgn as
    c_rdl constant varchar2(60) := 'RDL_Location_Types';
    c_gate_group constant varchar2(60) := 'Gate Group';
 end test_av_loc_grp_assgn;
-show errors
 /
+
+show errors;
+
 show errors
 grant execute on test_av_loc_grp_assgn to cwms_user;
 create or replace package body test_av_loc_grp_assgn as
@@ -361,3 +363,5 @@ create or replace package body test_av_loc_grp_assgn as
 
 end test_av_loc_grp_assgn;
 /
+
+show errors;

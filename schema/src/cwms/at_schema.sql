@@ -2617,7 +2617,7 @@ ALTER TABLE at_unit_alias ADD CONSTRAINT at_unit_alias_pk  PRIMARY KEY (alias_id
 CREATE TABLE at_user_preferences
 (
   db_office_code           NUMBER,
-  username                 VARCHAR2(31 BYTE),
+  username                 VARCHAR2(128),
   display_format_lat_long  VARCHAR2(3 BYTE),
   display_unit_system      VARCHAR2(2 BYTE)
 )
@@ -6329,4 +6329,3 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_fcst_inst
 @@./cwms/tables/at_fcst_info
 @@./cwms/tables/run_stats
-

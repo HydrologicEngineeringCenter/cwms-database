@@ -1,5 +1,5 @@
 create table at_api_keys(
-    userid varchar2(32) not null references at_sec_cwms_users(USERID),
+    userid varchar2(128) not null references at_sec_cwms_users(USERID),
     key_name varchar2(64) not null,
     apikey varchar2(256) not null unique,    
     created date default current_timestamp not null,

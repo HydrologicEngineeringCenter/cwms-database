@@ -863,8 +863,8 @@ is
 
    l_lock_id         varchar2(40);
    l_do_lock         boolean := true;
-   l_username        varchar2(30);
-   l_osuser          varchar2(30);
+   l_username        at_sec_cwms_users.userid%type;
+   l_osuser          at_sec_cwms_users.userid%type;
    l_program         varchar2(64);
    l_machine         varchar2(64);
    l_office_id       varchar2(16);
@@ -1052,7 +1052,7 @@ function has_revoker_rights (
    return varchar2
 is
    l_application_id     varchar2(64) := lower(p_application_id);
-   l_user_id            varchar2(30) := lower(nvl(p_user_id, cwms_util.get_user_id));
+   l_user_id            at_sec_cwms_users.userid%type := lower(nvl(p_user_id, cwms_util.get_user_id));
    l_office_code        number(14)   := nvl(p_office_code, cwms_util.get_db_office_code(p_office_id));
    l_project_id         varchar2(57) := lower(cwms_loc.get_location_id(p_project_id, l_office_code));
    l_project_list       varchar2(256);
@@ -1425,7 +1425,7 @@ procedure update_lock_revoker_rights(
 is
    type l_user_t is table of boolean index by varchar2(30);
    l_cwms_users     l_user_t;
-   l_user_id        varchar2(30);
+   l_user_id        at_sec_cwms_users.userid%type;
    l_allow          varchar2(1);
    l_application_id varchar2(64);
    l_office_code    number(14);

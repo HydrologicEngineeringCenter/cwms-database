@@ -3370,8 +3370,8 @@ create table at_project_lock (
    project_code    number(14),
    application_id  varchar2(64),
    acquire_time    timestamp,
-   session_user    varchar2(30),
-   os_user         varchar2(30),
+   session_user    VARCHAR2(128),
+   os_user         VARCHAR2(128),
    session_program varchar2(64),
    session_machine varchar2(64),
    constraint at_project_lock_ck1 check (application_id = lower(application_id)),
@@ -3392,7 +3392,7 @@ comment on column at_project_lock.session_program is 'The program that acquired 
 comment on column at_project_lock.session_machine is 'The computer that acquired the lock';
 
 create table at_prj_lck_revoker_rights (
-   user_id         varchar2(30),
+   user_id         varchar2(128),
    office_code     number(14),
    application_id  varchar2(64),
    allow_flag      varchar2(1),
@@ -3411,4 +3411,3 @@ comment on column at_prj_lck_revoker_rights.office_code    is 'The office the us
 comment on column at_prj_lck_revoker_rights.application_id is 'The application the user rights are described for';
 comment on column at_prj_lck_revoker_rights.allow_flag     is 'Specifies whether this list is the ALLOW or DISALLOW list';
 comment on column at_prj_lck_revoker_rights.project_list   is 'Comma-separated list of project identiers and/or project identifer masks';
-

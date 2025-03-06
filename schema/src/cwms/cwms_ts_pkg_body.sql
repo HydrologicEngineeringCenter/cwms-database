@@ -12250,7 +12250,7 @@ end retrieve_existing_item_counts;
    PROCEDURE start_trim_ts_deleted_job
    IS
       l_count          BINARY_INTEGER;
-      l_user_id        VARCHAR2 (30);
+      l_user_id        at_sec_cwms_users.userid%type;
       l_job_id         VARCHAR2 (30) := 'TRIM_TS_DELETED_TIMES_JOB';
       l_run_interval   VARCHAR2 (8);
       l_comment        VARCHAR2 (256);

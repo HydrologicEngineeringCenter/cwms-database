@@ -7,7 +7,7 @@ AS
         RETURN BOOLEAN
     IS
         l_is_locked   VARCHAR2 (1);
-        l_username    VARCHAR2 (31) := cwms_util.get_user_id;
+        l_username    at_sec_cwms_users.userid%type := cwms_util.get_user_id;
     BEGIN
         --
         -- CWMS_20, system, sys are ok
@@ -47,7 +47,7 @@ AS
     IS
         l_count       INTEGER := 0;
         l_is_locked   VARCHAR2 (1);
-        l_username    VARCHAR2 (31) := cwms_util.get_user_id;
+        l_username    at_sec_cwms_users.userid%type := cwms_util.get_user_id;
     BEGIN
         --
         -- CWMS_20, system, sys are ok
@@ -120,7 +120,7 @@ AS
         l_db_office_code   NUMBER
             := cwms_util.get_db_office_code (p_db_office_id);
         l_count            NUMBER;
-        l_username         VARCHAR2 (31);
+        l_username         at_sec_cwms_users.userid%type;
     BEGIN
         confirm_user_admin_priv (l_db_office_code);
 
@@ -288,7 +288,7 @@ AS
         p_priv_groups       OUT SYS_REFCURSOR,
         p_db_office_id   IN     VARCHAR2 DEFAULT NULL)
     IS
-        l_username         VARCHAR2 (31) := cwms_util.get_user_id;
+        l_username         at_sec_cwms_users.userid%type := cwms_util.get_user_id;
         l_db_office_id     VARCHAR2 (16);
         l_db_office_code   NUMBER;
     BEGIN
@@ -373,7 +373,7 @@ AS
         p_db_office_id   IN     VARCHAR2 DEFAULT NULL)
     IS
         l_db_office_id            VARCHAR2 (16);
-        l_username                VARCHAR2 (31);
+        l_username                at_sec_cwms_users.userid%type;
         l_db_office_code          NUMBER;
         l_retrieve_all_username   BOOLEAN;
         l_retrieve_all_offices    BOOLEAN;
@@ -547,7 +547,7 @@ AS
     PROCEDURE confirm_cwms_user (p_username IN VARCHAR2)
     IS
         l_count      NUMBER;
-        l_username   VARCHAR2 (64);
+        l_username   at_sec_cwms_users.userid%type;
     BEGIN
         IF (p_username is null)
         THEN
@@ -594,7 +594,7 @@ AS
         p_username       IN VARCHAR2,
         p_db_office_id   IN VARCHAR2 DEFAULT NULL)
     IS
-        l_username         VARCHAR2 (31) := UPPER (TRIM (p_username));
+        l_username         at_sec_cwms_users.userid%type := UPPER (TRIM (p_username));
         l_is_locked        VARCHAR2 (1);
         l_db_office_id     VARCHAR2 (16)
                                := cwms_util.get_db_office_id (p_db_office_id);
@@ -753,7 +753,7 @@ AS
         l_db_office_code   NUMBER
             := cwms_util.get_db_office_code (p_db_office_id);
         l_count            NUMBER;
-        l_username         VARCHAR2 (31);
+        l_username         at_sec_cwms_users.userid%type;
     BEGIN
         confirm_user_admin_priv (l_db_office_code);
         confirm_cwms_user (p_username);
@@ -863,7 +863,7 @@ AS
                                  p_db_office_code   IN NUMBER)
     IS
         l_user_group_code   NUMBER;
-        l_username          VARCHAR2 (31) := UPPER (TRIM (p_username));
+        l_username          at_sec_cwms_users.userid%type := UPPER (TRIM (p_username));
     BEGIN
         confirm_user_admin_priv (p_db_office_code);
 
@@ -1066,7 +1066,7 @@ AS
                                 := cwms_util.get_db_office_id (p_db_office_id);
         l_db_office_code    NUMBER
             := cwms_util.get_db_office_code (l_db_office_id);
-        l_username          VARCHAR2 (31) := UPPER (TRIM (p_username));
+        l_username          at_sec_cwms_users.userid%type := UPPER (TRIM (p_username));
         l_user_group_code   NUMBER;
         l_count             NUMBER;
         l_user_exists       BOOLEAN;
@@ -1233,7 +1233,7 @@ AS
 
     PROCEDURE delete_user (p_username IN VARCHAR2)
     IS
-        l_username         VARCHAR2 (31);
+        l_username         at_sec_cwms_users.userid%type;
         l_db_office_id     VARCHAR2 (16) := cwms_util.get_db_office_id (NULL);
         l_db_office_code   NUMBER
             := cwms_util.get_db_office_code (l_db_office_id);
@@ -1283,7 +1283,7 @@ AS
 
     PROCEDURE delete_user_from_all_offices (p_username IN VARCHAR2)
     IS
-        l_username   VARCHAR2 (31);
+        l_username   at_sec_cwms_users.userid%type;
         l_count      NUMBER := 0;
     BEGIN
         l_username := UPPER (TRIM (p_username));
@@ -1332,7 +1332,7 @@ AS
         l_db_office_code   NUMBER
             := cwms_util.get_db_office_code (l_db_office_id);
         l_count            NUMBER;
-        l_username         VARCHAR2 (31);
+        l_username         at_sec_cwms_users.userid%type;
     BEGIN
         confirm_user_admin_priv (l_db_office_code);
 
@@ -1451,7 +1451,7 @@ AS
             := cwms_util.get_db_office_code (l_db_office_id);
         l_account_status   VARCHAR2 (32) := NULL;
         l_is_locked        VARCHAR2 (1);
-        l_username         VARCHAR2 (31) := UPPER (TRIM (p_username));
+        l_username         at_sec_cwms_users.userid%type := UPPER (TRIM (p_username));
     BEGIN
         confirm_user_admin_priv (l_db_office_code);
 
@@ -1655,7 +1655,7 @@ AS
                              p_comment        VARCHAR2)
     IS
         l_count     BINARY_INTEGER;
-        l_user_id   VARCHAR2 (30);
+        l_user_id   at_sec_cwms_users.userid%type;
 
         FUNCTION job_count
             RETURN BINARY_INTEGER
@@ -1766,7 +1766,7 @@ AS
         l_db_office_code_list   number_tab_t := number_tab_t ();
         l_is_member_list        char_16_array_type := char_16_array_type ();
         l_user_group_code       NUMBER;
-        l_username              VARCHAR2 (31);
+        l_username              at_sec_cwms_users.userid%type;
     BEGIN
         -- confirm user exicuting this call has privileges on all db_offices
         --   in the p_db_office_id_list
@@ -2547,7 +2547,7 @@ AS
                                := cwms_util.get_db_office_id (p_db_office_id);
         l_db_office_code   NUMBER
             := cwms_util.get_db_office_code (l_db_office_id);
-        l_username         VARCHAR2 (31) := CWMS_UTIL.GET_USER_ID;
+        l_username         at_sec_cwms_users.userid%type := CWMS_UTIL.GET_USER_ID;
         l_is_locked        VARCHAR2 (1);
         l_query            VARCHAR2 (1256);
         l_count            NUMBER;
@@ -2837,7 +2837,7 @@ AS
     IS
         l_handle     VARCHAR2 (128);
         l_ret        INTEGER := -1;
-        l_username   VARCHAR2 (16) := cac_service_user;
+        l_username   at_sec_cwms_users.userid%type := cac_service_user;
     BEGIN
         get_service_credentials (p_username, p_password);
 
@@ -2852,7 +2852,7 @@ AS
     IS
         l_handle     VARCHAR2 (128);
         l_ret        INTEGER := -1;
-        l_username   VARCHAR2 (16) := cac_service_user;
+        l_username   at_sec_cwms_users.userid%type := cac_service_user;
     BEGIN
         confirm_pd_user (CWMS_UTIL.GET_USER_ID);
 

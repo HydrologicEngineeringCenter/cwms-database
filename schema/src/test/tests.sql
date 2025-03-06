@@ -13,6 +13,10 @@ begin
                                         CHAR_32_ARRAY_TYPE ('CWMS Users','TS ID Creator', 'Viewer Users'),
                                         '&&office_id');
     cwms_20.cwms_sec.add_user_to_group('&&multiuser2','CWMS Users','POA');
+    cwms_20.cwms_sec.add_user_to_group('&&eroc' || 'cwmspd','CWMS DBA Users', '&&office_id');
+    cwms_20.cwms_sec.add_user_to_group('&&eroc' || 'webtest','CWMS DBA Users', '&&office_id');
+
+    
 end;
 /
 

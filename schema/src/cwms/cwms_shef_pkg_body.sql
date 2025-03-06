@@ -4493,7 +4493,7 @@ AS
    PROCEDURE start_update_shef_spec_map_job
    IS
       l_count          BINARY_INTEGER;
-      l_user_id        VARCHAR2 (30);
+      l_user_id        at_sec_cwms_users.userid%type;
       l_job_id         VARCHAR2 (30) := 'UPDATE_SHEF_SPEC_MAPPING';
       l_run_interval   VARCHAR2 (8) := '1';
       l_comment        VARCHAR2 (256);

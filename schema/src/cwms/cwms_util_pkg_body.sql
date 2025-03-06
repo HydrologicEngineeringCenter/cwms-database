@@ -531,7 +531,7 @@ as
       RETURN VARCHAR2
    IS
       l_office_id   VARCHAR2 (16);
-      l_username    VARCHAR2 (32);
+      l_username    at_sec_cwms_users.userid%type;
       l_upass_id    VARCHAR2 (32) := 'UPASSADM';
    BEGIN
       l_office_id := cwms_cache.get(g_office_id_cache, '<NULL>');
@@ -2873,7 +2873,7 @@ as
    FUNCTION get_user_id
       RETURN VARCHAR2
    IS
-      l_user_id   VARCHAR2 (31);
+      l_user_id   at_sec_cwms_users.userid%type;
    BEGIN      
       l_user_id := APEX_USER_CHECK();
       IF l_user_id != null
@@ -2898,7 +2898,7 @@ as
       p_office_id      IN     VARCHAR2 DEFAULT NULL)
    IS
       l_unit_system           VARCHAR2 (2);
-      l_user_id               VARCHAR2 (31) := UPPER (NVL (p_user_id, get_user_id));
+      l_user_id               at_sec_cwms_users.userid%type := UPPER (NVL (p_user_id, get_user_id));
       l_office_id             VARCHAR2 (16) := get_db_office_id (p_office_id);
       l_base_parameter_id     VARCHAR2 (16) := get_base_id (p_parameter_id);
       l_office_code           NUMBER := get_db_office_code (p_office_id);
@@ -6010,7 +6010,7 @@ as
       p_office_id     in varchar2,
       p_user_group_id in varchar2 default null)
    is
-      l_user_id       varchar2(30);
+      l_user_id       at_sec_cwms_users.userid%type;
       l_office_id     varchar2(16);
       l_user_group_id varchar2(32);
    begin
@@ -6535,7 +6535,7 @@ as
       p_login_server     in  varchar2,
       p_office_id        in  varchar2)
    is
-      l_username    varchar2(30);
+      l_username    at_sec_cwms_users.userid%type;
       l_session_key varchar2(16);
       l_uuid        varchar2(32);
    begin
@@ -6699,7 +6699,7 @@ as
       l_row        urowid;
       l_session_id integer := sys_context('userenv', 'sid');
       l_office     varchar2(16);
-      l_username   varchar2(30);
+      l_username   at_sec_cwms_users.userid%type;
    begin
       -----------------
       -- valid UUID? --

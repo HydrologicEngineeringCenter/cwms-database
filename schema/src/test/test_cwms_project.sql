@@ -42,7 +42,7 @@ AS
     PROCEDURE teardown
     IS
     BEGIN
-       cwms_sec.delete_user(c_username);
+      cwms_sec.delete_user(c_username);
     END teardown;
 
 --------------------------------------------------------------------------------

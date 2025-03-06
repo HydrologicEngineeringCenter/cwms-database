@@ -598,7 +598,7 @@ procedure store_user_unit(
    p_user_id        in varchar2 default null,
    p_office_id      in varchar2 default null)
 is
-   l_user_id     varchar2(30);
+   l_user_id     at_sec_cwms_users.userid%type;
    l_office_id   varchar2(16);
    l_base_param  number(14);
    l_property_id varchar2(256);
@@ -740,7 +740,7 @@ procedure retrieve_user_unit(
    p_office_id      in  varchar2 default null)
 is
    item_does_not_exist exception; pragma exception_init(item_does_not_exist, -20034);
-   l_user_id     varchar2(30);
+   l_user_id     at_sec_cwms_users.userid%type;
    l_office_id   varchar2(16);
    l_unit_system varchar2(2);
    l_property_id varchar2(256);
@@ -886,7 +886,7 @@ procedure delete_user_unit(
    p_user_id        in varchar2 default null,
    p_office_id      in varchar2 default null)
 is
-   l_user_id     varchar2(30);
+   l_user_id     at_sec_cwms_users.userid%type;
    l_office_id   varchar2(16);
    l_property_id varchar2(256);
 begin

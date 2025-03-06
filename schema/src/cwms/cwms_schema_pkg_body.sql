@@ -299,7 +299,7 @@ end output_schema_versions;
 procedure start_check_schema_job
 is
    l_count        binary_integer;
-   l_user_id      varchar2(30);
+   l_user_id      at_sec_cwms_users.userid%type;
    l_job_id       varchar2(30)  := 'CHECK_SCHEMA_JOB';
    l_run_interval varchar2(8);
    l_comment      varchar2(256);

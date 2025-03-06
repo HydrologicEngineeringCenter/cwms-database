@@ -3,7 +3,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_priv
 AS
    PROCEDURE passwd (p_username IN VARCHAR2, p_password IN VARCHAR2)
    IS
-      l_username   VARCHAR2 (30)
+      l_username   at_sec_cwms_users.userid%type
                               := dbms_assert.enquote_name (TRIM (p_username));
       l_password   VARCHAR2 (30)
                        := dbms_assert.enquote_name (TRIM (p_password), FALSE);

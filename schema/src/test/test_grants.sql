@@ -11,7 +11,7 @@ GRANT EXECUTE ON &cwms_schema..test_cwms_project to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_ts to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_rating to &1;
 GRANT EXECUTE ON &cwms_schema..test_clean_all to &1;
-GRANT EXECUTE ON &cwms_schema..test_cwms_prop to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_prop to &7;
 GRANT EXECUTE ON &cwms_schema..test_cwms_msg to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_pool to &1;
 GRANT EXECUTE ON &cwms_schema..test_versioned_time_series to &1;
