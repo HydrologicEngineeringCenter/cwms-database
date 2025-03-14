@@ -7,6 +7,8 @@ may be out of date. Please ask questions at https://github.com/HydrologicEnginee
 
 ## Contributing
 
+See CONTRIBUTING.md for additional information.
+
 clone the repository with 
 
     git clone https://github.com/HydrologicEngineeringCenter/cwms-database.git
