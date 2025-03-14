@@ -21,9 +21,14 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '8'
+      - name: Info
+        run: |
+          pwd
+          ls -l
+          ls -l schema/
+          ls -l .github/workflows/
       - name: Start Database
         uses: ./.github/workflows/start-database.yml
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_PATH }}
       - name: Run Tests
         working-directory: schema
         run: ant test -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
