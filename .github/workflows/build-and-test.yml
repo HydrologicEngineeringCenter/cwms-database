@@ -12,6 +12,7 @@ jobs:
   build:
     name: build and test
     runs-on: ubuntu-latest
+    
     steps:
       - name: checkout code
         uses: actions/checkout@v4.2.2
@@ -22,6 +23,7 @@ jobs:
           java-version: '8'
       - name: Start Database
         uses: ./.github/workflows/start-database.yml
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_PATH }}
       - name: Run Tests
         working-directory: schema
         run: ant test -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
