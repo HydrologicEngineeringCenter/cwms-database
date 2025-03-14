@@ -37,7 +37,6 @@ on:
         default: true
 
 jobs:
-  needs: 
   release:
     runs-on: ubuntu-latest
     permissions:

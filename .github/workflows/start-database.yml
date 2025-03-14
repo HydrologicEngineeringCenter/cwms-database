@@ -43,5 +43,3 @@ jobs:
       - name: Install Schema
         working-directory: schema
         run: ant docker.install -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
-      - name: Run Tests
-        working-directory: schema
