@@ -3,6 +3,7 @@ on:
 
 jobs:
   start-database:
+    runs-on: ubuntu-latest
     steps:
       - name: Oracle Tools
         id: cache-oracle-tools
