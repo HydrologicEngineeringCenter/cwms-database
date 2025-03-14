@@ -1,0 +1,47 @@
+name: 'Start Oracle Database and Install Cwms Schema'
+runs:
+  using: "composite"
+  steps:
+    - name: Oracle Tools
+      id: cache-oracle-tools
+      uses: actions/cache@v4.2.0
+      with:
+        path: oracle-tools
+        key: oracle-tools-23.6
+    - name: Download Oracle Tools
+      if: steps.cache-oracle-tools.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p oracle-tools/instantclient
+        cd oracle-tools
+        wget https://download.oracle.com/otn_software/linux/instantclient/2360000/instantclient-basic-linux.x64-23.6.0.24.10.zip
+        wget https://download.oracle.com/otn_software/linux/instantclient/2360000/instantclient-sqlplus-linux.x64-23.6.0.24.10.zip
+        wget https://download.oracle.com/otn_software/linux/instantclient/2360000/instantclient-tools-linux.x64-23.6.0.24.10.zip
+        unzip -o instantclient-basic*.zip
+        unzip -o instantclient-sqlplus*.zip
+        unzip -o instantclient-tools*.zip
+        rm -f *.zip
+        mv instantclient_*/* ./instantclient
+        ls -l instantclient/
+        wget https://github.com/utPLSQL/utPLSQL-cli/releases/download/3.1.9/utPLSQL-cli.zip
+        unzip utPLSQL-cli.zip
+        rm utPLSQL-cli.zip
+    - name: Set Oracle Home
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libaio1t64
+        sudo ln -sf /usr/lib/x86_64-linux-gnu/libaio.so.1t64 oracle-tools/instantclient/libaio.so.1
+        cd oracle-tools
+        echo "LD_LIBRARY_PATH=`pwd`/instantclient:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "ORACLE_HOME=`pwd`/instantclient" >> $GITHUB_ENV
+        echo "PATH=`pwd`/instantclient:`pwd`/utPLSQL-cli/bin:$PATH" >> $GITHUB_ENV
+        echo "DISABLE_OOB=ON" > ~/.sqlnet.ora
+    - name: Prep Database
+      shell: bash
+      working-directory: schema
+      run: ant docker.prepdb -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
+    - name: Install Schema
+      shell: bash
+      working-directory: schema
+      run: ant docker.install -Doracle.image=gvenzl/oracle-free:23.4-full-faststart

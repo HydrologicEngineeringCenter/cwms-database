@@ -64,7 +64,7 @@ jobs:
       - name: show version
         run: echo ${VERSION}
       - name: Start Database
-        uses: ./.github/workflows/start-database.yml
+        uses: ./.github/actions/start-database
       - name: Generate Bundle (docs and schemas)
         working-directory: schema
         run: ant bundle -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
