@@ -29,7 +29,7 @@ on:
         required: true
         description: Which Branch to make the build from
         options:
-          - develop
+          - main
       nightly:
         type: boolean
         required: true
