@@ -105,7 +105,9 @@ jobs:
         run: |
           #HEC_PUB_REGISTRY="${{secrets.registry != null && secrets.registry ||secrets.HEC_PUB_REGISTRY}}"
           REPO=`echo "${{github.repository}}" | tr  '[:upper:]' '[:lower:]'`
-          ant docker.push -Dteamcity.branch=$VERSION -Ddocker.registry=$REPO
+          ant docker.push -Dteamcity.branch=$VERSION \
+             -Ddocker.registry=ghcr.io/$REPO \
+             -Ddocker.registry_public=ghcr.io/$REPO
       #- name: Logout of HEC pub registry
       #  if: ${{ always() }}
       #  run: |
