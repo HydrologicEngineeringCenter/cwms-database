@@ -15,17 +15,13 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v4.2.2
+      - name: Clean Runner
+        uses: ./.github/actions/clean-runner
       - name: setup java
         uses: actions/setup-java@v4.6.0
         with:
           distribution: 'temurin'
           java-version: '8'
-      - name: Info
-        run: |
-          pwd
-          ls -l
-          ls -l schema/
-          ls -l .github/workflows/
       - name: Start Database
         uses: ./.github/actions/start-database
       - name: Run Tests
@@ -59,6 +55,8 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v4.2.2
+      - name: Clean Runner
+        uses: ./.github/actions/clean-runner
       - name: setup java
         uses: actions/setup-java@v4.6.0
         with:
