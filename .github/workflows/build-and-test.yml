@@ -31,14 +31,14 @@ jobs:
         uses: ./.github/actions/start-database
       - name: Run Tests
         working-directory: schema
-        run: ant test -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
+        run: ant test -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.6-full-faststart
       - name: Generate Bundle (docs and schemas)
         working-directory: schema
-        run: ant bundle -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
+        run: ant bundle -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.6-full-faststart
       - name: Remove database container
         if: success() || failure() # always run even if the previous step fails
         working-directory: schema
-        run: ant docker.killdb -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
+        run: ant docker.killdb -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.6-full-faststart
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v5
         if: success() || failure() # always run even if the previous step fails
@@ -46,3 +46,12 @@ jobs:
           annotate_only: true
           include_passed: true
           report_paths: 'schema/build/test*.xml'
+      - name: Build Ready Database
+        working-directory: schema
+        run: ant docker.create_ready_database -Doracle.image=gvenzl/oracle-free:23.6-full-faststart
+      - name: Upload Build Logs
+        if: success() || failure() # always run even if the previous step fails
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: build_logs
+          path: ./**/buildCWMS_DB*.log
