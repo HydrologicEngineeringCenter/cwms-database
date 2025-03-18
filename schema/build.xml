@@ -102,13 +102,21 @@
 
    <!-- Create CWMS schema build user -->
    <target name="createbuilduser" description="creates user to build CWMS schema" depends="init">
-                <echo message="Create build user"/>
-                <exec dir="${root}" executable="sqlplus">
-                        <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
-                        <arg value="@builduser_grants"/>
-                        <arg value="${oracle.builduser}"/>
-                        <arg value="${oracle.builduser.password}"/>
-                </exec>
+      <if>
+         <not><equals arg1="${oracle.sys.password}" arg2=""/></not>
+         <then>
+            <echo message="Create build user"/>
+            <exec dir="${root}" executable="sqlplus">
+               <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+               <arg value="@builduser_grants"/>
+               <arg value="${oracle.builduser}"/>
+               <arg value="${oracle.builduser.password}"/>
+            </exec>
+         </then>
+         <else>
+            <echo message="Assuming provided build user is already created."/>
+         </else>
+      </if>
    </target>
 
    <target name="build" description="Executes python3 scripts to build the CWMS schema" depends="createbuilduser,database-version">
@@ -1250,6 +1258,8 @@
       <attribute name="database-name"/>
       <attribute name="sys-password"/>
       <attribute name="cwms-password"/>
+      <attribute name="builduser" default=""/>
+      <attribute name="rds-mode" default="false"/>
       <attribute name="builduser-password"/>
       <attribute name="office-id"/>
       <attribute name="office-eroc"/>
@@ -1267,9 +1277,13 @@
             <arg value="-e"/>
             <arg value="DB_NAME=/@{database-name}"/>
             <arg value="-e"/>
-            <arg value="SYS_PASSWORD=@{sys-password}"/>
+            <arg value="SYS_PASSWORD=@{sys-password}"/>      
             <arg value="-e"/>
             <arg value="CWMS_PASSWORD=@{cwms-password}"/>
+            <arg value="-e"/>
+            <arg value="RDS_MODE=@{rds-mode}"/>
+            <arg value="-e"/>
+            <arg value="BUILDUSER=@{builduser}"/>
             <arg value="-e"/>
             <arg value="BUILDUSER_PASSWORD=@{builduser-password}"/>
             <arg value="-e"/>
@@ -1292,6 +1306,35 @@
          host-and-port="${database.host_and_port}"
          database-name="${database.name}"
          sys-password="${database.syspw}"
+         cwms-password="${database.cwmspw}"
+         builduser-password="${database.buildpw}"
+         office-id="${database.office}"
+         office-eroc="${database.eroc}"
+      />
+   </target>
+
+   <target name="docker.install.rds" depends="docker.prepdb, docker.buildimage"
+      description="Mimics RDS admin user for testing, creates build user. Task is not suitable for actual RDS install.">
+      <echo message="Using Docker build to install database, mimicing RDS Oracle Admin account setup."/>
+      <getdockerport property="rds.external_port" container="${docker.props.container_name_valid}"/>
+      <property name="oracle.builduser" value="builduser"/>
+      <exec dir="${root}" executable="sqlplus">
+         <arg value="sys/${database.syspw}@localhost:${rds.external_port}/${database.name} as sysdba" />
+         <arg value="@builduser_grants"/>
+         <arg value="${oracle.builduser}"/>
+         <arg value="${database.buildpw}"/>
+      </exec>
+      <exec dir="${root}" executable="sqlplus">
+         <arg value="sys/${database.syspw}@localhost:${rds.external_port}/${database.name} as sysdba" />
+         <arg value="@data_file_dest"/>
+      </exec>
+      <docker.install_schema image="${docker.props.image_name}" output-file="build/buildCWMS_DB-rds.log"
+         network="${docker.props.network_name}"
+         host-and-port="${database.host_and_port}"
+         database-name="${database.name}"
+         sys-password=""
+         rds-mode="true"
+         builduser="${oracle.builduser}"
          cwms-password="${database.cwmspw}"
          builduser-password="${database.buildpw}"
          office-id="${database.office}"
