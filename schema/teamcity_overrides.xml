@@ -20,7 +20,7 @@
 
 	<!-- oracle user to build CWMS schema -->
 
-	<property name="oracle.builduser" value="builduser"/>
+	<property name="oracle.builduser" value="BUILDUSER"/>
 
 	<!-- oracle.builduser password -->
 
@@ -97,5 +97,3 @@
 	<!-- end of properties for oracle cc build. -->
 
 </project>
-
-

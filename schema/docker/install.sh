@@ -5,6 +5,7 @@ echo "DB HOST_PORT: $DB_HOST_PORT"
 echo "DB NAME: $DB_NAME"
 echo "OFFICE_ID: $OFFICE_ID"
 echo "OFFICE_EROC: $OFFICE_EROC"
+echo "RDS_MODE: $RDS_MODE"
 if [ "$CWMS_PASSWORD" ==  "" ]
 then
     export CWMS_PASSWORD=`tr -cd '[:alnum:]' < /dev/urandom | fold -w25 | head -n1`
@@ -28,17 +29,27 @@ then
     export SUB_DB_NAME="\\$DB_NAME"
 fi
 
-if [ "$SYS_PASSWORD" == "" ]
+if [[ "$SYS_PASSWORD" == "" && "$RDS_MODE" != "true" ]]
 then
     echo "SYS password for database must be supplied (-e SYS_PASSWORD=<pw> )"
     exit 1
+elif [[ "$RDS_MODE" == "true" ]]
+then
+    SYS_PASSWORD=""
 fi
 
-if [ "$BUILDUSER_PASSWORD" == "" ]
+if [ "$BUILDUSER" == "" && "$RDS_MODE" != "true" ]
+then
+    BUILDUSER=builduser
+fi
+
+if [[ "$BUILDUSER_PASSWORD" == "" && "$RDS_MODE" != "true" ]]
 then
     export BUILDUSER_PASSWORD=`tr -cd '[:alnum:]' < /dev/urandom | fold -w25 | head -n1`
-    #echo "Build user password must be supplied ( -e BUILDUSER_PASSWORD=<pw> )"
-    #exit 1
+elif [[ "$BUILDUSER_PASSWORD" == "" && "$RDS_MODE" == "true" ]]
+then
+    echo "Build user password must be supplied "
+    exit 1
 fi
 
 cd /cwmsdb/schema
@@ -47,6 +58,7 @@ echo $DB_NAME
 sed -e "s/HOST_AND_PORT/$DB_HOST_PORT/g" \
     -e "s/\/SERVICE_NAME/$SUB_DB_NAME/g" \
     -e "s/BUILDUSER_PASS/$BUILDUSER_PASSWORD/g" \
+    -e "s/BUILDUSER/$BUILDUSER/g" \
     -e "s/OFFICE_ID/$OFFICE_ID/g" \
     -e "s/OFFICE_CODE/$OFFICE_EROC/g" \
     -e "s/TEST_ACCOUNT_FLAG/$TEST_ACCOUNT/g" \
@@ -55,25 +67,33 @@ sed -e "s/HOST_AND_PORT/$DB_HOST_PORT/g" \
  # TODO: create lookup system for office code
 
 cat /overrides.xml
-TABLESPACE_DIR="/opt/oracle/oradata"
-#echo "Installing APEX"
-#cd /opt/apex/apex
-#sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
-#    alter system set db_create_file_dest = '/opt/oracle/oradata';
-#    create tablespace apex datafile '/opt/oracle/oradata/apex01.dat' size 100M autoextend on next 1M;
-#END
 
-#sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba @apexins.sql APEX APEX TEMP /i/
 
-echo "Creating table spaces at sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba"
-sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
-    CREATE TABLESPACE "CWMS_20AT_DATA" DATAFILE 'at_data.dat' size 20M autoextend on next 10M;
-    CREATE TABLESPACE "CWMS_20DATA" DATAFILE 'data.dat' size 20M autoextend on next 10M;
-    CREATE TABLESPACE "CWMS_20_TSV" DATAFILE 'tsv.dat' size 20M autoextend on next 10M;
-    CREATE TABLESPACE "CWMS_AQ" DATAFILE 'aq.dat' size 20M autoextend on next 10M;
-    CREATE TABLESPACE "CWMS_AQ_EX" DATAFILE 'aq_ex.dat' size 20M autoextend on next 10M;
 
-END
+
+if [ "$RDS_MODE" == "true" ]
+then
+    CONNECTION_STR="$BUILDUSER/$BUILDUSER_PASSWORD@$DB_HOST_PORT$DB_NAME"
+    cat > /tmp/tablespaces.sql <<EOF
+CREATE TABLESPACE "CWMS_20AT_DATA" DATAFILE  size   2G autoextend on next 100M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_20DATA"    DATAFILE  size   2G autoextend on next 100M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_20_TSV"    DATAFILE  size   5G autoextend on next 500M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_AQ"        DATAFILE  size   1G autoextend on next 100M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_AQ_EX"     VDATAFILE size 200M autoextend on next 100M maxsize UNLIMITED;
+EOF
+else
+    CONNECTION_STR="sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba"
+    cat > /tmp/tablespaces.sql <<EOF
+CREATE TABLESPACE "CWMS_20AT_DATA" DATAFILE 'at_data.dat' size 20M autoextend on next 10M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_20DATA"    DATAFILE 'data.dat'    size 20M autoextend on next 10M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_20_TSV"    DATAFILE 'tsv.dat'     size 20M autoextend on next 10M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_AQ"        DATAFILE 'aq.dat'      size 20M autoextend on next 10M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_AQ_EX"     DATAFILE 'aq_ex.dat'   size 20M autoextend on next 10M maxsize UNLIMITED;
+EOF
+fi
+
+echo "Creating table spaces at $CONNECTION_STR"
+sqlplus $CONNECTION_STR @/tmp/tablespaces.sql
 
 function run_user_data()
 {
