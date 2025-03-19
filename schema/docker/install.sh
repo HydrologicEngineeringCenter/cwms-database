@@ -38,7 +38,7 @@ then
     SYS_PASSWORD=""
 fi
 
-if [ "$BUILDUSER" == "" && "$RDS_MODE" != "true" ]
+if [[ "$BUILDUSER" == "" && "$RDS_MODE" != "true" ]]
 then
     BUILDUSER=builduser
 fi
