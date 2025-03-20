@@ -998,7 +998,18 @@
 
    -->
    <target name="docker.init" depends="init">
-      <condition property="docker.props.container_name" value="cwmsdb_${teamcity.branch}" else="antdockercwmsdb">
+      <condition property="docker.props.oracle.image" value="${oracle.image}" else="gvenzl/oracle-free:23.6-full">
+         <isset property="oracle.image"/>
+      </condition>
+      <condition property="docker.props.oracle.is-fast-start" value="true">
+         <matches string="${docker.props.oracle.image}" pattern="^.*faststart$" casesensitive="false"/>
+      </condition>
+
+      <condition property="fast-start-tag" value="-faststart" else="">
+         <istrue value="${docker.props.oracle.is-fast-start}"/>
+      </condition>
+
+      <condition property="docker.props.container_name" value="cwmsdb_${teamcity.branch}${fast-start-tag}" else="antdockercwmsdb${fast-start-tag}">
          <isset property="teamcity.branch"/>
       </condition>
       <condition property="database.office" value="${database.office}" else="SPK">
@@ -1009,18 +1020,6 @@
          <isset property="database.eroc"/>
       </condition>
 
-      <condition property="docker.props.oracle.image" value="${oracle.image}" else="gvenzl/oracle-free:23.6-full">
-         <isset property="oracle.image"/>
-      </condition>
-
-      <condition property="docker.props.oracle.is-fast-start" value="true">
-         <matches string="${docker.props.oracle.image}" pattern="^.*faststart$" casesensitive="false"/>
-      </condition>
-
-      <!-- Check for XE database -->
-      <condition property="docker.props.db_name" value="XEPDB1">
-         <matches string="${docker.props.oracle.image}" pattern="^.*xe$" casesensitive="false"/>
-      </condition>
 
       <!-- Check for faststart which already has a database setup. -->
       <condition property="docker.props.db_name" value="FREEPDB1" else="CWMS">
