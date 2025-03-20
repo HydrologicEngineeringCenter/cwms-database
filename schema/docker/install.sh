@@ -79,7 +79,7 @@ CREATE TABLESPACE "CWMS_20AT_DATA" DATAFILE  size   2G autoextend on next 100M m
 CREATE TABLESPACE "CWMS_20DATA"    DATAFILE  size   2G autoextend on next 100M maxsize UNLIMITED;
 CREATE TABLESPACE "CWMS_20_TSV"    DATAFILE  size   5G autoextend on next 500M maxsize UNLIMITED;
 CREATE TABLESPACE "CWMS_AQ"        DATAFILE  size   1G autoextend on next 100M maxsize UNLIMITED;
-CREATE TABLESPACE "CWMS_AQ_EX"     VDATAFILE size 200M autoextend on next 100M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_AQ_EX"     DATAFILE size 200M autoextend on next 100M maxsize UNLIMITED;
 EOF
 else
     CONNECTION_STR="sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba"
