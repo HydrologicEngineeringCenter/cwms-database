@@ -88,7 +88,7 @@ CREATE TABLESPACE "CWMS_AQ_EX"     DATAFILE 'aq_ex.dat'   size 20M autoextend on
 EOF
 fi
 
-echo "Creating table spaces at $CONNECTION_STR"
+echo "Creating table spaces"
 sqlplus $CONNECTION_STR @/tmp/tablespaces.sql
 
 function run_user_data()
