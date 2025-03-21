@@ -166,7 +166,7 @@
       <echo message="Creating new CWMS Schema..."/>
 
       <property name="autobuild-arg-line" value="autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} builduser=${oracle.builduser} builduser_passwd=${oracle.builduser.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} pd_office=${office.primary.id} pd_passwd=${oracle.cwmspd.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
-      <echo message="${autobuild-arg-line}"/>
+      <echo message="${autobuild-arg-line}" level="debug"/>
 
       <exec dir="${src}" executable="python3" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
          <arg line="${autobuild-arg-line}"/>
@@ -590,7 +590,7 @@
       <echo message="dropping existing CWMS Schema..."/>
 
       <property name="autokill-arg-line" value="autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} builduser=${oracle.builduser} builduser_passwd=${oracle.builduser.password} cwms_schema=${oracle.cwms.user} ${autokill.force} ${build.restricted}"/>
-      <echo message="${autokill-arg-line}"/>
+      <echo message="${autokill-arg-line}" level="debug"/>
 
       <exec dir="${src}" executable="python3" output="auto-kill-output.txt" error="auto-kill-error.txt" resultproperty="auto-kill-result">
          <arg line="${autokill-arg-line}"/>
@@ -628,7 +628,7 @@
       <echo message="Loading rowcps Schema..."/>
 
       <property name="rowcpsLoad-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @rowcps_schema"/>
-      <echo message="${rowcpsLoad-arg-line}"/>
+      <echo message="${rowcpsLoad-arg-line}" level="debug"/>
 
       <exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-output.txt" error="rowcps-load-error.txt" resultproperty="rowcps-load-result">
          <arg line="${rowcpsLoad-arg-line}"/>
@@ -654,7 +654,7 @@
       <echo message="Loading rowcps Types..."/>
 
       <property name="rowcpsLoadTypes-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @rowcps_types"/>
-      <echo message="${rowcpsLoadTypes-arg-line}"/>
+      <echo message="${rowcpsLoadTypes-arg-line}" level="debug"/>
 
       <exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-types-load-output.txt" error="rowcps-types-load-error.txt" resultproperty="rowcps-types-load-result">
          <arg line="${rowcpsLoadTypes-arg-line}"/>
@@ -677,7 +677,7 @@
       <echo message="Loading CWMS project Package..."/>
 
       <property name="rowcpsLoadCWMSProjectPkg-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @cwms_project_pkg"/>
-      <echo message="${rowcpsLoadCWMSProjectPkg-arg-line}"/>
+      <echo message="${rowcpsLoadCWMSProjectPkg-arg-line}" level="debug"/>
 
       <exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-output.txt" error="rowcps-load-CWMS-Project-Pkg-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-result">
          <arg line="${rowcpsLoadCWMSProjectPkg-arg-line}"/>
@@ -700,7 +700,7 @@
       <echo message="Loading CWMS project Package Body..."/>
 
       <property name="rowcpsLoadCWMSProjectPkgBody-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @cwms_project_pkg_body"/>
-      <echo message="${rowcpsLoadCWMSProjectPkgBody-arg-line}"/>
+      <echo message="${rowcpsLoadCWMSProjectPkgBody-arg-line}" level="debug"/>
 
       <exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-body-output.txt" error="rowcps-load-CWMS-Project-Pkg-body-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-body-result">
          <arg line="${rowcpsLoadCWMSProjectPkgBody-arg-line}"/>
@@ -733,7 +733,7 @@
                 <echo message="Exporting CWMS schema ..."/>
 
                 <property name="autoexportschema-arg-line" value="autoexportschema.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexportschema.force}"/>
-                <echo message="${autoexportschema-arg-line}"/>
+                <echo message="${autoexportschema-arg-line}" level="debug"/>
 
                 <exec dir="${src}" executable="python3" output="auto-export-schema-output.txt" error="auto-export-schema-error.txt" resultproperty="auto-export-schema-result" failonerror="true">
                         <arg line="${autoexportschema-arg-line}"/>
@@ -760,7 +760,7 @@
                 <echo message="Exporting CWMS tables ..."/>
 
                 <property name="autoexport-arg-line" value="python3 autoexport.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexport.force} ${build.restricted}"/>
-                <echo message="${autoexport-arg-line}"/>
+                <echo message="${autoexport-arg-line}" level="debug"/>
 
                 <exec dir="${src}" executable="python3" output="auto-export-output.txt" error="auto-export-error.txt" resultproperty="auto-export-result" failonerror="true">
                         <arg line="${autoexport-arg-line}"/>
@@ -787,7 +787,7 @@
                 <echo message="Importing  CWMS tables ..."/>
 
                 <property name="autoimport-arg-line" value="autoimport.py echo=${autoimport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} cwms_dir=${oracle.cwms.dir} ccp_passwd=${oracle.ccp.password} ${autoimport.force} ${build.restricted}"/>
-                <echo message="${autoimport-arg-line}"/>
+                <echo message="${autoimport-arg-line}" level="debug"/>
 
                 <exec dir="${src}" executable="python3" output="auto-import-output.txt" error="auto-import-error.txt" resultproperty="auto-import-result" failonerror="true">
                         <arg line="${autoimport-arg-line}"/>
@@ -814,7 +814,7 @@
                 <echo message="Recreate  CWMS users ..."/>
 
                 <property name="autocreateusers-arg-line" value="autoCreateCWMSUsers.py echo=${autocreateusers.echo} inst=${oracle.cwms.instance} pd_passwd=${oracle.pd.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} ${autocreateusers.force}"/>
-                <echo message="${autocreateusers-arg-line}"/>
+                <echo message="${autocreateusers-arg-line}" level="debug"/>
 
                 <exec dir="${src}" executable="python3" output="auto-createusers-output.txt" error="auto-createusers-error.txt" resultproperty="auto-createusers-result" failonerror="true">
                         <arg line="${autocreateusers-arg-line}"/>
