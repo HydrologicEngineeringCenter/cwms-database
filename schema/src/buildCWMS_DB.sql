@@ -207,8 +207,8 @@ begin execute immediate 'create user ' || cwms_sec.cac_service_user || ' PROFILE
 -- Replace connect to role with create session/set container for RDS compatibility
 begin execute immediate 'grant create session to ' || cwms_sec.cac_service_user; end; 
 /
-begin execute immediate 'grant set container to ' || cwms_sec.cac_service_user; end; 
-/
+--begin execute immediate 'grant set container to ' || cwms_sec.cac_service_user; end; 
+--/
 
 set echo off
 --
