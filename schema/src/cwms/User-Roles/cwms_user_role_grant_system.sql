@@ -1,5 +1,5 @@
 grant create session to cwms_user;
-grant set container to cwms_user;
+--grant set container to cwms_user;
 grant aq_user_role to cwms_user;
 grant aq_administrator_role to cwms_user;
 --grant select on dba_scheduler_jobs to cwms_user;

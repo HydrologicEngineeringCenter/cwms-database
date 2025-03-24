@@ -7,8 +7,7 @@ CREATE USER CWMS_DBA no authentication
   -- This grants connect role 
   GRANT CREATE SESSION TO CWMS_DBA
 /
-  GRANT SET CONTAINER TO CWMS_DBA
-/
+  
 -- This role seems to be unnecessary and is causing problem on M3000 installations
 -- GRANT "MGMT_USER" TO "CWMS_DBA"
 /
