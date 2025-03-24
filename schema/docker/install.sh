@@ -9,8 +9,9 @@ echo "RDS_MODE: $RDS_MODE"
 if [ "$CWMS_PASSWORD" ==  "" ]
 then
     export CWMS_PASSWORD=`tr -cd '[:alnum:]' < /dev/urandom | fold -w25 | head -n1`
+    echo "Generated CWMS PASSWORD: $CWMS_PASSWORD"
 fi
-echo "CWMS PASSWORD: $CWMS_PASSWORD"
+
 
 if [ "$DB_HOST_PORT" == "" ]
 then
@@ -66,11 +67,6 @@ sed -e "s/HOST_AND_PORT/$DB_HOST_PORT/g" \
     -e "s/PASSWORD/$CWMS_PASSWORD/g" teamcity_overrides.xml > /overrides.xml
  # TODO: create lookup system for office code
 
-cat /overrides.xml
-
-
-
-
 if [ "$RDS_MODE" == "true" ]
 then
     CONNECTION_STR="$BUILDUSER/$BUILDUSER_PASSWORD@$DB_HOST_PORT$DB_NAME"
@@ -92,7 +88,7 @@ CREATE TABLESPACE "CWMS_AQ_EX"     DATAFILE 'aq_ex.dat'   size 20M autoextend on
 EOF
 fi
 
-echo "Creating table spaces at $CONNECTION_STR"
+echo "Creating table spaces"
 sqlplus $CONNECTION_STR @/tmp/tablespaces.sql
 
 function run_user_data()
@@ -137,7 +133,6 @@ fi
 
 echo "ret val: $build_ret"
 if [ $build_ret -eq 0 ]; then
-    echo "CWMS USER PASSWORD: $CWMS_PASSWORD"
     exit 0
 elif [ $build_ret -eq 50 ]; then
     # password would've already been set
