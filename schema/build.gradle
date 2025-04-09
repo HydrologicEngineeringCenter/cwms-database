@@ -4,6 +4,8 @@ plugins {
     id 'org.flywaydb.flyway' version '10.0.0'
 }
 
+apply plugin: org.opendcs.support.DatabaseServicePlugin
+
 //defaults
 var build_user = project.findProperty("cwms.user") ?: 'must set user to run these tasks'
 def cwms_schema_name = project.findProperty("cwms.schema") ?: "CWMS_20"
@@ -306,5 +308,5 @@ task testDb() {
 }
 
 
-
+testDb.dependsOn tasks.named("databaseStart")
 test.dependsOn testDb
