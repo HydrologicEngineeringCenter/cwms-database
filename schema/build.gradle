@@ -4,8 +4,6 @@ plugins {
     id 'org.flywaydb.flyway' version '10.0.0'
 }
 
-apply plugin: org.opendcs.support.DatabaseServicePlugin
-
 //defaults
 var build_user = project.findProperty("cwms.user") ?: 'must set user to run these tasks'
 def cwms_schema_name = project.findProperty("cwms.schema") ?: "CWMS_20"
@@ -42,7 +40,7 @@ dependencies {
 flyway {
     locations = ["db/schema"]
     configurations = ['flywayMigration','compile','runtimeClasspath']
-    user = build_user
+    user = cwms_user
     mixed = true
     schemas = [cwms_schema_name,'CWMS_DBA']
     baselineOnMigrate = true
@@ -62,8 +60,6 @@ flyway {
         "TEST_PASSWORD": test_password
     ]
 }
-
-
 
 def dataMigrate = tasks.register("dataMigrate", org.flywaydb.gradle.task.FlywayMigrateTask) {
 //task dataMigrate(type: org.flywaydb.gradle.task.FlywayMigrateTask){ /*  dependsOn: flywayMigrate){*/
@@ -301,7 +297,6 @@ def testMigrationCode = tasks.register("testMigrationCode", Test) {
 
 
 def testDb = tasks.register("testDb") {
-    dependsOn tasks.named("databaseStart")
     dependsOn testMigrationCode
     dependsOn installTests
 
