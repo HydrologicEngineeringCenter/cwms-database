@@ -63,7 +63,12 @@ flyway {
     ]
 }
 
-task dataMigrate(type: org.flywaydb.gradle.task.FlywayMigrateTask){ /*  dependsOn: flywayMigrate){*/
+
+
+def dataMigrate = tasks.register("dataMigrate", org.flywaydb.gradle.task.FlywayMigrateTask) {
+//task dataMigrate(type: org.flywaydb.gradle.task.FlywayMigrateTask){ /*  dependsOn: flywayMigrate){*/
+    dependsOn tasks.named("flywayMigrate")
+    dependsOn classes
     locations = ["db/data"]
     configurations = ['flywayMigration','compile','runtimeClasspath']
     user = cwms_user
@@ -81,7 +86,8 @@ task dataMigrate(type: org.flywaydb.gradle.task.FlywayMigrateTask){ /*  dependsO
     ]
 }
 
-task dataRepair(type: org.flywaydb.gradle.task.FlywayRepairTask){
+def dataRepair = tasks.register("dataRepair", org.flywaydb.gradle.task.FlywayRepairTask) {
+    dependsOn classes
     locations = ["db/data"]
     configurations = ['flywayMigration','compile','runtimeClasspath']
     user = "${build_user}[$cwms_schema_name]"
@@ -101,15 +107,12 @@ task dataRepair(type: org.flywaydb.gradle.task.FlywayRepairTask){
 flywayMigrate.dependsOn classes
 flywayClean.dependsOn classes
 flywayRepair.dependsOn classes
-dataMigrate.dependsOn classes
-dataMigrate.dependsOn flywayMigrate
-dataRepair.dependsOn classes
 
 var sysPassword = project.findProperty("db.sys_password")
 def tmp = project.findProperty("flyway.url")
 def dbUrl = tmp == null ? tmp: tmp.split("@")[1]
 
-task checkTestSetup {
+def checkTestSetup = tasks.register("checkTestSetup") {
     doFirst {
         def result = exec {
             executable "sqlplus"
@@ -146,8 +149,8 @@ task checkTestSetup {
     }
 }
 
-task downloadUtplSql(type: Copy, dependsOn: checkTestSetup ){
-
+def downloadUtplSql = tasks.register("downloadUtplSql", Copy) {
+    dependsOn checkTestSetup
     from zipTree(configurations.utplsql.singleFile)
     into "$buildDir/deps"
     doLast {
@@ -162,7 +165,7 @@ task downloadUtplSql(type: Copy, dependsOn: checkTestSetup ){
     }
 }
 
-task installTestFramework(type: Exec ) {
+def installTestFramework = tasks.register("installTestFramework", Exec) {
     dependsOn downloadUtplSql
     dependsOn checkTestSetup
 
@@ -182,7 +185,7 @@ task installTestFramework(type: Exec ) {
 }
 
 
-task installTests(type: Exec ){
+def installTests = tasks.register("installTests", Exec) {
     dependsOn installTestFramework
     dependsOn dataMigrate
     workingDir "src/test"
@@ -213,7 +216,7 @@ task installTests(type: Exec ){
     }
 }
 
-task cleanTestData(type: Exec) {
+def cleanTestData = tasks.register("cleanTestData", Exec) {
     dependsOn installTests
     executable="utplsql"
     args "run"
@@ -231,7 +234,7 @@ task cleanTestData(type: Exec) {
 	args "${cwms_user}/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
 }
 
-task loadTestData() {
+def loadTestData = tasks.register("loadTestData") {
     dependsOn installTests
     dependsOn cleanTestData
     doLast {
@@ -247,7 +250,7 @@ task loadTestData() {
 
 }
 
-task testAsPdUser(type: Exec) {
+def testAsPdUser = tasks.register("testAsPdUser", Exec) {
     dependsOn installTests
     dependsOn loadTestData
 
@@ -270,7 +273,7 @@ task testAsPdUser(type: Exec) {
 	args "${cwms_eroc}cwmspd/\"${pd_password}\"@${dbUrl}"
 }
 
-task testAsRoUser(type: Exec ) {
+def testAsRoUser = tasks.register("testAsRoUser", Exec ) {
     dependsOn installTests
     dependsOn loadTestData
 
@@ -290,14 +293,15 @@ task testAsRoUser(type: Exec ) {
 	args "${cwms_eroc}hectest_ro/\"${pd_password}\"@${dbUrl}"
 }
 
-task testMigrationCode(type: Test) {
+def testMigrationCode = tasks.register("testMigrationCode", Test) {
     dependsOn compileJava
     dependsOn compileTestJava
     useJUnitPlatform()
 }
 
 
-task testDb() {
+def testDb = tasks.register("testDb") {
+    dependsOn tasks.named("databaseStart")
     dependsOn testMigrationCode
     dependsOn installTests
 
@@ -307,6 +311,4 @@ task testDb() {
     //dependsOn testAsRoUser
 }
 
-
-testDb.dependsOn tasks.named("databaseStart")
 test.dependsOn testDb
