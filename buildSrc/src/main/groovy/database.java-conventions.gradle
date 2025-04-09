@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    id 'java-library'
+    // NOTE: external plugin version is specified in implementation dependency artifact of the project's build file
+    id 'jacoco'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+    options.compilerArgs << '-parameters'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+    options.compilerArgs << '-parameters'
+}
+
+dependencies {
+    testRuntimeOnly(libs.slf4j.simple)
+    testImplementation(libs.bundles.junit)
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacoco {
+    toolVersion = "0.8.9"
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = true
+    }
+}
