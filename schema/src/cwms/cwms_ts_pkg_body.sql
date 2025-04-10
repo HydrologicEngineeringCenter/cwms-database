@@ -3206,7 +3206,7 @@ AS
       l_office_id  := cwms_util.get_db_office_id(p_office_id);
       l_cwms_ts_id := get_ts_id(p_cwms_ts_id, l_office_id);
       if l_cwms_ts_id is null then
-         cwms_err.raise('TS_ID_NOT_FOUND', p_cwms_ts_id);
+         cwms_err.raise('TS_ID_NOT_FOUND', p_cwms_ts_id, l_office_id);
       elsif use_new_lrts_format_on_output = 'T'
          and substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 1, 1) = '~'
          and upper(substr(cwms_util.split_text(l_cwms_ts_id, 4, '.'), -5)) = 'LOCAL'

@@ -113,6 +113,9 @@ procedure test_cwms_v_ts_id_access;
 --%test (CWDB-289 Retrieve TS with session time zone other than UTC)
 procedure test_cwdb_289_retrieve_ts_with_session_timezone_not_utc;
 
+--%test (test_ts_id_not_found_error_message)
+procedure test_ts_id_not_found_error_message;
+
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -3424,6 +3427,35 @@ AS
       ut.expect(l_session_tz).to_equal('UTC');
 
    end test_cwdb_289_retrieve_ts_with_session_timezone_not_utc;
+   --------------------------------------------------
+   -- procedure test_ts_id_not_found_error_message --
+   --------------------------------------------------
+   procedure test_ts_id_not_found_error_message
+   is
+      l_cursor    sys_refcursor;
+      l_ts_id     cwms_v_ts_id.cwms_ts_id%type;
+      l_unit      cwms_v_unit.unit_id%type;
+      l_time_zone cwms_v_loc.time_zone_name%type;
+   begin
+     cwms_loc.store_location(
+      p_location_id    => test_base_location_id,
+      p_active         => 'F',
+      p_db_office_id   => '&&office_id');
+      begin
+         l_cursor := cwms_ts.retrieve_ts_f(
+            l_ts_id,
+            l_unit,
+            l_time_zone,
+            test_base_location_id||'.Code.Inst.1Hour.0.Non-Existent',
+            sysdate - 1,
+            sysdate,
+            p_office_id => '&&office_id');
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+     exception
+        when others then
+           ut.expect(sqlerrm).to_be_like('ORA-20001: TS_ID_NOT_FOUND: The timeseries identifier "%" was not found for office "&&office_id"%');
+     end;
+   end test_ts_id_not_found_error_message;
 
 END test_cwms_ts;
 /
