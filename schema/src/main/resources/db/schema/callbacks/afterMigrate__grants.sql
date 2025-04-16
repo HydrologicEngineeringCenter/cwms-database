@@ -5,4 +5,4 @@ after the queues mechanisms were brought in.
 */
 grant select on SYS.AQ$_UNFLUSHED_DEQUEUES to CWMS_20 with grant option;
 
-alter user cwms_20 grant connect through cwms_extra;
+alter user cwms_20 grant connect through ${flyway:user};

@@ -40,7 +40,7 @@ dependencies {
 flyway {
     locations = ["db/schema"]
     configurations = ['flywayMigration','compile','runtimeClasspath']
-    user = cwms_user
+    user = build_user
     mixed = true
     schemas = [cwms_schema_name,'CWMS_DBA']
     baselineOnMigrate = true
