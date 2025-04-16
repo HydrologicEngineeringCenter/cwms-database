@@ -27,13 +27,10 @@
 		<module>schema</module>
 	</modules>
 	<distributionManagement>
-		<snapshotRepository>
-			<id>hec-nexus-snapshots</id>
-			<url>https://www.hec.usace.army.mil/nexus/repository/cwms-snapshots</url>
-		</snapshotRepository>
 		<repository>
-			<id>hec-nexus-releases</id>
-			<url>https://www.hec.usace.army.mil/nexus/repository/cwms-releases</url>
+			<id>github</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/hydrologicengineeringcenter/cwms-database</url>
 		</repository>
 	</distributionManagement>
 	<repositories>
