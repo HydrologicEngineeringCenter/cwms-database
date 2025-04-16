@@ -89,8 +89,8 @@ as
                ----------------------------------------------------------------------------------
                -- set rate_factor and rate_offset to convert from db units to comparison units --
                ----------------------------------------------------------------------------------
-               select function,
-                      offset
+               
+               select function
                  into conditions(conditions.count).rate_function
                  from at_parameter p,
                       cwms_base_parameter bp,

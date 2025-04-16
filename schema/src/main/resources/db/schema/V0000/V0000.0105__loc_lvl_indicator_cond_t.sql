@@ -1,4 +1,4 @@
-create type loc_lvl_indicator_cond_t
+create or replace type loc_lvl_indicator_cond_t
 /**
  * Holds information about a location level indicator condition.  A location level
  * indicator condition is a condition that must evalutate to TRUE for the encompassing

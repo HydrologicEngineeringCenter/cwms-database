@@ -1,4 +1,4 @@
-create type zloc_lvl_indicator_t
+create or replace type zloc_lvl_indicator_t
 -- not documented
 is object
 (
@@ -32,4 +32,3 @@ is object
 
 
 create or replace public synonym cwms_t_zloc_lvl_indicator for zloc_lvl_indicator_t;
-
