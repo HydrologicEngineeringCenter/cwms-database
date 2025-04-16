@@ -108,6 +108,10 @@ jobs:
           ant docker.push -Dteamcity.branch=$VERSION \
              -Ddocker.registry=ghcr.io/$REPO \
              -Ddocker.registry_public=ghcr.io/$REPO
+      - name: Publish package
+        run: mvn --batch-mode deploy -Dbuilduser.overrides=schema/build/overrides.external.xml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #- name: Logout of HEC pub registry
       #  if: ${{ always() }}
       #  run: |
