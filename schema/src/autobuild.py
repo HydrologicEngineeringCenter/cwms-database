@@ -36,6 +36,7 @@ define echo_state = %s
 define inst = %s
 define cwms_schema = %s
 define host_office = %s
+define builduser = %s
 '''
 
 restricted = False
@@ -57,7 +58,7 @@ cwms_schema = cwms_schema.upper()
 inst = inst.upper()
 
 auto_block = auto_block_template % (echo, inst, builduser, builduser_passwd, cwms_schema, cwms_passwd, pd_passwd, test_passwd)
-defines_block = defines_block_template % (echo, inst, cwms_schema, pd_office)
+defines_block = defines_block_template % (echo, inst, cwms_schema, pd_office, builduser)
 
 f = open(manual_sqlfilename, "r")
 sql_script = f.read()
