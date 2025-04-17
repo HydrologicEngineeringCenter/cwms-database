@@ -12,7 +12,7 @@ AS
         --
         -- CWMS_20, system, sys are ok
         --
-        IF l_username IN ('&&cwms_schema', 'SYSTEM', 'SYS', '&&builduser')
+        IF l_username IN ('&&cwms_schema', 'SYSTEM', 'SYS', upper('&&builduser'))
         THEN
             RETURN FALSE;
         END IF;
@@ -52,7 +52,7 @@ AS
         --
         -- CWMS_20, system, sys are ok
         --
-        IF l_username IN ('&&cwms_schema', 'SYSTEM', 'SYS', '&&builduser')
+        IF l_username IN ('&&cwms_schema', 'SYSTEM', 'SYS', upper('&&builduser'))
         THEN
             RETURN TRUE;
         END IF;
