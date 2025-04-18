@@ -1276,7 +1276,7 @@
             <arg value="-e"/>
             <arg value="DB_NAME=/@{database-name}"/>
             <arg value="-e"/>
-            <arg value="SYS_PASSWORD=@{sys-password}"/>      
+            <arg value="SYS_PASSWORD=@{sys-password}"/>
             <arg value="-e"/>
             <arg value="CWMS_PASSWORD=@{cwms-password}"/>
             <arg value="-e"/>
