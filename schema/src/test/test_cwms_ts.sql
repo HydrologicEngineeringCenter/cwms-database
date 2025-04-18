@@ -116,7 +116,6 @@ procedure test_cwdb_289_retrieve_ts_with_session_timezone_not_utc;
 --%test (test_ts_id_not_found_error_message)
 procedure test_ts_id_not_found_error_message;
 
-
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
