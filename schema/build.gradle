@@ -1,6 +1,7 @@
 plugins {
     id 'database.deps-conventions'
     id 'database.java-conventions'
+    id 'database'
     id 'org.flywaydb.flyway' version '10.0.0'
 }
 

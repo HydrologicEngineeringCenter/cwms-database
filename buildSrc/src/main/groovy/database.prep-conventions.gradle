@@ -1,0 +1,13 @@
+plugins {
+    id 'base'
+}
+
+
+tasks.register("startDatabase") {
+
+}
+
+
+tasks.register("stopDatabase" ) {
+    
+}
