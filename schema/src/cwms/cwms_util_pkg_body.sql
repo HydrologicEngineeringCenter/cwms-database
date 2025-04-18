@@ -553,7 +553,7 @@ as
          THEN
             IF l_username = '&cwms_schema' or l_username = 'NOBODY' or 
                l_username = 'CCP' or l_username = 'SYS' or upper(l_username) = upper(l_upass_id) or
-               l_username = '&builduser'
+               l_username = upper('&builduser')
             THEN
                l_office_id := 'CWMS';
             ELSE
