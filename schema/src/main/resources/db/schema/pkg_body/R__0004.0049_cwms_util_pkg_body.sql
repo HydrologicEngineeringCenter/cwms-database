@@ -3171,6 +3171,9 @@ as
       l_from_unit_code cwms_unit.unit_code%type;
       l_to_unit_code cwms_unit.unit_code%type;
    begin
+      if p_value is null then
+         return p_value;
+      end if;
       l_from_unit_code := cwms_util.get_unit_code(p_from_unit_id);
       l_to_unit_code := cwms_util.get_unit_code(p_to_unit_id);
       return cwms_util.convert_units(p_value,l_from_unit_code,l_to_unit_code);

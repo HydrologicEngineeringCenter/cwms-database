@@ -32,7 +32,6 @@ create or replace type loc_lvl_indicator_cond_t
  * @member description                A description of the location level indicator
  * @member function                   The unit conversion function for absolute magnitude comparison values to convert from specified units to database storage units. <bold>Transient</bold>
  * @member rate_function              The unit conversion function for rate of change comparison values to convert from specified units to database storage units. <bold>Transient</bold>
- * @member rate_offset                The unit conversion offset for rate of change comparison values to convert from specified units to database storage units. <bold>Transient</bold>
  * @member interval_factor            A conversion factor to convert from data interval to the specified rate interval. <bold>Transient</bold>
  * @member uses_reference             A flag (T or F) that specifes whether the indicator references a second location level. <bold>Transient</bold>
  * @member expression_tokens          A tokenized version of the absolute magnitude expression. <bold>Transient</bold>
@@ -59,7 +58,6 @@ is object
    description                varchar2(256),
    function                   varchar2(64),
    rate_function              varchar2(64),
-   rate_offset                binary_double,
    interval_factor            binary_double,
    uses_reference             varchar2(1),
    expression_tokens          str_tab_t,

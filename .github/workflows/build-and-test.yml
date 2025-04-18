@@ -1,0 +1,97 @@
+---
+name: Build And Test CWMS Database
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4.2.2
+      - name: Clean Runner
+        uses: ./.github/actions/clean-runner
+      - name: setup java
+        uses: actions/setup-java@v4.6.0
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+      - name: Start Database
+        uses: ./.github/actions/start-database
+      - name: Run Tests
+        working-directory: schema
+        run: ant test -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.6-full-faststart
+      - name: Generate Bundle (docs and schemas)
+        working-directory: schema
+        run: ant bundle -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.6-full-faststart
+      - name: Remove database container
+        if: success() || failure() # always run even if the previous step fails
+        working-directory: schema
+        run: ant docker.killdb -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.6-full-faststart
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure() # always run even if the previous step fails
+        with:
+          annotate_only: true
+          include_passed: true
+          report_paths: 'schema/build/test*.xml'
+      - name: Upload Build Logs
+        if: success() || failure() # always run even if the previous step fails
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: build_logs-testdb
+          path: ./**/*.log
+  ready-database:
+    # This step doesn't rely on the creation of the database created
+    # for testing and can be done separately.
+    name: Create Ready-Database    
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4.2.2
+      - name: Clean Runner
+        uses: ./.github/actions/clean-runner
+      - name: setup java
+        uses: actions/setup-java@v4.6.0
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+      - name: Build Ready Database
+        working-directory: schema
+        run: ant docker.create_ready_database -Doracle.image=gvenzl/oracle-free:23.6-full-faststart
+      - name: Upload Build Logs
+        if: success() || failure() # always run even if the previous step fails
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: build_logs-ready-database
+          path: ./**/*.log
+  rds-variations:
+    name: Test RDS deployment tweaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4.2.2
+      - name: Clean Runner
+        uses: ./.github/actions/clean-runner
+      - name: setup java
+        uses: actions/setup-java@v4.6.0
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+      - name: Setup Oracle Tools
+        uses: ./.github/actions/setup-oracle-clients
+      - name: Install Schema using RDS variations (no direct sys)
+        working-directory: schema
+        run: ant docker.install.rds
+      - name: Upload Build Logs
+        if: success() || failure() # always run even if the previous step fails
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: build_logs-rds-database
+          path: ./**/*.log

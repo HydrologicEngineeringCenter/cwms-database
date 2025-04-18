@@ -831,7 +831,7 @@ begin
      from cwms_v_vloc_lvl_constituent;
 
    ut.expect(l_count).to_equal(4);
-
+   
    cwms_level.delete_location_level3(
       p_location_level_id   => c_top_of_normal_stor_id,
       p_office_id           => c_office_id,
