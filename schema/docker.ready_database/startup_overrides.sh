@@ -10,6 +10,8 @@ resetPassword ${ORACLE_PASSWORD}
 cat <<EOF > /tmp/update_userpassword.sql
 ALTER SESSION SET CONTAINER=FREEPDB1;
 alter user cwms_20 identified by "${CWMS_PASSWORD}";
+-- Reset the build user password
+alter user builduser identified by "${BUILDUSER_PASSWORD:-$ORACLE_PASSWORD}";
 begin
     for l_user in (select username from dba_users where lower(username) like 's0%')
     loop
