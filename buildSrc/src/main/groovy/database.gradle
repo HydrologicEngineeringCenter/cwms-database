@@ -1,46 +1,14 @@
-interface DatabaseExtension {
-    Property<String> getUrl();
-    Property<String> getUsername();
-    Property<String> getPassword();
-}
 
 
 def extension = project.extensions.create("database",DatabaseExtension)
-extension.url.convention(project.findProperty("flyway.url"))
-extension.username.convention(project.findProperty("flyway.user"))
-extension.password.convention(project.findProperty("flyway.password"))
-
-
-abstract class StartDatabaseTask extends DefaultTask {
-    @Input
-    @Optional
-    abstract Property<String> getUrl();
-
-    @Input
-    @Optional
-    abstract Property<String> getUsername();
-
-    @Input
-    @Optional
-    abstract Property<String> getPassword();
-
-
-    @TaskAction
-    void startOrValidateDatabase() {
-        if (!url.isPresent()) {
-            System.out.println("Starting new database");
-            project.extensions.findByType(DatabaseExtension).url.set("a test");
-            //url.set("a test");
-        } else {
-            System.out.println("Using existing database.");
-        }
-    }
-}
+extension.image.convention("gvenzl/oracle-free:23.5-full-faststart")
+extension.buildUser.convention("builduser")
+extension.buildUserPassword.convention("buildpassword")
 
 tasks.register("startDatabase", StartDatabaseTask) {
-    url.convention(extension.url);
-    username.convention(extension.username);
-    password.convention(extension.password);
-
+    url.convention(project.findProperty("flyway.url"))
+    username.convention(project.findProperty("flyway.user"))
+    password.convention(project.findProperty("flyway.password"))
+    outputFile.convention(project.layout.buildDir.file("flyway.conf"))
     
 }

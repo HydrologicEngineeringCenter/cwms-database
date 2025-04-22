@@ -2,7 +2,7 @@
 junit="5.9"
 mockito="4.6.1"
 junit-launcher = "1.11.2"
-testcontainers = { strictly = "1.20.4" }
+docker-java = "3.3.0"
 oracle-jdbc = "23.3.0.23.09"
 flyway = "10.0.0"
 exp4j="0.4.8"
@@ -27,21 +27,19 @@ org-flyway-database-oracle = { module ="org.flywaydb:flyway-database-oracle", ve
 slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
+docker-java = { module = "com.github.docker-java:docker-java-core", version.ref = "docker-java" }
+docker-java-transport = { module = "com.github.docker-java:docker-java-transport-httpclient5", version.ref = "docker-java" }
+
 # test
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-launcher" }
-testcontainers-base = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers"}
-testcontainers-database-commons = { module = "org.testcontainers:database-commons", version.ref = "testcontainers" }
-testcontainers-jdbc = { module = "org.testcontainers:jdbc", version.ref = "testcontainers"}
-testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers"}
 
 
 
 [bundles]
 junit = ["junit-jupiter-api", "junit-jupiter-params", "junit-jupiter-engine", "junit-platform-launcher"]
-testcontainers = [ "testcontainers-base", "testcontainers-database-commons", "testcontainers-jdbc",
-                   "testcontainers-junit-jupiter"]
+docker-java = [ "docker-java", "docker-java-transport" ]
 jackson = ["jackson-core", "jackson-dataformat-csv", "jackson-dataformat-xml", "jackson-datatype-jsr310" ]

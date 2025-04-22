@@ -1,5 +1,6 @@
 plugins {
     id 'groovy-gradle-plugin'
+    id 'eclipse'
 }
 
 repositories {
@@ -10,4 +11,5 @@ repositories {
 dependencies {
     implementation(libs.oracle.jdbc.driver)
     implementation(libs.org.flyway.database.oracle)
+    implementation(libs.bundles.docker.java)
 }
