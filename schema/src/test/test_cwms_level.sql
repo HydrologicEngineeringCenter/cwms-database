@@ -990,6 +990,7 @@ begin
    ---------------------------
    -- store the guide curve --
    ---------------------------
+   
    for i in 1..4 loop
       cwms_level.store_location_level4(
          p_location_level_id =>  l_location_level_id,
@@ -1057,7 +1058,6 @@ begin
       and unit_system = 'EN';
 
    ut.expect(l_count).to_equal(0);
-
 end test_guide_curve;
 --------------------------------------------------------------------------------
 -- procedure test_sources_labels_indicators_conditions_and_xml

@@ -1838,7 +1838,6 @@ begin
            l_offset_months := l_offset_months - 1;
            l_offset_minutes := round((l_seasonal_date_utc - add_months(p_interval_origin, l_offset_months)) * CWMS_TS.min_in_dy, 9);
         end if;
-        dbms_output.put_line('cwms_level::store_seasonal_location_level -> Input Months' || p_seasonal_values(i).offset_months || ', Months ' || l_offset_months || ', yminterval ' || cwms_util.months_to_yminterval(l_offset_months));
         insert
           into at_seasonal_location_level
         values(p_location_level_code,
@@ -1910,7 +1909,7 @@ is
    l_level_param_is_elev       boolean;
    l_attr_param_is_elev        boolean;
    l_level_vert_datum_offset   binary_double;
-   l_attr_vert_datum_offset    binary_double;
+   l_attr_vert_datum_offset    binary_double := 0.0;
    l_seasonal_date_utc         date;
    l_offset_months             integer;
    l_offset_minutes            integer;
@@ -2045,6 +2044,7 @@ begin
       l_attribute_value := null;
    else
       l_attr_store_units_code := cwms_util.get_db_unit_code(p_attribute_parameter_id);
+      l_attribute_value := p_attribute_value;
    end if;
 
    l_level_value := p_level_value;
@@ -6811,7 +6811,6 @@ begin
          l_expiration_dates,
          l_level_types;
    close l_crsr;
-
    l_results := number_tab_t();
    for i in 1..l_location_level_ids.count loop
       continue when l_expiration_dates(i) is not null and l_expiration_dates(i) < p_date;

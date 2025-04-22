@@ -19,7 +19,6 @@ as
       p_value          in number)
    is
    begin
-      dbms_output.put_line('Months '|| p_offset_months || ',Minutes ' || p_offset_minutes || ', value ' || p_value);
       offset_months  := p_offset_months;
       offset_minutes := p_offset_minutes;
       value          := p_value;
