@@ -5,11 +5,15 @@ extension.image.convention("gvenzl/oracle-free:23.5-full-faststart")
 extension.name.convention("cwms-test-database")
 extension.buildUser.convention("builduser")
 extension.buildUserPassword.convention("buildpassword")
+extension.cwmsOfficeId.convention("SPK")
+extension.cwmsOfficeEroc.convention("l2")
+extension.cwmsPassword.convention("cwms_user_password")
+extension.createUsers.convention("create")
 
 tasks.register("startDatabase", StartDatabaseTask) {
     url.convention(project.findProperty("flyway.url"))
-    username.convention(project.findProperty("flyway.user"))
-    password.convention(project.findProperty("flyway.password"))
+    username.convention(extension.buildUser)
+    password.convention(extension.buildUserPassword)
     outputFile.convention(project.layout.buildDir.file("flyway.conf"))
     
 }

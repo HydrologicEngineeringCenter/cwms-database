@@ -2,11 +2,11 @@ plugins {
     id 'database.deps-conventions'
     id 'database.java-conventions'
     id 'database'
-    id 'org.flywaydb.flyway' version '10.0.0'
+    id 'org.flywaydb.flyway' version '11.7.2'
 }
 
 //defaults
-var build_user = project.findProperty("cwms.user") ?: 'must set user to run these tasks'
+//var build_user = project.findProperty("cwms.user") ?: 'must set user to run these tasks'
 def cwms_schema_name = project.findProperty("cwms.schema") ?: "CWMS_20"
 def cwms_office = project.findProperty("cwms.office") ?:"SPK"
 def cwms_eroc = project.findProperty("cwms.eroc") ?:"l2"
@@ -14,7 +14,7 @@ def create_users = project.hasProperty("testaccounts") ? "create" : "nocreate"
 def pd_password = project.findProperty("cwms.pd_password") ?: project.findProperty("flyway.password")
 def test_password = project.findProperty("cwms.test_password") ?: pd_password
 def coverageDir = "$buildDir/coverage"
-def cwms_user = "${build_user}[$cwms_schema_name]"
+def cwms_user = "${flyway.user}[$cwms_schema_name]"
 
 configurations {
     compile
@@ -41,7 +41,6 @@ dependencies {
 flyway {
     locations = ["db/schema"]
     configurations = ['flywayMigration','compile','runtimeClasspath']
-    user = build_user
     mixed = true
     schemas = [cwms_schema_name,'CWMS_DBA']
     baselineOnMigrate = true
@@ -54,11 +53,6 @@ flyway {
         "AT_TABLESPACE": "CWMS_20ATDATA",
         "AQ_TABLESPACE": "CWMS_AQ",
         "AQ_EX_TABLESPACE": "CWMS_AQ_EX",
-        "CWMS_OFFICE_ID": cwms_office,
-        "CWMS_OFFICE_EROC": cwms_eroc,
-        "CWMS_TEST_USERS": create_users,
-        "PD_PASSWORD": pd_password,
-        "TEST_PASSWORD": test_password
     ]
 }
 

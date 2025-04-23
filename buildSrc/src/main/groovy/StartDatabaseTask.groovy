@@ -1,4 +1,7 @@
 import com.github.dockerjava.api.DockerClient
+import com.github.dockerjava.api.model.ExposedPort
+import com.github.dockerjava.api.model.PortBinding
+import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.core.DockerClientConfig
 import com.github.dockerjava.core.DockerClientImpl
 import com.github.dockerjava.core.DefaultDockerClientConfig
@@ -29,6 +32,8 @@ public abstract class StartDatabaseTask extends DefaultTask {
     void startOrValidateDatabase() {
         final var extension = project.extensions.getByType(DatabaseExtension)
         def props = [:]
+        def placeholders = [:]
+        placeholders.CWMS_TEST_USERS = "create"
 
         if (!url.isPresent()) {
             System.out.println("Starting new database");
@@ -36,27 +41,39 @@ public abstract class StartDatabaseTask extends DefaultTask {
             def name = extension.name.get()
             def container = DockerUtil.findContainer(name)
             def dockerClient = DockerUtil.getClient()
+
             if (!container.isPresent()) {
                 dockerClient.pullImageCmd(image)
-                            .withRegistry(config.registryUrl)
                             .start()
                             .awaitCompletion()
 
                 def createContainer = dockerClient.createContainerCmd(image)
-                                                .withEnv("ORACLE_PASSWORD=BadSysPassword")
+                                                .withEnv("ORACLE_PASSWORD=${password.get()}")
                                                 .withName(name)
-                container = Optional.of(createContainer.exec())
+                                                .withExposedPorts(new ExposedPort(1521))
+                                                .withHostConfig(
+                                                    HostConfig.newHostConfig()
+                                                              .withPortBindings(PortBinding.parse("1521"))
+                                                )
+
+                def containerResponse = createContainer.exec()
+                container = DockerUtil.findContainer(containerResponse.getId())
             }
             DockerUtil.startContainer(container.get())
-            
-            props.url = "a test"
-            props.username = "user"
-            props.password = "pass"
+            def port = DockerUtil.getPortFor(container.get(),1521)
+
+            props.url = "jdbc:oracle:thin:@localhost:${port}/FREEPDB1"
+            props.user = username.get()
+            props.password = password.get()
+            placeholders.PD_PASSWORD = extension.cwmsPassword.get()
+            placeholders.TEST_PASSWORD = extension.cwmsPassword.get()
+            placeholders.CWMS_OFFICE_ID = extension.cwmsOfficeId.get()
+            placeholders.CWMS_OFFICE_EROC = extension.cwmsOfficeEroc.get()
         } else {
             System.out.println("Using existing database.");
-            props["url"] = url.get()
-            props["password"] = password.get()
-            props["username"] = username.get()
+            props.url = url.get()
+            props.password = password.get()
+            props.user = username.get()
         }
 
         url.finalizeValue()
@@ -66,12 +83,11 @@ public abstract class StartDatabaseTask extends DefaultTask {
 
         def out = outputFile.get().asFile
         out.delete()
-        out << "[flyway]\n";
         props.each { entry ->
-            out << "${entry.key}=${entry.value}\n"
+            out << "flyway.${entry.key}=${entry.value}\n"
         }
-        out << "[flyway.placeholders]\n"
-        out << "testaccounts=true\n";
-        
+        placeholders.each { entry ->
+            out << "flyway.placeholders.${entry.key}=${entry.value}\n";
+        }
     }
 }
