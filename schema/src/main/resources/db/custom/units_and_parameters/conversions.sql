@@ -11,7 +11,7 @@
 declare
     p_from_id varchar(16) := ?;
     p_to_id varchar(16) := ?;
-    p_abstract_param_id cwms_abstract_parameter.abstract_param_id%type := ?;    
+    p_abstract_param_id cwms_abstract_parameter.abstract_param_id%type := ?;
     p_factor binary_double := ?;
     p_offset binary_double := ?;
     p_function varchar2(64) := ?;
@@ -21,12 +21,12 @@ MERGE into cwms_20.cwms_unit_conversion cuc
         ON (cuc.from_unit_id = p_from_id and cuc.to_unit_id = p_to_id)
         WHEN MATCHED then
             update set
-                cuc.abstract_param_code = 
-                    (select 
-                        abstract_param_code 
-                     from 
-                        cwms_abstract_parameter 
-                    where 
+                cuc.abstract_param_code =
+                    (select
+                        abstract_param_code
+                     from
+                        cwms_abstract_parameter
+                    where
                         abstract_param_id = p_abstract_param_id
                     ),
                     cuc.factor = p_factor,
@@ -42,7 +42,28 @@ MERGE into cwms_20.cwms_unit_conversion cuc
                 (select abstract_param_code from cwms_abstract_parameter where abstract_param_id = p_abstract_param_id),
                 p_factor,
                 p_offset,
-                p_function                
+                p_function
+            )
+;
+MERGE into cwms_20.cwms_unit_conversion cuc
+        USING dual
+        ON (cuc.from_unit_id = p_from_id and cuc.to_unit_id = p_from_id)
+        WHEN MATCHED then
+            update set
+                    cuc.factor = null,
+                    cuc.offset = null,
+                    cuc.function = 'ARG1'
+        WHEN NOT MATCHED then
+            insert(from_unit_code,to_unit_code,from_unit_id,to_unit_id,abstract_param_code,factor,offset,function)
+            values(
+                (select unit_code from cwms_unit where unit_id=p_from_id),
+                (select unit_code from cwms_unit where unit_id=p_from_id),
+                p_from_id,
+                p_from_id,
+                (select abstract_param_code from cwms_abstract_parameter where abstract_param_id = p_abstract_param_id),
+                null,
+                null,
+                'ARG1'
             )
 ;
 end;
