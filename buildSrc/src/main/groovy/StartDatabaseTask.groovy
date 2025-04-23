@@ -41,7 +41,8 @@ public abstract class StartDatabaseTask extends DefaultTask {
             def name = extension.name.get()
             def container = DockerUtil.findContainer(name)
             def dockerClient = DockerUtil.getClient()
-
+            // TODO: deal with the situation of the oracle free vs enterprise and 
+            // maintaining a volume for non-fast-start images.
             if (!container.isPresent()) {
                 dockerClient.pullImageCmd(image)
                             .start()
