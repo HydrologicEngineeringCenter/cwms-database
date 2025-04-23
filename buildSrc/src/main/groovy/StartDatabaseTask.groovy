@@ -1,3 +1,4 @@
+import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.core.DockerClientConfig
 import com.github.dockerjava.core.DockerClientImpl
 import com.github.dockerjava.core.DefaultDockerClientConfig
@@ -27,25 +28,26 @@ public abstract class StartDatabaseTask extends DefaultTask {
     @TaskAction
     void startOrValidateDatabase() {
         final var extension = project.extensions.getByType(DatabaseExtension)
-        def props = [:]        
+        def props = [:]
+
         if (!url.isPresent()) {
             System.out.println("Starting new database");
-            def config = DefaultDockerClientConfig.createDefaultConfigBuilder().build();
-            def httpClient = new ApacheDockerHttpClient.Builder()
-                            .dockerHost(config.getDockerHost())
-                            .sslConfig(config.getSSLConfig())
-                            .maxConnections(100)
-                            .connectionTimeout(Duration.ofSeconds(30))
-                            .responseTimeout(Duration.ofSeconds(45))
-                            .build();
             def image = extension.image.get()
-            def dockerClient = DockerClientImpl.getInstance(config,httpClient)
-            dockerClient.pullImageCmd(image)
-                        .withRegistry(config.registryUrl)
-                        .start()
-                        .awaitCompletion()
-            def createContainer = dockerClient.createContainerCmd(image).withEnv("ORACLE_PASSWORD", "BadSysPassword")
-            def response = createContainer.exec()
+            def name = extension.name.get()
+            def container = DockerUtil.findContainer(name)
+            def dockerClient = DockerUtil.getClient()
+            if (!container.isPresent()) {
+                dockerClient.pullImageCmd(image)
+                            .withRegistry(config.registryUrl)
+                            .start()
+                            .awaitCompletion()
+
+                def createContainer = dockerClient.createContainerCmd(image)
+                                                .withEnv("ORACLE_PASSWORD=BadSysPassword")
+                                                .withName(name)
+                container = Optional.of(createContainer.exec())
+            }
+            DockerUtil.startContainer(container.get())
             
             props.url = "a test"
             props.username = "user"
