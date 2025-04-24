@@ -1,6 +1,7 @@
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.ExposedPort
 import com.github.dockerjava.api.model.PortBinding
+import com.github.dockerjava.api.model.HealthCheck
 import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.core.DockerClientConfig
 import com.github.dockerjava.core.DockerClientImpl
@@ -11,6 +12,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import java.time.Duration
+import java.util.concurrent.TimeUnit
 
 public abstract class StartDatabaseTask extends DefaultTask {
     @Input
@@ -55,6 +57,13 @@ public abstract class StartDatabaseTask extends DefaultTask {
                                                 .withHostConfig(
                                                     HostConfig.newHostConfig()
                                                               .withPortBindings(PortBinding.parse("1521"))
+                                                )
+                                                .withHealthcheck(new HealthCheck()
+                                                    .withTest(["CMD","tnsping", "FREEPDB1"])
+                                                    .withInterval(TimeUnit.SECONDS.toNanos(30))
+                                                    .withTimeout(TimeUnit.SECONDS.toNanos(50))
+                                                    .withStartPeriod(TimeUnit.MINUTES.toNanos(40))
+                                                    .withRetries(50)
                                                 )
 
                 def containerResponse = createContainer.exec()

@@ -8,8 +8,8 @@ runs:
     - name: Prep Database
       shell: bash
       working-directory: schema
-      run: ant docker.prepdb -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
+      run: ./gradlew schema:startDatabase --info
     - name: Install Schema
       shell: bash
       working-directory: schema
-      run: ant docker.install -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
+      run: ./gradlew schema:dataMigrate --info -Pflyway.configFiles=build/flyway.config
