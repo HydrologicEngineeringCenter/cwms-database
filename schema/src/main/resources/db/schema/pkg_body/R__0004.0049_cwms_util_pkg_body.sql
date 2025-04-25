@@ -558,8 +558,8 @@ as
                   WHERE     b.username = l_username
                AND a.office_code=b.db_office_code;
                EXCEPTION WHEN OTHERS THEN
-                        cwms_err.raise ('SESSION_OFFICE_ID_NOT_SET');
-                     END;
+                  cwms_err.raise ('SESSION_OFFICE_ID_NOT_SET', 'For ' || l_username);
+               END;
             END IF;
          END IF;
          cwms_cache.put(g_office_id_cache, '<NULL>', l_office_id);

@@ -143,10 +143,15 @@ sqlplus sys/${password.get()}@localhost:1521/FREEPDB1 as sysdba @/tmp/builduser.
         def out = outputFile.get().asFile
         out.delete()
         props.each { entry ->
-            out << "flyway.${entry.key}=${entry.value}\n"
+            if (entry.key !+ "user") {
+                out << "flyway.${entry.key}=${entry.value}\n"
+            }
         }
         placeholders.each { entry ->
             out << "flyway.placeholders.${entry.key}=${entry.value}\n";
         }
+        // Can't put set flyway.user here, configFile is loaded *after* the task set values
+        // and thus breaks the builduser[CWMS_20] user on the data migration task.
+        out << "flyway.placeholders.BUILD_USER=${props.user}"
     }
 }
