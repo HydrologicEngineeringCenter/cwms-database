@@ -15,7 +15,7 @@ tasks.register("startDatabase", StartDatabaseTask) {
     username.convention(extension.buildUser)
     password.convention(extension.buildUserPassword)
     outputFile.convention(project.layout.buildDir.file("flyway.conf"))
-    
+    outputs.upToDateWhen { false }
 }
 
 tasks.register("stopDatabase", StopDatabaseTask) {

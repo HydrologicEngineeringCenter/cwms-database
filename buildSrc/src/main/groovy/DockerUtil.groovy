@@ -1,4 +1,5 @@
 import com.github.dockerjava.api.DockerClient
+import com.github.dockerjava.core.command.ExecStartResultCallback
 import com.github.dockerjava.api.exception.NotModifiedException
 import com.github.dockerjava.api.model.Container
 import com.github.dockerjava.api.model.ExposedPort
@@ -23,13 +24,14 @@ public class DockerUtil {
    
 
     public static Optional<Container> findContainer(String name) {
+        def search = [name]
         def containers = getClient().listContainersCmd()
                                     .withShowAll(true)
-                                    .withNameFilter([name])
-                                    .exec()
-                       + getClient().listContainersCmd()
+                                    .withNameFilter(search)
+                                    .exec() +
+                         getClient().listContainersCmd()
                                     .withShowAll(true)
-                                    .withIdFilter([name])
+                                    .withIdFilter(search)
                                     .exec()
         
         if (containers.size() == 0) {
@@ -64,5 +66,28 @@ public class DockerUtil {
         def ports = bindings.get(exposedPort)        
         return ports.hostPortSpec[0]
 
+    }
+
+    public static String execInContainer(Container container, String... commands) {
+        def execCmd = getClient().execCreateCmd(container.getId())
+                          .withCmd(commands)
+                          .withAttachStdout(true)
+                          .exec()
+                          .getId()
+        getClient().execStartCmd(execCmd)
+                   .exec(new ExecStartResultCallback(System.out, System.err))
+                    .awaitCompletion()
+
+        return "test"
+    }
+
+    public static void waitForHealthy(Container container) {
+        def state = getClient().inspectContainerCmd(container.getId()).exec().getState()
+        while (state.getHealth().getStatus() != "healthy") {
+            println("Status " + state.getHealth().getStatus());
+            Thread.sleep(500)
+            state = getClient().inspectContainerCmd(container.getId()).exec().getState()
+        }
+        println("${state.health.log}")
     }
 }

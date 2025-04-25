@@ -2,7 +2,7 @@
 junit="5.9"
 mockito="4.6.1"
 junit-launcher = "1.11.2"
-docker-java = "3.3.0"
+docker-java = "3.5.0"
 oracle-jdbc = "23.3.0.23.09"
 flyway = "11.7.2"
 exp4j="0.4.8"
