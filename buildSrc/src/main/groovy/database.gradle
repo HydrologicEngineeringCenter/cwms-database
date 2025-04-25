@@ -20,4 +20,5 @@ tasks.register("startDatabase", StartDatabaseTask) {
 
 tasks.register("stopDatabase", StopDatabaseTask) {
     url.convention(project.findProperty("flyway.url"))
+    outputs.upToDateWhen { false }
 }

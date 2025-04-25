@@ -103,7 +103,19 @@ grant select on sys.v_\\\$mystat to &builduser with grant option;
 grant select on sys.v_\\\$statname to &builduser with grant option;
 grant select on sys.v_\\\$timer to &builduser with grant option;
 grant select on SYS.AQ\\\$_UNFLUSHED_DEQUEUES to &builduser with grant option;
+grant ctxapp to &builduser with admin option;
+grant execute on ctxsys.ctx_ddl to &builduser with grant option;
+grant execute on ctxsys.ctx_doc to &builduser with grant option;
+
 grant execute any procedure to &builduser;
+
+-- create table spaces
+CREATE TABLESPACE "CWMS_20AT_DATA" DATAFILE 'at_data.dat' size 20M autoextend on next 10M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_20DATA"    DATAFILE 'data.dat'    size 20M autoextend on next 10M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_20_TSV"    DATAFILE 'tsv.dat'     size 20M autoextend on next 10M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_AQ"        DATAFILE 'aq.dat'      size 20M autoextend on next 10M maxsize UNLIMITED;
+CREATE TABLESPACE "CWMS_AQ_EX"     DATAFILE 'aq_ex.dat'   size 20M autoextend on next 10M maxsize UNLIMITED;
+
 EOF
 sqlplus sys/${password.get()}@localhost:1521/FREEPDB1 as sysdba @/tmp/builduser.sql builduser ${password.get()}
             """ )
