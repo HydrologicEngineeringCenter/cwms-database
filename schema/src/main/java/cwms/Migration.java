@@ -9,12 +9,9 @@ import org.flywaydb.core.Flyway;
 public class Migration {
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
-        
         try (InputStream is = new FileInputStream(args[0]))
         {
             props.load(is);
-            props.forEach((k,v) -> System.out.println(k +"="+v));
-            
             Flyway schema = Flyway.configure()
                             .configuration(props)
                             .schemas("CWMS_20", "CWMS_DBA")

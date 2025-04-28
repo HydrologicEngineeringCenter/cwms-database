@@ -1,0 +1,56 @@
+
+SQL*Loader: Release 23.0.0.0.0 - Production on Mon Apr 28 21:36:56 2025
+Version 23.6.0.24.10
+
+Copyright (c) 1982, 2024, Oracle and/or its affiliates.  All rights reserved.
+
+Control File:   xsl_test_clobs.ctl
+Data File:      xsl_test_clobs.ctl
+  Bad File:     xsl_test_clobs.bad
+  Discard File:  none specified
+ 
+ (Allow all discards)
+
+Number to load: ALL
+Number to skip: 0
+Errors allowed: 50
+Bind array:     250 rows, maximum of 1048576 bytes
+Continuation:    none specified
+Path used:      Conventional
+
+Table AT_CLOB, loaded from every logical record.
+Insert option in effect for this table: APPEND
+
+   Column Name                  Position   Len  Term Encl Datatype
+------------------------------ ---------- ----- ---- ---- ---------------------
+CLOB_CODE                           FIRST     *   ,       CHARACTER            
+    SQL string for column : "cwms_20.cwms_seq.nextval"
+OFFICE_CODE                          NEXT     *   ,       CHARACTER            
+ID                                   NEXT     *   ,       CHARACTER            
+DESCRIPTION                          NEXT     *   ,       CHARACTER            
+FILENAME                             NEXT     *   ,       CHARACTER            
+  (FILLER FIELD)
+VALUE                             DERIVED     *  EOF      CHARACTER            
+    Dynamic LOBFILE.  Filename in field FILENAME
+
+
+Table AT_CLOB:
+  6 Rows successfully loaded.
+  0 Rows not loaded due to data errors.
+  0 Rows not loaded because all WHEN clauses were failed.
+  0 Rows not loaded because all fields were null.
+
+
+Space allocated for bind array:                 322500 bytes(250 rows)
+Read   buffer bytes: 1048576
+
+Total logical records skipped:          0
+Total logical records read:             6
+Total logical records rejected:         0
+Total logical records discarded:        0
+
+Run began on Mon Apr 28 21:36:56 2025
+Run ended on Mon Apr 28 21:36:58 2025
+
+Elapsed time was:     00:00:01.47
+CPU time was:         00:00:00.03

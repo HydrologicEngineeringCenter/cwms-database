@@ -1,2 +1,3 @@
 rootProject.name = 'CWMS Database'
 include 'schema'
+include 'integrationtests'

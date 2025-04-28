@@ -121,14 +121,14 @@ sqlplus sys/${password.get()}@localhost:1521/FREEPDB1 as sysdba @/tmp/builduser.
             """ )
             println("***********" + buildUserResult)
 
-            props.url = "jdbc:oracle:thin:@localhost:${port}/FREEPDB1?oracle.net.disableOob=true"
+            props.jdbcUrl = "jdbc:oracle:thin:@localhost:${port}/FREEPDB1?oracle.net.disableOob=true"
+            props.url = "localhost:${port}/FREEPDB1"
             props.user = username.get()
             props.password = password.get()
             placeholders.PD_PASSWORD = extension.cwmsPassword.get()
             placeholders.TEST_PASSWORD = extension.cwmsPassword.get()
             placeholders.CWMS_OFFICE_ID = extension.cwmsOfficeId.get()
             placeholders.CWMS_OFFICE_EROC = extension.cwmsOfficeEroc.get()
-
         } else {
             System.out.println("Using existing database.");
             props.url = url.get()
@@ -136,8 +136,9 @@ sqlplus sys/${password.get()}@localhost:1521/FREEPDB1 as sysdba @/tmp/builduser.
             props.user = username.get()
         }
         extension.url.set(props.url)
+        extension.jdbcUrl.set(props.jdbcUrl)
         extension.url.finalizeValue()
-        //url.set(props.url).finalizeValue()
+        extension.jdbcUrl.finalizeValue()
 
         username.finalizeValue()
         password.finalizeValue()
@@ -146,9 +147,7 @@ sqlplus sys/${password.get()}@localhost:1521/FREEPDB1 as sysdba @/tmp/builduser.
         def out = outputFile.get().asFile
         out.delete()
         props.each { entry ->
-            if (entry.key != "user") {
-                out << "flyway.${entry.key}=${entry.value}\n"
-            }
+            out << "flyway.${entry.key}=${entry.value}\n"
         }
         placeholders.each { entry ->
             out << "flyway.placeholders.${entry.key}=${entry.value}\n";
