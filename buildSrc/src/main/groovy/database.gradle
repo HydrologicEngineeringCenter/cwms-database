@@ -11,7 +11,7 @@ extension.cwmsPassword.convention("cwms_user_password")
 extension.createUsers.convention("create")
 
 tasks.register("startDatabase", StartDatabaseTask) {
-    url.convention(project.findProperty("flyway.url"))
+    //url.convention(project.findProperty("flyway.url"))
     username.convention(extension.buildUser)
     password.convention(extension.buildUserPassword)
     outputFile.convention(project.layout.buildDir.file("flyway.conf"))
@@ -19,6 +19,6 @@ tasks.register("startDatabase", StartDatabaseTask) {
 }
 
 tasks.register("stopDatabase", StopDatabaseTask) {
-    url.convention(project.findProperty("flyway.url"))
+    //url.convention(project.findProperty("flyway.url"))
     outputs.upToDateWhen { false }
 }

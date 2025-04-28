@@ -43,7 +43,7 @@ public abstract class StartDatabaseTask extends DefaultTask {
             def name = extension.name.get()
             def container = DockerUtil.findContainer(name)
             def dockerClient = DockerUtil.getClient()
-            // TODO: deal with the situation of the oracle free vs enterprise and 
+            // TODO: deal with the situation of the oracle free vs enterprise and
             // maintaining a volume for non-fast-start images.
             if (!container.isPresent()) {
                 dockerClient.pullImageCmd(image)
@@ -121,21 +121,24 @@ sqlplus sys/${password.get()}@localhost:1521/FREEPDB1 as sysdba @/tmp/builduser.
             """ )
             println("***********" + buildUserResult)
 
-            props.url = "jdbc:oracle:thin:@localhost:${port}/FREEPDB1"
+            props.url = "jdbc:oracle:thin:@localhost:${port}/FREEPDB1?oracle.net.disableOob=true"
             props.user = username.get()
             props.password = password.get()
             placeholders.PD_PASSWORD = extension.cwmsPassword.get()
             placeholders.TEST_PASSWORD = extension.cwmsPassword.get()
             placeholders.CWMS_OFFICE_ID = extension.cwmsOfficeId.get()
             placeholders.CWMS_OFFICE_EROC = extension.cwmsOfficeEroc.get()
+
         } else {
             System.out.println("Using existing database.");
             props.url = url.get()
             props.password = password.get()
             props.user = username.get()
         }
+        extension.url.set(props.url)
+        extension.url.finalizeValue()
+        //url.set(props.url).finalizeValue()
 
-        url.finalizeValue()
         username.finalizeValue()
         password.finalizeValue()
         outputFile.finalizeValue();
@@ -143,7 +146,7 @@ sqlplus sys/${password.get()}@localhost:1521/FREEPDB1 as sysdba @/tmp/builduser.
         def out = outputFile.get().asFile
         out.delete()
         props.each { entry ->
-            if (entry.key !+ "user") {
+            if (entry.key != "user") {
                 out << "flyway.${entry.key}=${entry.value}\n"
             }
         }

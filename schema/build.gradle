@@ -1,6 +1,7 @@
 plugins {
     id 'database.deps-conventions'
     id 'database.java-conventions'
+    id 'application'
     id 'database'
     id 'org.flywaydb.flyway' version '11.7.2'
 }
@@ -22,17 +23,25 @@ configurations {
     utplsql
 }
 
+application {
+    mainClass = 'cwms.Migration'
+}
+
+tasks.withType(JavaExec) {
+    args "build/flyway.conf"
+}
+
 dependencies {
     implementation(libs.org.flyway.core)
+    implementation(libs.oracle.jdbc.driver)
+    implementation(libs.org.flyway.database.oracle)
     implementation(libs.net.objecthunter.exp4j)
     implementation(libs.bundles.jackson)
     implementation(libs.org.apache.commons.io)
     implementation(libs.org.opendcs.java.algebra.system)
 
     compile(libs.org.flyway.core)
-
-    flywayMigration(libs.oracle.jdbc.driver)
-    flywayMigration(libs.org.flyway.database.oracle)
+    
     flywayMigration sourceSets.main.runtimeClasspath
 
     utplsql 'org.utplsql:utplsql:3.1.10@zip'
@@ -101,11 +110,12 @@ flywayClean.dependsOn classes
 flywayRepair.dependsOn classes
 
 var sysPassword = project.findProperty("db.sys_password")
-def tmp = project.findProperty("flyway.url")
-def dbUrl = tmp == null ? tmp: tmp.split("@")[1]
 
 def checkTestSetup = tasks.register("checkTestSetup") {
+    dependsOn startDatabase
+    
     doFirst {
+        def dbUrl = database.url.get().split("@")[1]
         def result = exec {
             executable "sqlplus"
             args "-h"
@@ -160,7 +170,7 @@ def downloadUtplSql = tasks.register("downloadUtplSql", Copy) {
 def installTestFramework = tasks.register("installTestFramework", Exec) {
     dependsOn downloadUtplSql
     dependsOn checkTestSetup
-
+    def dbUrl = {database.url.get().split("@")[1]}
     executable "sqlplus"
     args "sys/${sysPassword}@${dbUrl} as sysdba"
     args "@install_headless_with_trigger.sql"
@@ -169,7 +179,7 @@ def installTestFramework = tasks.register("installTestFramework", Exec) {
     doLast {
         exec {
             executable "sqlplus"
-            args "sys/${sysPassword}@${dbUrl} as sysdba"
+            args "sys/${sysPassword}@${dbUrl()} as sysdba"
             standardInput = new ByteArrayInputStream("GRANT INHERIT PRIVILEGES ON USER sys TO ut3;".getBytes())
 
         }
@@ -180,6 +190,8 @@ def installTestFramework = tasks.register("installTestFramework", Exec) {
 def installTests = tasks.register("installTests", Exec) {
     dependsOn installTestFramework
     dependsOn dataMigrate
+    def dbUrl = { database.url.get().split("@")[1]}
+
     workingDir "src/test"
     executable "sqlplus"
     args "${cwms_user}/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
@@ -210,6 +222,8 @@ def installTests = tasks.register("installTests", Exec) {
 
 def cleanTestData = tasks.register("cleanTestData", Exec) {
     dependsOn installTests
+    def dbUrl = () -> database.url.get().split("@")[1]
+
     executable="utplsql"
     args "run"
 	args "-p=${cwms_schema_name}.test_clean_all"
@@ -230,6 +244,7 @@ def loadTestData = tasks.register("loadTestData") {
     dependsOn installTests
     dependsOn cleanTestData
     doLast {
+        def dbUrl = database.url.get().split("@")[1]
         println("Loading Test Clobs")
         exec {
             def dbUrlWithoutParams = dbUrl.split("\\?")[0];
@@ -245,7 +260,7 @@ def loadTestData = tasks.register("loadTestData") {
 def testAsPdUser = tasks.register("testAsPdUser", Exec) {
     dependsOn installTests
     dependsOn loadTestData
-
+    def dbUrl =  () -> database.url.get().split("@")[1]
     executable "utplsql"
     args "run"
 	//args "-p=${cwms_schema_name}.test_cwms_rating,${cwms_schema_name}.test_lrts_updates,${cwms_schema_name}.test_probability_parameter,${cwms_schema_name}.test_cwms_loc,${cwms_schema_name}.test_cwms_ts,${cwms_schema_name}.test_cwms_util,${cwms_schema_name}.test_cwms_prop,${cwms_schema_name}.test_versioned_time_series,${cwms_schema_name}.test_update_ts_extents,${cwms_schema_name}.test_cwms_pool,${cwms_schema_name}.test_timeseries_snapping,${cwms_schema_name}.test_cwms_cat,${cwms_schema_name}.test_cwms_msg,${cwms_schema_name}.test_cwms_level,${cwms_schema_name}.test_cwms_display"
@@ -268,7 +283,7 @@ def testAsPdUser = tasks.register("testAsPdUser", Exec) {
 def testAsRoUser = tasks.register("testAsRoUser", Exec ) {
     dependsOn installTests
     dependsOn loadTestData
-
+    def dbUrl = () -> database.url.get().split("@")[1]
     executable="utplsql"
     args "run"
 	args "-p=${cwms_schema_name}.test_ro"

@@ -1,6 +1,7 @@
 import org.gradle.api.provider.Property
 
 interface DatabaseExtension {
+    Property<String> getUrl();
     Property<String> getImage();
     Property<String> getName();
     Property<String> getBuildUser();
