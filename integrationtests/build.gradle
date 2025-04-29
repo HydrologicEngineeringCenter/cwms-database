@@ -170,7 +170,9 @@ def testAsPdUser = tasks.register("testAsPdUser", UtTest) {
     dependsOn installTests
     dependsOn loadTestData
     //args "-p=${cwms_schema_name}.test_cwms_rating,${cwms_schema_name}.test_lrts_updates,${cwms_schema_name}.test_probability_parameter,${cwms_schema_name}.test_cwms_loc,${cwms_schema_name}.test_cwms_ts,${cwms_schema_name}.test_cwms_util,${cwms_schema_name}.test_cwms_prop,${cwms_schema_name}.test_versioned_time_series,${cwms_schema_name}.test_update_ts_extents,${cwms_schema_name}.test_cwms_pool,${cwms_schema_name}.test_timeseries_snapping,${cwms_schema_name}.test_cwms_cat,${cwms_schema_name}.test_cwms_msg,${cwms_schema_name}.test_cwms_level,${cwms_schema_name}.test_cwms_display"
-    tests = ["test_cwms_level"]
+    tests = ["test_cwms_level",
+             "test_cwms_rating",
+             "test_lrts_updates"]
     user = "cwmspd"
 }
 
