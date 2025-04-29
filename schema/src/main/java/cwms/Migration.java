@@ -21,9 +21,7 @@ public class Migration {
                             .tablespace("CWMS_20DATA")
                             .mixed(true)
                             .load();
-            System.out.println("Migrating Schema.");
             schema.migrate();
-            System.out.println("Loading Data.");
             props.setProperty("flyway.user", props.getProperty("flyway.user")+"[CWMS_20]");
             Flyway data = Flyway.configure()
                                 .configuration(props)
