@@ -79,8 +79,19 @@ public final class DockerDatabase {
                 "/bin/bash", "-xc", """
 cat > /tmp/builduser.sql <<EOF
 define builduser=&1
-drop user &builduser;
-create user &builduser identified by "&2";
+
+begin
+  execute immediate 'create user &builduser identified by "&2"';
+exception
+  when others then
+    --"ORA-01921: role name 'x' conflicts with another user or role name"
+    if sqlcode = -01921 then
+      null;
+    else
+      raise;
+    end if;
+end;
+/
 
 grant dba to &builduser;
 

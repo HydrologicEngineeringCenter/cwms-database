@@ -13,7 +13,7 @@ public class DatabaseServicePlugin implements Plugin<Project>
             // Provide some parameters
 
             // Check for configured parameters and decided if the database exists or needs to be started.
-            final var url = project.findProperty("database.url");          
+            final var url = project.findProperty("database.url");
             final var database = spec.getParameters();
             if (url != null) {
                 database.createTestDatabase.set(false);
@@ -42,5 +42,35 @@ public class DatabaseServicePlugin implements Plugin<Project>
             }
             database.schema.set("CWMS_20")
         })
+
+        def checkTestSetup = project.tasks.register("CheckTestSetup", CheckTestSetupTask) {}
+        def installTestFramework = project.tasks.register("installTestFramework", InstallTestFrameworkTask) {
+            dependsOn checkTestSetup
+        }
+        def installTests = project.tasks.register("installTests", InstallTestsTask) {
+            dependsOn installTestFramework
+        }
+        def cleanTestData = project.tasks.register("cleanTestData", cwms.database.testing.support.UtTest) {
+            dependsOn installTests
+            tests = ["test_clean_all"]
+            outputs.upToDateWhen { false } // we always run this task
+            user = "cwmspd"
+        }
+        def loadTestData = project.tasks.register("loadTestData", LoadTestDataTask) {
+            dependsOn installTests
+            dependsOn cleanTestData
+        }
+
+        def testDb = project.tasks.register("testDb") {
+            dependsOn installTests
+
+            dependsOn cleanTestData
+            dependsOn loadTestData
+        }
+
+        def test = project.tasks.register("test") {
+            dependsOn testDb
+}
+
     }
 }
