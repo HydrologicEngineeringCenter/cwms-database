@@ -1,3 +1,5 @@
+package cwms.database.testing.support
+
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.core.command.ExecStartResultCallback
 import com.github.dockerjava.api.exception.NotModifiedException
@@ -82,12 +84,14 @@ public class DockerUtil {
     }
 
     public static void waitForHealthy(Container container) {
-        def state = getClient().inspectContainerCmd(container.getId()).exec().getState()
-        while (state.getHealth().getStatus() != "healthy") {
-            println("Status " + state.getHealth().getStatus());
+        while (!isHealthy(container)) {
+            println("Waiting for health");
             Thread.sleep(500)
-            state = getClient().inspectContainerCmd(container.getId()).exec().getState()
         }
-        println("${state.health.log}")
+    }
+
+    public static boolean isHealthy(Container container) {
+        def state = getClient().inspectContainerCmd(container.getId()).exec().getState()
+        return state.getHealth().getStatus() == "healthy"
     }
 }

@@ -1,7 +1,7 @@
 plugins {
     id 'database.deps-conventions'
-    id 'database'
     id 'base'
+    id 'cwms.database.test-database' version 'local'
 }
 
 configurations {
@@ -21,11 +21,15 @@ def test_password = project.findProperty("cwms.test_password") ?: pd_password
 
 var sysPassword = {database.buildUserPassword}
 def cwms_user = {database.buildUser.get() + "[CWMS_20]"}
+import cwms.database.testing.support.DatabaseService
+def database = project.gradle.sharedServices.registerIfAbsent("database", DatabaseService) {
+
+} 
 
 def checkTestSetup = tasks.register("checkTestSetup") {
-    dependsOn startDatabase
+    usesService(database)
     doFirst {
-        def dbUrl = database.url.get()
+        def dbUrl = database.get().url
         def result = exec {
             executable "sqlplus"
             args "-h"
@@ -79,9 +83,10 @@ def downloadUtplSql = tasks.register("downloadUtplSql", Copy) {
 def installTestFramework = tasks.register("installTestFramework", DatabaseExecTask ) {
     dependsOn downloadUtplSql
     dependsOn checkTestSetup
-    url = database.url
-    user = database.buildUser
-    password = database.buildUserPassword
+    usesService(database)
+    url = database.get().url
+    user = database.get().buildUser
+    password = database.get().buildUserPassword
     
 
     executable "sqlplus"
@@ -106,16 +111,14 @@ def installTestFramework = tasks.register("installTestFramework", DatabaseExecTa
 
 def installTests = tasks.register("installTests", DatabaseExecTask) {
     dependsOn installTestFramework
-    dependsOn startDatabase
-    url = database.url
-    user = database.cwmsUser
-    password = database.buildUserPassword
-    sysPassword = database.buildUserPassword
-    
+    usesService(database)    
+    user = "tmp"
+    url ="tmp"
+    password = "tmp"
     workingDir "src/test/utplsql"
     executable "sqlplus"
     argumentProviders.add({[
-        String.format("%s/\"%s\"@%s", user.get(), password.get(), url.get()),
+        String.format("%s/\"%s\"@%s", database.get().cwmsUser, database.get().buildUserPassword, database.get().url),
         "@tests.sql",
         cwms_office,
         cwms_schema_name,
@@ -127,7 +130,7 @@ def installTests = tasks.register("installTests", DatabaseExecTask) {
             executable "sqlplus"
             workingDir "src/test/utplsql"
             argumentProviders.add({[
-                String.format("sys/%s@%s as sysdba",sysPassword.get(),url.get()),
+                String.format("sys/%s@%s as sysdba",database.get().sysPassword,database.get().url),
                 "@test_grants.sql",
                 "${cwms_eroc}cwmspd".toString(),
 			    "${cwms_eroc}hectest_ro".toString(),
@@ -143,8 +146,8 @@ def installTests = tasks.register("installTests", DatabaseExecTask) {
         }
     }
 }
-
-def cleanTestData = tasks.register("cleanTestData", UtTest) {
+import cwms.database.testing.support.UtTest
+def cleanTestData = tasks.register("cleanTestData", cwms.database.testing.support.UtTest) {
     dependsOn installTests
     tests = ["test_clean_all"]
     outputs.upToDateWhen { false } // we always run this task
@@ -154,9 +157,10 @@ def cleanTestData = tasks.register("cleanTestData", UtTest) {
 def loadTestData = tasks.register("loadTestData", DatabaseExecTask) {
     dependsOn installTests
     dependsOn cleanTestData
-    url = database.url
-    user = database.cwmsUser
-    password = database.buildUserPassword
+    usesService(database)
+    url = database.get().url
+    user = database.get().cwmsUser
+    password = database.get().buildUserPassword
 
     workingDir "${projectDir}/src/test/data/ratings"
     executable "sqlldr"
@@ -166,7 +170,7 @@ def loadTestData = tasks.register("loadTestData", DatabaseExecTask) {
     ]} as CommandLineArgumentProvider)
 }
 
-def testAsPdUser = tasks.register("testAsPdUser", UtTest) {
+def testAsPdUser = tasks.register("testAsPdUser", cwms.database.testing.support.UtTest) {
     dependsOn installTests
     dependsOn loadTestData
     //args "-p=${cwms_schema_name}.test_cwms_rating,${cwms_schema_name}.test_lrts_updates,${cwms_schema_name}.test_probability_parameter,${cwms_schema_name}.test_cwms_loc,${cwms_schema_name}.test_cwms_ts,${cwms_schema_name}.test_cwms_util,${cwms_schema_name}.test_cwms_prop,${cwms_schema_name}.test_versioned_time_series,${cwms_schema_name}.test_update_ts_extents,${cwms_schema_name}.test_cwms_pool,${cwms_schema_name}.test_timeseries_snapping,${cwms_schema_name}.test_cwms_cat,${cwms_schema_name}.test_cwms_msg,${cwms_schema_name}.test_cwms_level,${cwms_schema_name}.test_cwms_display"
@@ -176,7 +180,7 @@ def testAsPdUser = tasks.register("testAsPdUser", UtTest) {
     user = "cwmspd"
 }
 
-def testAsRoUser = tasks.register("testAsRoUser", UtTest ) {
+def testAsRoUser = tasks.register("testAsRoUser", cwms.database.testing.support.UtTest ) {
     dependsOn installTests
     dependsOn loadTestData
     tests = ["test_ro"]

@@ -12,4 +12,4 @@ runs:
     - name: Install Schema
       shell: bash
       working-directory: schema
-      run: ./gradlew schema:dataMigrate --info -Pflyway.configFiles=build/flyway.config
+      run: ./gradlew schema:run --info -Pflyway.configFiles=build/flyway.config

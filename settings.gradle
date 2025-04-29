@@ -1,3 +1,7 @@
+pluginManagement {
+    includeBuild 'database-plugin'
+}
+
 rootProject.name = 'CWMS Database'
 include 'schema'
 include 'integrationtests'

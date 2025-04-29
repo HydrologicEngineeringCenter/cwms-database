@@ -1,0 +1,25 @@
+plugins {
+    id 'groovy-gradle-plugin'
+    id 'java'
+    id 'groovy'
+}
+
+repositories {
+    gradlePluginPortal() // so that external plugins can be resolved in dependencies section
+    mavenCentral()
+}
+
+dependencies {
+    implementation(libs.bundles.docker.java)
+}
+
+version = "local"
+
+gradlePlugin {
+    plugins {
+        databaseService {
+            id = 'cwms.database.test-database'
+            implementationClass = 'cwms.database.testing.support.DatabaseServicePlugin'
+        }
+    }
+}
