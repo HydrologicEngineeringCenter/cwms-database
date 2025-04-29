@@ -129,6 +129,7 @@ sqlplus sys/${password.get()}@localhost:1521/FREEPDB1 as sysdba @/tmp/builduser.
             placeholders.TEST_PASSWORD = extension.cwmsPassword.get()
             placeholders.CWMS_OFFICE_ID = extension.cwmsOfficeId.get()
             placeholders.CWMS_OFFICE_EROC = extension.cwmsOfficeEroc.get()
+            
         } else {
             System.out.println("Using existing database.");
             props.url = url.get()
@@ -139,6 +140,8 @@ sqlplus sys/${password.get()}@localhost:1521/FREEPDB1 as sysdba @/tmp/builduser.
         extension.jdbcUrl.set(props.jdbcUrl)
         extension.url.finalizeValue()
         extension.jdbcUrl.finalizeValue()
+        extension.schemaName.value("CWMS_20").finalizeValue()
+        placeholders.CWMS_SCHEMA = extension.schemaName.get()
 
         username.finalizeValue()
         password.finalizeValue()

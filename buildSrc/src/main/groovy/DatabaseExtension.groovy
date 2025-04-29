@@ -12,4 +12,5 @@ interface DatabaseExtension {
     Property<String> getCwmsPassword();
     Property<String> getCreateUsers();
     Property<String> getCwmsUser();
+    Property<String> getSchemaName();
 }

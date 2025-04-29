@@ -18,7 +18,6 @@ def cwms_eroc = project.findProperty("cwms.eroc") ?:"l2"
 def create_users = project.hasProperty("testaccounts") ? "create" : "nocreate"
 def pd_password = project.findProperty("cwms.pd_password") ?: project.findProperty("flyway.password")
 def test_password = project.findProperty("cwms.test_password") ?: pd_password
-def coverageDir = "$buildDir/coverage"
 
 var sysPassword = {database.buildUserPassword}
 def cwms_user = {database.buildUser.get() + "[CWMS_20]"}
@@ -124,7 +123,6 @@ def installTests = tasks.register("installTests", DatabaseExecTask) {
         cwms_eroc
     ]} as CommandLineArgumentProvider) 
     doLast {
-        project.mkdir(coverageDir)
         exec {
             executable "sqlplus"
             workingDir "src/test/utplsql"
@@ -146,29 +144,10 @@ def installTests = tasks.register("installTests", DatabaseExecTask) {
     }
 }
 
-def cleanTestData = tasks.register("cleanTestData", DatabaseExecTask) {
+def cleanTestData = tasks.register("cleanTestData", UtTest) {
     dependsOn installTests
-    url = database.url
-    user = database.cwmsUser
-    password = database.buildUserPassword
-    sysPassword = database.buildUserPassword
-    executable="utplsql"
-    argumentProviders.add({[
-                "run",
-                "-p=${cwms_schema_name}.test_clean_all".toString(),
-                "-f=UT_COVERAGE_HTML_REPORTER",
-                    "-o=${coverageDir}/index.html".toString(),
-                "-f=UT_COVERAGE_COBERTURA_REPORTER",
-                    "-o=${coverageDir}/coverage_pd.xml".toString(),
-                "-f=UT_JUNIT_REPORTER",
-                    "-o=$buildDir/tests_pd.xml".toString(),
-                "-f=UT_DOCUMENTATION_REPORTER",
-                "-d", // diagnostic info
-                "-D", // dbms_output
-                "-s", // terminal output even with o set
-                "${user.get()}/\"${password.get()}\"@${url.get()}".toString()
-            ]} as CommandLineArgumentProvider
-            ) 
+    tests = ["test_clean_all"]
+    outputs.upToDateWhen { false } // we always run this task
 }
 
 def loadTestData = tasks.register("loadTestData", DatabaseExecTask) {
@@ -186,49 +165,17 @@ def loadTestData = tasks.register("loadTestData", DatabaseExecTask) {
     ]} as CommandLineArgumentProvider)
 }
 
-def testAsPdUser = tasks.register("testAsPdUser", Exec) {
+def testAsPdUser = tasks.register("testAsPdUser", UtTest) {
     dependsOn installTests
     dependsOn loadTestData
-    url = database.url
-    user = database.cwmsUser
-    password = database.buildUserPassword
-    executable "utplsql"
-    args "run"
-	//args "-p=${cwms_schema_name}.test_cwms_rating,${cwms_schema_name}.test_lrts_updates,${cwms_schema_name}.test_probability_parameter,${cwms_schema_name}.test_cwms_loc,${cwms_schema_name}.test_cwms_ts,${cwms_schema_name}.test_cwms_util,${cwms_schema_name}.test_cwms_prop,${cwms_schema_name}.test_versioned_time_series,${cwms_schema_name}.test_update_ts_extents,${cwms_schema_name}.test_cwms_pool,${cwms_schema_name}.test_timeseries_snapping,${cwms_schema_name}.test_cwms_cat,${cwms_schema_name}.test_cwms_msg,${cwms_schema_name}.test_cwms_level,${cwms_schema_name}.test_cwms_display"
-    //args "-p=${cwms_schema_name}.test_cwms_loc,${cwms_schema_name}.test_cwms_ts"//,${cwms_schema_name}.test_cwms_util,${cwms_schema_name}.test_cwms_prop,${cwms_schema_name}.test_update_ts_extents,${cwms_schema_name}.test_cwms_display"
-    args "-p=${cwms_schema_name}.test_cwms_level"
-    args "-f=UT_COVERAGE_HTML_REPORTER"
-        args "-o=${coverageDir}/index.html"
-    args "-f=UT_COVERAGE_COBERTURA_REPORTER"
-        args "-o=${coverageDir}/coverage_dba.xml"
-    args "-f=UT_JUNIT_REPORTER"
-        args "-o=$buildDir/tests_pdu.xml"
-	args "-f=UT_DOCUMENTATION_REPORTER"
-    args "-d" // diagnostic info
-    args "-D" // dbms_output
-    args "-s" // terminal output even with o set
-    args "-c" // color
-	args "${cwms_eroc}cwmspd/\"${pd_password}\"@${dbUrl}"
+    //args "-p=${cwms_schema_name}.test_cwms_rating,${cwms_schema_name}.test_lrts_updates,${cwms_schema_name}.test_probability_parameter,${cwms_schema_name}.test_cwms_loc,${cwms_schema_name}.test_cwms_ts,${cwms_schema_name}.test_cwms_util,${cwms_schema_name}.test_cwms_prop,${cwms_schema_name}.test_versioned_time_series,${cwms_schema_name}.test_update_ts_extents,${cwms_schema_name}.test_cwms_pool,${cwms_schema_name}.test_timeseries_snapping,${cwms_schema_name}.test_cwms_cat,${cwms_schema_name}.test_cwms_msg,${cwms_schema_name}.test_cwms_level,${cwms_schema_name}.test_cwms_display"
+    tests = ["test_cwms_level"]
 }
 
-def testAsRoUser = tasks.register("testAsRoUser", Exec ) {
+def testAsRoUser = tasks.register("testAsRoUser", UtTest ) {
     dependsOn installTests
     dependsOn loadTestData
-    def dbUrl = () -> database.url.get().split("@")[1]
-    executable="utplsql"
-    args "run"
-	args "-p=${cwms_schema_name}.test_ro"
-    args "-f=UT_COVERAGE_HTML_REPORTER"
-        args "-o=${coverageDir}/index.html"
-    args "-f=UT_COVERAGE_COBERTURA_REPORTER"
-        args "-o=${coverageDir}/coverage_ro.xml"
-    args "-f=UT_JUNIT_REPORTER"
-        args "-o=$buildDir//tests_ro.xml"
-	args "-f=UT_DOCUMENTATION_REPORTER"
-    args "-d"
-    args "-D"
-    args "-s"
-	args "${cwms_eroc}hectest_ro/\"${pd_password}\"@${dbUrl}"
+    tests = ["test_ro"]    
 }
 
 
