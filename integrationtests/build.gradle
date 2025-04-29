@@ -148,6 +148,7 @@ def cleanTestData = tasks.register("cleanTestData", UtTest) {
     dependsOn installTests
     tests = ["test_clean_all"]
     outputs.upToDateWhen { false } // we always run this task
+    user = "cwmspd"
 }
 
 def loadTestData = tasks.register("loadTestData", DatabaseExecTask) {
@@ -170,12 +171,14 @@ def testAsPdUser = tasks.register("testAsPdUser", UtTest) {
     dependsOn loadTestData
     //args "-p=${cwms_schema_name}.test_cwms_rating,${cwms_schema_name}.test_lrts_updates,${cwms_schema_name}.test_probability_parameter,${cwms_schema_name}.test_cwms_loc,${cwms_schema_name}.test_cwms_ts,${cwms_schema_name}.test_cwms_util,${cwms_schema_name}.test_cwms_prop,${cwms_schema_name}.test_versioned_time_series,${cwms_schema_name}.test_update_ts_extents,${cwms_schema_name}.test_cwms_pool,${cwms_schema_name}.test_timeseries_snapping,${cwms_schema_name}.test_cwms_cat,${cwms_schema_name}.test_cwms_msg,${cwms_schema_name}.test_cwms_level,${cwms_schema_name}.test_cwms_display"
     tests = ["test_cwms_level"]
+    user = "cwmspd"
 }
 
 def testAsRoUser = tasks.register("testAsRoUser", UtTest ) {
     dependsOn installTests
     dependsOn loadTestData
-    tests = ["test_ro"]    
+    tests = ["test_ro"]
+    user = "hectest_ro"
 }
 
 

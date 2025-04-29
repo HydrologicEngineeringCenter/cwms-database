@@ -10,6 +10,10 @@ import java.util.stream.Collectors
 
 public abstract class UtTest extends DefaultTask {
 
+
+    @Input
+    public abstract Property<String> getUser();
+
     @Input
     public abstract ListProperty<String> getTests();
 
@@ -52,7 +56,7 @@ public abstract class UtTest extends DefaultTask {
             args "-D" // dbms_output
             args "-s" // terminal output even with o set
             args "-c" // color
-            args "${cwms_eroc}cwmspd/\"${pd_password}\"@${dbUrl}"
+            args "${cwms_eroc}${user.get()}/\"${pd_password}\"@${dbUrl}"
         }).rethrowFailure()
     }
 }

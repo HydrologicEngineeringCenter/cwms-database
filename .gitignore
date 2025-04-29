@@ -51,7 +51,7 @@ schema/src/xml/*.svg
 schema/src/xml/*.out
 schema/src/xml/*.log
 schema/src/xml/hec-datatypes.xsd
-integrationtest/**/*.log
+**/*.log
 **/.gradle
 **/bin
 **/*.bad
