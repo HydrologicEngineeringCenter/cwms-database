@@ -12,6 +12,7 @@ configurations {
 
 application {
     mainClass = 'cwms.Migration'
+    applicationName = 'migrate'
 }
 
 tasks.withType(JavaExec) {
