@@ -6,29 +6,18 @@ plugins {
 
 configurations {
     utplsql
+    schema
 }
 
 dependencies {
     utplsql 'org.utplsql:utplsql:3.1.14@zip'
+    schema(project(":schema"))
 }
 
 import cwms.database.testing.support.DatabaseService
 def database = project.gradle.sharedServices.registerIfAbsent("database", DatabaseService) {} 
 
-def downloadUtplSql = tasks.register("downloadUtplSql", Copy) {
-    dependsOn checkTestSetup
-    from zipTree(configurations.utplsql.singleFile)
-    into "$buildDir/deps"
-    doLast {
-        File createOwner = new File("$buildDir/deps/utPLSQL/source/create_utplsql_owner.sql")
-        createOwner.withWriterAppend( { out ->
-            out.println("\ngrant execute on dbms_lob to &ut3_user;")
-            out.println("grant execute on dbms_random to &ut3_user;")
-	  		out.println("grant execute on dbms_random to &ut3_user;")
-	  		out.println("grant execute on dbms_sql to &ut3_user;")
-        })
-    }
-}
+
 
 import cwms.database.testing.support.UtTest
 
@@ -51,3 +40,87 @@ def testAsRoUser = tasks.register("testAsRoUser", cwms.database.testing.support.
 
 test.dependsOn testAsPdUser
 test.dependsOn testAsRoUser
+
+
+def installSchema = tasks.register("installSchema") {
+    usesService(database)
+
+    def installCall = project.providers.javaexec({
+        classpath configurations.schema
+        mainClass.set('cwms.Migration')
+        ignoreExitValue = true
+        def db = database.get()
+        def test_users = db.createTestAccounts ? "create" : "nocreate"
+        args("-c", "migrate",
+             "-D", "flyway.url=${db.jdbcUrl}",
+             "-D", "flyway.user=${db.buildUser}",
+             "-D", "flyway.password=${db.buildUserPassword}",
+             "-D", "flyway.placeholders.CWMS_SCHEMA=${db.schemaName}",
+             "-D", "flyway.placeholders.CWMS_TEST_USERS=${test_users}",
+             "-D", "flyway.placeholders.BUILD_USER=${db.buildUser}",
+             "-D", "flyway.placeholders.CWMS_OFFICE_ID=${db.officeId}",
+             "-D", "flyway.placeholders.CWMS_OFFICE_EROC=${db.eroc}",
+             "-D", "flyway.placeholders.PD_PASSWORD=${db.testAccountPassword}",
+             "-D", "flyway.placeholders.TEST_PASSWORD=${db.testAccountPassword}",
+             "-D", "flyway.placeholders.CWMS_SCHEMA_AUTH=no authentication",
+             "-D", "flyway.placeholders.CWMS_DBA_AUTH=no authentication",
+             "-D", "flyway.placeholders.CWMS_TABLESPACE=CWMS_20DATA",
+             "-D", "flyway.placeholders.AT_TABLESPACE=CWMS_20ATDATA",
+             "-D", "flyway.placeholders.AQ_TABLESPACE=CWMS_AQ",
+             "-D", "flyway.placeholders.AQ_EX_TABLESPACE=CWMS_AQ_EX",
+        )
+    })
+
+    doLast {
+        def result = installCall.result.get()
+
+        println(installCall.standardOutput.asText.get())
+        println(installCall.standardError.asText.get())
+        result.assertNormalExitValue()
+              .rethrowFailure()
+    }
+}
+
+tasks.named("installTests").configure {
+    dependsOn installSchema
+}
+
+def cleanSchema = tasks.register("cleanSchema") {
+    usesService(database)
+
+    def cleanCall = project.providers.javaexec({
+        classpath configurations.schema
+        mainClass.set('cwms.Migration')
+        ignoreExitValue = true
+        def db = database.get()
+        def test_users = db.createTestAccounts ? "create" : "nocreate"
+        args("-c", "clean",
+             "-D", "flyway.url=${db.jdbcUrl}",
+             "-D", "flyway.user=${db.buildUser}",
+             "-D", "flyway.password=${db.buildUserPassword}",
+             "-D", "flyway.placeholders.CWMS_SCHEMA=${db.schemaName}",
+             "-D", "flyway.placeholders.CWMS_TEST_USERS=${test_users}",
+             "-D", "flyway.placeholders.BUILD_USER=${db.buildUser}",
+             "-D", "flyway.placeholders.CWMS_OFFICE_ID=${db.officeId}",
+             "-D", "flyway.placeholders.CWMS_OFFICE_EROC=${db.eroc}",
+             "-D", "flyway.placeholders.PD_PASSWORD=${db.testAccountPassword}",
+             "-D", "flyway.placeholders.TEST_PASSWORD=${db.testAccountPassword}",
+             "-D", "flyway.placeholders.CWMS_SCHEMA_AUTH=no authentication",
+             "-D", "flyway.placeholders.CWMS_DBA_AUTH=no authentication",
+             "-D", "flyway.placeholders.CWMS_TABLESPACE=CWMS_20DATA",
+             "-D", "flyway.placeholders.AT_TABLESPACE=CWMS_20ATDATA",
+             "-D", "flyway.placeholders.AQ_TABLESPACE=CWMS_AQ",
+             "-D", "flyway.placeholders.AQ_EX_TABLESPACE=CWMS_AQ_EX",
+             "-D", "flyway.cleanDisabled=false",
+        )
+    })
+
+    doLast {
+        def result = cleanCall.result.get()
+
+        println(cleanCall.standardOutput.asText.get())
+        println(cleanCall.standardError.asText.get())
+        result.assertNormalExitValue()
+              .rethrowFailure()
+    }
+}

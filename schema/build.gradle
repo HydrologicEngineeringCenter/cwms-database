@@ -15,10 +15,6 @@ application {
     applicationName = 'migrate'
 }
 
-tasks.withType(JavaExec) {
-    args "build/flyway.conf"
-}
-
 dependencies {
     implementation(libs.org.flyway.core)
     implementation(libs.oracle.jdbc.driver)
@@ -27,9 +23,10 @@ dependencies {
     implementation(libs.bundles.jackson)
     implementation(libs.org.apache.commons.io)
     implementation(libs.org.opendcs.java.algebra.system)
+    implementation(libs.args4j)
 
     compile(libs.org.flyway.core)
-    
+
     flywayMigration sourceSets.main.runtimeClasspath
 
     utplsql 'org.utplsql:utplsql:3.1.10@zip'

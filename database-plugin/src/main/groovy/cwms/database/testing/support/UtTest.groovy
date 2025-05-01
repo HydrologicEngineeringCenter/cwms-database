@@ -40,7 +40,7 @@ public abstract class UtTest extends DatabaseTask {
 
     @TaskAction
     public void test() {
-database.ero
+
         def database = databaseService.get()
         def dbUrl = database.url
         def cwms_eroc = database.eroc
@@ -52,7 +52,7 @@ database.ero
                          .collect(Collectors.joining(","))
         exec.exec( {
             executable "utplsql"
-            args "run"database.ero
+            args "run"
             args "-p=${tests}"
             args "-f=UT_COVERAGE_HTML_REPORTER"
                 args "-o=${coverageDir.get()}/index_${name}.html"
@@ -141,7 +141,7 @@ public abstract class InstallTestsTask extends DatabaseTask {
         exec.exec({
             workingDir project.layout.projectDirectory.dir("src/test/utplsql")
             executable "sqlplus"
-            args "${database.cwmsUser}/\"${database.buildUserPassword}\"@{database.url}"
+            args "${database.cwmsUser}/\"${database.buildUserPassword}\"@${database.url}"
             args "@tests.sql"
             args database.officeId
             args database.schemaName
@@ -162,7 +162,7 @@ public abstract class InstallTestsTask extends DatabaseTask {
             args "${database.schemaName}"
             args "${database.eroc}hectest"
             args "${database.eroc}webtest"
-            args "${database.eroc}hectest_multioffice"database.ero
+            args "${database.eroc}hectest_multioffice"
         }).assertNormalExitValue()
     }
 }

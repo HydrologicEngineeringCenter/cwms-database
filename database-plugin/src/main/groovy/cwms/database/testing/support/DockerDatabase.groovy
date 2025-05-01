@@ -75,6 +75,7 @@ public final class DockerDatabase {
         def port = DockerUtil.getPortFor(container,1521)
 
         params.url.set("localhost:${port}/FREEPDB1")
+        params.jdbcUrl.set("jdbc:oracle:thin:@${params.url.get()}?oracle.net.disableOob=true")
         def buildUserResult = DockerUtil.execInContainer(container,
                 "/bin/bash", "-xc", """
 cat > /tmp/builduser.sql <<EOF

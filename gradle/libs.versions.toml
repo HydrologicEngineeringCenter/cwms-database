@@ -10,6 +10,7 @@ jackson = "2.17.1"
 commons-io = "2.11.0"
 java-algebra-system = "0.0.1"
 slf4j = "2.0.16"
+args4j = "2.32"
 
 [libraries]
 org-mockito-mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
@@ -26,6 +27,7 @@ org-flyway-core = { module = "org.flywaydb:flyway-core", version.ref= "flyway" }
 org-flyway-database-oracle = { module ="org.flywaydb:flyway-database-oracle", version.ref = "flyway" }
 slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+args4j = {module = "args4j:args4j", version.ref = "args4j"}
 
 docker-java = { module = "com.github.docker-java:docker-java-core", version.ref = "docker-java" }
 docker-java-transport = { module = "com.github.docker-java:docker-java-transport-httpclient5", version.ref = "docker-java" }

@@ -77,6 +77,11 @@ public abstract class DatabaseService implements BuildService<DatabaseService.Pa
         return getParameters().getSysPassword().get();
     }
 
+    public boolean getCreateTestAccounts() {
+        checkDatabase();
+        return getParameters().getCreateTestAccounts().get();
+    }
+
     public String getTestAccountPassword() {
         checkDatabase();
         return getParameters().getTestAccountPassword().get();

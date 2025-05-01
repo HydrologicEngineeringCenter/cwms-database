@@ -22,7 +22,7 @@ import org.flywaydb.core.internal.jdbc.Results;
 
 public class CwmsDataLoadExecutor implements MigrationExecutor {
     private static final Logger logger = Logger.getLogger(CwmsDataLoadExecutor.class.getName());
-    private DataResource resource;
+    private LoadableResource resource;
     private String query;
     private ArrayList<String> disabledIndexes = new ArrayList<>();
     private int batchSize = 1000;
@@ -45,7 +45,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
 
     private ArrayList<Group> groups = new ArrayList<Group>();
 
-    public CwmsDataLoadExecutor(DataResource resource) {
+    public CwmsDataLoadExecutor(LoadableResource resource) {
         this.resource = resource;
     }
 

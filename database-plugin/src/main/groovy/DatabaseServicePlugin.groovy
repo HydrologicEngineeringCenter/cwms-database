@@ -1,5 +1,6 @@
 package cwms.database.testing.support;
 
+import org.gradle.api.tasks.Copy;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
@@ -39,23 +40,44 @@ public class DatabaseServicePlugin implements Plugin<Project>
                 database.officeId.set(project.findProperty("database.officeId")?: "SPK")
                 database.createTestAccounts.set(true)
                 database.url.value("")
+                database.jdbcUrl.value("")
             }
             database.schema.set("CWMS_20")
         })
 
         def checkTestSetup = project.tasks.register("CheckTestSetup", CheckTestSetupTask) {}
+
+        def downloadUtplSql = project.tasks.register("downloadUtplSql", Copy) {
+            dependsOn checkTestSetup
+            from project.zipTree(project.configurations.utplsql.singleFile)
+            into project.layout.BuildDir.dir("deps")
+            doLast {
+                File createOwner = new File("${project.layout.BuildDir.get()}/deps/utPLSQL/source/create_utplsql_owner.sql")
+                createOwner.withWriterAppend( { out ->
+                    out.println("\ngrant execute on dbms_lob to &ut3_user;")
+                    out.println("grant execute on dbms_random to &ut3_user;")
+                    out.println("grant execute on dbms_random to &ut3_user;")
+                    out.println("grant execute on dbms_sql to &ut3_user;")
+                })
+            }
+        }
+
         def installTestFramework = project.tasks.register("installTestFramework", InstallTestFrameworkTask) {
             dependsOn checkTestSetup
+            dependsOn downloadUtplSql
         }
+
         def installTests = project.tasks.register("installTests", InstallTestsTask) {
             dependsOn installTestFramework
         }
+
         def cleanTestData = project.tasks.register("cleanTestData", cwms.database.testing.support.UtTest) {
             dependsOn installTests
             tests = ["test_clean_all"]
             outputs.upToDateWhen { false } // we always run this task
             user = "cwmspd"
         }
+
         def loadTestData = project.tasks.register("loadTestData", LoadTestDataTask) {
             dependsOn installTests
             dependsOn cleanTestData
@@ -70,7 +92,7 @@ public class DatabaseServicePlugin implements Plugin<Project>
 
         def test = project.tasks.register("test") {
             dependsOn testDb
-}
+        }
 
     }
 }
