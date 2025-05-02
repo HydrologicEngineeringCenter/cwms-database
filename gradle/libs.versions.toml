@@ -8,7 +8,7 @@ flyway = "11.7.2"
 exp4j="0.4.8"
 jackson = "2.17.1"
 commons-io = "2.11.0"
-java-algebra-system = "0.0.1"
+java-algebra-system = "0.0.2"
 slf4j = "2.0.16"
 args4j = "2.32"
 
@@ -22,7 +22,7 @@ jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-dat
 jackson-dataformat-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml", version.ref = "jackson" }
 net-objecthunter-exp4j = { module = "net.objecthunter:exp4j", version.ref="exp4j" }
 org-apache-commons-io = { module = "commons-io:commons-io", version.ref="commons-io" }
-org-opendcs-java-algebra-system = { module ="org.opendcs:java-algebra-system", version.ref= "java-algebra-system" }
+org-opendcs-java-algebra-system = { module ="io.github.opendcs:java-algebra-system", version.ref= "java-algebra-system" }
 org-flyway-core = { module = "org.flywaydb:flyway-core", version.ref= "flyway" }
 org-flyway-database-oracle = { module ="org.flywaydb:flyway-database-oracle", version.ref = "flyway" }
 slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
