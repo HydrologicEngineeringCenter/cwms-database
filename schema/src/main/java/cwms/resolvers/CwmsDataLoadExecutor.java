@@ -1,16 +1,14 @@
 package cwms.resolvers;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.SQLType;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,10 +17,12 @@ import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.executor.Context;
 import org.flywaydb.core.api.executor.MigrationExecutor;
 import org.flywaydb.core.api.resource.LoadableResource;
+import org.flywaydb.core.internal.jdbc.Result;
+import org.flywaydb.core.internal.jdbc.Results;
 
 public class CwmsDataLoadExecutor implements MigrationExecutor {
     private static final Logger logger = Logger.getLogger(CwmsDataLoadExecutor.class.getName());
-    private DataResource resource;
+    private LoadableResource resource;
     private String query;
     private ArrayList<String> disabledIndexes = new ArrayList<>();
     private int batchSize = 1000;
@@ -45,14 +45,15 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
 
     private ArrayList<Group> groups = new ArrayList<Group>();
 
-    public CwmsDataLoadExecutor(DataResource resource) {
+    public CwmsDataLoadExecutor(LoadableResource resource) {
         this.resource = resource;
     }
 
     @Override
-    public void execute(Context context) throws SQLException {
+    public List<Results> execute(Context context) throws SQLException {
         logger.info("Loading " + resource.getFilename());
-        try (BufferedReader reader = new BufferedReader(resource.read())){
+        var results = new Results();
+        try (BufferedReader reader = new BufferedReader(resource.read())) {
             String line;
             while( (line = reader.readLine()) != null ){
                 if (line.startsWith("#")){
@@ -68,10 +69,12 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                     logger.fine("Processing Data Elemements");
                     int entries = processData(reader,context.getConnection());
                     logger.finest("Total Entries loaded for (" + resource.getFilename() + ") is " + entries);
+                    results.addResult(new Result(entries, List.of(), List.of(), query));
                 } else if( line.startsWith("!disableindex")) {
                     disableIndex(line.split("\\s+")[1],context.getConnection());
                 } else if( line.startsWith("!config")) {
                     processConfig(reader);
+                    
                 } else if( line.startsWith("!")){
                     // do nothing, comment
                 }
@@ -93,8 +96,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
         }
 
 
-
-
+        return List.of(results);
     }
 
     private void processConfig(BufferedReader reader) throws IOException {

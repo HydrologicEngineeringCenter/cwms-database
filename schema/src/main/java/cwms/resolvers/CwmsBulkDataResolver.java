@@ -45,7 +45,6 @@ public class CwmsBulkDataResolver implements MigrationResolver {
             }
             Integer checkSum = ChecksumCalculator.calculate(lr);
             Integer equiv = ChecksumCalculator.calculate(lr);
-            DataResource dr = new DataResource(new File(lr.getAbsolutePathOnDisk()));
             migrations.add(new CwmsResolvedMigration(null,
                                                      lr.getFilename(),
                                                      lr.getRelativePath(),
@@ -53,7 +52,7 @@ public class CwmsBulkDataResolver implements MigrationResolver {
                                                      equiv, //equivalentChecksum,
                                                      CoreMigrationType.CUSTOM,
                                                      lr.getAbsolutePathOnDisk(),
-                                                     new CwmsDataLoadExecutor(dr)));
+                                                     new CwmsDataLoadExecutor(lr)));
         }
 
     }

@@ -7,9 +7,3 @@ repositories {
     gradlePluginPortal() // so that external plugins can be resolved in dependencies section
     mavenCentral()
 }
-
-dependencies {
-    implementation(libs.oracle.jdbc.driver)
-    implementation(libs.org.flyway.database.oracle)
-    implementation(libs.bundles.docker.java)
-}

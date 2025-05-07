@@ -3,7 +3,6 @@ package db.data;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.flywaydb.core.api.migration.Context;
@@ -25,10 +24,11 @@ public interface CwmsMigration {
 
     default public String expandPlaceHolders(String input, Context context) throws IOException {
         
-        PlaceholderReplacingReader reader = 
+        var reader = 
             new PlaceholderReplacingReader(
                     context.getConfiguration().getPlaceholderPrefix(),
                     context.getConfiguration().getPlaceholderSuffix(),
+                    context.getConfiguration().getPlaceholderSeparator(),
                     context.getConfiguration().getPlaceholders(),
                     new StringReader(input)
                 );

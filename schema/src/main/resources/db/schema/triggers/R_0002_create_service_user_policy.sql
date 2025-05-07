@@ -18,7 +18,7 @@ END CHECK_SESSION_USER;
 /
 
 BEGIN
-    for c IN (select table_name from user_tables WHERE table_name <> 'AT_SEC_SESSION')
+    for c IN (select table_name from all_tables WHERE owner='${CWMS_SCHEMA}' and table_name <> 'AT_SEC_SESSION')
     loop
         BEGIN
           DBMS_RLS.DROP_POLICY(

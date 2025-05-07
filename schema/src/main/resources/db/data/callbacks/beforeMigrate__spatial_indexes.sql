@@ -14,13 +14,14 @@ declare
                                         sdo_dim_element ('longitude', -90, 90, 0.0005)),
                         p_srid   -- SRID
                         );
+            
+            v_sql := 'CREATE INDEX '|| p_index_name || ' ON ' || p_table_name || '(' || p_column_name || ') INDEXTYPE IS MDSYS.SPATIAL_INDEX NOPARALLEL'; 
+
+            execute immediate v_sql;
         exception   
             when duplicate_entry then null; -- duplicate entry
         end;
 
-        v_sql := 'CREATE INDEX '|| p_index_name || ' ON ' || p_table_name || '(' || p_column_name || ') INDEXTYPE IS MDSYS.SPATIAL_INDEX NOPARALLEL'; 
-        
-        execute immediate v_sql;
     exception
         when idx_exists then null; -- index already created
     end;
