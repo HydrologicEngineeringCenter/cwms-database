@@ -547,7 +547,9 @@ as
 
          IF l_office_id IS NULL
          THEN
-            IF l_username = '${CWMS_SCHEMA}' or l_username = 'NOBODY' or l_username = 'CCP' or l_username = 'SYS' or upper(l_username) = upper(l_upass_id)
+            IF l_username = '${CWMS_SCHEMA}' or l_username = 'NOBODY' or l_username = 'CCP' or
+               l_username = 'SYS' or upper(l_username) = upper(l_upass_id) or
+               upper(l_username)= upper('${BUILD_USER}')
             THEN
                l_office_id := 'CWMS';
             ELSE

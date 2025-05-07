@@ -11,7 +11,7 @@ AS
         --
         -- CWMS_20, system, sys are ok
         --
-        IF l_username IN ('CWMS_20', 'SYSTEM', 'SYS')
+        IF l_username IN ('${CWMS_SCHEMA}', 'SYSTEM', 'SYS',upper('${BUILD_USER}'))
         THEN
             RETURN FALSE;
         END IF;
@@ -51,7 +51,7 @@ AS
         --
         -- CWMS_20, system, sys are ok
         --
-        IF l_username IN ('CWMS_20', 'SYSTEM', 'SYS')
+        IF l_username IN ('${CWMS_SCHEMA}', 'SYSTEM', 'SYS', upper('${BUILD_USER}'))
         THEN
             RETURN TRUE;
         END IF;

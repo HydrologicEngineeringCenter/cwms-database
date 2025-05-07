@@ -29,7 +29,7 @@ BEGIN
              l_priv   VARCHAR2 (16);
              BEGIN
              l_priv := NVL(SYS_CONTEXT (''CWMS_ENV'', ''CWMS_PRIVILEGE''),'''');
-             IF (l_priv <> ''CAN_WRITE'' AND user NOT IN (''SYS'', ''${CWMS_SCHEMA}'')'
+             IF (l_priv <> ''CAN_WRITE'' AND user NOT IN (''SYS'', ''${CWMS_SCHEMA}'', ''${BUILD_USER}'')'
           || l_upass
           || ')
              THEN
@@ -60,7 +60,7 @@ BEGIN
              l_priv   VARCHAR2 (16);
              BEGIN
              l_priv := NVL(SYS_CONTEXT (''CWMS_ENV'', ''CWMS_PRIVILEGE''),'''');
-             IF ((l_priv <> ''CAN_WRITE'') AND (l_priv <> ''CAN_LOGIN'') AND user NOT IN (''SYS'', ''${CWMS_SCHEMA}''))
+             IF ((l_priv <> ''CAN_WRITE'') AND (l_priv <> ''CAN_LOGIN'') AND user NOT IN (''SYS'', ''${CWMS_SCHEMA}'', ''${BUILD_USER}''))
              THEN
 
                CWMS_20.CWMS_ERR.RAISE(''NO_WRITE_PRIVILEGE'');
@@ -83,7 +83,7 @@ BEGIN
 
     IF (    (l_priv <> 'CAN_WRITE')
         AND (l_priv <> 'CAN_LOGIN')
-        AND USER NOT IN ('SYS', 'CWMS_20'))
+        AND USER NOT IN ('SYS', '${CWMS_SCHEMA}','${BUILD_USER}'))
     THEN
         CWMS_20.CWMS_ERR.RAISE ('NO_WRITE_PRIVILEGE');
     END IF;

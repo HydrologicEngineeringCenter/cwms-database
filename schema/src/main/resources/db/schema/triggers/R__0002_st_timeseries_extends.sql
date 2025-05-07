@@ -8,7 +8,7 @@ DECLARE
 BEGIN
     SELECT SYS_CONTEXT ('CWMS_ENV', 'CWMS_PRIVILEGE') INTO l_priv FROM DUAL;
 
-    IF ((l_priv is NULL OR l_priv <> 'CAN_WRITE') AND user NOT IN ('SYS', 'CWMS_20'))
+    IF ((l_priv is NULL OR l_priv <> 'CAN_WRITE') AND user NOT IN ('SYS', '${CWMS_SCHEMA}', '${BUILD_USER}'))
     THEN
         CWMS_20.CWMS_ERR.RAISE('NO_WRITE_PRIVILEGE');
     END IF;
