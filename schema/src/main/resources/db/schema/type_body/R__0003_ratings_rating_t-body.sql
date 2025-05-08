@@ -2721,7 +2721,9 @@ as
                   l_rating_spec := rating_spec_t(rating_spec_id, office_id);
                   l_template := rating_template_t(office_id, l_rating_spec.template_id);
                end if;
-               l_results(j) := self.rating_info.rate(l_ind_set, 1, l_template.ind_parameters);
+               if l_ind_set(1) is not null then
+                   l_results(j) := self.rating_info.rate(l_ind_set, 1, l_template.ind_parameters);
+               end if;
             when self.formula is not null then
                --------------------
                -- formula rating --

@@ -5489,7 +5489,7 @@ begin
          end if;
          for i in l_first_valid..l_last_valid loop
             l_results.extend;
-            l_results(i) := ztsv_type(
+            l_results(l_results.count) := ztsv_type(
                l_times(i),
                l_dep_values(i),
                case l_dep_values(i) is null
@@ -5732,17 +5732,16 @@ begin
             p_rating_id,
             'CWMS rating identifier');
       end if;
-      l_units := cwms_util.split_text(replace(l_parts(1), separator2, separator3), separator3);
-      if l_units.count != 2 then
+      l_parts := cwms_util.split_text(replace(l_parts(2), separator2, separator3), separator3);
+      if l_parts.count != 2 then
          cwms_err.raise(
             'ERROR',
             'Rating ('
             ||p_rating_id
-            ||') requires '
-            ||l_units.count - 1
-            ||' independent parameters, 2 specified');
+            ||') requires a single independent parameter, '
+            || TO_CHAR(l_units.count - 1)
+            ||' specified');
       end if;
-      l_units(l_units.count) := p_units;
       l_parts := cwms_util.split_text(p_input_id, separator1);
       if l_parts.count != 6 then
          cwms_err.raise(
@@ -5752,6 +5751,7 @@ begin
       end if;
       l_location := l_parts(1);
       l_interval := l_parts(4);
+      l_units := str_tab_t(p_units, cwms_util.get_default_units(l_parts(2), 'SI'));
       -------------------------------
       -- get the working time zone --
       -------------------------------
@@ -5787,7 +5787,7 @@ begin
       cwms_ts.retrieve_ts(
          l_cursor,
          p_input_id,
-         l_units(1),
+         l_units(2),
          p_start_time,
          p_end_time,
          p_time_zone,
@@ -5852,7 +5852,7 @@ begin
          end if;
          for i in l_first_valid..l_last_valid loop
             l_results.extend;
-            l_results(i) := ztsv_type(
+            l_results(l_results.count) := ztsv_type(
                l_times(i),
                l_ind_values(i),
                case l_ind_values(i) is null
