@@ -21,6 +21,8 @@ procedure test_retrieve_usgs_rating_without_shift_points;
 procedure test_expression_rating;
 --%test(Test table rating)
 procedure test_table_rating;
+--%test(Test reverse rate ts)
+procedure test_reverse_rate_ts;
 
 c_location_id        constant varchar2(57) := 'Test_Ratings_Loc';
 c_inspect_after_test constant boolean := false;
@@ -638,6 +640,140 @@ begin
    end if;
 
 end test_table_rating;
+
+
+procedure test_reverse_rate_ts
+   is
+   l_result        ztsv_array;
+   l_rating_spec   cwms_v_rating.rating_id%type;
+   l_errors        clob;
+   l_start_time    timestamp;
+   l_end_time      timestamp;
+   l_tsv           tsv_array;
+   l_xml           varchar2(32767) := '
+        <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
+          <rating-template office-id="&&office_id">
+            <parameters-id>Elev;Area</parameters-id>
+            <version>Standard</version>
+            <ind-parameter-specs>
+              <ind-parameter-spec position="1">
+                <parameter>Elev</parameter>
+                <in-range-method>LINEAR</in-range-method>
+                <out-range-low-method>NEXT</out-range-low-method>
+                <out-range-high-method>PREVIOUS</out-range-high-method>
+              </ind-parameter-spec>
+            </ind-parameter-specs>
+            <dep-parameter>Area</dep-parameter>
+            <description>12</description>
+          </rating-template>
+          <rating-spec office-id="&&office_id">
+            <rating-spec-id>$location-id.Elev;Area.Standard.test_cwms_rating</rating-spec-id>
+            <template-id>Elev;Area.Standard</template-id>
+            <location-id>$location-id</location-id>
+            <version>test_cwms_rating</version>
+            <source-agency/>
+            <in-range-method>PREVIOUS</in-range-method>
+            <out-range-low-method>NEAREST</out-range-low-method>
+            <out-range-high-method>PREVIOUS</out-range-high-method>
+            <active>true</active>
+            <auto-update>true</auto-update>
+            <auto-activate>true</auto-activate>
+            <auto-migrate-extension>true</auto-migrate-extension>
+            <ind-rounding-specs>
+              <ind-rounding-spec position="1">4444444444</ind-rounding-spec>
+            </ind-rounding-specs>
+            <dep-rounding-spec>4444444444</dep-rounding-spec>
+            <description></description>
+          </rating-spec>
+          <simple-rating office-id="&&office_id">
+            <rating-spec-id>$location-id.Elev;Area.Standard.test_cwms_rating</rating-spec-id>
+            <units-id>ft;acre</units-id>
+            <effective-date>2017-09-26T20:06:00Z</effective-date>
+            <transition-start-date>2017-09-24T20:06:00Z</transition-start-date>
+            <create-date>2017-09-26T20:06:00Z</create-date>
+            <active>true</active>
+            <description/>
+            <rating-points>
+              <point><ind>370.0</ind><dep>0.0</dep></point>
+              <point><ind>383.0</ind><dep>0.1</dep></point>
+              <point><ind>387.0</ind><dep>1.0</dep></point>
+              <point><ind>388.0</ind><dep>2.0</dep></point>
+              <point><ind>389.0</ind><dep>4.0</dep></point>
+              <point><ind>390.2</ind><dep>7.0</dep></point>
+              <point><ind>391.0</ind><dep>10.0</dep></point>
+              <point><ind>392.0</ind><dep>12.0</dep></point>
+              <point><ind>393.0</ind><dep>14.0</dep></point>
+              <point><ind>394.0</ind><dep>18.0</dep></point>
+              <point><ind>395.0</ind><dep>20.0</dep></point>
+              <point><ind>396.0</ind><dep>22.0</dep></point>
+              <point><ind>397.0</ind><dep>25.0</dep></point>
+              <point><ind>398.0</ind><dep>27.0</dep></point>
+              <point><ind>399.0</ind><dep>29.0</dep></point>
+            </rating-points>
+          </simple-rating>
+        </ratings>';
+begin
+    l_start_time := TO_TIMESTAMP('2025-01-02 01:00:00', 'YYYY-MM-DD HH24:MI:SS');
+    l_end_time := TO_TIMESTAMP('2025-01-04 01:00:00', 'YYYY-MM-DD HH24:MI:SS');
+    ------------------------
+   -- store the location --
+   ------------------------
+   cwms_loc.store_location(
+      p_location_id  => c_location_id,
+      p_db_office_id => '&&office_id');
+    ------------------------
+    -- store the timeseries --
+    ------------------------
+    l_tsv := tsv_array();
+    l_tsv.extend(2);
+    l_tsv(1) := tsv_type(TO_TIMESTAMP('2025-01-03 00:00:00', 'YYYY-MM-DD HH24:MI:SS'), 12.0, 0);
+    l_tsv(2) := tsv_type(TO_TIMESTAMP('2025-01-04 00:00:00', 'YYYY-MM-DD HH24:MI:SS'), 27.0, 0);
+    cwms_ts.store_ts(
+        p_office_id => '&&office_id',
+        p_cwms_ts_id => c_location_id || '.Area.Inst.1Day.0.test_cwms_rating',
+        p_units => 'acre',
+        p_timeseries_data => l_tsv,
+        p_store_rule => cwms_util.REPLACE_ALL,
+        p_override_prot => 1);
+   ----------------------
+   -- store the rating --
+   ----------------------
+   l_xml := replace(l_xml, '$location-id', c_location_id);
+   cwms_rating.store_ratings_xml(
+      p_errors         => l_errors,
+      p_xml            =>l_xml,
+      p_fail_if_exists => 'F',
+      p_replace_base   => 'T');
+
+   ut.expect(l_errors).to_be_null;
+   ------------------------------
+   -- rate one input value set --
+   ------------------------------
+   l_rating_spec := regexp_substr(l_xml, '<rating-spec-id>(.+?)</rating-spec-id>', 1, 1, 'i', 1);
+   l_result := cwms_rating.retrieve_reverse_rated_ts(
+      p_input_id => c_location_id || '.Area.Inst.1Day.0.test_cwms_rating',
+      p_rating_Id => l_rating_spec,
+      p_units       => 'ft',
+      p_start_time => l_start_time,
+      p_end_time => l_end_time,
+      p_rating_time => null,
+      p_time_zone => 'UTC',
+      p_round => 'F',
+      p_trim => 'T',
+      p_start_inclusive => 'T',
+      p_end_inclusive => 'T',
+      p_previous => 'F',
+      p_next => 'F',
+      p_version_date => null,
+      p_max_version => 'T',
+      p_ts_office_id   => '&&office_id',
+      p_rating_office_id   => '&&office_id');
+
+   ut.expect(l_result.count).to_equal(2);
+   ut.expect(round(l_result(1).value, 9)).to_equal(392.0);
+   ut.expect(round(l_result(2).value, 9)).to_equal(398.0);
+
+end test_reverse_rate_ts;
 
 end test_cwms_rating;
 /
