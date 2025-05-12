@@ -13,7 +13,7 @@ clone the repository with
 
     git clone https://github.com/HydrologicEngineeringCenter/cwms-database.git
 
-Use a token, created through the bitbucket account management interface, instead of your password. Certain operations will fail if your username/password combination is used.
+Use a token, created through the github account management interface, instead of your password. Certain operations will fail if your username/password combination is used.
 
 Once you've decided on what you'll be working on create a branch (or checkout an existing branch if helping someone.)
 
