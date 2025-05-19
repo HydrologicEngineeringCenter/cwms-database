@@ -35,6 +35,8 @@ end;
 @@cwms/types/ztsv_type
 @@cwms/types/ztsv_array
 @@cwms/types/ztsv_array_tab
+@@cwms/types/ztsv_entry_type
+@@cwms/types/ztsv_entry_array
 @@cwms/types/ztimeseries_type
 @@cwms/types/ztimeseries_array
 @@cwms/types/char_16_array_type

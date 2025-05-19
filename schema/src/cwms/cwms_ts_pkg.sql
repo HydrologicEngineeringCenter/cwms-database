@@ -120,6 +120,31 @@ AS
     */
    TYPE zts_tab_t IS TABLE OF zts_rec_t;
 
+    /**
+    * Type for holding a time series value with data entry date.
+    *
+    * @see type ztsv_type
+    *
+    * @member date_time          Same as for type ztsv_type
+    * @member value              Same as for type ztsv_type
+    * @member quality_code       Same as for type ztsv_type
+    * @member data_entry_date    The date/time the value was entered into the database
+    */
+   TYPE zts_entry_rec_t IS RECORD
+   (
+      date_time      DATE,
+      VALUE          BINARY_DOUBLE,
+      quality_code   NUMBER,
+      data_entry_date TIMESTAMP
+   );
+
+   /**
+    * Type for holding time series values with data entry dates.
+    *
+    * @see type ztsv_array
+    */
+   TYPE zts_entry_tab_t IS TABLE OF zts_entry_rec_t;
+
    /**
     * Type for passing collections of values from cx_Oracle scripts and possibly others
     */
@@ -1194,11 +1219,13 @@ AS
     * Undocumented
     */
    procedure retrieve_ts_raw(
-      p_ts_retrieved   in out nocopy ztsv_array,
-      p_ts_code        in integer,
-      p_date_range     in date_range_t,
-      p_version_date   in date default null,
-      p_max_version    in varchar2 default 'T');
+      p_ts_retrieved          in out nocopy ztsv_entry_array,
+      p_ts_code               in integer,
+      p_date_range            in date_range_t,
+      p_version_date          in date default null,
+      p_max_version           in varchar2 default 'T',
+      p_retrieve_data_entry   in varchar2 default 'F');
+
    /**
     * Retrieves time series data for a specified time series and time window, including LRTS time zone
     *
@@ -1254,27 +1281,30 @@ AS
     * @param p_version_date    The version date of the data to retrieve. If unspecified or NULL, the version date is determined by p_max_version
     * @param p_max_version     A flag ('T' or 'F') that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_version_date is NULL
     * @param p_office_id       The office that owns the time series. If unspecified or NULL, the session user's current office is used
+    * @param p_retrieve_data_entry   A flag ('T' or 'F') that specifies whether to retrieve the data entry date for the data value
     */
    function retrieve_ts_f (
-      p_cwms_ts_id_out       out varchar2,
-      p_units_out            out varchar2,
-      p_time_zone_id         out varchar2,
-      p_cwms_ts_id        in     varchar2,
-      p_start_time        in     date,
-      p_end_time          in     date,
-      p_time_zone         in     varchar2 default null,
-      p_date_time_type    in     varchar2 default 'DATE',
-      p_units             in     varchar2 default null,
-      p_unit_system       in     varchar2 default 'SI',
-      p_trim              in     varchar2 default 'F',
-      p_start_inclusive   in     varchar2 default 'T',
-      p_end_inclusive     in     varchar2 default 'T',
-      p_previous          in     varchar2 default 'F',
-      p_next              in     varchar2 default 'F',
-      p_version_date      in     date     default null,
-      p_max_version       in     varchar2 default 'T',
-      p_office_id         in     varchar2 default null)
+      p_cwms_ts_id_out           out varchar2,
+      p_units_out                out varchar2,
+      p_time_zone_id             out varchar2,
+      p_cwms_ts_id            in     varchar2,
+      p_start_time            in     date,
+      p_end_time              in     date,
+      p_time_zone             in     varchar2 default null,
+      p_date_time_type        in     varchar2 default 'DATE',
+      p_units                 in     varchar2 default null,
+      p_unit_system           in     varchar2 default 'SI',
+      p_trim                  in     varchar2 default 'F',
+      p_start_inclusive       in     varchar2 default 'T',
+      p_end_inclusive         in     varchar2 default 'T',
+      p_previous              in     varchar2 default 'F',
+      p_next                  in     varchar2 default 'F',
+      p_version_date          in     date     default null,
+      p_max_version           in     varchar2 default 'T',
+      p_office_id             in     varchar2 default null,
+      p_retrieve_data_entry   in varchar2 default 'F')
       return sys_refcursor;
+
    /**
     * Retrieves time series data for a specified time series and time window, including LRTS time zone
     *
@@ -1323,25 +1353,27 @@ AS
     * @param p_version_date    The version date of the data to retrieve. If not specified or NULL, the version date is determined by p_max_version
     * @param p_max_version     A flag ('T' or 'F') that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_version_date is NULL
     * @param p_office_id       The office that owns the time series
+    * @param p_retrieve_data_entry   A flag ('T' or 'F') that specifies whether to retrieve the data entry date for the data value
     */
    PROCEDURE retrieve_ts_out (
-      p_at_tsv_rc            OUT SYS_REFCURSOR,
-      p_cwms_ts_id_out       OUT VARCHAR2,
-      p_units_out            OUT VARCHAR2,
-      p_time_zone_id         OUT VARCHAR2,
-      p_cwms_ts_id        IN     VARCHAR2,
-      p_units             IN     VARCHAR2,
-      p_start_time        IN     DATE,
-      p_end_time          IN     DATE,
-      p_time_zone         IN     VARCHAR2 DEFAULT 'UTC',
-      p_trim              IN     VARCHAR2 DEFAULT 'F',
-      p_start_inclusive   IN     VARCHAR2 DEFAULT 'T',
-      p_end_inclusive     IN     VARCHAR2 DEFAULT 'T',
-      p_previous          IN     VARCHAR2 DEFAULT 'F',
-      p_next              IN     VARCHAR2 DEFAULT 'F',
-      p_version_date      IN     DATE DEFAULT NULL,
-      p_max_version       IN     VARCHAR2 DEFAULT 'T',
-      p_office_id         IN     VARCHAR2 DEFAULT NULL);
+      p_at_tsv_rc                OUT SYS_REFCURSOR,
+      p_cwms_ts_id_out           OUT VARCHAR2,
+      p_units_out                OUT VARCHAR2,
+      p_time_zone_id             OUT VARCHAR2,
+      p_cwms_ts_id            IN     VARCHAR2,
+      p_units                 IN     VARCHAR2,
+      p_start_time            IN     DATE,
+      p_end_time              IN     DATE,
+      p_time_zone             IN     VARCHAR2 DEFAULT 'UTC',
+      p_trim                  IN     VARCHAR2 DEFAULT 'F',
+      p_start_inclusive       IN     VARCHAR2 DEFAULT 'T',
+      p_end_inclusive         IN     VARCHAR2 DEFAULT 'T',
+      p_previous              IN     VARCHAR2 DEFAULT 'F',
+      p_next                  IN     VARCHAR2 DEFAULT 'F',
+      p_version_date          IN     DATE DEFAULT NULL,
+      p_max_version           IN     VARCHAR2 DEFAULT 'T',
+      p_office_id             IN     VARCHAR2 DEFAULT NULL,
+      p_retrieve_data_entry   IN VARCHAR2 DEFAULT 'F');
 
    /**
     * Retrieves time series data for a specified time series and time window
@@ -1472,6 +1504,79 @@ AS
       p_max_version       IN VARCHAR2 DEFAULT 'T',
       p_office_id         IN VARCHAR2 DEFAULT NULL)
       RETURN zts_tab_t
+      PIPELINED;
+
+
+   /**
+    * Retrieves a table of time series data with data entry dates for a specified time series and time window
+    *
+    * @param p_cwms_ts_id      The time series identifier to retrieve data for
+    * @param p_units           The unit to retrieve the data values in
+    * @param p_start_time      The start time of the time window
+    * @param p_end_time        The end time of the time window
+    * @param p_time_zone       The time zone for the time window and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified.
+    * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
+    * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window begins on ('T') or after ('F') the start time
+    * @param p_end_inclusive   A flag ('T' or 'F') that specifies whether the time window ends on ('T') or before ('F') the end time
+    * @param p_previous        A flag ('T' or 'F') that specifies whether to retrieve the latest value before the start of the time window
+    * @param p_next            A flag ('T' or 'F') that specifies whether to retrieve the earliest value after the end of the time window
+    * @param p_version_date    The version date of the data to retrieve. If not specified or NULL, the version date is determined by p_max_version
+    * @param p_max_version     A flag ('T' or 'F') that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_version_date is NULL
+    * @param p_office_id       The office that owns the time series
+    * @param p_retrieve_data_entry   A flag ('T' or 'F') that specifies whether to retrieve the data entry date for the data value
+    *
+    * @return  A collection of records containing the time series data. The records contains
+    * the following columns, sorted by date_time:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date/time of the value, in the specified time zone</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">value</td>
+    *     <td class="descr">binary_double</td>
+    *     <td class="descr">The data value</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">quality_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The quality code for the data value</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">4</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">timestamp</td>
+    *     <td class="descr">The date the data was entered in the database</td>
+    *   </tr>
+    * </table><p>
+    * The record collection is suitable for casting to a table with the table() function.
+    */
+   FUNCTION retrieve_ts_entry_out_tab (
+      p_cwms_ts_id            IN VARCHAR2,
+      p_units                 IN VARCHAR2,
+      p_start_time            IN DATE,
+      p_end_time              IN DATE,
+      p_time_zone             IN VARCHAR2 DEFAULT 'UTC',
+      p_trim                  IN VARCHAR2 DEFAULT 'F',
+      p_start_inclusive       IN VARCHAR2 DEFAULT 'T',
+      p_end_inclusive         IN VARCHAR2 DEFAULT 'T',
+      p_previous              IN VARCHAR2 DEFAULT 'F',
+      p_next                  IN VARCHAR2 DEFAULT 'F',
+      p_version_date          IN DATE DEFAULT NULL,
+      p_max_version           IN VARCHAR2 DEFAULT 'T',
+      p_office_id             IN VARCHAR2 DEFAULT NULL)
+      RETURN zts_entry_tab_t
       PIPELINED;
 
    /**

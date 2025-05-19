@@ -18,7 +18,7 @@ create type ztsv_type
 AS OBJECT (
    date_time    DATE,
    VALUE        BINARY_DOUBLE,
-   quality_code NUMBER);
+   quality_code NUMBER) NOT FINAL;
 /
 
 

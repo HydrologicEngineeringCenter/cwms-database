@@ -3030,25 +3030,31 @@ AS
    -- function retrieve_ts_raw
    --------------------------------------------------------------------------------
    procedure retrieve_ts_raw(
-      p_ts_retrieved   in out nocopy ztsv_array,
-      p_ts_code        in integer,
-      p_date_range     in date_range_t,
-      p_version_date   in date default null,
-      p_max_version    in varchar2 default 'T')
+      p_ts_retrieved          in out nocopy ztsv_entry_array,
+      p_ts_code               in integer,
+      p_date_range            in date_range_t,
+      p_version_date          in date default null,
+      p_max_version           in varchar2 default 'T',
+      p_retrieve_data_entry   in varchar2 default 'F')
    is
       type tsv_t is record (date_time date, value binary_double, quality_code integer);
       type tsv_tab_t is table of tsv_t index by varchar2(16);
       type tsv_tab_tab_t is table of tsv_tab_t index by varchar2(16);
-      c_fmt             constant varchar2(18) := 'yyyy-mm-dd hh24:mi';
-      l_ts_retrieved    ztsv_array;
-      l_max_version     boolean;
-      l_version_date    date := p_version_date;
-      l_start_date_time date;
-      l_end_date_time   date;
-      l_ts_data         tsv_tab_tab_t;
-      l_date_time_str   varchar2(16);
-      l_vers_date_str   varchar2(16);
-      i                 binary_integer;
+      type tsv_entry_t is record (date_time date, value binary_double, quality_code integer, data_entry_date date);
+      type tsv_entry_tab_t is table of tsv_entry_t index by varchar2(16);
+      type tsv_entry_tab_tab_t is table of tsv_entry_tab_t index by varchar2(16);
+      c_fmt                   constant varchar2(18) := 'yyyy-mm-dd hh24:mi';
+      l_max_version           boolean;
+      l_retrieve_data_entry   boolean;
+      l_version_date          date := p_version_date;
+      l_start_date_time       date;
+      l_end_date_time         date;
+      l_version_query_date    date;
+      l_ts_data               tsv_tab_tab_t;
+      l_ts_entry_data         tsv_entry_tab_tab_t;
+      l_date_time_str         varchar2(16);
+      l_vers_date_str         varchar2(16);
+      i                       binary_integer;
    begin
       -------------------
       -- sanity checks --
@@ -3062,6 +3068,7 @@ AS
       l_start_date_time := p_date_range.start_time('UTC');
       l_end_date_time   := p_date_range.end_time('UTC');
       l_max_version := cwms_util.return_true_or_false(p_max_version);
+      l_retrieve_data_entry := cwms_util.return_true_or_false(p_retrieve_data_entry);
       if p_version_date is null then
          ---------------------------------------------
          -- retrieve the data for all version dates --
@@ -3070,38 +3077,69 @@ AS
                         date_time,
                         version_date,
                         value,
-                        quality_code
+                        quality_code,
+                        data_entry_date
                      from
                         av_tsv
                      where
                         ts_code = p_ts_code
-                        and date_time between l_start_date_time and l_end_date_time
-                        and start_date <= l_end_date_time
-                        and end_date > l_start_date_time
-                    )
+                       and date_time between l_start_date_time and l_end_date_time
+                       and start_date <= l_end_date_time
+                       and end_date > l_start_date_time
+         )
          loop
             l_date_time_str := to_char(rec.date_time, c_fmt);
             l_vers_date_str := to_char(rec.version_date, c_fmt);
-            l_ts_data(l_date_time_str)(l_vers_date_str) := tsv_t(rec.date_time, rec.value, rec.quality_code);
+            if l_retrieve_data_entry then
+                  l_ts_entry_data(l_date_time_str)(l_vers_date_str) := tsv_entry_t(rec.date_time, rec.value, rec.quality_code, rec.data_entry_date);
+            else
+                  l_ts_data(l_date_time_str)(l_vers_date_str) := tsv_t(rec.date_time, rec.value, rec.quality_code);
+            end if;
          end loop;
          ---------------------------------------------------
          -- build the output data from the retrieved data --
          ---------------------------------------------------
-         p_ts_retrieved := ztsv_array();
-         p_ts_retrieved.extend(l_ts_data.count);
+         p_ts_retrieved := ztsv_entry_array();
+         if l_retrieve_data_entry then
+            p_ts_retrieved.extend(l_ts_entry_data.count);
+         else
+            p_ts_retrieved.extend(l_ts_data.count);
+         end if;
          i := 1;
-         l_date_time_str := l_ts_data.first;
+         if l_retrieve_data_entry then
+            l_date_time_str := l_ts_entry_data.first;
+         else
+            l_date_time_str := l_ts_data.first;
+         end if;
          while l_date_time_str is not null loop
-            if l_max_version then
-               l_vers_date_str := l_ts_data(l_date_time_str).last;
+            if l_retrieve_data_entry then
+               if l_max_version then
+                  l_vers_date_str := l_ts_entry_data(l_date_time_str).last;
+               else
+                  l_vers_date_str := l_ts_entry_data(l_date_time_str).first;
+               end if;
+               p_ts_retrieved(i) := ztsv_entry_type(
+                  l_ts_entry_data(l_date_time_str)(l_vers_date_str).date_time,
+                  l_ts_entry_data(l_date_time_str)(l_vers_date_str).value,
+                  l_ts_entry_data(l_date_time_str)(l_vers_date_str).quality_code,
+                  l_ts_entry_data(l_date_time_str)(l_vers_date_str).data_entry_date);
             else
-               l_vers_date_str := l_ts_data(l_date_time_str).first;
+               if l_max_version then
+                  l_vers_date_str := l_ts_data(l_date_time_str).last;
+               else
+                  l_vers_date_str := l_ts_data(l_date_time_str).first;
+               end if;
+               p_ts_retrieved(i) := ztsv_entry_type(
+                  l_ts_data(l_date_time_str)(l_vers_date_str).date_time,
+                  l_ts_data(l_date_time_str)(l_vers_date_str).value,
+                  l_ts_data(l_date_time_str)(l_vers_date_str).quality_code,
+                  null);
             end if;
-            p_ts_retrieved(i) := ztsv_type(
-               l_ts_data(l_date_time_str)(l_vers_date_str).date_time,
-               l_ts_data(l_date_time_str)(l_vers_date_str).value,
-               l_ts_data(l_date_time_str)(l_vers_date_str).quality_code);
-            l_date_time_str := l_ts_data.next(l_date_time_str);
+            if l_retrieve_data_entry then
+               l_date_time_str := l_ts_entry_data.next(l_date_time_str);
+            else
+               l_date_time_str := l_ts_data.next(l_date_time_str);
+            end if;
             i := i + 1;
          end loop;
       else
@@ -3111,20 +3149,37 @@ AS
          if l_version_date != cwms_util.non_versioned and p_date_range.time_zone not in ('UTC', 'GMT') then
             l_version_date := cwms_util.change_timezone(p_version_date, p_date_range.time_zone, 'UTC');
          end if;
-         select
-            ztsv_type(date_time, value, quality_code)
-         bulk collect into
-            p_ts_retrieved
-         from
-            av_tsv
-         where
-            ts_code = p_ts_code
-            and date_time between l_start_date_time and l_end_date_time
-            and start_date <= l_end_date_time
-            and end_date > l_start_date_time
-            and version_date = l_version_date
-         order by
-            date_time;
+         if l_retrieve_data_entry then
+            select
+               ztsv_entry_type(date_time, value, quality_code, data_entry_date)
+            bulk collect into
+               p_ts_retrieved
+            from
+               av_tsv
+            where
+               ts_code = p_ts_code
+               and date_time between l_start_date_time and l_end_date_time
+               and start_date <= l_end_date_time
+               and end_date > l_start_date_time
+               and version_date = l_version_date
+            order by
+               date_time;
+         else
+            select
+               ztsv_entry_type(date_time, value, quality_code, null)
+            bulk collect into
+               p_ts_retrieved
+            from
+               av_tsv
+            where
+               ts_code = p_ts_code
+               and date_time between l_start_date_time and l_end_date_time
+               and start_date <= l_end_date_time
+               and end_date > l_start_date_time
+               and version_date = l_version_date
+            order by
+               date_time;
+         end if;
       end if;
       ---------------------------------
       -- normalize the quality codes --
@@ -3133,56 +3188,59 @@ AS
          p_ts_retrieved(i).quality_code := normalize_quality(p_ts_retrieved(i).quality_code);
       end loop;
    end retrieve_ts_raw;
+
    --------------------------------------------------------------------------------
    -- function retrieve_ts_f
    --------------------------------------------------------------------------------
    function retrieve_ts_f (
-      p_cwms_ts_id_out       out varchar2,
-      p_units_out            out varchar2,
-      p_time_zone_id         out varchar2,
-      p_cwms_ts_id        in     varchar2,
-      p_start_time        in     date,
-      p_end_time          in     date,
-      p_time_zone         in     varchar2 default null,
-      p_date_time_type    in     varchar2 default 'DATE',
-      p_units             in     varchar2 default null,
-      p_unit_system       in     varchar2 default 'SI',
-      p_trim              in     varchar2 default 'F',
-      p_start_inclusive   in     varchar2 default 'T',
-      p_end_inclusive     in     varchar2 default 'T',
-      p_previous          in     varchar2 default 'F',
-      p_next              in     varchar2 default 'F',
-      p_version_date      in     date     default null,
-      p_max_version       in     varchar2 default 'T',
-      p_office_id         in     varchar2 default null)
+      p_cwms_ts_id_out           out varchar2,
+      p_units_out                out varchar2,
+      p_time_zone_id             out varchar2,
+      p_cwms_ts_id            in     varchar2,
+      p_start_time            in     date,
+      p_end_time              in     date,
+      p_time_zone             in     varchar2 default null,
+      p_date_time_type        in     varchar2 default 'DATE',
+      p_units                 in     varchar2 default null,
+      p_unit_system           in     varchar2 default 'SI',
+      p_trim                  in     varchar2 default 'F',
+      p_start_inclusive       in     varchar2 default 'T',
+      p_end_inclusive         in     varchar2 default 'T',
+      p_previous              in     varchar2 default 'F',
+      p_next                  in     varchar2 default 'F',
+      p_version_date          in     date     default null,
+      p_max_version           in     varchar2 default 'T',
+      p_office_id             in     varchar2 default null,
+      p_retrieve_data_entry   in     varchar2 default 'F')
       return sys_refcursor
    is
-      l_crsr            sys_refcursor;
-      l_ts_code         at_cwms_ts_id.ts_code%type;
-      l_office_id       cwms_office.office_id%type;
-      l_cwms_ts_id      at_cwms_ts_id.cwms_ts_id%type;
-      l_location_id     av_loc.location_id%type;
-      l_location_code   at_physical_location.location_code%type;
-      l_parameter_id    at_cwms_ts_id.parameter_id%type;
-      l_unit_id         at_cwms_ts_id.unit_id%type;
-      l_time_zone_in    cwms_time_zone.time_zone_name%type;
-      l_time_zone_out   cwms_time_zone.time_zone_name%type;
-      l_date_range      date_range_t;
-      l_ext_time        date;
-      l_trim            boolean;
-      l_start_inclusive boolean;
-      l_end_inclusive   boolean;
-      l_prev            boolean;
-      l_next            boolean;
-      l_max_version     boolean;
-      l_ts_retrieved    ztsv_array;
-      l_default_unit    cwms_unit.unit_id%type;
-      l_interval        integer;
-      l_offset          integer;
-      l_top_of_interval date;
-      l_datum_offset    binary_double;
-      l_reg_ts_times    date_table_type := date_table_type();
-      l_dst_offset      interval day to second;
+      l_crsr                  sys_refcursor;
+      l_ts_code               at_cwms_ts_id.ts_code%type;
+      l_office_id             cwms_office.office_id%type;
+      l_cwms_ts_id            at_cwms_ts_id.cwms_ts_id%type;
+      l_location_id           av_loc.location_id%type;
+      l_location_code         at_physical_location.location_code%type;
+      l_parameter_id          at_cwms_ts_id.parameter_id%type;
+      l_unit_id               at_cwms_ts_id.unit_id%type;
+      l_time_zone_in          cwms_time_zone.time_zone_name%type;
+      l_time_zone_out         cwms_time_zone.time_zone_name%type;
+      l_date_range            date_range_t;
+      l_ext_time              date;
+      l_trim                  boolean;
+      l_start_inclusive       boolean;
+      l_end_inclusive         boolean;
+      l_prev                  boolean;
+      l_next                  boolean;
+      l_max_version           boolean;
+      l_retrieve_data_entry   boolean;
+      l_ts_retrieved          ztsv_entry_array;
+      l_default_unit          cwms_unit.unit_id%type;
+      l_interval              integer;
+      l_offset                integer;
+      l_top_of_interval       date;
+      l_datum_offset          binary_double;
+      l_reg_ts_times          date_table_type := date_table_type();
+      l_dst_offset            interval day to second;
    begin
       -------------------
       -- sanity checks --
@@ -3205,6 +3263,7 @@ AS
       -----------------
       l_office_id  := cwms_util.get_db_office_id(p_office_id);
       l_cwms_ts_id := get_ts_id(p_cwms_ts_id, l_office_id);
+      l_retrieve_data_entry := cwms_util.return_true_or_false(p_retrieve_data_entry);
       if l_cwms_ts_id is null then
          cwms_err.raise('TS_ID_NOT_FOUND', p_cwms_ts_id, l_office_id);
       elsif use_new_lrts_format_on_output = 'T'
@@ -3279,7 +3338,8 @@ AS
          p_ts_code        => l_ts_code,
          p_date_range     => l_date_range,
          p_version_date   => p_version_date,
-         p_max_version    => p_max_version);
+         p_max_version    => p_max_version,
+         p_retrieve_data_entry => p_retrieve_data_entry);
       if l_ts_retrieved.count > 0 or not l_trim then
          -----------------------
          -- handle regular ts --
@@ -3386,117 +3446,237 @@ AS
             --------------------------------------------------
             -- no difference in summer time and winter time --
             --------------------------------------------------
-            open l_crsr for
-               select nvl(q1.date_time, q2.date_time) as date_time,
-                      value,
-                      nvl(quality_code, 0) as quality_code
-                 from (select date_time,
-                              value,
-                              quality_code
-                         from table(l_ts_retrieved)
-                      ) q1
-                      full outer join
-                      (select column_value as date_time
-                         from table(l_reg_ts_times)
-                      ) q2 on q2.date_time = q1.date_time
-                order by 1;
+            if l_retrieve_data_entry then
+               open l_crsr for
+                  select nvl(q1.date_time, q2.date_time) as date_time,
+                         value,
+                         nvl(quality_code, 0) as quality_code,
+                         data_entry_date
+                  from (select date_time,
+                               value,
+                               quality_code,
+                               data_entry_date
+                           from table(l_ts_retrieved)
+                        ) q1
+                        full outer join
+                        (select column_value as date_time
+                           from table(l_reg_ts_times)
+                        ) q2 on q2.date_time = q1.date_time
+                  order by 1;
+            else
+               open l_crsr for
+                  select nvl(q1.date_time, q2.date_time) as date_time,
+                         value,
+                         nvl(quality_code, 0) as quality_code
+                    from (select date_time,
+                                 value,
+                                 quality_code
+                            from table(l_ts_retrieved)
+                         ) q1
+                         full outer join
+                         (select column_value as date_time
+                            from table(l_reg_ts_times)
+                         ) q2 on q2.date_time = q1.date_time
+                   order by 1;
+            end if;
          else
             --------------------------------------------------------------------------------------------------
             -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
             --------------------------------------------------------------------------------------------------
-            open l_crsr for
-               select distinct
-                      nvl(q1.date_time, q2.date_time) as date_time,
-                      value,
-                      nvl(quality_code, 0) as quality_code
-                 from (select date_time,
-                              value,
-                              quality_code
-                         from table(l_ts_retrieved)
-                      ) q1
-                      full outer join
-                      (select column_value as date_time
-                         from table(l_reg_ts_times)
-                      ) q2 on q2.date_time = q1.date_time
-                order by 1;
+            if l_retrieve_data_entry then
+               open l_crsr for
+                  select distinct
+                     nvl(q1.date_time, q2.date_time) as date_time,
+                     value,
+                     nvl(quality_code, 0) as quality_code,
+                     data_entry_date
+                  from (select date_time,
+                               value,
+                               quality_code,
+                               data_entry_date
+                        from table(l_ts_retrieved)
+                       ) q1
+                          full outer join
+                       (select column_value as date_time
+                        from table(l_reg_ts_times)
+                       ) q2 on q2.date_time = q1.date_time
+                  order by 1;
+            else
+               open l_crsr for
+                  select distinct
+                         nvl(q1.date_time, q2.date_time) as date_time,
+                         value,
+                         nvl(quality_code, 0) as quality_code
+                    from (select date_time,
+                                 value,
+                                 quality_code
+                            from table(l_ts_retrieved)
+                         ) q1
+                         full outer join
+                         (select column_value as date_time
+                            from table(l_reg_ts_times)
+                         ) q2 on q2.date_time = q1.date_time
+                   order by 1;
+            end if;
          end if;
       when 'TIMESTAMP' then
          if l_dst_offset = interval '0 0:0:0' day to second then
             --------------------------------------------------
             -- no difference in summer time and winter time --
             --------------------------------------------------
-            open l_crsr for
-               select cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
-                      value,
-                      nvl(quality_code, 0) as quality_code
-                 from (select date_time,
-                              value,
-                              quality_code
-                         from table(l_ts_retrieved)
-                      ) q1
-                      full outer join
-                      (select column_value as date_time
-                         from table(l_reg_ts_times)
-                      ) q2 on q2.date_time = q1.date_time
-                order by 1;
+            if l_retrieve_data_entry then
+               open l_crsr for
+                  select cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
+                         value,
+                         nvl(quality_code, 0) as quality_code,
+                         data_entry_date
+                  from (select date_time,
+                               value,
+                               quality_code,
+                               data_entry_date
+                        from table(l_ts_retrieved)
+                       ) q1
+                          full outer join
+                       (select column_value as date_time
+                        from table(l_reg_ts_times)
+                       ) q2 on q2.date_time = q1.date_time
+                  order by 1;
+            else
+               open l_crsr for
+                  select cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
+                         value,
+                         nvl(quality_code, 0) as quality_code
+                    from (select date_time,
+                                 value,
+                                 quality_code
+                            from table(l_ts_retrieved)
+                         ) q1
+                         full outer join
+                         (select column_value as date_time
+                            from table(l_reg_ts_times)
+                         ) q2 on q2.date_time = q1.date_time
+                   order by 1;
+            end if;
          else
             --------------------------------------------------------------------------------------------------
             -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
             --------------------------------------------------------------------------------------------------
-            open l_crsr for
-               select distinct -- distinct is to remove duplicate times/values when crossing Fall DST boundary
-                      cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
-                      value,
-                      nvl(quality_code, 0) as quality_code
-                 from (select date_time,
-                              value,
-                              quality_code
-                         from table(l_ts_retrieved)
-                      ) q1
-                      full outer join
-                      (select column_value as date_time
-                         from table(l_reg_ts_times)
-                      ) q2 on q2.date_time = q1.date_time
-                order by 1;
+            if l_retrieve_data_entry then
+               open l_crsr for
+                  select distinct -- distinct is to remove duplicate times/values when crossing Fall DST boundary
+                         cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
+                         value,
+                         nvl(quality_code, 0) as quality_code,
+                         data_entry_date
+                  from (select date_time,
+                               value,
+                               quality_code,
+                               data_entry_date
+                        from table(l_ts_retrieved)
+                       ) q1
+                          full outer join
+                       (select column_value as date_time
+                        from table(l_reg_ts_times)
+                       ) q2 on q2.date_time = q1.date_time
+                  order by 1;
+            else
+               open l_crsr for
+                  select distinct -- distinct is to remove duplicate times/values when crossing Fall DST boundary
+                         cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
+                         value,
+                         nvl(quality_code, 0) as quality_code
+                    from (select date_time,
+                                 value,
+                                 quality_code
+                            from table(l_ts_retrieved)
+                         ) q1
+                         full outer join
+                         (select column_value as date_time
+                            from table(l_reg_ts_times)
+                         ) q2 on q2.date_time = q1.date_time
+                   order by 1;
             end if;
+         end if;
       when 'TIMESTAMP WITH TIME ZONE' then
          if l_dst_offset = interval '0 0:0:0' day to second then
             --------------------------------------------------
             -- no difference in summer time and winter time --
             --------------------------------------------------
-            open l_crsr for
-               select from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
-                      value,
-                      nvl(quality_code, 0) as quality_code
-                 from (select date_time,
-                              value,
-                              quality_code
-                         from table(l_ts_retrieved)
-                      ) q1
-                      full outer join
-                      (select column_value as date_time
-                         from table(l_reg_ts_times)
-                      ) q2 on q2.date_time = q1.date_time
-                order by 1;
+            if l_retrieve_data_entry then
+               open l_crsr for
+                  select from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
+                         value,
+                         nvl(quality_code, 0) as quality_code,
+                         data_entry_date
+                  from (select date_time,
+                               value,
+                               quality_code,
+                               data_entry_date
+                        from table(l_ts_retrieved)
+                       ) q1
+                          full outer join
+                       (select column_value as date_time
+                        from table(l_reg_ts_times)
+                       ) q2 on q2.date_time = q1.date_time
+                  order by 1;
+            else
+               open l_crsr for
+                  select from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
+                         value,
+                         nvl(quality_code, 0) as quality_code
+                    from (select date_time,
+                                 value,
+                                 quality_code
+                            from table(l_ts_retrieved)
+                         ) q1
+                         full outer join
+                         (select column_value as date_time
+                            from table(l_reg_ts_times)
+                         ) q2 on q2.date_time = q1.date_time
+                   order by 1;
+            end if;
          else
-            open l_crsr for
-            --------------------------------------------------------------------------------------------------
-            -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
-            --------------------------------------------------------------------------------------------------
-               select distinct
-                      from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
-                      value,
-                      nvl(quality_code, 0) as quality_code
-                 from (select date_time,
-                              value,
-                              quality_code
-                         from table(l_ts_retrieved)
-                      ) q1
-                      full outer join
-                      (select column_value as date_time
-                         from table(l_reg_ts_times)
-                      ) q2 on q2.date_time = q1.date_time
-                order by 1;
+            if l_retrieve_data_entry then
+               open l_crsr for
+               --------------------------------------------------------------------------------------------------
+               -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
+               --------------------------------------------------------------------------------------------------
+                  select distinct
+                     from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
+                     value,
+                     nvl(quality_code, 0) as quality_code,
+                     data_entry_date
+                  from (select date_time,
+                               value,
+                               quality_code,
+                               data_entry_date
+                        from table(l_ts_retrieved)
+                       ) q1
+                          full outer join
+                       (select column_value as date_time
+                        from table(l_reg_ts_times)
+                       ) q2 on q2.date_time = q1.date_time
+                  order by 1;
+            else
+               open l_crsr for
+               --------------------------------------------------------------------------------------------------
+               -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
+               --------------------------------------------------------------------------------------------------
+                  select distinct
+                         from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
+                         value,
+                         nvl(quality_code, 0) as quality_code
+                    from (select date_time,
+                                 value,
+                                 quality_code
+                            from table(l_ts_retrieved)
+                         ) q1
+                         full outer join
+                         (select column_value as date_time
+                            from table(l_reg_ts_times)
+                         ) q2 on q2.date_time = q1.date_time
+                   order by 1;
+            end if;
             ---------------------------------------------------------------------------------------------
             -- With TIMESTAMP WITH TIME ZONE, although the DISTINCT select eliminates duplicate times  --
             -- and everything looks fine if you display the times using time zone region or time zone  --
@@ -3507,6 +3687,7 @@ AS
             declare
                type tstz_indices_t is table of number_tab_t index by varchar2(64);
                l_tstzs            tstz_tab_t;
+               l_data_entry       timestamp_tab_t;
                l_values           double_tab_t;
                l_qualities        number_tab_t;
                l_dst_year         binary_integer;
@@ -3519,12 +3700,22 @@ AS
                -------------------------------------
                -- collect the values for analysis --
                -------------------------------------
-               fetch l_crsr
-                bulk collect
-                into l_tstzs,
-                     l_values,
-                     l_qualities;
-               close l_crsr;
+               if l_retrieve_data_entry then
+                  fetch l_crsr
+                   bulk collect
+                   into l_tstzs,
+                        l_values,
+                        l_qualities,
+                        l_data_entry;
+                  close l_crsr;
+               else
+                  fetch l_crsr
+                   bulk collect
+                   into l_tstzs,
+                        l_values,
+                        l_qualities;
+                  close l_crsr;
+               end if;
                --------------------------------------------------------------------------
                -- collect indices of times in the summer to winter transition overlaps --
                --------------------------------------------------------------------------
@@ -3561,15 +3752,30 @@ AS
                ------------------------------------------------------
                -- re-open the cursor on the possibly modified data --
                ------------------------------------------------------
-               open l_crsr
+               if l_retrieve_data_entry then
+                  open l_crsr
                   for select tstzs.column_value,
                              vals.column_value,
-                             qualities.column_value
-                        from (select column_value, rownum as rn from table(l_tstzs)) tstzs
-                             join
-                             (select column_value, rownum as rn from table(l_values)) vals on vals.rn = tstzs.rn
-                             join
-                             (select column_value, rownum as rn from table(l_qualities)) qualities on qualities.rn = tstzs.rn;
+                             qualities.column_value,
+                             data_entry.column_value
+                      from (select column_value, rownum as rn from table(l_tstzs)) tstzs
+                              join
+                           (select column_value, rownum as rn from table(l_values)) vals on vals.rn = tstzs.rn
+                              join
+                           (select column_value, rownum as rn from table(l_qualities)) qualities on qualities.rn = tstzs.rn
+                              join
+                           (select column_value, rownum as rn from table(l_data_entry)) data_entry on data_entry.rn = tstzs.rn;
+               else
+                  open l_crsr
+                     for select tstzs.column_value,
+                                vals.column_value,
+                                qualities.column_value
+                           from (select column_value, rownum as rn from table(l_tstzs)) tstzs
+                                join
+                                (select column_value, rownum as rn from table(l_values)) vals on vals.rn = tstzs.rn
+                                join
+                                (select column_value, rownum as rn from table(l_qualities)) qualities on qualities.rn = tstzs.rn;
+               end if;
             end;
          end if;
       end case;
@@ -3583,23 +3789,24 @@ AS
    -- RETREIVE_TS_OUT - v2.0 -
    --
    PROCEDURE retrieve_ts_out (
-      p_at_tsv_rc            OUT SYS_REFCURSOR,
-      p_cwms_ts_id_out       OUT VARCHAR2,
-      p_units_out            OUT VARCHAR2,
-      p_time_zone_id         OUT VARCHAR2,
-      p_cwms_ts_id        IN     VARCHAR2,
-      p_units             IN     VARCHAR2,
-      p_start_time        IN     DATE,
-      p_end_time          IN     DATE,
-      p_time_zone         IN     VARCHAR2 DEFAULT 'UTC',
-      p_trim              IN     VARCHAR2 DEFAULT 'F',
-      p_start_inclusive   IN     VARCHAR2 DEFAULT 'T',
-      p_end_inclusive     IN     VARCHAR2 DEFAULT 'T',
-      p_previous          IN     VARCHAR2 DEFAULT 'F',
-      p_next              IN     VARCHAR2 DEFAULT 'F',
-      p_version_date      IN     DATE DEFAULT NULL,
-      p_max_version       IN     VARCHAR2 DEFAULT 'T',
-      p_office_id         IN     VARCHAR2 DEFAULT NULL)
+      p_at_tsv_rc                OUT SYS_REFCURSOR,
+      p_cwms_ts_id_out           OUT VARCHAR2,
+      p_units_out                OUT VARCHAR2,
+      p_time_zone_id             OUT VARCHAR2,
+      p_cwms_ts_id            IN     VARCHAR2,
+      p_units                 IN     VARCHAR2,
+      p_start_time            IN     DATE,
+      p_end_time              IN     DATE,
+      p_time_zone             IN     VARCHAR2 DEFAULT 'UTC',
+      p_trim                  IN     VARCHAR2 DEFAULT 'F',
+      p_start_inclusive       IN     VARCHAR2 DEFAULT 'T',
+      p_end_inclusive         IN     VARCHAR2 DEFAULT 'T',
+      p_previous              IN     VARCHAR2 DEFAULT 'F',
+      p_next                  IN     VARCHAR2 DEFAULT 'F',
+      p_version_date          IN     DATE DEFAULT NULL,
+      p_max_version           IN     VARCHAR2 DEFAULT 'T',
+      p_office_id             IN     VARCHAR2 DEFAULT NULL,
+      p_retrieve_data_entry   IN    VARCHAR2 DEFAULT 'F')
    is
       l_query_str VARCHAR2 (4000);
 
@@ -3633,11 +3840,10 @@ AS
          p_next            => p_next,
          p_version_date    => p_version_date,
          p_max_version     => p_max_version,
-         p_office_id       => p_office_id);
+         p_office_id       => p_office_id,
+         p_retrieve_data_entry => p_retrieve_data_entry);
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END retrieve_ts_out;
-
-   --*******************************************************************   --
 
    --
    --*******************************************************************   --
@@ -3737,6 +3943,62 @@ AS
 
       RETURN;
    END retrieve_ts_out_tab;
+
+
+    FUNCTION retrieve_ts_entry_out_tab (
+       p_cwms_ts_id            IN VARCHAR2,
+       p_units                 IN VARCHAR2,
+       p_start_time            IN DATE,
+       p_end_time              IN DATE,
+       p_time_zone             IN VARCHAR2 DEFAULT 'UTC',
+       p_trim                  IN VARCHAR2 DEFAULT 'F',
+       p_start_inclusive       IN VARCHAR2 DEFAULT 'T',
+       p_end_inclusive         IN VARCHAR2 DEFAULT 'T',
+       p_previous              IN VARCHAR2 DEFAULT 'F',
+       p_next                  IN VARCHAR2 DEFAULT 'F',
+       p_version_date          IN DATE DEFAULT NULL,
+       p_max_version           IN VARCHAR2 DEFAULT 'T',
+       p_office_id             IN VARCHAR2 DEFAULT NULL)
+       RETURN zts_entry_tab_t
+       PIPELINED
+    IS
+       query_cursor       SYS_REFCURSOR;
+       output_row         zts_entry_rec_t;
+       l_cwms_ts_id_out   VARCHAR2(191);
+       l_units_out        VARCHAR2 (16);
+       l_time_zone_id     VARCHAR2(30);
+       l_retrieve_data_entry   boolean;
+    BEGIN
+       retrieve_ts_out (p_at_tsv_rc             => query_cursor,
+                        p_cwms_ts_id_out        => l_cwms_ts_id_out,
+                        p_units_out             => l_units_out,
+                        p_time_zone_id          => l_time_zone_id,
+                        p_cwms_ts_id            => p_cwms_ts_id,
+                        p_units                 => p_units,
+                        p_start_time            => p_start_time,
+                        p_end_time              => p_end_time,
+                        p_time_zone             => p_time_zone,
+                        p_trim                  => p_trim,
+                        p_start_inclusive       => p_start_inclusive,
+                        p_end_inclusive         => p_end_inclusive,
+                        p_previous              => p_previous,
+                        p_next                  => p_next,
+                        p_version_date          => p_version_date,
+                        p_max_version           => p_max_version,
+                        p_office_id             => p_office_id,
+                        p_retrieve_data_entry   => 'T');
+
+       LOOP
+          FETCH query_cursor INTO output_row;
+
+          EXIT WHEN query_cursor%NOTFOUND;
+          PIPE ROW (output_row);
+       END LOOP;
+
+       CLOSE query_cursor;
+
+       RETURN;
+       END retrieve_ts_entry_out_tab;
 
    --
    --*******************************************************************   --
