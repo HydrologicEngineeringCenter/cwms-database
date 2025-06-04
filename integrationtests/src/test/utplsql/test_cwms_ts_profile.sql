@@ -15,7 +15,7 @@ create or replace package test_cwms_ts_profile as
    c_location_ids constant str_tab_t := str_tab_t('TestLocTsProf', 'TestLocTsProf-WithSub');
    c_timezone_ids constant str_tab_t := str_tab_t('US/Central', 'America/Los_Angeles');
 end test_cwms_ts_profile;
-show errors
+
 /
 create or replace package body test_cwms_ts_profile as
    --------------------------------------------------------------------------------
@@ -367,5 +367,5 @@ create or replace package body test_cwms_ts_profile as
 
 end test_cwms_ts_profile;
 /
-show errors
+show errors;
 grant execute on test_cwms_ts_profile to cwms_user;
