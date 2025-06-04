@@ -31,10 +31,6 @@ procedure test_cwdb_251_orphaned_sys_context_values_cause_problems_in_virutal_lo
 procedure test_cwdb_300_null_local_time_zone_breaks_av_location_level_curval;
 --%test(CWDB-304 AV_LOCATION_LEVEL_CURVAL giving Null values at SPK)
 procedure test_cwdb_304_null_values_in_av_location_level_curval;
---%test(CWDB-300 Null local time zone breaks AV_LOCATION_LEVEL_CURVAL)
-procedure test_cwdb_300_null_local_time_zone_breaks_av_location_level_curval;
---%test(CWDB-304 AV_LOCATION_LEVEL_CURVAL giving Null values at SPK)
-procedure test_cwdb_304_null_values_in_av_location_level_curval;
 
 c_office_id             varchar2(16)  := '&&office_id';
 c_location_id           varchar2(57)  := 'LocLevelTestLoc';

@@ -80,4 +80,3 @@ create or replace type body supp_streamflow_meas_t as
 
 end;
 /
-show errors;

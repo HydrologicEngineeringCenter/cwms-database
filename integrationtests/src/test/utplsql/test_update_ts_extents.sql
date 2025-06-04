@@ -25,8 +25,6 @@ procedure cwdb_220_null_in_subquery_affects_update_ts_extents;
 procedure cwdb_200_ts_extents_has_field_for_non_zero_quality;
 --%test(TS Extents problems with existing time series without data [Jira issues CWDB-313 and CWDB-314])
 procedure test_cwdb_313_314_ts_extents_with_ts_with_no_values;
---%test(TS Extents problems with existing time series without data [Jira issues CWDB-313 and CWDB-314])
-procedure test_cwdb_313_314_ts_extents_with_ts_with_no_values;
 --%test (TS extents not updating for new versioned time series)
 procedure test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts;
 

@@ -1,4 +1,3 @@
-set define off
 create or replace type streamflow_meas2_t
 /**
  * Holds a stream flow measurement
@@ -179,7 +178,4 @@ as object (
 );
 /
 
-show errors
-
 create or replace public synonym cwms_t_streamflow_meas2 for streamflow_meas2_t;
-

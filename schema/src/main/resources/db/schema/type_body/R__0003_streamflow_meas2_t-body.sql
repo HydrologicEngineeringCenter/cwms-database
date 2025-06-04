@@ -499,5 +499,3 @@ as
    end to_string1;
 end;
 /
-show errors;
-
