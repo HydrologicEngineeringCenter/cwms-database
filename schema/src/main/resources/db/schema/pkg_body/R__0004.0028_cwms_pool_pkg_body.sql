@@ -3050,7 +3050,7 @@ begin
    cwms_ts.retrieve_ts(
       p_at_tsv_rc         =>  c_ts,
       p_cwms_ts_id        =>  p_tsid,
-      p_units             =>  p_unit,
+      p_units             =>  'm',
       p_start_time        =>  p_start_time,
       p_end_time          =>  p_end_time,
       p_time_zone         =>  p_timezone,

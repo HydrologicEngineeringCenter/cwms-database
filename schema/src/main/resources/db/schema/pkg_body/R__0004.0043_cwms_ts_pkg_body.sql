@@ -5875,10 +5875,10 @@ AS
                                        t2.quality_code,
                                        :l_version_date)'
                      using l_value_offset,
-                           l_timeseries_data,
-                           l_ts_code,
                            l_units,
                            l_base_unit_id,
+                           l_timeseries_data,
+                           l_ts_code,
                            from_tz(cast(x.start_date as timestamp),'0:00'),
                            from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
