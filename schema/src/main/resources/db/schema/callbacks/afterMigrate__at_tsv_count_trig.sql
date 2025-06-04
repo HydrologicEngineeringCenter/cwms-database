@@ -28,8 +28,8 @@ begin
    ---------------------------
    -- drop any old triggers --
    ---------------------------
-   for rec in (select trigger_name from user_triggers where trigger_name like 'AT\_TSV\_%\_AIUDR' escape '\') loop
-      execute immediate 'drop trigger '||rec.trigger_name;
+   for rec in (select owner,trigger_name from dba_triggers where owner = '${CWMS_SCHEMA}.trigger_name' like 'AT\_TSV\_%\_AIUDR' escape '\') loop
+      execute immediate 'drop trigger '||rec.owner||'.'||rec.trigger_name;
    end loop;
    --------------------------------------------------------------------
    -- determine whether the at_tsv_count table exists and is current --
