@@ -101,9 +101,9 @@ show errors;
 show errors;
 @test_cwms_outlet.sql
 show errors;
-@views/test_av_ts_grp_assgn.sql;
+@../views/test_av_ts_grp_assgn.sql;
 show errors;
-@views/test_av_loc_grp_assgn.sql;
+@../views/test_av_loc_grp_assgn.sql;
 show errors;
 @test_cwms_project.sql
 show errors;
