@@ -635,6 +635,43 @@ AS
       RETURN VARCHAR2;
 
    /**
+      * Returns the timezone offset in minutes for the specified time zone region.
+   */
+   FUNCTION get_timezone_utc_offset_minutes(
+      p_tz_region IN VARCHAR2)
+      RETURN BINARY_INTEGER;
+
+    /**
+      * Formats a date/time for use in XML, but uses arithmetic to avoid timezone issues with daylight-observing time zones.
+      * This function is used for dates before 1970, which are not well supported by the Oracle timezone functions. This treats all dates as standard-time
+      *
+      * @param p_local_time
+      * @param p_local_tz
+      *
+      * @return the XML-formatted date/time
+      *
+     */
+   FUNCTION get_xml_time_pre_1970(
+      p_local_time IN DATE,
+      p_local_tz IN VARCHAR2)
+      RETURN VARCHAR2;
+
+   /**
+      * Formats a date/time for use in XML, but uses arithmetic if pre-1970 to avoid timezone issues with daylight-obs
+      *
+      * @param p_local_time
+      * @param p_local_tz
+      *
+      * @return the XML-formatted date/time
+      *
+      */
+   FUNCTION get_xml_time_safe(
+      p_local_time in date,
+      p_local_tz   in varchar2)
+      RETURN VARCHAR2;
+
+
+   /**
     * Corrects times withing daylight savings time in time zones PST and CST.  These
     * time zones are not expected to observer DST, but erroneously do.  This function
     * corrects the affected times.

@@ -397,7 +397,7 @@ as
                 ||' used="'||case self.used when 'T' then 'true' else 'false' end||'">';
       l_text := l_text ||make_elem('location',           self.location.get_location_id);
       l_text := l_text ||make_elem('number',             self.meas_number);
-      l_text := l_text ||make_elem('date',               cwms_util.get_xml_time(self.date_time, self.time_zone));
+      l_text := l_text ||make_elem('date',               cwms_util.get_xml_time_safe(self.date_time, self.time_zone));
       l_text := l_text ||make_elem('agency',             self.agency_id);
       l_text := l_text ||make_elem('party',              self.party);
       l_text := l_text ||make_elem('gage-height',        cwms_rounding.round_dt_f(self.gage_height, '9999999999'));
