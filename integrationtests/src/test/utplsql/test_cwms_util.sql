@@ -43,6 +43,10 @@ procedure cwdb_255_cache_unit_conversion_factors_and_formulas_in_convert_units;
 procedure test_to_timestamp_null_timestamp;
 --%test(Test RUNSTSTATS package)
 procedure test_runstats;
+--%test(Test get_xml_time)
+procedure test_get_xml_time;
+--%test(Test get_xml_time_1900)
+procedure test_get_xml_time_1900;
 
 procedure setup;
 procedure teardown;
@@ -848,6 +852,93 @@ begin
       ut.expect(round(l_times(1)/l_times(2), 1)).to_equal(1);
    end if;
 end test_runstats;
+
+---------------------------------------
+-- procedure test_get_xml_time --
+---------------------------------------
+procedure test_get_xml_time
+is
+   v_time       date := to_date('2020-01-05 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+   v_tz_name    cwms_time_zone.time_zone_name%type;
+   v_xml_time   varchar2(32);
+   cursor tz_cursor is
+      select time_zone_name
+      from cwms_time_zone;
+begin
+   open tz_cursor;
+      loop
+         fetch tz_cursor into v_tz_name;
+            exit when tz_cursor%notfound;
+
+            -- Call the function with the current time zone
+            v_xml_time := cwms_util.get_xml_time(v_time, v_tz_name);
+
+            if v_tz_name = 'Unknown or Not Applicable' then
+               ut.expect(v_xml_time).to_match('^\d{1,4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:?$');
+            else
+               ut.expect(v_xml_time).to_match('^\d{1,4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$');
+            end if;
+      end loop;
+   close tz_cursor;
+end test_get_xml_time;
+
+---------------------------------------
+-- procedure test_get_xml_time_1900
+---------------------------------------
+procedure test_get_xml_time_1900
+   is
+   v_time       date := to_date('2025-01-01 00:00:00', 'yyyy-mm-dd hh24:mi:ss');
+   v_time_1900  date := to_date('1900-01-01 00:00:00', 'yyyy-mm-dd hh24:mi:ss');
+   v_tz_name    cwms_time_zone.time_zone_name%type;
+   v_xml_time   varchar2(32);
+   v_xml_time_1900 varchar2(32);
+   v_xml_time_1970     varchar2(32);
+   v_xml_tz varchar2(32);
+   v_xml_tz_1900 varchar2(32);
+   v_xml_tz_1970       varchar2(32);
+   v_oracle_tz_offset  interval day to second;
+   v_cwms_tz_offset    interval day to second;
+   cursor tz_cursor is
+      select time_zone_name, utc_offset
+      from cwms_time_zone;
+begin
+   for tz_rec in tz_cursor loop
+         v_tz_name := tz_rec.time_zone_name;
+         v_cwms_tz_offset := tz_rec.utc_offset;
+         -- Call the function with the current time zone one for the year 2025 and one for the year 1900
+         v_xml_time := cwms_util.get_xml_time(v_time, v_tz_name);
+         v_xml_time_1970 := cwms_util.get_xml_time(date '1971-01-01', v_tz_name); --used for sanity check on which timezones to test against
+         v_xml_time_1900 := cwms_util.get_xml_time_safe(v_time_1900, v_tz_name);
+         v_xml_tz := regexp_substr(v_xml_time, '(Z|[+-]\d{2}:\d{2})$');
+         v_xml_tz_1900 := regexp_substr(v_xml_time_1900, '(Z|[+-]\d{2}:\d{2})$');
+
+         v_xml_tz := regexp_substr(v_xml_time, '(Z|[+-]\d{2}:\d{2})$');
+         v_xml_tz_1900 := regexp_substr(v_xml_time_1900, '(Z|[+-]\d{2}:\d{2})$');
+         v_xml_tz_1970 := regexp_substr(v_xml_time_1970, '(Z|[+-]\d{2}:\d{2})$');
+
+         v_oracle_tz_offset :=cast(v_time as timestamp) - cast(cwms_util.change_timezone(v_time, v_tz_name, 'UTC') as timestamp);
+
+         -- skip test for unknown tz and if timezone changed in history at some point or doesn't match the cwms_time_zone table
+         if v_tz_name != 'Unknown or Not Applicable' and v_xml_tz = v_xml_tz_1970 and v_cwms_tz_offset = v_oracle_tz_offset then
+            ut.expect(v_xml_tz).to_equal(v_xml_tz_1900);
+         else
+            declare
+               v_reason varchar2(4000) := '';
+            begin
+               if v_tz_name = 'Unknown or Not Applicable' then
+                  v_reason := 'Unknown or Not Applicable TZ.';
+               elsif v_xml_tz != v_xml_tz_1970 then
+                  v_reason := 'Offset changed since 1970: ' || v_xml_tz || ' vs ' || v_xml_tz_1970 || '.';
+               elsif v_cwms_tz_offset != v_oracle_tz_offset then
+                  v_reason := 'CWMS vs Oracle offset mismatch: ' || to_char(v_cwms_tz_offset) || ' vs ' || to_char(v_oracle_tz_offset) || '.';
+               end if;
+               dbms_output.put_line('Skipped timezone: ' || v_tz_name || ' | Reason: ' || v_reason);
+            end;
+         end if;
+      end loop;
+end test_get_xml_time_1900;
+
+
 end test_cwms_util;
 /
 
