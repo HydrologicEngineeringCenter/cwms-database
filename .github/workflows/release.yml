@@ -100,18 +100,33 @@ jobs:
         env:
           IMAGE_TAG: ${{env.VERSION}}
           #ALT_REGISTRY: ${{secrets.ALT_REGISTRY}}
-          #HEC_PUB_REGISTRY: ${{secrets.HEC_PUB_REGISTRY}}
+          HEC_PUB_REGISTRY: ${{secrets.HEC_PUB_REGISTRY}}
         working-directory: schema
         run: |
           #HEC_PUB_REGISTRY="${{secrets.registry != null && secrets.registry ||secrets.HEC_PUB_REGISTRY}}"
           REPO=`echo "${{github.repository}}" | tr  '[:upper:]' '[:lower:]'`
           ant docker.push -Dteamcity.branch=$VERSION \
              -Ddocker.registry=ghcr.io/$REPO \
-             -Ddocker.registry_public=ghcr.io/$REPO
+             -Ddocker.registry_public=$HEC_PUB_REGISTRY
       - name: Publish package
-        run: mvn --batch-mode deploy -Dbuilduser.overrides=schema/build/overrides.external.xml
+        run: mvn --batch-mode deploy -Dbuilduser.overrides=schema/build/overrides.external.xml -Pgithub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: setup java for hec push
+        uses: actions/setup-java@v4.6.0
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'maven'
+          server-id: hec
+          server-username: ${{ secrets.registry_user != null && secrets.registry_user || secrets.ALT_REG_USER }}
+          server-password: ${{ secrets.registry_password != null && secrets.registry_password || secrets.ALT_REG_PASSWORD }}
+      - name: Publish package
+        run: mvn --batch-mode deploy -Dbuilduser.overrides=schema/build/overrides.external.xml -Phec
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAVEN_USERNAME: ${{ secrets.registry_user != null && secrets.registry_user || secrets.ALT_REG_USER }}
+          MAVEN_PASSWORD: ${{ secrets.registry_password != null && secrets.registry_password || secrets.ALT_REG_PASSWORD }}
       #- name: Logout of HEC pub registry
       #  if: ${{ always() }}
       #  run: |

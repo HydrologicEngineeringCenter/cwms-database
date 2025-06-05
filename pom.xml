@@ -26,13 +26,34 @@
 	<modules>
 		<module>schema</module>
 	</modules>
-	<distributionManagement>
-		<repository>
+	<profiles>
+		<profile>
 			<id>github</id>
-			<name>GitHub Packages</name>
-			<url>https://maven.pkg.github.com/hydrologicengineeringcenter/cwms-database</url>
-		</repository>
-	</distributionManagement>
+			<distributionManagement>
+				<repository>
+					<id>github</id>
+					<name>GitHub Packages</name>
+					<url>https://maven.pkg.github.com/hydrologicengineeringcenter/cwms-database</url>
+				</repository>
+			</distributionManagement>
+		</profile>
+			<profile>
+			<id>hec</id>
+			<distributionManagement>
+				<repository>
+					<id>hec</id>
+					<name>HEC Releases</name>
+					<url>https://www.hec.usace.army.mil/nexus/repository/maven-releases</url>
+				</repository>
+				<snapshotRepository>
+					<id>hec</id>
+					<name>HEC Snapshots</name>
+					<url>https://www.hec.usace.army.mil/nexus/repository/maven-snapshots</url>
+				</snapshotRepository>
+			</distributionManagement>
+		</profile>
+	</profiles>
+	
 	<repositories>
 		<repository>
 			<id>maven-public</id>
