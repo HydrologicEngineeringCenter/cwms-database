@@ -118,8 +118,8 @@ jobs:
           java-version: '8'
           cache: 'maven'
           server-id: hec
-          server-username: ${{ secrets.registry_user != null && secrets.registry_user || secrets.ALT_REG_USER }}
-          server-password: ${{ secrets.registry_password != null && secrets.registry_password || secrets.ALT_REG_PASSWORD }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
       - name: Publish package
         run: mvn --batch-mode deploy -Dbuilduser.overrides=schema/build/overrides.external.xml -Phec
         env:
