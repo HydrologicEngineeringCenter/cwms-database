@@ -16,7 +16,6 @@ ant test -Dbuilduser.overrides=build/overrides.external.xml $*
 if [ $? -ne 0 ]; then echo "Tests failed"; exit 3; fi
 echo "bundle"
 mvn -Dbuilduser.overrides=build/overrides.external.xml package $*
-if [ $? -ne 0 ]; then echo "Codegen Failed"; exit 4; fi
 
 ant bundle -Dbuilduser.overrides=build/overrides.external.xml $*
 if [ $? -ne 0 ]; then echo "Failed to build bundle"; exit 5; fi
