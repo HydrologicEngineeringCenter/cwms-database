@@ -1,4 +1,5 @@
 begin
+   execute immediate 'alter session set plscope_settings=''IDENTIFIERS:ALL''';
    dbms_utility.compile_schema('${CWMS_SCHEMA}',false);
    for count in 1..2 loop
    FOR cur IN (
@@ -17,9 +18,9 @@ begin
             EXECUTE IMMEDIATE 'alter ' || cur.OBJECT_TYPE || ' ' || cur.owner || '.' || cur.OBJECT_NAME || ' compile'; 
          end if; 
       EXCEPTION
-      WHEN OTHERS THEN NULL; 
+         WHEN OTHERS THEN NULL; 
       END;
-   end loop;
+      end loop;
    end loop;
 end;
 /

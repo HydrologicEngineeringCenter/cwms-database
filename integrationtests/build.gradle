@@ -51,8 +51,41 @@ def testAsRoUser = tasks.register("testAsRoUser", cwms.database.testing.support.
     user = "hectest_ro"
 }
 
+def testAsPduUser = tasks.register("testAsPduUser", cwms.database.testing.support.UtTest) {
+    dependsOn tasks.named("installTests")
+    dependsOn tasks.named("loadTestData")
+    tests = ["test_aaa"]
+    user = "hectest_pu"
+}
+
+def testAsUpUser = tasks.register('testAsUpUser', cwms.database.testing.support.UtTest) {
+    dependsOn tasks.named("installTests")
+    dependsOn tasks.named("loadTestData")
+    tests = ["test_up"]
+    user = "hectest_up"
+}
+
+def testAsDbaUser = tasks.register('testAsDbaUser', cwms.database.testing.support.UtTest) {
+    dependsOn tasks.named("installTests")
+    dependsOn tasks.named("loadTestData")
+    tests = ["test_dba"]
+    user = "hectest_db"
+}
+
+/* API KEY Table missing.
+def testAsWebUser = tasks.register('testAsWebUser', cwms.database.testing.support.UtTest) {
+    dependsOn tasks.named("installTests")
+    dependsOn tasks.named("loadTestData")
+    tests = ["test_webuser_abilities"]
+    user = "webtest"
+}*/
+ 
 test.dependsOn testAsPdUser
 test.dependsOn testAsRoUser
+test.dependsOn testAsPduUser
+test.dependsOn testAsUpUser
+test.dependsOn testAsDbaUser
+test.dependsOn testAsWebUser
 
 
 def installSchema = tasks.register("installSchema") {
