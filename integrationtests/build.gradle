@@ -24,7 +24,7 @@ import cwms.database.testing.support.UtTest
 def testAsPdUser = tasks.register("testAsPdUser", cwms.database.testing.support.UtTest) {
     dependsOn tasks.named("installTests")
     dependsOn tasks.named("loadTestData")
-    //args "${cwms_schema_name}.test_update_ts_extents,${cwms_schema_name}.test_cwms_pool,${cwms_schema_name}.test_timeseries_snapping,${cwms_schema_name}.test_cwms_cat,${cwms_schema_name}.test_cwms_msg,${cwms_schema_name}.test_cwms_display"
+    //${cwms_schema_name}.test_cwms_msg,${cwms_schema_name}.test_cwms_display"
     tests = ["test_cwms_level",
              "test_cwms_rating",
              "test_lrts_updates",
@@ -35,7 +35,11 @@ def testAsPdUser = tasks.register("testAsPdUser", cwms.database.testing.support.
              "test_cwms_prop",
              "test_versioned_time_series",
              "test_update_ts_extents",
-             "test_cwms_pool"
+             "test_cwms_pool",
+             "test_timeseries_snapping",
+             "test_cwms_cat",
+             "test_cwms_msg",
+             "test_cwms_display"
              ]
     user = "cwmspd"
 }

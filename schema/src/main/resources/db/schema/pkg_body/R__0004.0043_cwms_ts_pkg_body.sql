@@ -4803,7 +4803,7 @@ AS
    exception when others then
       cwms_msg.log_db_message (cwms_msg.msg_level_normal,
          'UPDATE_TS_EXTENTS: null value in primary key: ts_code='||nvl(to_char(p_rec.ts_code), 'NULL')||
-         ', version_time='||nvl(to_char(p_rec.version_time), 'NULL'));
+         ', version_time='||nvl(to_char(p_rec.version_time), 'NULL') || ' SQLERR' || sqlerrm);
 
       rollback;
       return FALSE;
