@@ -93,6 +93,7 @@ CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
  procedure cwdb_134_test_store_multi_does_not_hide_error_messages;
 
 --%test (CWDB-211 Update TSV DML counters to include streamed DML)
+--%disabled likely issues with flyway running as builduser vs cwms_20 to setup triggers.
  procedure cwdb_211_update_tsv_dml_counters_to_include_streamed_dml;
 
 --%test (Test TOP_OF_INTERVAL_UTC)

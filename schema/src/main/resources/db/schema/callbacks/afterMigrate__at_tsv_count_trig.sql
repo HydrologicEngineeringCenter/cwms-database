@@ -5,8 +5,8 @@ declare
    l_trigger_name    varchar2(30);
    l_trigger_sql     varchar2(1024);
    l_sql             varchar2(1024) := '
-      create or replace TRIGGER :trigger_name
-      AFTER INSERT OR UPDATE OR DELETE ON :table_name
+      create or replace TRIGGER ${CWMS_SCHEMA}.:trigger_name
+      AFTER INSERT OR UPDATE OR DELETE ON ${CWMS_SCHEMA}.:table_name
       FOR EACH ROW
       DECLARE
       BEGIN
@@ -28,7 +28,7 @@ begin
    ---------------------------
    -- drop any old triggers --
    ---------------------------
-   for rec in (select owner,trigger_name from dba_triggers where owner = '${CWMS_SCHEMA}.trigger_name' like 'AT\_TSV\_%\_AIUDR' escape '\') loop
+   for rec in (select owner,trigger_name from dba_triggers where owner = '${CWMS_SCHEMA}' and trigger_name like 'AT\_TSV\_%\_AIUDR' escape '\') loop
       execute immediate 'drop trigger '||rec.owner||'.'||rec.trigger_name;
    end loop;
    --------------------------------------------------------------------
@@ -56,7 +56,7 @@ begin
    -- create the DML count triggers --
    -----------------------------------
    begin
-      for rec in (select * from at_ts_table_properties) loop
+      for rec in (select * from ${CWMS_SCHEMA}.at_ts_table_properties) loop
          l_trigger_name := rec.table_name||'_COUNT';
          l_trigger_sql := replace(l_sql, ':table_name', rec.table_name);
          l_trigger_sql := replace(l_trigger_sql,':trigger_name', l_trigger_name);
@@ -78,7 +78,7 @@ begin
    -- create logoff triggers to flush counts to table when the session is closed --
    --------------------------------------------------------------------------------
    l_trigger_sql := '
-      create or replace trigger :x_FLUSH_TSV_DML_COUNTS_ON_LOGOFF
+      create or replace trigger ${CWMS_SCHEMA}.:x_FLUSH_TSV_DML_COUNTS_ON_LOGOFF
       BEFORE LOGOFF on :x.SCHEMA
       BEGIN cwms_tsv.flush; END;';
    begin
@@ -99,7 +99,7 @@ begin
          execute immediate replace(l_trigger_sql,':x',rec.username);
          if rec.rolename is null then
             -- grant execute on the count package
-            execute immediate 'grant execute on cwms_tsv to '||rec.username;
+            execute immediate 'grant execute on ${CWMS_SCHEMA}.cwms_tsv to '||rec.username;
          end if;
       end loop;
    end;
