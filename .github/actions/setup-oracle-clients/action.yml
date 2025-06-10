@@ -37,4 +37,5 @@ runs:
         echo "ORACLE_HOME=`pwd`/instantclient" >> $GITHUB_ENV
         echo "`pwd`/instantclient" >> $GITHUB_PATH
         echo "`pwd`/utPLSQL-cli/bin" >> $GITHUB_PATH
+        #echo "PATH=$PATH" >> $GITHUB_ENV
         echo "DISABLE_OOB=ON" > ~/.sqlnet.ora

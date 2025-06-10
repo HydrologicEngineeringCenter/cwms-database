@@ -79,7 +79,7 @@ public abstract class CheckTestSetupTask extends DatabaseTask {
         def dbUrl = database.url
         def result = exec.exec( {
             executable "sqlplus"
-            args "-h"
+            //args "-h"
             ignoreExitValue = true
             standardOutput = new ByteArrayOutputStream()
             errorOutput = new ByteArrayOutputStream()

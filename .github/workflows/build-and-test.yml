@@ -22,14 +22,15 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+      - name: Oracle Tools
+        id: cache-oracle-tools
+        uses: ./.github/actions/setup-oracle-clients
       - name: Test Migration Code
         run: ./gradlew schema:test --info
       - name: Build schema application
         run: ./gradlew schema:build
-      - name: Start Database
-        uses: ./.github/actions/start-database
       - name: Integration Tests
-        run: ./gradlew integrationtests:test --info
+        run: ./gradlew integrationtests:test --info\
       # On the TODO list
       # - name: Generate Bundle (docs and schemas)
       #   working-directory: schema
@@ -45,7 +46,7 @@ jobs:
   # ready-database:
   #   # This step doesn't rely on the creation of the database created
   #   # for testing and can be done separately.
-  #   name: Create Ready-Database    
+  #   name: Create Ready-Database
   #   runs-on: ubuntu-latest
   #   steps:
   #     - name: checkout code

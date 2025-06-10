@@ -10,4 +10,3 @@ if ( !project.findProperty('mavenUser')) {
 if ( !project.findProperty('mavenPassword')) {
     ext.mavenPassword = ""
 }
-
