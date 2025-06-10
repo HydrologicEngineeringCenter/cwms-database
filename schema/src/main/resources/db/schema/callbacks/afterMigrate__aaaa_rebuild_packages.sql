@@ -22,5 +22,7 @@ begin
       END;
       end loop;
    end loop;
+
+   dbms_utility.compile_schema('CWMS_DBA');
 end;
 /

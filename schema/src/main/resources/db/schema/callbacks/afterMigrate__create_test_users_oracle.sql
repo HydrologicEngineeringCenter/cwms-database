@@ -46,77 +46,88 @@ begin
             execute immediate 'create user ${CWMS_OFFICE_EROC}' || user_list(i) || ' identified by "${test_password}"';
 
             execute immediate 'grant create session to ${CWMS_OFFICE_EROC}' || user_list(i);
-            execute immediate 'grant set container to ${CWMS_OFFICE_EROC}' || user_list(i);
         end loop;
         execute immediate 'grant execute on cwms_upass to ${CWMS_OFFICE_EROC}hectest_up';
         execute immediate 'grant web_user to ${CWMS_OFFICE_EROC}webtest';
     end if;
 end;
 /
-    /*drop user ${CWMS_OFFICE_EROC}hectest;
-    drop user ${CWMS_OFFICE_EROC}hectest_ro;
-    drop user ${CWMS_OFFICE_EROC}.hectest_up;
-    drop user ${CWMS_OFFICE_EROC}.hectest_db;
-    drop user ${CWMS_OFFICE_EROC}.hectest_ua;
-    drop user ${CWMS_OFFICE_EROC}.hectest_pu;
-    drop user ${CWMS_OFFICE_EROC}.hectest_ru;
-    drop user ${CWMS_OFFICE_EROC}.hectest_dx;
-    drop user ${CWMS_OFFICE_EROC}.hectest_da;
-    drop user ${CWMS_OFFICE_EROC}.hectest_vt;
-    drop user ${CWMS_OFFICE_EROC}.hectest_dv;
-    drop user ${CWMS_OFFICE_EROC}.hectest_ccp_p;
-    drop user ${CWMS_OFFICE_EROC}.hectest_ccp_m;
-    drop user ${CWMS_OFFICE_EROC}.hectest_ccp_r;
-    drop user ${CWMS_OFFICE_EROC}.hectest_rdl_m;
-    drop user ${CWMS_OFFICE_EROC}.hectest_rdl_r;
-    */
 
-    -- create user for UPASS Admin
-    /*
-    create user ${CWMS_OFFICE_EROC}.hectest_up identified by "${test_password}";
-    grant execute on cwms_upass to ${CWMS_OFFICE_EROC}.hectest_up;
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_up;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_up;
-    create user ${CWMS_OFFICE_EROC}.hectest identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest;
-    create user ${CWMS_OFFICE_EROC}.hectest_ro identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_ro;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_ro;
-    create user ${CWMS_OFFICE_EROC}.hectest_db identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_db;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_db;
-    create user ${CWMS_OFFICE_EROC}.hectest_ua identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_ua;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_ua;
-    create user ${CWMS_OFFICE_EROC}.hectest_pu identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_pu;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_pu;
-    create user ${CWMS_OFFICE_EROC}.hectest_dx identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_dx;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_dx;
-    create user ${CWMS_OFFICE_EROC}.hectest_da identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_da;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_da;
-    create user ${CWMS_OFFICE_EROC}.hectest_vt identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_vt;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_vt;
-    create user ${CWMS_OFFICE_EROC}.hectest_dv identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_dv;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_dv;
-    create user ${CWMS_OFFICE_EROC}.hectest_ccp_p identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_ccp_p;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_ccp_p;
-    create user ${CWMS_OFFICE_EROC}.hectest_ccp_m identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_ccp_m;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_ccp_m;
-    create user ${CWMS_OFFICE_EROC}.hectest_ccp_r identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_ccp_r;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_ccp_r;
-    create user ${CWMS_OFFICE_EROC}.hectest_rdl_r identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_rdl_r;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_rdl_r;
-    create user ${CWMS_OFFICE_EROC}.hectest_rdl_m identified by "${TEST_PASSWORD}";
-    grant create session to ${CWMS_OFFICE_EROC}.hectest_rdl_m;
-    grant set container to ${CWMS_OFFICE_EROC}.hectest_rdl_m;
-*/
+DECLARE
+   pd_group_list  "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE"('CWMS PD Users');
+   group_list     "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE";
+BEGIN
+   if '${CWMS_TEST_USERS}' = 'create' then
+      "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}cwmspd', pd_group_list, '${CWMS_OFFICE_ID}');
+
+      "${CWMS_SCHEMA}"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All Rev TS IDs', 'Viewer Users', 'Read', '${CWMS_OFFICE_ID}');
+
+      "${CWMS_SCHEMA}"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All TS IDs', 'CWMS Users', 'Read-Write', '${CWMS_OFFICE_ID}');
+
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('TS ID Creator', 'CWMS Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest', group_list, '${CWMS_OFFICE_ID}');
+         --
+         -- hectest_ro
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS Users', 'Viewer Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_ro', group_list, '${CWMS_OFFICE_ID}');
+         --
+         -- hectest_dba
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS DBA Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_db', group_list, '${CWMS_OFFICE_ID}');
+         --
+         -- hectest_ua
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'TS ID Creator', 'Viewer Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_ua', group_list, '${CWMS_OFFICE_ID}');
+         --
+         -- hectest_pu
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'CWMS PD Users','TS ID Creator', 'Viewer Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_pu', group_list, '${CWMS_OFFICE_ID}');
+         --
+         -- hectest_dx
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('Data Exchange Mgr', 'TS ID Creator', 'CWMS Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_dx', group_list, '${CWMS_OFFICE_ID}');
+         --
+         -- hectest_da
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('Data Acquisition Mgr', 'TS ID Creator', 'CWMS Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_da', group_list, '${CWMS_OFFICE_ID}');
+         --
+         -- hectest_vt
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('VT Mgr', 'TS ID Creator', 'CWMS Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_vt', group_list, '${CWMS_OFFICE_ID}');
+         --
+         -- hectest_dv
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('Data Acquisition Mgr', 'VT Mgr', 'TS ID Creator', 'CWMS Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_dv', group_list, '${CWMS_OFFICE_ID}');
+         --
+         -- hectest_ccp_p
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'CCP Proc', 'TS ID Creator', 'CWMS Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_ccp_p', group_list, '${CWMS_OFFICE_ID}');
+         --
+         -- hectest_ccp_m
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'CCP Mgr', 'TS ID Creator', 'CWMS Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_ccp_m', group_list, '${CWMS_OFFICE_ID}');
+         --
+         -- hectest_ccp_r
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'CCP Reviewer', 'TS ID Creator', 'CWMS Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_ccp_r', group_list, '${CWMS_OFFICE_ID}');
+
+         -- hectest_rdl_r
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'RDL Reviewer', 'TS ID Creator', 'CWMS Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_rdl_r', group_list, '${CWMS_OFFICE_ID}');
+         -- hectest_rdl_m
+         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'RDL Mgr', 'TS ID Creator', 'CWMS Users');
+         "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_rdl_m', group_list, '${CWMS_OFFICE_ID}');
+
+          -- webtest
+        group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'CWMS PD Users','TS ID Creator', 'CWMS Users', 'CWMS DBA Users');
+        "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}webtest', group_list, '${CWMS_OFFICE_ID}');
+        execute immediate 'grant web_user to ${CWMS_OFFICE_EROC}webtest';
+
+        group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'CWMS PD Users','TS ID Creator', 'Viewer Users');
+        "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}.hectest_multioffice', group_list, '${CWMS_OFFICE_ID}');
+        "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}.hectest_multioffice', group_list, 'HQ');
+        "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}.hectest_multioffice', group_list, 'POA');
+        
+   end if;
+END;
+/
