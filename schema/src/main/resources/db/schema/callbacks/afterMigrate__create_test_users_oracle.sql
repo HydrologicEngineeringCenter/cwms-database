@@ -35,6 +35,7 @@ begin
         user_list(15) := 'hectest_rdl_m';
         user_list(16) := 'hectest_rdl_r';
         user_list(17) := 'webtest';
+        user_list(18) := 'hectest_multioffice';
 
         for i in 1..user_list.count loop
             begin
@@ -124,9 +125,9 @@ BEGIN
         execute immediate 'grant web_user to ${CWMS_OFFICE_EROC}webtest';
 
         group_list := "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'CWMS PD Users','TS ID Creator', 'Viewer Users');
-        "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}.hectest_multioffice', group_list, '${CWMS_OFFICE_ID}');
-        "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}.hectest_multioffice', group_list, 'HQ');
-        "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}.hectest_multioffice', group_list, 'POA');
+        "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_multioffice', group_list, '${CWMS_OFFICE_ID}');
+        "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_multioffice', group_list, 'HQ');
+        "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}hectest_multioffice', group_list, 'POA');
         
    end if;
 END;

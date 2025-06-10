@@ -79,6 +79,24 @@ def testAsWebUser = tasks.register('testAsWebUser', cwms.database.testing.suppor
     tests = ["test_webuser_abilities"]
     user = "webtest"
 }
+
+def testAsNormalUser = tasks.register('testAsNormalUser', cwms.database.testing.support.UtTest) {
+    dependsOn tasks.named("installTests")
+    dependsOn tasks.named("loadTestData")
+    //<arg value="-p=${oracle.cwms.user}.test_aq_user,${oracle.cwms.user}.test_aaa_normaluserfails,${oracle.cwms.user}.test_cwms_loc_normal_user"/>
+    tests = ["test_aq_user",
+             "test_aaa_normaluserfails",
+             "test_cwms_loc_normal_user"
+             ]
+    user = "hectest"
+}
+
+def testAsMultiOfficeUser = tasks.register('testAsMultiOfficeUser', cwms.database.testing.support.UtTest) {
+    dependsOn tasks.named("installTests")
+    dependsOn tasks.named("loadTestData")
+    tests = ["test_multiple_office_perms"]
+    user = "hectest_multioffice"
+}
  
 test.dependsOn testAsPdUser
 test.dependsOn testAsRoUser
@@ -86,6 +104,8 @@ test.dependsOn testAsPduUser
 test.dependsOn testAsUpUser
 test.dependsOn testAsDbaUser
 test.dependsOn testAsWebUser
+test.dependsOn testAsNormalUser
+test.dependsOn testAsMultiOfficeUser
 
 
 def installSchema = tasks.register("installSchema") {
