@@ -8,6 +8,11 @@ grant select on dba_scheduler_jobs to &builduser with grant option;
 grant select on dba_scheduler_job_log to &builduser with grant option;
 grant select on dba_scheduler_job_run_details to &builduser with grant option;
 
+grant select on dba_queues to &builduser with grant option;
+grant select on dba_queue_subscribers to &builduser with grant option;
+grant select on dba_subscr_registrations to &builduser with grant option;
+grant execute on dbms_session to &builduser with grant option;
+
 grant execute on dbms_crypto to &builduser with grant option;
 grant execute on dbms_aq to &builduser with grant option;
 grant execute on dbms_aq_bqview to &builduser with grant option;
