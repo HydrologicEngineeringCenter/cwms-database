@@ -17,7 +17,7 @@ AS
     BEGIN
         l_sql_string := 'ALTER user ' || p_username || ' account lock';
         --DBMS_OUTPUT.put_line (l_sql_string);
-        cwms_util.check_dynamic_sql (l_sql_string);
+        ${CWMS_SCHEMA}.cwms_util.check_dynamic_sql (l_sql_string);
 
         EXECUTE IMMEDIATE l_sql_string;
     END;
@@ -28,13 +28,13 @@ AS
 	l_status VARCHAR2(64);
     BEGIN
 	l_sql_string := 'SELECT account_status FROM dba_users where username='''||p_username||'''';
-        cwms_util.check_dynamic_sql (l_sql_string);
+        ${CWMS_SCHEMA}.cwms_util.check_dynamic_sql (l_sql_string);
 	execute immediate l_sql_string into l_status;
 	if(l_status = 'LOCKED')
 	then
           l_sql_string := 'ALTER user ' || p_username || ' account unlock';
           --DBMS_OUTPUT.put_line (l_sql_string);
-          cwms_util.check_dynamic_sql (l_sql_string);
+          ${CWMS_SCHEMA}.cwms_util.check_dynamic_sql (l_sql_string);
 
           EXECUTE IMMEDIATE l_sql_string;
 	end if;
@@ -51,7 +51,7 @@ AS
             || DBMS_ASSERT.simple_sql_name (p_username)
             || ' PROFILE CWMS_PROF';
         --DBMS_OUTPUT.put_line (l_sql_string);
-        cwms_util.check_dynamic_sql (l_sql_string);
+        ${CWMS_SCHEMA}.cwms_util.check_dynamic_sql (l_sql_string);
 
         EXECUTE IMMEDIATE l_sql_string;
     END;

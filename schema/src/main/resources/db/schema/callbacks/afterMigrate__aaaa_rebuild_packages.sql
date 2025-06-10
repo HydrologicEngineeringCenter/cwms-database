@@ -23,6 +23,6 @@ begin
       end loop;
    end loop;
 
-   dbms_utility.compile_schema('CWMS_DBA');
+   dbms_utility.compile_schema('CWMS_DBA', false);
 end;
 /
