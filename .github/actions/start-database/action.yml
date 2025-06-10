@@ -7,5 +7,5 @@ runs:
       uses: ./.github/actions/setup-oracle-clients
     - name: Prep Database
       shell: bash
-      run: ./gradlew startDatabase --info
+      run: ./gradlew schema:build integrationtests:installSchema --info
     
