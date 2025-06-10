@@ -7,9 +7,5 @@ runs:
       uses: ./.github/actions/setup-oracle-clients
     - name: Prep Database
       shell: bash
-      working-directory: schema
       run: ./gradlew schema:startDatabase --info
-    - name: Install Schema
-      shell: bash
-      working-directory: schema
-      run: ./gradlew schema:run --info -Pflyway.configFiles=build/flyway.config
+    

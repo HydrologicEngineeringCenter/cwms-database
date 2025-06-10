@@ -21,11 +21,15 @@ jobs:
         uses: actions/setup-java@v4.6.0
         with:
           distribution: 'temurin'
-          java-version: '8'
+          java-version: '21'
       - name: Start Database
         uses: ./.github/actions/start-database
-      - name: Run Tests
-        working-directory: schema
+      - name: Test Migration Code
+        run: ./gradlew schema:test --info
+      - name: Install Schema
+        shell: bash
+        run: ./gradlew :schema:build integrationtests:installSchema --info
+      - name: Integration Tests
         run: ./gradlew integrationtests:test --info
       # On the TODO list
       # - name: Generate Bundle (docs and schemas)
@@ -40,7 +44,7 @@ jobs:
         with:
           annotate_only: true
           include_passed: true
-          report_paths: '**/build/**/test*.xml'
+          report_paths: '**/build/**/TEST-*.xml'
 # need to build tasks
   # ready-database:
   #   # This step doesn't rely on the creation of the database created
