@@ -46,6 +46,7 @@ AS
         test_cwms_forecast.teardown;
         test_cwms_xchg.teardown;
         test_cwms_cache.teardown;
+        test_cwms_fcst.teardown;
     END teardown_all;
 
 END test_clean_all;

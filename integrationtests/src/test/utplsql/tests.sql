@@ -109,6 +109,8 @@ show errors;
 show errors;
 @test_multiple_office_perms.sql;
 show errors;
+@test_cwms_fcst.sql;
+show errors;
 prompt clean_all
 @test_clean_all.sql;
 show errors;
