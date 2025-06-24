@@ -501,22 +501,19 @@ begin
    ---------------------------------------
    -- get or create the instance record --
    ---------------------------------------
-   l_fcst_inst_code := get_fcst_inst_code(l_fcst_spec_code, l_fcst_time_utc, l_issue_time_utc, 'F');
-   if l_fcst_inst_code is null then
-      l_fcst_inst_rec.fcst_spec_code  := l_fcst_spec_code;
-      l_fcst_inst_rec.fcst_date_time  := l_fcst_time_utc;
-      l_fcst_inst_rec.issue_date_time := l_issue_time_utc;
-      l_ignore_nulls := false;
-   else
-      if l_fail_if_exists then
-         cwms_err.raise(
-            'ITEM_ALREADY_EXISTS',
-            'Forecast instance',
-            l_office_id||'/'||p_fcst_spec_id||'/'||p_fcst_designator
-            ||'/'||to_char(l_fcst_time_utc, 'yyyy-mm-dd"T"hh24:mi:ss"Z"')
-            ||'/'||to_char(l_issue_time_utc, 'yyyy-mm-dd"T"hh24:mi:ss"Z"'));
-      end if;
+   l_fcst_inst_rec.fcst_inst_code  := get_fcst_inst_code(l_fcst_spec_code, l_fcst_time_utc, l_issue_time_utc, 'F');
+   if l_fcst_inst_rec.fcst_inst_code is not null  and l_fail_if_exists then
+      cwms_err.raise(
+         'ITEM_ALREADY_EXISTS',
+         'Forecast instance',
+         l_office_id||'/'||p_fcst_spec_id||'/'||p_fcst_designator
+         ||'/'||to_char(l_fcst_time_utc, 'yyyy-mm-dd"T"hh24:mi:ss"Z"')
+         ||'/'||to_char(l_issue_time_utc, 'yyyy-mm-dd"T"hh24:mi:ss"Z"'));   
    end if;
+   l_fcst_inst_rec.fcst_spec_code  := l_fcst_spec_code;
+   l_fcst_inst_rec.fcst_date_time  := l_fcst_time_utc;
+   l_fcst_inst_rec.issue_date_time := l_issue_time_utc;
+   l_ignore_nulls := false;
    -------------------------------------
    -- populate instance record fields --
    -------------------------------------
