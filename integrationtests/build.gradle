@@ -25,7 +25,7 @@ def testAsPdUser = tasks.register("testAsPdUser", cwms.database.testing.support.
     dependsOn tasks.named("installTests")
     dependsOn tasks.named("loadTestData")
     //${cwms_schema_name}.test_cwms_msg,${cwms_schema_name}.test_cwms_display"
-    tests = [/*"test_cwms_level",
+    tests = ["test_cwms_level",
              "test_cwms_rating",
              "test_lrts_updates",
              "test_probability_parameter",
@@ -39,7 +39,7 @@ def testAsPdUser = tasks.register("testAsPdUser", cwms.database.testing.support.
              "test_timeseries_snapping",
              "test_cwms_cat",
              "test_cwms_msg",
-             "test_cwms_display",*/
+             "test_cwms_display",
              "test_cwms_fcst"
              ]
     user = "cwmspd"
