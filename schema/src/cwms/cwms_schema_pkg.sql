@@ -592,7 +592,9 @@ type_names constant object_tab_t := object_tab_t(
 	'ZTIMESERIES_TYPE',
 	'ZTSV_ARRAY',
 	'ZTSV_ARRAY_TAB',
-	'ZTSV_TYPE');
+	'ZTSV_TYPE',
+   'ZTSV_ENTRY_ARRAY',
+   'ZTSV_ENTRY_TYPE');
 /*
    select object_name
      from user_objects

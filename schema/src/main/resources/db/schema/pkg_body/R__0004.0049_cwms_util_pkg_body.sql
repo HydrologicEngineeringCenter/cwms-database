@@ -144,10 +144,71 @@ as
          ELSE
                   TO_CHAR (EXTRACT (HOUR FROM l_interval), 'S09')
                || ':'
-               || TRIM (TO_CHAR (EXTRACT (MINUTE FROM l_interval), '09'))
+               || TRIM (TO_CHAR (ABS(EXTRACT (MINUTE FROM l_interval)), '09'))
          END;
       RETURN l_xml_time || l_tz_designator;
    END get_xml_time;
+
+   FUNCTION get_timezone_utc_offset_minutes(p_tz_region IN VARCHAR2) RETURN BINARY_INTEGER IS
+      l_offset_interval INTERVAL DAY TO SECOND;
+      l_offset_minutes  BINARY_INTEGER := 0;
+   BEGIN
+      -- Grab the fixed UTC offset interval
+      SELECT utc_offset
+      INTO l_offset_interval
+      FROM cwms_time_zone
+      WHERE time_zone_name = p_tz_region;
+
+      -- Convert interval to total minutes
+      l_offset_minutes := EXTRACT(HOUR FROM l_offset_interval) * 60 +EXTRACT(MINUTE FROM l_offset_interval);
+
+      RETURN l_offset_minutes;
+   END get_timezone_utc_offset_minutes;
+
+   FUNCTION get_xml_time_pre_1970(p_local_time IN DATE, p_local_tz IN VARCHAR2)
+      RETURN VARCHAR2 IS
+      l_xml_time     VARCHAR2(32);
+      l_offset_mins  NUMBER;
+      l_hours        NUMBER;
+      l_minutes      NUMBER;
+      l_sign         VARCHAR2(1);
+      l_tz_designator VARCHAR2(6);
+      l_offset_interval INTERVAL DAY TO SECOND;
+
+   BEGIN
+      SELECT utc_offset
+      INTO l_offset_interval
+      FROM cwms_time_zone
+      WHERE time_zone_name = p_local_tz;
+      -- Format time
+      l_xml_time := TO_CHAR(p_local_time, 'yyyy-mm-dd"T"hh24:mi:ss');
+
+      -- Calculate UTC offset in minutes using helper
+      l_offset_mins := get_timezone_utc_offset_minutes(p_local_tz);
+
+      -- Format as +HH:MM or -HH:MM
+      l_sign := CASE WHEN l_offset_mins < 0 THEN '-' ELSE '+' END;
+      l_hours := TRUNC(ABS(l_offset_mins) / 60);
+      l_minutes := MOD(ABS(l_offset_mins), 60);
+
+      l_tz_designator := l_sign || TO_CHAR(l_hours, 'FM09') || ':' || TO_CHAR(l_minutes, 'FM09');
+      IF l_offset_interval = TO_DSINTERVAL ('00 00:00:00')THEN
+         l_tz_designator := 'Z';
+      END IF;
+
+      RETURN l_xml_time || l_tz_designator;
+   END get_xml_time_pre_1970;
+
+
+   FUNCTION get_xml_time_safe(p_local_time IN DATE, p_local_tz IN VARCHAR2)
+      RETURN VARCHAR2 IS
+   BEGIN
+      IF p_local_time < TO_DATE('1970-01-01', 'YYYY-MM-DD') THEN
+         RETURN get_xml_time_pre_1970(p_local_time, p_local_tz);
+      ELSE
+         RETURN get_xml_time(p_local_time, p_local_tz);
+      END IF;
+   END get_xml_time_safe;
 
    FUNCTION FIXUP_TIMEZONE (p_time IN TIMESTAMP WITH TIME ZONE)
       RETURN TIMESTAMP WITH TIME ZONE

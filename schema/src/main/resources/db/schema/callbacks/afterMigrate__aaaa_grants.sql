@@ -20,3 +20,4 @@ grant select,update,insert,delete on cwms_20.at_api_keys to web_user;
 grant select on cwms_20.av_active_api_keys to web_user;
 grant execute on cwms_dba.cwms_user_admin to cwms_20;
 grant execute on cwms_20.cwms_util to cwms_dba;
+grant execute on random_uuid to cwms_user;

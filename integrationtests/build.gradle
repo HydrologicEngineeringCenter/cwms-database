@@ -39,7 +39,8 @@ def testAsPdUser = tasks.register("testAsPdUser", cwms.database.testing.support.
              "test_timeseries_snapping",
              "test_cwms_cat",
              "test_cwms_msg",
-             "test_cwms_display"
+             "test_cwms_display",
+             "test_cwms_fcst"
              ]
     user = "cwmspd"
 }
