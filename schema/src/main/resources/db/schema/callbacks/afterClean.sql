@@ -35,8 +35,7 @@ begin
 end;
 /
 
--- flush out all the meta data
-delete from user_sdo_geom_metadata; 
+
 ----------------------------------------------------
 -- drop tables, mviews & mview logs if they exist --
 ----------------------------------------------------
