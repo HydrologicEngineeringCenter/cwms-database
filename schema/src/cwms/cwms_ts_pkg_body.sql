@@ -2905,6 +2905,17 @@ AS
       return format_lrts_output(p_ts_id, use_new_lrts_format_on_output = 'T' and is_lrts(p_ts_id, p_office_id) = 'T');
    end format_lrts_output;
    --------------------------------------------------------------------------------
+   -- function bitor
+   --------------------------------------------------------------------------------
+   function bitor(
+      p_value in binary_integer,
+      p_mask  in binary_integer)
+      return binary_integer
+   is
+   begin
+      return p_value + p_mask - bitand(p_value, p_mask);
+   end bitor;
+   --------------------------------------------------------------------------------
    -- procedure set_use_new_lrts_format_on_output
    --------------------------------------------------------------------------------
    procedure set_use_new_lrts_format_on_output(
@@ -2914,17 +2925,9 @@ AS
    begin
       case upper(substr(p_use_new_format, 1, 1))
       when 'T' then
-         if bitand(l_current, g_use_new_lrts_ids_on_output) != g_use_new_lrts_ids_on_output then
-            cwms_util.set_session_info(
-               'USE_NEW_LRTS_ID_FORMAT',
-               l_current + g_use_new_lrts_ids_on_output - bitand(l_current, g_use_new_lrts_ids_on_output)); -- bitor
-         end if;
+         cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', bitor(l_current, g_use_new_lrts_ids_on_output));
       when 'F' then
-         if bitand(l_current, g_use_new_lrts_ids_on_output) = g_use_new_lrts_ids_on_output then
-            cwms_util.set_session_info(
-               'USE_NEW_LRTS_ID_FORMAT',
-               bitand(l_current, g_not_use_new_lrts_ids_on_output));
-         end if;
+         cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', bitand(l_current, g_not_use_new_lrts_ids_on_output));
       else
          cwms_err.raise('INVALID_T_F_FLAG', p_use_new_format);
       end case;
@@ -2952,21 +2955,9 @@ AS
    begin
       case upper(substr(p_allow_new_format, 1, 1))
       when 'T' then
-         if bitand(l_current, g_allow_new_lrts_ids_on_input) != g_allow_new_lrts_ids_on_input then
-            if bitand(l_current, g_use_new_lrts_ids_on_output) = g_use_new_lrts_ids_on_output then
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_use_new_lrts_ids_on_output + g_allow_new_lrts_ids_on_input);
-            else
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_allow_new_lrts_ids_on_input);
-            end if;
-         end if;
+         cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', bitor(bitand(l_current, g_not_require_new_lrts_ids_on_input), g_allow_new_lrts_ids_on_input));
       when 'F' then
-         if bitand(l_current, g_allow_new_lrts_ids_on_input) != g_allow_new_lrts_ids_on_input then
-            if bitand(l_current, g_use_new_lrts_ids_on_output) = g_use_new_lrts_ids_on_output then
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_use_new_lrts_ids_on_output);
-            else
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', 0);
-            end if;
-         end if;
+         cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', bitand(bitand(l_current, g_not_allow_new_lrts_ids_on_input), g_not_require_new_lrts_ids_on_input));
       else
          cwms_err.raise('INVALID_T_F_FLAG', p_allow_new_format);
       end case;
@@ -2994,21 +2985,9 @@ AS
    begin
       case upper(substr(p_require_new_format, 1, 1))
       when 'T' then
-         if bitand(l_current, g_require_new_lrts_ids_on_input) != g_require_new_lrts_ids_on_input then
-            if bitand(l_current, g_use_new_lrts_ids_on_output) = g_use_new_lrts_ids_on_output then
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_use_new_lrts_ids_on_output + g_require_new_lrts_ids_on_input);
-            else
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_require_new_lrts_ids_on_input);
-            end if;
-         end if;
+         cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', bitor(bitand(l_current, g_not_allow_new_lrts_ids_on_input), g_require_new_lrts_ids_on_input));
       when 'F' then
-         if bitand(l_current, g_require_new_lrts_ids_on_input) != g_require_new_lrts_ids_on_input then
-            if bitand(l_current, g_use_new_lrts_ids_on_output) = g_use_new_lrts_ids_on_output then
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', g_use_new_lrts_ids_on_output);
-            else
-               cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', 0);
-            end if;
-         end if;
+         cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', bitand(bitand(l_current, g_not_require_new_lrts_ids_on_input), g_not_allow_new_lrts_ids_on_input));
       else
          cwms_err.raise('INVALID_T_F_FLAG', p_require_new_format);
       end case;
