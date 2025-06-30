@@ -64,7 +64,7 @@ begin
    cwms_loc.store_location(
       p_location_id  => c_location_id,
       p_time_zone_id => c_time_zone,
-      p_db_office_id => c_office_id);
+      p_db_office_id => c_office_id);   
 end setup;
 --------------------------------------------------------------------------------
 -- function make_timeseries
@@ -336,6 +336,8 @@ is
    l_ts_values_2 cwms_t_tsv_array;
    l_first_time  date;
 begin
+   cwms_ts.set_require_new_lrts_format_on_input('F');
+   cwms_ts.set_use_new_lrts_format_on_output('F');
    for i in 1..c_start_dates.count loop
       l_ts_values   := make_timeseries('LRTS', c_start_dates(i), c_interval_offset);
       l_ts_values_2 := trim_timeseries(l_ts_values, c_interval_offset, c_time_zone);

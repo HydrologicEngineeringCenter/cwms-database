@@ -33,14 +33,16 @@ AS
     * Input flag to store time series as LRTS is required only for old LRTS IDs in routintes that create time series.
     * May be ORed with g_use_new_lrts_ids_on_output.
     */
-   g_allow_new_lrts_ids_on_input   constant integer := 1;
+   g_allow_new_lrts_ids_on_input     constant integer := 1;
+   g_not_allow_new_lrts_ids_on_input constant integer := 4; -- bit mask to turn off
    /**
     * Constant specifing to require use of the new LRTS ID format on input in routines.
     * Old LRTS IDs will be interpreted strictly as PRTS.
     * Input flag to store time series as LRTS is ignored in routintes that create time series.
     * May be ORed with g_use_new_lrts_ids_on_output.
     */
-   g_require_new_lrts_ids_on_input constant integer := 2;
+   g_require_new_lrts_ids_on_input     constant integer := 2;
+   g_not_require_new_lrts_ids_on_input constant integer := 5; -- bit mask to turn off
    /**
     * Constant specifing to use the new LRTS ID format on output in routines and views.
     * LRTS IDs output from routines and views will be in new LRTS format.
