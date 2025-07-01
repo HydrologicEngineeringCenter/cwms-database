@@ -175,8 +175,28 @@ end;
 drop function get_source;
 
 PROMPT ################################################################################
+PROMPT GRANT SELECT ON TABLES TO USERS
+select systimestamp from dual;
+
+begin
+   for rec in (select object_name
+                 from all_objects
+                where owner = 'CWMS_20'
+                  and object_type = 'TABLE'
+                  and (object_name like 'AT\_%' escape '\' or object_name like 'CWMS\_%' escape '\')
+                  and object_name not like 'AT_SEC_%'
+                  and object_name != 'AT_API_KEYS'
+              )
+   loop
+      dbms_output.put_line(rec.object_name);
+      execute immediate 'grant select on '||rec.object_name||' to cwms_user';
+   end loop;
+end;
+
+PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
 select systimestamp from dual;
+
 declare
    type usernames_t is table of varchar2(30);
    usernames usernames_t;
