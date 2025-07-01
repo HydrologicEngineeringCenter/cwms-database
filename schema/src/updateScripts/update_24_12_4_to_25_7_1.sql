@@ -71,7 +71,7 @@ alter table at_project_lock modify session_user varchar2(128);
 alter table at_project_lock modify os_user varchar2(128);
 alter table at_sec_cwms_users modify userid varchar2(128);
 alter table at_sec_cwms_users modify createdby varchar2(128);
-alter table at_sec_cwms_users modify principle_name varchar2(512);
+--alter table at_sec_cwms_users modify principle_name varchar2(512);
 alter table at_sec_locked_users modify username varchar2(128);
 alter table at_sec_service_user modify userid varchar2(128);
 alter table at_sec_session modify userid varchar2(128);
@@ -149,19 +149,19 @@ begin
                from all_objects
                where owner = 'CWMS_20'
                  and object_type = 'TRIGGER'
-                 and object_name like 'ST\_%' escape '\' order by 1;)
+                 and object_name like 'ST\_%' escape '\' order by 1)
    loop
       begin
          l_sql := 'CREATE OR REPLACE '
             ||replace(get_source('TRIGGER', rec.object_name),
                'user NOT IN (''SYS'', ''CWMS_20'')', 
                'user NOT IN (''SYS'', ''CWMS_20'', upper(''builduser''))');
-         execute immedate l_sql;
+         execute immediate l_sql;
       end;
    end loop;
 end;
-
-drop function get_source
+/
+drop function get_source;
 
 PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
