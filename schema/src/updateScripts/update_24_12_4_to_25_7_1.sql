@@ -71,7 +71,10 @@ alter table at_project_lock modify session_user varchar2(128);
 alter table at_project_lock modify os_user varchar2(128);
 alter table at_sec_cwms_users modify userid varchar2(128);
 alter table at_sec_cwms_users modify createdby varchar2(128);
+-- at_sec_cwms_users.principle_name takes more work since it's used in a virtual column
+alter table at_sec_cwms_users drop column edipi;
 alter table at_sec_cwms_users modify principle_name varchar2(512);
+alter table at_sec_cwms_users add (edipi number(*,0) generated always as (case when length(principle_name)>10 then case  when  regexp_like (substr(principle_name,1,10),'^[[:digit:]]+$') then to_number(substr(principle_name,1,10)) else null end  else null end) virtual);alter table at_sec_locked_users modify username varchar2(128);
 alter table at_sec_locked_users modify username varchar2(128);
 alter table at_sec_service_user modify userid varchar2(128);
 alter table at_sec_session modify userid varchar2(128);
@@ -91,6 +94,7 @@ drop type ztsv_type force;
 @../cwms/types/ztsv_type
 @../cwms/types/ztsv_entry_type
 @../cwms/types/ztsv_entry_array
+create or replace public synonym cwms_t_ztsv_entry for ztsv_entry_type;
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING TYPE BODIES
