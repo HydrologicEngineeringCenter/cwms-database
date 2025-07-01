@@ -88,6 +88,8 @@ select systimestamp from dual;
 
 drop type ztsv_type force;
 @../cwms/types/ztsv_type
+@../cwms/types/ztsv_entry_type
+@../cwms/types/ztsv_entry_array
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING TYPE BODIES
@@ -109,6 +111,8 @@ PROMPT UPDATING PACKAGE SPECIFICATIONS
 PROMPT ################################################################################
 PROMPT UPDATING PACKAGE BODIES
 select systimestamp from dual;
+
+define builduser = BUILDUSER
 
 @../cwms/cwms_cache_pkg_body
 @../cwms/cwms_display_pkg_body
