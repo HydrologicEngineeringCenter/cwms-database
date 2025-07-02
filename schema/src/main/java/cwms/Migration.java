@@ -121,6 +121,16 @@ public class Migration {
     }
 
     private void clean(Properties props) {
+        Flyway data = Flyway.configure()
+                            .configuration(props)
+                            .locations("db/data")
+                            .mixed(true)
+                            .resolvers(new cwms.resolvers.CwmsBulkDataResolver())
+                            .table("flyway_data_history")
+                            .baselineOnMigrate(true)
+                            .schemas("CWMS_20")
+                            .load();
+        data.clean();
         Flyway schema = Flyway.configure()
                         .configuration(props)
                         .schemas("CWMS_20", "CWMS_DBA")
