@@ -198,58 +198,29 @@ PROMPT FINAL HOUSEKEEPING
 select systimestamp from dual;
 
 declare
-   type usernames_t is table of varchar2(30);
-   usernames usernames_t;
-   l_count integer;
    cmd varchar2(128);
 begin
-   select count(*) into l_count from dba_users where username='CCP';
-   usernames := usernames_t('&cwms_schema', '&cwms_dba_schema');
-   if (l_count > 0) then
-      usernames.extend;
-      usernames(usernames.count) := 'CCP';
-   end if;
-   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'PACKAGE BODY') loop
-      cmd := 'grant execute on &cwms_schema..'||rec.object_name||' to ';
-      dbms_output.put(cmd||'[');
-      for i in 1..usernames.count loop
-         begin
-            execute immediate(cmd||usernames(i));
-            dbms_output.put(' '||usernames(i)||'(SUCCESS)');
-         exception
-            when others then
-               dbms_output.put(' '||usernames(i)||'(FAILED)');
-         end;
-      end loop;
-      dbms_output.put_line(' ]');
-   end loop;
-   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'TYPE') loop
-      cmd := 'grant execute on &cwms_schema..'||rec.object_name||' to ';
-      dbms_output.put(cmd||'[');
-      for i in 1..usernames.count loop
-         begin
-            execute immediate(cmd||usernames(i));
-            dbms_output.put(' '||usernames(i)||'(SUCCESS)');
-         exception
-            when others then
-               dbms_output.put(' '||usernames(i)||'(FAILED)');
-         end;
-      end loop;
-      dbms_output.put_line(' ]');
-   end loop;
-   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'VIEW' and object_name not like '%AQ$%') loop
-      cmd := 'grant select on &cwms_schema..'||rec.object_name||' to ';
-      dbms_output.put(cmd||'[');
-      for i in 1..usernames.count loop
-         begin
-            execute immediate(cmd||usernames(i));
-            dbms_output.put(' '||usernames(i)||'(SUCCESS)');
-         exception
-            when others then
-               dbms_output.put(' '||usernames(i)||'(FAILED)');
-         end;
-      end loop;
-      dbms_output.put_line(' ]');
+   execute immediate 'grant CWMS_USER to CWMS_DBA';
+   for rec in (select object_name,
+                      object_type
+                 from dba_objects
+                where owner = '&cwms_schema'
+                  and object_type in ('PACKAGE BODY', 'TYPE', 'VIEW')
+                  and object_name not like '%AQ$%'
+              )
+   loop
+      cmd := 'grant '
+         ||case when rec.object_type = 'VIEW' then 'select' else 'execute' end
+         ||' on &cwms_schema..'
+         ||rec.object_name
+         ||' to CWMS_USER';
+      dbms_output.put(cmd||' [');
+      begin
+         execute immediate cmd;
+         dbms_output.put_line('SUCCEEDED]');
+      exception
+         when others then dbms_output.put_line('FAILED]');
+      end;   
    end loop;
 end;
 /
