@@ -577,7 +577,7 @@ AS
       p_db_office_id          IN     VARCHAR2 DEFAULT NULL
    )
    IS
-      PRAGMA AUTONOMOUS_TRANSACTION;
+   --   PRAGMA AUTONOMOUS_TRANSACTION;
 
       l_hashcode                NUMBER;
       l_ret                    NUMBER;
@@ -706,25 +706,26 @@ AS
          ---------.
          ---------.
          -- Create new base and sub locations in database...
-         l_hashcode :=
-            DBMS_UTILITY.get_hash_value (
-                  p_db_office_code
-               || UPPER (p_base_location_id)
-               || UPPER (p_sub_location_id),
-               0,
-               1073741823
-            );
-         l_ret :=
-            DBMS_LOCK.request (id                  => l_hashcode,
-                               timeout             => 0,
-                               lockmode            => 5,
-                               release_on_commit   => TRUE
-                              );
+         -- l_hashcode :=
+         --    DBMS_UTILITY.get_hash_value (
+         --          p_db_office_code
+         --       || UPPER (p_base_location_id)
+         --       || UPPER (p_sub_location_id),
+         --       0,
+         --       1073741823
+         --    );
+         -- l_ret :=
+         --    DBMS_LOCK.request (id                  => l_hashcode,
+         --                       timeout             => 0,
+         --                       lockmode            => 5,
+         --                       release_on_commit   => TRUE
+         --                      );
 
-         IF l_ret > 0
-         THEN
-            DBMS_LOCK.sleep (2);
-         ELSE
+         -- IF l_ret > 0
+         -- THEN
+         --    raise_application_error('20001', 'locked');
+         --    DBMS_LOCK.sleep (2);
+         -- ELSE
             ---------.
             ---------.
             -- Create new Base Location (if necessary)...
@@ -859,11 +860,12 @@ AS
                     INTO   p_location_code;
                update_local_datum_name(p_location_code, p_vertical_datum);
             END IF;
-         END IF;
+         --END IF;
       END IF;
 
       --
-      COMMIT;                                   -- needed to release dbms_lock.
+      -- release the lock when the user says their done
+      --COMMIT;                                   -- needed to release dbms_lock.
    --
    END create_location_raw2;
 
@@ -7078,7 +7080,7 @@ end unassign_loc_groups;
       p_vertical_datum_id_2 in  varchar2,
       p_datetime_utc        in  date default sysdate)
    is
-      pragma autonomous_transaction; -- for inserting VERTCON offset estimate
+      --pragma autonomous_transaction; -- for inserting VERTCON offset estimate
       l_offset              binary_double;
       l_effective_date      date;
       l_vertical_datum_id_1 varchar2(16);

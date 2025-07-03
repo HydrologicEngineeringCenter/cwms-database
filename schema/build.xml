@@ -306,7 +306,7 @@
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pdu.xml" />
          <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/><arg value="-s"/>
             <arg value="-d"/><arg value="-D"/><arg value="-c"/>
-         <arg value="${office.primary.code}hectest_pu/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest_pu/${oracle.hectest.password}@${oracle.cwms.instance}${oracle.connection.parameters}" />
         </exec>
 
       <fail>
@@ -335,7 +335,7 @@
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_dba.xml" />
          <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/><arg value="-s"/>
             <arg value="-d"/><arg value="-D"/><arg value="-c"/>
-         <arg value="${office.primary.code}hectest_db/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest_db/${oracle.hectest.password}@${oracle.cwms.instance}${oracle.connection.parameters}" />
 
         </exec>
 
@@ -365,7 +365,7 @@
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_up.xml" />
          <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/><arg value="-s"/>
             <arg value="-d"/><arg value="-D"/><arg value="-c"/>
-         <arg value="${office.primary.code}hectest_up/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest_up/${oracle.hectest.password}@${oracle.cwms.instance}${oracle.connection.parameters}" />
 
         </exec>
 
@@ -395,7 +395,7 @@
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_ro.xml" />
          <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/><arg value="-s"/>
             <arg value="-d"/><arg value="-D"/><arg value="-c"/>
-         <arg value="${office.primary.code}hectest_ro/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest_ro/${oracle.hectest.password}@${oracle.cwms.instance}${oracle.connection.parameters}" />
 
         </exec>
 
@@ -425,7 +425,7 @@
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_webuser_abilities.xml" />
          <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/><arg value="-s"/>
             <arg value="-d"/><arg value="-D"/><arg value="-c"/>
-         <arg value="${office.primary.code}webtest/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}webtest/${oracle.hectest.password}@${oracle.cwms.instance}${oracle.connection.parameters}" />
         </exec>
       <fail>
          <condition>
@@ -453,7 +453,7 @@
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_webuser_abilities.xml" />
          <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/><arg value="-s"/>
             <arg value="-d"/><arg value="-D"/><arg value="-c"/>
-         <arg value="${office.primary.code}hectest_multioffice/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest_multioffice/${oracle.hectest.password}@${oracle.cwms.instance}${oracle.connection.parameters}" />
         </exec>
       <fail>
          <condition>
@@ -481,7 +481,7 @@
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_ro.xml" />
          <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/><arg value="-s"/>
             <arg value="-d"/><arg value="-D"/><arg value="-c"/>
-         <arg value="${office.primary.code}hectest/${oracle.hectest.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}hectest/${oracle.hectest.password}@${oracle.cwms.instance}${oracle.connection.parameters}" />
 
         </exec>
 
@@ -513,7 +513,7 @@
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pd.xml" />
          <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/><arg value="-s"/>
             <arg value="-d"/><arg value="-D"/><arg value="-c"/>
-         <arg value="${office.primary.code}cwmspd/${oracle.cwmspd.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}cwmspd/${oracle.cwmspd.password}@${oracle.cwms.instance}${oracle.connection.parameters}" />
 
         </exec>
 
@@ -542,7 +542,7 @@
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pd.xml" />
             <arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/><arg value="-s"/>
             <arg value="-d"/><arg value="-D"/><arg value="-c"/>
-         <arg value="${office.primary.code}cwmspd/${oracle.cwmspd.password}@${oracle.cwms.instance}" />
+         <arg value="${office.primary.code}cwmspd/${oracle.cwmspd.password}@${oracle.cwms.instance}${oracle.connection.parameters}" />
 
         </exec>
 
@@ -1599,7 +1599,7 @@
       -->
       <delete file="${build.dir}/sqlversion"/>
       <sql driver="oracle.jdbc.driver.OracleDriver"
-          url="jdbc:oracle:thin:@${oracle.cwms.instance}"
+          url="jdbc:oracle:thin:@${oracle.cwms.instance}${oracle.connection.parameters}"
           userid="${oracle.cwms.user}"
           password="${oracle.cwms.password}"
           print="yes"
