@@ -636,7 +636,7 @@ AS
             p_public_name        => 'Fall Creek near Lowell',
             p_long_name          => 'FCLO',
             p_time_zone_id       => 'US/Pacific');
-        COMMIT;
+
 
 
 
@@ -2031,12 +2031,11 @@ AS
             p_nation_id           => p_nation_id,
             p_nearest_city        => p_nearest_city,
             p_db_office_id        => '&&office_id');
-         commit;
+
          select * into ll_rec from cwms_v_loc where location_id = 'HUB' and unit_system = 'SI';
 
          if p_delete then
             cwms_loc.delete_location('HUB', cwms_util.delete_all, '&&office_id');
-            commit;
          end if;
          
          return ll_rec;

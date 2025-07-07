@@ -479,7 +479,6 @@ compound trigger
    l_tz_loc_codes_base tz_loc_codes := tz_loc_codes();
    l_tz_loc_tz tz_codes := tz_codes();
    l_tz_code_len integer := 1;
-   --pragma autonomous_transaction;
 before each row is
 begin
    if deleting then
@@ -568,7 +567,6 @@ begin
          update at_cwms_ts_spec
             set time_zone_code = l_tz_code
           where location_code = l_tz_loc_codes(idx);
-         -- commit;
       end loop;
    end if;
 end after statement;

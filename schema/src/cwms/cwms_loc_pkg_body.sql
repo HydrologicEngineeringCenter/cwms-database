@@ -577,8 +577,6 @@ AS
       p_db_office_id          IN     VARCHAR2 DEFAULT NULL
    )
    IS
-   --   PRAGMA AUTONOMOUS_TRANSACTION;
-
       l_hashcode                NUMBER;
       l_ret                    NUMBER;
       l_base_loc_exists        BOOLEAN := TRUE;
@@ -705,78 +703,114 @@ AS
       THEN
          ---------.
          ---------.
-         -- Create new base and sub locations in database...
-         -- l_hashcode :=
-         --    DBMS_UTILITY.get_hash_value (
-         --          p_db_office_code
-         --       || UPPER (p_base_location_id)
-         --       || UPPER (p_sub_location_id),
-         --       0,
-         --       1073741823
-         --    );
-         -- l_ret :=
-         --    DBMS_LOCK.request (id                  => l_hashcode,
-         --                       timeout             => 0,
-         --                       lockmode            => 5,
-         --                       release_on_commit   => TRUE
-         --                      );
-
-         -- IF l_ret > 0
-         -- THEN
-         --    raise_application_error('20001', 'locked');
-         --    DBMS_LOCK.sleep (2);
-         -- ELSE
-            ---------.
-            ---------.
-            -- Create new Base Location (if necessary)...
+         -- Create new Base Location (if necessary)...
+         --.
+         IF NOT l_base_loc_exists
+         THEN
             --.
-            IF NOT l_base_loc_exists
-            THEN
-               --.
-               -- Insert new Base Location -
-               INSERT
-                    INTO   at_base_location (base_location_code,
-                                             db_office_code,
-                                             base_location_id,
-                                             active_flag
-                                            )
-                  VALUES   (
-                              cwms_seq.NEXTVAL,
-                              p_db_office_code,
-                              p_base_location_id,
-                              p_active_flag
-                           )
-               RETURNING   base_location_code
-                    INTO   p_base_location_code;
+            -- Insert new Base Location -
+            INSERT
+                  INTO   at_base_location (base_location_code,
+                                          db_office_code,
+                                          base_location_id,
+                                          active_flag
+                                          )
+               VALUES   (
+                           cwms_seq.NEXTVAL,
+                           p_db_office_code,
+                           p_base_location_id,
+                           p_active_flag
+                        )
+            RETURNING   base_location_code
+                  INTO   p_base_location_code;
 
-               --
-               --.Insert new Base Location into at_physical_location -
-               INSERT
-                 INTO   at_physical_location (location_code,
-                                              base_location_code,
-                                              time_zone_code,
-                                              county_code,
-                                              location_type,
-                                              elevation,
-                                              vertical_datum,
-                                              longitude,
-                                              latitude,
-                                              horizontal_datum,
-                                              public_name,
-                                              long_name,
-                                              description,
-                                              active_flag,
-                                              location_kind,
-                                              map_label,
-                                              published_latitude,
-                                              published_longitude,
-                                              office_code,
-                                              nation_code,
-                                              nearest_city
+            --
+            --.Insert new Base Location into at_physical_location -
+            INSERT
+               INTO   at_physical_location (location_code,
+                                             base_location_code,
+                                             time_zone_code,
+                                             county_code,
+                                             location_type,
+                                             elevation,
+                                             vertical_datum,
+                                             longitude,
+                                             latitude,
+                                             horizontal_datum,
+                                             public_name,
+                                             long_name,
+                                             description,
+                                             active_flag,
+                                             location_kind,
+                                             map_label,
+                                             published_latitude,
+                                             published_longitude,
+                                             office_code,
+                                             nation_code,
+                                             nearest_city
+                                          )
+            VALUES   (
+                        p_base_location_code,
+                        p_base_location_code,
+                        p_time_zone_code,
+                        l_county_code,
+                        p_location_type,
+                        p_elevation,
+                        p_vertical_datum,
+                        p_longitude,
+                        p_latitude,
+                        p_horizontal_datum,
+                        p_public_name,
+                        p_long_name,
+                        p_description,
+                        p_active_flag,
+                        l_location_kind_code,
+                        p_map_label,
+                        p_published_latitude,
+                        p_published_longitude,
+                        l_bounding_office_code,
+                        l_nation_code,
+                        l_nearest_city
+                     );
+
+            update_local_datum_name(p_base_location_code, p_vertical_datum);
+            p_location_code := p_base_location_code;
+         END IF;
+
+         ---------.
+         ---------.
+         -- Create new (Sub) Location (if necessary)...
+         --.
+         IF p_sub_location_id IS NOT NULL
+         THEN
+            INSERT
+                  INTO   at_physical_location (location_code,
+                                                base_location_code,
+                                                sub_location_id,
+                                                time_zone_code,
+                                                county_code,
+                                                location_type,
+                                                elevation,
+                                                vertical_datum,
+                                                longitude,
+                                                latitude,
+                                                horizontal_datum,
+                                                public_name,
+                                                long_name,
+                                                description,
+                                                active_flag,
+                                                location_kind,
+                                                map_label,
+                                                published_latitude,
+                                                published_longitude,
+                                                office_code,
+                                                nation_code,
+                                                nearest_city
                                              )
                VALUES   (
+                           cwms_seq.NEXTVAL,
                            p_base_location_code,
-                           p_base_location_code,
+                           p_sub_location_id,
                            p_time_zone_code,
                            l_county_code,
                            p_location_type,
@@ -796,77 +830,14 @@ AS
                            l_bounding_office_code,
                            l_nation_code,
                            l_nearest_city
-                        );
+                        )
+            RETURNING   location_code
+                  INTO   p_location_code;
+            update_local_datum_name(p_location_code, p_vertical_datum);
+         END IF;
 
-               update_local_datum_name(p_base_location_code, p_vertical_datum);
-               p_location_code := p_base_location_code;
-            END IF;
-
-            ---------.
-            ---------.
-            -- Create new (Sub) Location (if necessary)...
-            --.
-            IF p_sub_location_id IS NOT NULL
-            THEN
-               INSERT
-                    INTO   at_physical_location (location_code,
-                                                 base_location_code,
-                                                 sub_location_id,
-                                                 time_zone_code,
-                                                 county_code,
-                                                 location_type,
-                                                 elevation,
-                                                 vertical_datum,
-                                                 longitude,
-                                                 latitude,
-                                                 horizontal_datum,
-                                                 public_name,
-                                                 long_name,
-                                                 description,
-                                                 active_flag,
-                                                 location_kind,
-                                                 map_label,
-                                                 published_latitude,
-                                                 published_longitude,
-                                                 office_code,
-                                                 nation_code,
-                                                 nearest_city
-                                                )
-                  VALUES   (
-                              cwms_seq.NEXTVAL,
-                              p_base_location_code,
-                              p_sub_location_id,
-                              p_time_zone_code,
-                              l_county_code,
-                              p_location_type,
-                              p_elevation,
-                              p_vertical_datum,
-                              p_longitude,
-                              p_latitude,
-                              p_horizontal_datum,
-                              p_public_name,
-                              p_long_name,
-                              p_description,
-                              p_active_flag,
-                              l_location_kind_code,
-                              p_map_label,
-                              p_published_latitude,
-                              p_published_longitude,
-                              l_bounding_office_code,
-                              l_nation_code,
-                              l_nearest_city
-                           )
-               RETURNING   location_code
-                    INTO   p_location_code;
-               update_local_datum_name(p_location_code, p_vertical_datum);
-            END IF;
-         --END IF;
       END IF;
 
-      --
-      -- release the lock when the user says their done
-      --COMMIT;                                   -- needed to release dbms_lock.
-   --
    END create_location_raw2;
 
    --********************************************************************** -
@@ -2617,9 +2588,6 @@ AS
             end loop;
          end;
       end if;
-
-     -- COMMIT;
-   --
    END rename_location;
 
    --********************************************************************** -
@@ -3252,8 +3220,6 @@ AS
          l_location_id_cache_val := upper(l_db_office_id)||'/'||upper(l_location_id);
          cwms_cache.remove_by_value(g_location_id_cache, l_location_id_cache_val);
       end if;
-      --commit;
-
    end delete_location;
 
    --********************************************************************** -
@@ -7080,7 +7046,6 @@ end unassign_loc_groups;
       p_vertical_datum_id_2 in  varchar2,
       p_datetime_utc        in  date default sysdate)
    is
-      --pragma autonomous_transaction; -- for inserting VERTCON offset estimate
       l_offset              binary_double;
       l_effective_date      date;
       l_vertical_datum_id_1 varchar2(16);
@@ -7352,7 +7317,6 @@ end unassign_loc_groups;
                   if l_vertical_datum_id_1 = 'NAVD88' then
                      l_offset := -l_offset;
                   end if;
-                  --commit;
                end if;
             exception
                when no_data_found then null;
