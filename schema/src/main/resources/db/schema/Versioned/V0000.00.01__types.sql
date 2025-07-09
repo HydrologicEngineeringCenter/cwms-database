@@ -5874,3 +5874,523 @@ AS OBJECT (
 
 
 create or replace public synonym cwms_t_cat_sub_loc_obj for cat_sub_loc_obj_t;
+
+create or replace TYPE timeseries_req_type
+/**
+ * Type suitable for requesting the retrieval of a time series.
+ *
+ * @member tsid the time seried identifier
+ * @member unit the unit to return data values in
+ * @member start_time  the beginning of the time window for which to retrieve data
+ * @member end_time    the end of the time window for which to retrieve data
+ *
+ * @see type timeseries_req_array
+ */
+AS OBJECT (
+   tsid         VARCHAR2(191),
+   unit         VARCHAR2 (16),
+   start_time   DATE,
+   end_time     DATE
+);
+/
+
+
+create or replace public synonym cwms_t_timeseries_req for timeseries_req_type;
+
+CREATE TYPE timeseries_req_array
+/**
+ * Type suitable for requesting the retrieval of multiple time series.
+ *
+ * @see type timeseries_req_type
+ * @see cwms_ts.retrieve_ts_multi
+ */
+IS TABLE OF timeseries_req_type;
+/
+
+
+create or replace public synonym cwms_t_timeseries_req_array for timeseries_req_array;
+
+create or replace TYPE nested_ts_type
+-- not documented, used only in body of retrieve_ts_multi
+ AS OBJECT (
+   SEQUENCE           INTEGER,
+   tsid               VARCHAR2(191),
+   units              VARCHAR2 (16),
+   start_time         date,
+   end_time           date,
+   DATA               tsv_array,
+   location_time_zone VARCHAR2(28)
+);
+/
+
+
+create or replace public synonym cwms_t_nested_ts2 for nested_ts2_type;
+
+CREATE TYPE nested_ts_table
+-- not documented, used only in body of retrieve_ts_multi
+IS TABLE OF nested_ts_type;
+/
+
+create or replace public synonym cwms_t_nested_ts_table for nested_ts_table;
+
+CREATE TYPE source_type
+-- not documented, used only in routine body
+AS OBJECT (
+   source_id   VARCHAR2 (16),
+   gage_id     VARCHAR2 (32)
+);
+/
+
+create or replace public synonym cwms_t_source for source_type;
+
+CREATE TYPE source_array
+-- not documented, used only in routine body
+IS TABLE OF source_type;
+/
+
+
+create or replace public synonym cwms_t_source_array for source_array;
+
+
+create type tr_template_set_type
+/* (non-javadoc)
+ * [description needed]
+ *
+ * @see type tr_template_set_array
+ * @see type char_183_array_type
+ *
+ * @member description           [description needed]
+ * @member store_dep_flag        [description needed]
+ * @member unit_system           [description needed]
+ * @member transform_id          [description needed]
+ * @member lookup_agency         [description needed]
+ * @member lookup_rating_version [description needed]
+ * @member scaling_arg_a         [description needed]
+ * @member scaling_arg_b         [description needed]
+ * @member scaling_arg_c         [description needed]
+ * @member array_of_masks        [description needed]
+ */
+AS OBJECT (
+   description             VARCHAR2 (132),
+   store_dep_flag          VARCHAR2 (1),
+   unit_system             VARCHAR2 (2),
+   transform_id            VARCHAR2 (32),
+   lookup_agency           VARCHAR2 (32),
+   lookup_rating_version   VARCHAR2 (32),
+   scaling_arg_a           NUMBER,
+   scaling_arg_b           NUMBER,
+   scaling_arg_c           NUMBER,
+   array_of_masks          str_tab_t
+);
+/
+
+
+create or replace public synonym cwms_t_tr_template_set for tr_template_set_type;
+
+create type tr_template_set_array
+/* (non-javadoc)
+ * [description needed]
+ *
+ * @see type tr_template_set_type
+ * @see cwms_vt.store_tr_template
+ */
+IS TABLE OF tr_template_set_type;
+/
+
+
+create or replace public synonym cwms_t_tr_template_set_array for tr_template_set_array;
+
+create or replace TYPE loc_type_ds
+-- not documented, used only in routine body
+AS OBJECT (
+   office_id        VARCHAR2 (16),
+   base_loc_id      VARCHAR2 (24),
+   state_initial    VARCHAR2 (2),
+   county_name      VARCHAR2 (40),
+   timezone_name    VARCHAR2 (28),
+   location_type    VARCHAR2 (16),
+   latitude         NUMBER,
+   longitude        NUMBER,
+   elevation        NUMBER,
+   elev_unit_id     VARCHAR2 (16),
+   vertical_datum   VARCHAR2 (16),
+   public_name      VARCHAR2 (57),
+   long_name        VARCHAR2 (80),
+   description      VARCHAR2 (512),
+   data_sources     source_array
+);
+/
+
+
+create or replace public synonym cwms_t_loc_type_ds for loc_type_ds;
+
+create type screen_dur_mag_type
+/* (non-javadoc)
+ * [description needed]
+ *
+ * @member duration_id  [description needed]
+ * @member reject_lo    [description needed]
+ * @member reject_hi    [description needed]
+ * @member question_lo  [description needed]
+ * @member question_hi  [description needed]
+ *
+ * @see type screen_dur_mag_array
+ */
+AS OBJECT (
+   duration_id   VARCHAR2 (16),
+   reject_lo     NUMBER,
+   reject_hi     NUMBER,
+   question_lo   NUMBER,
+   question_hi   NUMBER
+);
+/
+
+
+create or replace public synonym cwms_t_screen_dur_mag for screen_dur_mag_type;
+
+create type screen_dur_mag_array
+/* (non-javadoc)
+ * [description needed]
+ *
+ * @see type screen_dur_mag_type
+ */
+IS TABLE OF screen_dur_mag_type;
+/
+
+
+create or replace public synonym cwms_t_screen_dur_mag_array for screen_dur_mag_array;
+
+create type screen_crit_type
+/* (non-javadoc)
+ * [description needed]
+ *
+ * @member season_start_day         [description needed]
+ * @member season_start_month       [description needed]
+ * @member range_reject_lo          [description needed]
+ * @member range_reject_hi          [description needed]
+ * @member range_question_lo        [description needed]
+ * @member range_question_hi        [description needed]
+ * @member rate_change_reject_rise  [description needed]
+ * @member rate_change_reject_fall  [description needed]
+ * @member rate_change_quest_rise   [description needed]
+ * @member rate_change_quest_fall   [description needed]
+ * @member const_reject_duration_id [description needed]
+ * @member const_reject_min         [description needed]
+ * @member const_reject_tolerance   [description needed]
+ * @member const_reject_n_miss      [description needed]
+ * @member const_quest_duration_id  [description needed]
+ * @member const_quest_min          [description needed]
+ * @member const_quest_tolerance    [description needed]
+ * @member const_quest_n_miss       [description needed]
+ * @member estimate_expression      [description needed]
+ * @member dur_mag_array            [description needed]
+ *
+ * @see type screen_crit_array
+ */
+AS OBJECT (
+   season_start_day           NUMBER,
+   season_start_month         NUMBER,
+   range_reject_lo            NUMBER,
+   range_reject_hi            NUMBER,
+   range_question_lo          NUMBER,
+   range_question_hi          NUMBER,
+   rate_change_reject_rise    NUMBER,
+   rate_change_reject_fall    NUMBER,
+   rate_change_quest_rise     NUMBER,
+   rate_change_quest_fall     NUMBER,
+   const_reject_duration_id   VARCHAR2 (16),
+   const_reject_min           NUMBER,
+   const_reject_tolerance     NUMBER,
+   const_reject_n_miss        NUMBER,
+   const_quest_duration_id    VARCHAR2 (16),
+   const_quest_min            NUMBER,
+   const_quest_tolerance      NUMBER,
+   const_quest_n_miss         NUMBER,
+   estimate_expression        VARCHAR2 (32 BYTE),
+   dur_mag_array              screen_dur_mag_array
+);
+/
+
+
+create or replace public synonym cwms_t_screen_crit for screen_crit_type;
+
+CREATE TYPE screen_crit_array
+/* (non-javadoc)
+ * [description needed]
+ *
+ * @see type screen_crit_type
+ * @see cwms_vt.store_screening_criteria
+ */
+IS TABLE OF screen_crit_type;
+/
+
+
+create or replace public synonym cwms_t_screen_crit_array for screen_crit_array;
+
+create type cwms_ts_id_array
+/**
+ * Type for holding multiple CWMS time series identifiers
+ *
+ * @see cwms_ts_id_t
+ */
+IS TABLE OF cwms_ts_id_t;
+/
+
+
+create or replace public synonym cwms_t_cwms_ts_id_array for cwms_ts_id_array;
+
+create type screen_assign_array
+/* (non-javadoc)
+ * [description needed]
+ *
+ * @see type screen_assign_t
+ * @see cwms_vt.assign_screening_id
+ */
+IS TABLE OF screen_assign_t;
+/
+
+
+create or replace public synonym cwms_t_screen_assign_array for screen_assign_array;
+
+create or replace type loc_alias_type
+/**
+ * Holds basic information about a location alias.  This information doesn't
+ * contain any context for the alias.
+ *
+ * @see type_loc_alias_array
+ * @see type loc_alias_type2
+ * @see type loc_alias_type3
+ *
+ * @member location_id  the location identifier
+ * @member loc_alias_id the alias for the location
+ */
+AS OBJECT (
+   location_id    VARCHAR2 (57),
+   loc_alias_id   VARCHAR2 (128)
+);
+/
+
+
+create or replace public synonym cwms_t_loc_alias for loc_alias_type;
+
+create type loc_alias_array
+/**
+ * Holds basic information about a collection of location aliases.  This information
+ * doesn't contain any context for the aliases.
+ *
+ * @see type_loc_alias_type
+ * @see type loc_alias_array2
+ * @see type loc_alias_array3
+ * @see cwms_loc.assign_loc_groups
+ */
+IS TABLE OF loc_alias_type;
+/
+
+
+create or replace public synonym cwms_t_loc_alias_array for loc_alias_array;
+
+create or replace type loc_alias_type2
+/**
+ * Holds intermediate information about a location alias.  This information doesn't
+ * contain any context for the alias.
+ *
+ * @see type_loc_alias_array2
+ * @see type loc_alias_type
+ * @see type loc_alias_type3
+ *
+ * @member location_id   the location identifier
+ * @member loc_attribute a numeric attribute associated with the location and alias.
+ *         This can be used for sorting locations within a location group or other
+ *         user-defined purposes.
+ * @member loc_alias_id  the alias for the location
+ */
+AS OBJECT (
+   location_id    VARCHAR2 (57),
+   loc_attribute  NUMBER,
+   loc_alias_id   VARCHAR2 (128)
+);
+/
+
+
+create or replace public synonym cwms_t_loc_alias2 for loc_alias_type2;
+
+create type loc_alias_array2
+/**
+ * Holds intermediate information about a collection of location aliases.  This
+ * information doesn't contain any context for the aliases.
+ *
+ * @see type_loc_alias_type2
+ * @see type loc_alias_array
+ * @see type loc_alias_array3
+ * @see cwms_loc.assign_loc_groups2
+ */
+IS TABLE OF loc_alias_type2;
+/
+
+create or replace type loc_alias_type3
+/**
+ * Holds detailed information about a location alias.  This information doesn't
+ * contain any context for the alias.
+ *
+ * @see type_loc_alias_array3
+ * @see type loc_alias_type2
+ * @see type loc_alias_type3
+ *
+ * @member location_id   the location identifier
+ * @member loc_attribute a numeric attribute associated with the location and alias.
+ *         This can be used for sorting locations within a location group or other
+ *         user-defined purposes.
+ * @member loc_alias_id  the alias for the location
+ * @member loc_ref_id    the location identifier of a referenced location
+ */
+AS OBJECT (
+   location_id    VARCHAR2 (57),
+   loc_attribute  NUMBER,
+   loc_alias_id   VARCHAR2 (128),
+   loc_ref_id     VARCHAR2 (49)
+);
+/
+
+
+create or replace public synonym cwms_t_loc_alias3 for loc_alias_type3;
+
+create or replace public synonym cwms_t_loc_alias2_array for loc_alias_array2;
+
+create type loc_alias_array3
+/**
+ * Holds detailed information about a collection of location aliases.  This
+ * information doesn't contain any context for the aliases.
+ *
+ * @see type_loc_alias_type3
+ * @see type loc_alias_array2
+ * @see type loc_alias_array3
+ * @see cwms_loc.assign_loc_groups3
+ */
+IS TABLE OF loc_alias_type3;
+/
+
+
+create or replace public synonym cwms_t_loc_alias3_array for loc_alias_array3;
+
+create type group_type
+/**
+ * Holds basic information about location groups
+ *
+ * @see type group_type2
+ * @see type group_array
+ *
+ * @member group_id   the location group identifier
+ * @member group_desc a description of the location group
+ */
+AS OBJECT (
+   GROUP_ID     VARCHAR2 (32),
+   group_desc   VARCHAR2 (128)
+);
+/
+
+
+create or replace public synonym cwms_t_group for group_type;
+
+create type group_array
+/**
+ * Holds basic information about a collection of location groups
+ *
+ * @see type group_type
+ * @see type group_array2
+ * @see cwms_loc.assign_loc_grps_cat
+ */
+IS TABLE OF group_type;
+/
+
+
+create or replace public synonym cwms_t_group_array for group_array;
+
+create type group_type2
+/**
+ * Holds detailed information about location groups.
+ *
+ * @see type group_type
+ * @see type group_array2
+ *
+ * @member group_id          the location group identifier
+ * @member group_desc        a description of the location group
+ * @member shared_alias_id   a location alias shared by all members of the
+ *         location group
+ * @member shared_loc_ref_id the location identifier for a referenced location
+ *         shared by all members of the location group
+ */
+AS OBJECT (
+   GROUP_ID          VARCHAR2 (32),
+   group_desc        varchar2 (128),
+   shared_alias_id   VARCHAR2 (128),
+   shared_loc_ref_id VARCHAR2 (49)
+);
+/
+
+
+create or replace public synonym cwms_t_group2 for group_type2;
+
+create type group_array2
+/**
+ * Holds basic information about a collection of location groups
+ *
+ * @see type group_type2
+ * @see type group_array
+ * @see cwms_loc.assign_loc_grps_cat2
+ */
+IS TABLE OF group_type2;
+/
+
+
+create or replace public synonym cwms_t_group2_array for group_array2;
+
+create type group_type3
+/**
+ * Holds detailed information about location groups.
+ *
+ * @see type group_type
+ * @see type group_array2
+ *
+ * @member group_id          the location group identifier
+ * @member group_desc        a description of the location group
+ * @member group_attribute   a number that can be used for sorting, etc...
+ * @member shared_alias_id   a location alias shared by all members of the
+ *         location group
+ * @member shared_loc_ref_id the location identifier for a referenced location
+ *         shared by all members of the location group
+ */
+AS OBJECT (
+   GROUP_ID          VARCHAR2 (32),
+   group_desc        VARCHAR2 (128),
+   group_attribute   NUMBER,
+   shared_alias_id   VARCHAR2 (128),
+   shared_loc_ref_id VARCHAR2 (49)
+);
+/
+
+
+create or replace public synonym cwms_t_group3 for group_type3;
+
+create type group_array3
+/**
+ * Holds basic information about a collection of location groups
+ *
+ * @see type group_type3
+ * @see type group_array
+ * @see cwms_loc.assign_loc_grps_cat3
+ */
+IS TABLE OF group_type3;
+/
+
+
+create or replace public synonym cwms_t_group3_array for group_array3;
+
+create type str2tbltype
+/**
+ * Holds a table of varchar2(2000). Used by the standalone str2tab utility function.
+ */
+AS TABLE OF VARCHAR2 (2000);
+/
+
+
+create or replace public synonym cwms_t_str2tbltype for str2tbltype;
