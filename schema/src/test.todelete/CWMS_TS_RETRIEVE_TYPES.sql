@@ -1,3 +1,0 @@
-CREATE OR REPLACE TYPE date_table_type AS TABLE OF DATE;
-/
-
