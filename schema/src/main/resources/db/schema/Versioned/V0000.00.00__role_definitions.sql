@@ -1,3 +1,21 @@
+CREATE PROFILE "CWMS_PROF" LIMIT CPU_PER_SESSION DEFAULT
+CPU_PER_CALL DEFAULT
+CONNECT_TIME DEFAULT
+IDLE_TIME DEFAULT
+SESSIONS_PER_USER DEFAULT
+LOGICAL_READS_PER_SESSION DEFAULT
+LOGICAL_READS_PER_CALL DEFAULT
+PRIVATE_SGA DEFAULT
+COMPOSITE_LIMIT DEFAULT
+PASSWORD_LIFE_TIME UNLIMITED
+PASSWORD_GRACE_TIME DEFAULT
+PASSWORD_REUSE_MAX DEFAULT
+PASSWORD_REUSE_TIME DEFAULT
+PASSWORD_LOCK_TIME DEFAULT
+FAILED_LOGIN_ATTEMPTS UNLIMITED
+PASSWORD_VERIFY_FUNCTION DEFAULT;
+/
+
 
 alter user ${CWMS_SCHEMA} ${CWMS_SCHEMA_AUTH};
 alter user ${CWMS_SCHEMA} account unlock;
@@ -169,5 +187,74 @@ begin
             principal_type  => xs_acl.ptype_db));
        commit;
 
+end;
+/
+
+alter user CWMS_DBA ${CWMS_DBA_AUTH};
+alter user CWMS_DBA account unlock;
+
+
+-- This grants connect role
+GRANT CREATE SESSION TO CWMS_DBA;
+ALTER USER CWMS_DBA DEFAULT ROLE ALL;
+  -- 4 System Privileges for CWMS_DBA
+GRANT ALTER USER TO CWMS_DBA;
+GRANT CREATE USER TO CWMS_DBA;
+GRANT CREATE SESSION TO "CWMS_DBA" WITH ADMIN OPTION;
+GRANT DROP USER TO "CWMS_DBA";
+GRANT SELECT ANY DICTIONARY TO "CWMS_DBA";
+
+
+create role cwms_user not identified;
+grant cwms_user to cwms_20 with admin option;
+
+create role web_user not identified;
+grant web_user to cwms_20 with admin option;
+
+grant create session to cwms_user;
+grant aq_user_role to cwms_user;
+grant aq_administrator_role to cwms_user;
+--grant select on dba_scheduler_jobs to cwms_user;
+--grant select on dba_scheduler_job_log to cwms_user;
+--grant select on dba_scheduler_job_run_details to cwms_user;
+
+-- execute on packages granted later
+-- select on views granted later
+
+declare
+   privilege_not_granted exception;
+   pragma exception_init(privilege_not_granted, -1927);
+
+begin
+   --
+   -- grant network address resolve privileges (new in Oracle 12)
+   --
+     ----------------------------------------
+      -- remove existing ACEs if they exist --
+      ----------------------------------------
+      begin
+         dbms_network_acl_admin.remove_host_ace(
+            host => '*',
+            ace  => xs$ace_type(
+               privilege_list   => xs$name_list('resolve'),
+               granted          => true,
+               principal_name   => 'CWMS_USER',
+               principal_type   => xs_acl.ptype_db),
+            remove_empty_acl => true);
+      exception
+         when privilege_not_granted then null;
+      end;
+     commit;
+     ----------------------------------
+      -- grant 'resolve' to CWMS_USER --
+      ----------------------------------
+      dbms_network_acl_admin.append_host_ace(
+         host => '*',
+         ace  => xs$ace_type(
+            privilege_list  => xs$name_list('resolve'),
+            granted         => true,
+            principal_name  => 'CWMS_USER',
+            principal_type  => xs_acl.ptype_db));
+     commit;
 end;
 /
