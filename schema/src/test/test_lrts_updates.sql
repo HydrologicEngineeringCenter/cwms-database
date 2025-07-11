@@ -1069,6 +1069,9 @@ is
     pragma exception_init (exc_invalid_identifier, -904);
 begin
     setup;
+
+    cwms_ts.set_use_new_lrts_format_on_output('T');
+
     l_cwms_ts_id := replace(c_location_ids(1)||c_ts_id_part, '<intvl>', c_intervals(1));
 
     l_cwms_office_code := cwms_util.GET_OFFICE_CODE(c_office_id);
@@ -1079,6 +1082,11 @@ begin
 
     begin
         -- clean up any existing forecast spec record matching our test code
+
+        delete from at_fcst_location where fcst_spec_code = l_fcst_spec_code;
+
+        delete from at_fcst_time_series where fcst_spec_code = l_fcst_spec_code;
+
         delete from at_fcst_spec where fcst_spec_code = l_fcst_spec_code;
 
         insert into at_fcst_spec values (l_fcst_spec_code, l_cwms_office_code,
@@ -1090,6 +1098,8 @@ begin
             into l_fcst_spec_tsid
         from av_fcst_time_series a
             where a.fcst_spec_code = l_fcst_spec_code;
+
+        cwms_ts.set_use_new_lrts_format_on_output('F');
 
         ut.expect(l_fcst_spec_tsid).to_equal(l_cwms_ts_id);
     end;
@@ -1103,12 +1113,14 @@ procedure test_lrts_fcst_spec_retrieval
     l_cwms_ts_id        cwms_v_ts_id.cwms_ts_id%type;
     l_cwms_ts_code      integer;
     l_cwms_office_code  integer;
+    l_location_code     integer;
     l_fcst_spec_code    varchar2(64);
     l_fcst_spec_id      varchar2(64);
     l_entity_id         varchar2(64);
     l_description       varchar2(64);
     l_location_id       varchar2(64);
     l_timeseries_ids    clob;
+    l_ts_id             varchar2(64);
     exc_invalid_identifier exception;
     pragma exception_init (exc_invalid_identifier, -904);
 begin
@@ -1119,15 +1131,26 @@ begin
 
     l_cwms_ts_code := cwms_ts.get_ts_code(l_cwms_ts_id, l_cwms_office_code);
 
+    l_location_code := cwms_loc.GET_LOCATION_CODE(
+            p_db_office_code => l_cwms_office_code,
+            p_location_id => c_location_ids(1)
+    );
+
     l_fcst_spec_code := 'fcst_spec_test_code';
     l_fcst_spec_id := 'TEST_SPEC876';
 
     begin
         -- clean up any existing forecast spec record matching our test code
+        delete from at_fcst_location where fcst_spec_code = l_fcst_spec_code;
+
+        delete from at_fcst_time_series where fcst_spec_code = l_fcst_spec_code;
+
         delete from at_fcst_spec where fcst_spec_code = l_fcst_spec_code;
 
         insert into at_fcst_spec values (l_fcst_spec_code, l_cwms_office_code,
                                          l_fcst_spec_id, 'designator', 1, 'description');
+
+        insert into at_fcst_location values (l_fcst_spec_code, l_location_code);
 
         insert into at_fcst_time_series values (l_fcst_spec_code, l_cwms_ts_code);
 
@@ -1136,10 +1159,14 @@ begin
                 p_description => l_description,
                 p_location_id => l_location_id,
                 p_timeseries_ids => l_timeseries_ids,
-                p_fcst_spec_id => l_fcst_spec_id
+                p_fcst_spec_id => l_fcst_spec_id,
+                p_fcst_designator => 'designator',
+                p_office_id => c_office_id
         );
 
-        ut.expect(l_timeseries_ids).to_equal(l_cwms_ts_id);
+        l_ts_id := substr(l_timeseries_ids, 1, 64);
+
+        ut.expect(l_ts_id).to_equal(l_cwms_ts_id);
     end;
 end test_lrts_fcst_spec_retrieval;
 
