@@ -1,4 +1,4 @@
--- delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID';
+delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', null,
 '
 /**
