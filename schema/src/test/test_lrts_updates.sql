@@ -1120,7 +1120,7 @@ procedure test_lrts_fcst_spec_retrieval
     l_description       varchar2(64);
     l_location_id       varchar2(64);
     l_timeseries_ids    clob;
-    l_ts_id             varchar2(64);
+    l_ts_id             varchar2(128);
     exc_invalid_identifier exception;
     pragma exception_init (exc_invalid_identifier, -904);
 begin
@@ -1164,7 +1164,7 @@ begin
                 p_office_id => c_office_id
         );
 
-        l_ts_id := substr(l_timeseries_ids, 1, 64);
+        l_ts_id := substr(l_timeseries_ids, 1, 128);
 
         ut.expect(l_ts_id).to_equal(l_cwms_ts_id);
     end;
