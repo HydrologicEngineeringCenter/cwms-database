@@ -197,6 +197,7 @@ begin
       execute immediate 'grant select on '||rec.object_name||' to cwms_user';
    end loop;
 end;
+/
 
 PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
