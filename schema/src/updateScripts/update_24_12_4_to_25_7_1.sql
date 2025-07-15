@@ -87,6 +87,11 @@ alter table UPLOADED_XLS_FILE_ROWS_T modify USER_ID_UPLOADED varchar2(128);
 alter table UPLOADED_XLS_FILE_ROWS_T modify USER_ID_LAST_UPDATED varchar2(128);
 
 PROMPT ################################################################################
+PROMPT ALTERING VIEWS
+@../cwms/views/av_cwms_ts_id.sql
+@../cwms/views/av_location_level.sql
+
+PROMPT ################################################################################
 PROMPT CREATING AND ALTERING TYPE SPECIFICATIONS
 select systimestamp from dual;
 
@@ -192,6 +197,7 @@ begin
       execute immediate 'grant select on '||rec.object_name||' to cwms_user';
    end loop;
 end;
+/
 
 PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
