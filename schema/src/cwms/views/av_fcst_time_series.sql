@@ -24,7 +24,42 @@ as
 select o.office_id,
        fs.fcst_spec_id,
        fs.fcst_designator,
-       tsid.cwms_ts_id,
+       case
+           when 'T' = (select 'T'
+                       from dual
+                       where exists(select str_value
+                                    from at_session_info
+                                    where item_name = 'USE_NEW_LRTS_ID_FORMAT'
+                                        and bitand(num_value, 4) = 4
+                       )
+           )
+           then
+               ----------------------------
+               -- use new LRTS ID format --
+               ----------------------------
+               case
+               when substr(tsid.interval_id, 1, 1) = '~' and tsid.interval_utc_offset != -2147483648 then
+                    ----------------
+                    -- TS is LRTS --
+                    ----------------
+                    tsid.location_id
+                    ||'.'||tsid.parameter_id
+                    ||'.'||tsid.parameter_type_id
+                    ||'.'||regexp_replace(tsid.interval_id, '^~(.+)$', '\1Local')
+                    ||'.'||tsid.duration_id
+                    ||'.'||tsid.version_id
+               else
+                    --------------------
+                    -- TS is not LRTS --
+                    --------------------
+                    tsid.cwms_ts_id
+               end
+           else
+               ----------------------------
+               -- use old LRTS ID format --
+               ----------------------------
+               tsid.cwms_ts_id
+           end as cwms_ts_id,
        o.office_code,
        fs.fcst_spec_code,
        fts.ts_code
