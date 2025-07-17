@@ -363,6 +363,16 @@ begin
    order by
       tsid.cwms_ts_id;
    if l_ts_ids.count > 0 then
+      if cwms_ts.use_new_lrts_format_on_output = 'T' then
+          for j in 1..l_ts_ids.count loop
+              if cwms_ts.is_lrts(l_ts_ids(j), p_office_id) = 'T' then
+                  if cwms_ts.is_new_lrts_format(l_ts_ids(j)) = 'F' then
+                      l_ts_ids(j) := cwms_ts.format_lrts_output(l_ts_ids(j), true);
+                  end if;
+              end if;
+          end loop;
+      end if;
+
       dbms_lob.createtemporary(p_timeseries_ids, true);
       dbms_lob.open(p_timeseries_ids, dbms_lob.lob_readwrite);
       cwms_util.append(p_timeseries_ids, l_ts_ids(1));
