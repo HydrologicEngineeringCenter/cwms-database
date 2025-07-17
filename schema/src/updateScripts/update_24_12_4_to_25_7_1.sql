@@ -92,6 +92,10 @@ PROMPT ALTERING VIEWS
 @../cwms/views/av_location_level.sql
 
 PROMPT ################################################################################
+PROMPT adding Data acquisition groups
+@./25_07_01/data_acquisition
+
+PROMPT ################################################################################
 PROMPT CREATING AND ALTERING TYPE SPECIFICATIONS
 select systimestamp from dual;
 
