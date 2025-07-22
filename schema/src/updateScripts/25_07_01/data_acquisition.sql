@@ -8,12 +8,8 @@ insert into at_loc_category (
           'Data Acquisition',
           53,
           'These Locations Groups are used to manage data acquisition from other organizations'
-     from dual
-    where not exists (
-      select 1
-        from at_loc_category
-       where loc_category_code = 10
-   );
+    from dual
+    where not exists (select 1 from at_loc_category where loc_category_code = 10);
 
 insert into at_loc_group (
    loc_group_code,
@@ -31,10 +27,6 @@ insert into at_loc_group (
           'These Locations will be used to store Measurement data acquired from the USGS',
           53,
           null,
-          null null
-     from dual
-    where not exists (
-      select 1
-        from at_loc_group
-       where loc_group_code = 201
-   );
+          null, null
+    from dual
+    where not exists (select 1 from at_loc_group where loc_group_code = 201 );
