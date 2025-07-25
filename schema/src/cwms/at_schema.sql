@@ -981,6 +981,7 @@ ALTER TABLE AT_LOC_CATEGORY ADD CONSTRAINT AT_LOC_CATEGORY_FK1 FOREIGN KEY (DB_O
 
 INSERT INTO at_loc_category VALUES (0, 'Default',        53, 'Default');
 INSERT INTO at_loc_category VALUES (1, 'Agency Aliases', 53, 'Location aliases for other agencies');
+INSERT INTO at_loc_category VALUES (10,'Data Acquisition', 53, 'These Locations Groups are used to manage data acquisition from other organizations');
 -- INSERT INTO at_loc_category VALUES (2, 'Basin',          53, 'Category for basin location groups');
 -- INSERT INTO at_loc_category VALUES (3, 'Outlet',         53, 'Category for outlet location groups');
 -- INSERT INTO at_loc_category VALUES (4, 'Turbine',        53, 'Category for turbine location groups');
@@ -1095,6 +1096,7 @@ INSERT INTO at_loc_group VALUES ( 8, 1, 'TVA Station ID'     , 'Tennessee Valley
 INSERT INTO at_loc_group VALUES ( 9, 1, 'NRCS Station ID'    ,'Natural Resources Conservation Service Station ID'                                         , 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (10, 1, 'USGS GNIS ID'       , 'The ID used by the USGS GNIS APEX App to define a record in the Geographic Names database', 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (11, 1, 'NIDID'              , 'The National Inventory of Dams ID used by the NID and Corps Inventory of Dams Subset'     , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES (201,10,'USGS Measurements'  , 'These Locations will be used to store Measurement data acquired from the USGS'            , 53, NULL, NULL, NULL);
 COMMIT ;
 -----
 
