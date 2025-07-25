@@ -1,4 +1,4 @@
---delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL';
+delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL', null,
 '
 /**
@@ -46,6 +46,17 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL',
  * @field source                      The source entity for the location level values
  */
 ');
+
+create or replace function dash (
+   p1 in varchar2,
+   p2 in varchar2)
+   return varchar2
+as
+begin
+   return p1||case when p2 is not null then '-' end||p2;
+end;
+/
+
 
 --------------------------------------------------------------------------------
 -- AV_LOCATION_LEVEL_XXXX5h3
@@ -101,11 +112,6 @@ create or replace force view av_location_level
 )
 as
 with
-function dash (p1 varchar2, p2 varchar2) return varchar2 as
-   begin
-      return p1||case when p2 is not null then '-' end||p2;
-      --return p1||NVL2(p2,'-'||p2,'');
-   end;
 parameters as
 (  select
           c_bp1.base_parameter_code,

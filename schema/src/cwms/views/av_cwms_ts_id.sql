@@ -1,4 +1,4 @@
--- delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID';
+delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', null,
 '
 /**
@@ -37,6 +37,20 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', nul
 */
 ');
 
+create or replace function get_lrts
+   return number deterministic
+is
+   l_code number := 0;
+begin
+   select nvl((select bitand(num_value,4)
+                  from cwms_20.at_session_info
+                  where item_name = 'USE_NEW_LRTS_ID_FORMAT'),
+               0 )
+      into l_code
+      from dual;
+   return l_code;
+end;
+/
 CREATE OR REPLACE FORCE VIEW av_cwms_ts_id
 (
     db_office_id,
@@ -69,17 +83,6 @@ CREATE OR REPLACE FORCE VIEW av_cwms_ts_id
     time_zone_id
 )
 AS
-   with function get_lrts return number DETERMINISTIC is
-      l_code number := 0;
-   begin
-      select nvl((select bitand(num_value,4)
-                    from cwms_20.at_session_info
-                   where item_name = 'USE_NEW_LRTS_ID_FORMAT'),
-                  0 )
-        into l_code
-        from dual;
-      return l_code;
-   end;
    SELECT  db_office_id,
            case when get_LRTS = 4
            then
