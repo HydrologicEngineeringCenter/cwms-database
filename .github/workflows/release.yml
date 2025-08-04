@@ -65,6 +65,12 @@ jobs:
         run: echo "VERSION=${{inputs.branch}}" >> $GITHUB_ENV
       - name: show version
         run: echo ${VERSION}
+      - name: Update pom.xml
+        run: |
+          if [[ "${{inputs.branch}}" =~ ^[0-9][0-9]\.[0-9][0-9]\.[0-9](-RC[0-9][0-9]+)? ]]; then
+            with_dash=`sed 's/\./-/g' <<< "${{inputs.branch}}"`
+            sed -i "s/99-99-99-SNAPSHOT/${with_dash}/" pom.xml
+          fi
       - name: Start Database
         uses: ./.github/actions/start-database
       - name: Generate Bundle (docs and schemas)
