@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'CWMS Database'
-copyright = '2025, HEC'
-author = 'HEC'
+copyright = 'https://github.com/HydrologicEngineeringCenter/cwms-database/blob/main/INTENT.md'
+author = 'Various'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
