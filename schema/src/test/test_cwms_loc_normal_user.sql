@@ -78,6 +78,7 @@ AS
                     NULL;
             END;
         END LOOP;
+        commit;
     END setup;
 
 

@@ -30,3 +30,4 @@ insert into at_loc_group (
           null, null
     from dual
     where not exists (select 1 from at_loc_group where loc_group_code = 201 );
+

@@ -63,6 +63,7 @@ AS
         exc_location_id_not_found   EXCEPTION;
         PRAGMA EXCEPTION_INIT (exc_location_id_not_found, -20025);
     BEGIN
+        commit; -- finish out any existing transactions
         FOR rec
             IN (SELECT COLUMN_VALUE     AS loc_name
                   FROM TABLE (str_tab_t ('TestLoc1', 'TestLoc2', 'TestLocObj', 'MikesHouse')))
@@ -78,6 +79,7 @@ AS
                     NULL;
             END;
         END LOOP;
+        commit;
     END setup;
 
 
@@ -634,7 +636,7 @@ AS
             p_public_name        => 'Fall Creek near Lowell',
             p_long_name          => 'FCLO',
             p_time_zone_id       => 'US/Pacific');
-        COMMIT;
+
 
 
 
@@ -2035,7 +2037,7 @@ AS
          if p_delete then
             cwms_loc.delete_location('HUB', cwms_util.delete_all, '&&office_id');
          end if;
-
+         
          return ll_rec;
       end;
    begin
