@@ -577,8 +577,6 @@ AS
       p_db_office_id          IN     VARCHAR2 DEFAULT NULL
    )
    IS
-      PRAGMA AUTONOMOUS_TRANSACTION;
-
       l_hashcode                NUMBER;
       l_ret                    NUMBER;
       l_base_loc_exists        BOOLEAN := TRUE;
@@ -705,77 +703,114 @@ AS
       THEN
          ---------.
          ---------.
-         -- Create new base and sub locations in database...
-         l_hashcode :=
-            DBMS_UTILITY.get_hash_value (
-                  p_db_office_code
-               || UPPER (p_base_location_id)
-               || UPPER (p_sub_location_id),
-               0,
-               1073741823
-            );
-         l_ret :=
-            DBMS_LOCK.request (id                  => l_hashcode,
-                               timeout             => 0,
-                               lockmode            => 5,
-                               release_on_commit   => TRUE
-                              );
-
-         IF l_ret > 0
+         -- Create new Base Location (if necessary)...
+         --.
+         IF NOT l_base_loc_exists
          THEN
-            DBMS_LOCK.sleep (2);
-         ELSE
-            ---------.
-            ---------.
-            -- Create new Base Location (if necessary)...
             --.
-            IF NOT l_base_loc_exists
-            THEN
-               --.
-               -- Insert new Base Location -
-               INSERT
-                    INTO   at_base_location (base_location_code,
-                                             db_office_code,
-                                             base_location_id,
-                                             active_flag
-                                            )
-                  VALUES   (
-                              cwms_seq.NEXTVAL,
-                              p_db_office_code,
-                              p_base_location_id,
-                              p_active_flag
-                           )
-               RETURNING   base_location_code
-                    INTO   p_base_location_code;
+            -- Insert new Base Location -
+            INSERT
+                  INTO   at_base_location (base_location_code,
+                                          db_office_code,
+                                          base_location_id,
+                                          active_flag
+                                          )
+               VALUES   (
+                           cwms_seq.NEXTVAL,
+                           p_db_office_code,
+                           p_base_location_id,
+                           p_active_flag
+                        )
+            RETURNING   base_location_code
+                  INTO   p_base_location_code;
 
-               --
-               --.Insert new Base Location into at_physical_location -
-               INSERT
-                 INTO   at_physical_location (location_code,
-                                              base_location_code,
-                                              time_zone_code,
-                                              county_code,
-                                              location_type,
-                                              elevation,
-                                              vertical_datum,
-                                              longitude,
-                                              latitude,
-                                              horizontal_datum,
-                                              public_name,
-                                              long_name,
-                                              description,
-                                              active_flag,
-                                              location_kind,
-                                              map_label,
-                                              published_latitude,
-                                              published_longitude,
-                                              office_code,
-                                              nation_code,
-                                              nearest_city
+            --
+            --.Insert new Base Location into at_physical_location -
+            INSERT
+               INTO   at_physical_location (location_code,
+                                             base_location_code,
+                                             time_zone_code,
+                                             county_code,
+                                             location_type,
+                                             elevation,
+                                             vertical_datum,
+                                             longitude,
+                                             latitude,
+                                             horizontal_datum,
+                                             public_name,
+                                             long_name,
+                                             description,
+                                             active_flag,
+                                             location_kind,
+                                             map_label,
+                                             published_latitude,
+                                             published_longitude,
+                                             office_code,
+                                             nation_code,
+                                             nearest_city
+                                          )
+            VALUES   (
+                        p_base_location_code,
+                        p_base_location_code,
+                        p_time_zone_code,
+                        l_county_code,
+                        p_location_type,
+                        p_elevation,
+                        p_vertical_datum,
+                        p_longitude,
+                        p_latitude,
+                        p_horizontal_datum,
+                        p_public_name,
+                        p_long_name,
+                        p_description,
+                        p_active_flag,
+                        l_location_kind_code,
+                        p_map_label,
+                        p_published_latitude,
+                        p_published_longitude,
+                        l_bounding_office_code,
+                        l_nation_code,
+                        l_nearest_city
+                     );
+
+            update_local_datum_name(p_base_location_code, p_vertical_datum);
+            p_location_code := p_base_location_code;
+         END IF;
+
+         ---------.
+         ---------.
+         -- Create new (Sub) Location (if necessary)...
+         --.
+         IF p_sub_location_id IS NOT NULL
+         THEN
+            INSERT
+                  INTO   at_physical_location (location_code,
+                                                base_location_code,
+                                                sub_location_id,
+                                                time_zone_code,
+                                                county_code,
+                                                location_type,
+                                                elevation,
+                                                vertical_datum,
+                                                longitude,
+                                                latitude,
+                                                horizontal_datum,
+                                                public_name,
+                                                long_name,
+                                                description,
+                                                active_flag,
+                                                location_kind,
+                                                map_label,
+                                                published_latitude,
+                                                published_longitude,
+                                                office_code,
+                                                nation_code,
+                                                nearest_city
                                              )
                VALUES   (
+                           cwms_seq.NEXTVAL,
                            p_base_location_code,
-                           p_base_location_code,
+                           p_sub_location_id,
                            p_time_zone_code,
                            l_county_code,
                            p_location_type,
@@ -795,76 +830,14 @@ AS
                            l_bounding_office_code,
                            l_nation_code,
                            l_nearest_city
-                        );
-
-               update_local_datum_name(p_base_location_code, p_vertical_datum);
-               p_location_code := p_base_location_code;
-            END IF;
-
-            ---------.
-            ---------.
-            -- Create new (Sub) Location (if necessary)...
-            --.
-            IF p_sub_location_id IS NOT NULL
-            THEN
-               INSERT
-                    INTO   at_physical_location (location_code,
-                                                 base_location_code,
-                                                 sub_location_id,
-                                                 time_zone_code,
-                                                 county_code,
-                                                 location_type,
-                                                 elevation,
-                                                 vertical_datum,
-                                                 longitude,
-                                                 latitude,
-                                                 horizontal_datum,
-                                                 public_name,
-                                                 long_name,
-                                                 description,
-                                                 active_flag,
-                                                 location_kind,
-                                                 map_label,
-                                                 published_latitude,
-                                                 published_longitude,
-                                                 office_code,
-                                                 nation_code,
-                                                 nearest_city
-                                                )
-                  VALUES   (
-                              cwms_seq.NEXTVAL,
-                              p_base_location_code,
-                              p_sub_location_id,
-                              p_time_zone_code,
-                              l_county_code,
-                              p_location_type,
-                              p_elevation,
-                              p_vertical_datum,
-                              p_longitude,
-                              p_latitude,
-                              p_horizontal_datum,
-                              p_public_name,
-                              p_long_name,
-                              p_description,
-                              p_active_flag,
-                              l_location_kind_code,
-                              p_map_label,
-                              p_published_latitude,
-                              p_published_longitude,
-                              l_bounding_office_code,
-                              l_nation_code,
-                              l_nearest_city
-                           )
-               RETURNING   location_code
-                    INTO   p_location_code;
-               update_local_datum_name(p_location_code, p_vertical_datum);
-            END IF;
+                        )
+            RETURNING   location_code
+                  INTO   p_location_code;
+            update_local_datum_name(p_location_code, p_vertical_datum);
          END IF;
+
       END IF;
 
-      --
-      COMMIT;                                   -- needed to release dbms_lock.
-   --
    END create_location_raw2;
 
    --********************************************************************** -
@@ -2615,9 +2588,6 @@ AS
             end loop;
          end;
       end if;
-
-      COMMIT;
-   --
    END rename_location;
 
    --********************************************************************** -
@@ -3250,8 +3220,6 @@ AS
          l_location_id_cache_val := upper(l_db_office_id)||'/'||upper(l_location_id);
          cwms_cache.remove_by_value(g_location_id_cache, l_location_id_cache_val);
       end if;
-      commit;
-
    end delete_location;
 
    --********************************************************************** -
@@ -3294,310 +3262,7 @@ AS
       NULL;
    END copy_location;
 
-   --
-   --********************************************************************** -
-   --********************************************************************** -
-   --
-   -- STORE_ALIASES -
-   --
-   -- p_store_rule - Valid store rules are: -
-   --  Delete Insert - This will delete all existing aliases  -
-   --  and insert the new set of aliases -
-   --  in your p_alias_array. This is the -
-   --  Default.  -
-   --  Replace All - This will update any pre-existing  -
-   --  aliases and insert new ones -
-   --
-   -- p_ignorenulls - is only valid when the "Replace All" store rull is    -
-   --   envoked.
-   --   if 'T' then do not update a pre-existing value        -
-   --   with a newly passed-in null value.  -
-   --   if 'F' then update a pre-existing value               -
-   --   with a newly passed-in null value.  -
-   --*--------------------------------------------------------------------- -
-   --
-   --   PROCEDURE store_aliases (
-   --   p_location_id  IN VARCHAR2,
-   --   p_alias_array  IN alias_array,
-   --   p_store_rule   IN VARCHAR2 DEFAULT 'DELETE INSERT',
-   --   p_ignorenulls  IN VARCHAR2 DEFAULT 'T',
-   --   p_db_office_id IN VARCHAR2 DEFAULT NULL
-   --   )
-   --   IS
-   --   l_agency_code  NUMBER;
-   --   l_office_id VARCHAR2 (16);
-   --   l_office_code  NUMBER;
-   --   l_location_code   NUMBER;
-   --   l_array_count  NUMBER   := p_alias_array.COUNT;
-   --   l_count  NUMBER  := 1;
-   --   l_distinct NUMBER;
-   --   l_store_rule   VARCHAR2 (16);
-   --   l_alias_id VARCHAR2 (16);
-   --   l_alias_public_name  VARCHAR2 (57);
-   --   l_alias_long_name VARCHAR2 (80);
-   --   l_insert BOOLEAN;
-   --   l_ignorenulls  BOOLEAN
-   --  := cwms_util.return_true_or_false (p_ignorenulls);
-   --   BEGIN
-   --   --
-   --   IF l_count = 0
-   --   THEN
-   --   cwms_err.RAISE
-   --  ('GENERIC_ERROR',
-   --   'No viable agency/alias data passed to store_aliases.'
-   --  );
-   --   END IF;
-
-   --------------------------------------------------------------------
-   ---- Check that passed-in aliases are do not contain duplicates...
-   --------------------------------------------------------------------
-   --   SELECT COUNT (*)
-   --   INTO l_distinct
-   --   FROM (SELECT DISTINCT UPPER (t.agency_id)
-   --   FROM TABLE (CAST (p_alias_array AS alias_array)) t);
-
-   --   --
-   --   IF l_distinct != l_array_count
-   --   THEN
-   --   cwms_err.RAISE
-   --  ('GENERIC_ERROR',
-   --   'Duplicate Agency/Alias pairs are not permited. Only one Alias is permited per Agency (store_aliases).'
-   --  );
-   --   END IF;
-
-   --   --
-   --   -- Make sure none of the alias_id's are null
-   --   --
-   --   SELECT COUNT (*)
-   --   INTO l_distinct
-   --   FROM (SELECT t.alias_id
-   --  FROM TABLE (CAST (p_alias_array AS alias_array)) t
-   --   WHERE alias_id IS NULL);
-
-   --   --
-   --   IF l_distinct != 0
-   --   THEN
-   --   cwms_err.RAISE
-   --  ('GENERIC_ERROR',
-   --   'A NULL alias_id was submitted. alias_id may not be NULL. (store_aliases).'
-   --  );
-   --   END IF;
-
-   --   --
-   --   IF p_db_office_id IS NULL
-   --   THEN
-   --   l_office_id := cwms_util.user_office_id;
-   --   ELSE
-   --   l_office_id := UPPER (p_db_office_id);
-   --   END IF;
-
-   --   --
-   --   l_office_code := get_office_code (l_office_id);
-   --   l_location_code := get_location_code (l_office_id, p_location_id);
-
-   --   --
-   --   IF p_store_rule IS NULL
-   --   THEN
-   --   l_store_rule := cwms_util.delete_all;
-   --   ELSIF UPPER (p_store_rule) = cwms_util.delete_all
-   --   THEN
-   --   l_store_rule := cwms_util.delete_all;
-   --   ELSIF UPPER (p_store_rule) = cwms_util.replace_all
-   --   THEN
-   --   l_store_rule := cwms_util.replace_all;
-   --   ELSE
-   --   cwms_err.RAISE ('GENERIC_ERROR',
-   --  p_store_rule
-   --   || ' is an invalid store rule. (store_aliases)'
-   --  );
-   --   END IF;
-
-   --   --
-   --   IF l_store_rule = cwms_util.delete_all
-   --   THEN
-   --   DELETE FROM at_loc_group_assignment atlga
-   --  WHERE atlga.location_code = l_location_code;
-
-   --   --
-   --   LOOP
-   --  EXIT WHEN l_count > l_array_count;
-
-   --  --
-   --  BEGIN
-   --   SELECT agency_code
-   --   INTO l_agency_code
-   --   FROM at_agency_name
-   --  WHERE UPPER (agency_id) =
-   --   UPPER (p_alias_array (l_count).agency_id)
-   --  AND db_office_code IN
-   --  (l_office_code, cwms_util.db_office_code_all);
-   --  EXCEPTION
-   --   WHEN NO_DATA_FOUND
-   --   THEN
-   --  --.
-   --  INSERT INTO at_agency_name
-   --  (agency_code,
-   --   agency_id,
-   --   agency_name,
-   --   db_office_code
-   --  )
-   --   VALUES (cwms_seq.NEXTVAL,
-   --   p_alias_array (l_count).agency_id,
-   --   p_alias_array (l_count).agency_name,
-   --   l_office_code
-   --  )
-   --  RETURNING agency_code
-   --   INTO l_agency_code;
-   --  END;
-
-   --  --
-   --  INSERT INTO at_alias_name
-   --  (location_code, agency_code,
-   --   alias_id,
-   --   alias_public_name,
-   --   alias_long_name
-   --  )
-   --   VALUES (l_location_code, l_agency_code,
-   --   p_alias_array (l_count).alias_id,
-   --   p_alias_array (l_count).alias_public_name,
-   --   p_alias_array (l_count).alias_long_name
-   --  );
-
-   --  --
-   --  l_count := l_count + 1;
-   --   END LOOP;
-   --   ELSE  -- store_rule is REPLACE ALL -
-   --   LOOP
-   --  EXIT WHEN l_count > l_array_count;
-
-   --  --
-   --  -- retrieve agency_code...
-   --  BEGIN
-   --   SELECT agency_code
-   --   INTO l_agency_code
-   --   FROM at_agency_name
-   --  WHERE UPPER (agency_id) =
-   --   UPPER (p_alias_array (l_count).agency_id)
-   --  AND db_office_code IN
-   --  (l_office_code, cwms_util.db_office_code_all);
-   --  EXCEPTION
-   --   WHEN NO_DATA_FOUND
-   --   THEN -- No agency_code found, so create one...
-   --  --.
-   --  INSERT INTO at_agency_name
-   --  (agency_code,
-   --   agency_id,
-   --   agency_name,
-   --   db_office_code
-   --  )
-   --   VALUES (cwms_seq.NEXTVAL,
-   --   p_alias_array (l_count).agency_id,
-   --   p_alias_array (l_count).agency_name,
-   --   l_office_code
-   --  )
-   --  RETURNING agency_code
-   --   INTO l_agency_code;
-   --  END;
-
-   --  --
-   --  --
-   --  -- retrieve existing alias information...
-   --  l_insert := FALSE;
-
-   --  BEGIN
-   --   SELECT alias_id, alias_public_name, alias_long_name
-   --   INTO l_alias_id, l_alias_public_name, l_alias_long_name
-   --   FROM at_alias_name
-   --  WHERE location_code = l_location_code
-   --  AND agency_code = l_agency_code;
-
-   --   --
-   --   IF p_alias_array (l_count).alias_public_name IS NULL
-   --  AND NOT l_ignorenulls
-   --   THEN
-   --  l_alias_public_name := NULL;
-   --   END IF;
-
-   --   IF p_alias_array (l_count).alias_long_name IS NULL
-   --  AND NOT l_ignorenulls
-   --   THEN
-   --  l_alias_long_name := NULL;
-   --   END IF;
-   --  EXCEPTION
-   --   WHEN NO_DATA_FOUND
-   --   THEN
-   --  l_insert := TRUE;
-   --  END;
-
-   --  --
-   --  IF l_insert
-   --  THEN
-   --   --
-   --   INSERT INTO at_alias_name
-   --   (location_code, agency_code,
-   --  alias_id,
-   --  alias_public_name,
-   --  alias_long_name
-   --   )
-   --  VALUES (l_location_code, l_agency_code,
-   --  p_alias_array (l_count).alias_id,
-   --  p_alias_array (l_count).alias_public_name,
-   --  p_alias_array (l_count).alias_long_name
-   --   );
-   --  ELSE
-   --   UPDATE at_alias_name
-   --  SET alias_id = p_alias_array (l_count).alias_id,
-   --  alias_public_name = l_alias_public_name,
-   --  alias_long_name = l_alias_long_name
-   --  WHERE location_code = l_location_code
-   --  AND agency_code = l_agency_code;
-   --  --
-   --  END IF;
-
-   --  --
-   --  l_count := l_count + 1;
-   --   END LOOP;
-   --   END IF;
-
-   --   --
-   --   COMMIT;
-   ----
-   --   NULL;
-   --   END store_aliases;
-
-   --   PROCEDURE store_alias (
-   --   p_location_id  IN VARCHAR2,
-   --   p_agency_id IN VARCHAR2,
-   --   p_alias_id IN VARCHAR2,
-   --   p_agency_name  IN VARCHAR2 DEFAULT NULL,
-   --   p_alias_public_name  IN VARCHAR2 DEFAULT NULL,
-   --   p_alias_long_name IN VARCHAR2 DEFAULT NULL,
-   --   p_ignorenulls  IN VARCHAR2 DEFAULT 'T',
-   --   p_db_office_id IN VARCHAR2 DEFAULT NULL
-   --   )
-   --   IS
-   --   l_alias_array  alias_array := alias_array ();
-   --   l_store_rule   VARCHAR2 (16) := 'REPLACE ALL';
-   --   BEGIN
-   --   --
-   --   l_alias_array.EXTEND;
-   --   --
-   --   l_alias_array (1) :=
-   --   alias_type (p_agency_id,
-   --   p_alias_id,
-   --   p_agency_name,
-   --   p_alias_public_name,
-   --   p_alias_long_name
-   --  );
-   --   --
-   --   store_aliases (p_location_id,
-   --   l_alias_array,
-   --   l_store_rule,
-   --   p_ignorenulls,
-   --   p_db_office_id
-   --  );
-   --   END store_alias;
-
+   
    --********************************************************************** -
 
    PROCEDURE store_location2 (
@@ -7381,7 +7046,6 @@ end unassign_loc_groups;
       p_vertical_datum_id_2 in  varchar2,
       p_datetime_utc        in  date default sysdate)
    is
-      pragma autonomous_transaction; -- for inserting VERTCON offset estimate
       l_offset              binary_double;
       l_effective_date      date;
       l_vertical_datum_id_1 varchar2(16);
@@ -7653,32 +7317,13 @@ end unassign_loc_groups;
                   if l_vertical_datum_id_1 = 'NAVD88' then
                      l_offset := -l_offset;
                   end if;
-                  commit;
                end if;
             exception
                when no_data_found then null;
             end;
          end if;
       end if;
---      if l_offset is null then
---         ---------------------
---         -- declare failure --
---         ---------------------
---         declare
---            l_location location_ref_t := location_ref_t(p_location_code);
---         begin
---            cwms_err.raise(
---               'ERROR',
---               'No vertical offset exists for '
---               ||l_location.get_office_id
---               ||'/'
---               ||l_location.get_location_id
---               ||' from '
---               ||l_vertical_datum_id_1
---               ||' to '
---               ||l_vertical_datum_id_2);
---         end;
---      end if;
+
       p_offset := l_offset;
       p_effective_date := l_effective_date;
       if l_description is null or instr(upper(l_description), 'ESTIMATE') = 0 then
