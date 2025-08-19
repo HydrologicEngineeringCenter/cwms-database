@@ -216,12 +216,18 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
 
         JsonNode tmpConversions = mapper.readTree(
             getData("db/custom/units_and_parameters/conversions.json"));
-
+        HashSet<String> existing = new HashSet<>();
         tmpConversions.forEach( (conversion) -> {
-            //Conversion c = new Conversion(from, to, method)
             Unit from = unitDefinitions.get(conversion.get(0).asText());
             Unit to = unitDefinitions.get(conversion.get(1).asText());
-            if( from !=null && to != null ) {
+            if( from != null && to != null ) {
+                final String tracker = from.getAbbreviation() + "_" + to.getAbbreviation();
+                if (existing.contains(tracker)) {
+                    throw new CwmsMigrationError(
+                        "Found duplication conversion from " + from.getAbbreviation() + " to " + to.getAbbreviation() + 
+                        ". To reduce confusion remove one of the entries."
+                    );
+                }
                 String parts[] = conversion.get(2).asText().split(":");
                 String type = parts[0];
                 String function = parts[1].trim();
@@ -237,6 +243,7 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
                 Conversion c = new Conversion(from,to, method);
                 crc.update(c.toString().getBytes());
                 conversions.add(c);
+                existing.add(tracker);
             }
 
         });
