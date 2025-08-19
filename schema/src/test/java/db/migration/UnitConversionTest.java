@@ -5,6 +5,7 @@
 
 package db.migration;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,7 +20,10 @@ import net.hobbyscience.database.Conversion;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 
@@ -27,6 +31,8 @@ public class UnitConversionTest {
     private static final Logger log = Logger.getLogger(UnitConversionTest.class.getName());
 
     private static HashSet<Conversion> conversions;
+
+    private static Map<String, AtomicInteger> conversion_count = new HashMap<>();
 
     @BeforeAll
     public static void setup() throws Exception {
@@ -43,7 +49,16 @@ public class UnitConversionTest {
         });
         
         assertTrue(conversions.size() > 0);
-    }    
+    }
+
+    @AfterAll
+    public static void check_count() {
+        assertEquals(conversions.size(), conversion_count.keySet().size(), "Not all Unit conversions have been tested.");
+    }
+
+    private static void update_conversion_count(String from, String to) {
+        conversion_count.computeIfAbsent(from + "_" + to, k -> new AtomicInteger(0)).incrementAndGet();
+    }
 
     @ParameterizedTest /*(name="[{index}] {arguments}")*/
     @CsvFileSource(resources = "/units/conversions_to_test.csv",useHeadersInDisplayName = true)
@@ -62,6 +77,7 @@ public class UnitConversionTest {
         log.finest(()->"Inverse conversion " + inverseConversion.toString());
         double inverse = SimpleInfixCalculator.calculate(inverseInfix, expected);
         assertEquals(in,inverse, inverseDelta, () -> "Unable to perform inverse conversion using " + inverseConversion.toString() + " within " + inverseDelta);
+        update_conversion_count(from, to);
     }
 
     private Conversion getConversion(Unit from, Unit to) {
