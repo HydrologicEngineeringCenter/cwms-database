@@ -1032,7 +1032,7 @@
       <condition property="isdeployed" value="true" else="false">
          <and>
             <isset property="teamcity.branch"/>
-            <matches string="${teamcity.branch}" pattern="^(master|main|release/*)" casesensitive="false"/>
+            <matches string="${teamcity.branch}" pattern="^\d\d\.\d\d\.\d\d\.(-RC\d\d+)?$" casesensitive="false"/>
          </and>
       </condition>
 
