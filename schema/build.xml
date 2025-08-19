@@ -1032,10 +1032,10 @@
       <condition property="isdeployed" value="true" else="false">
          <and>
             <isset property="teamcity.branch"/>
-            <matches string="${teamcity.branch}" pattern="^(main|\d\d\.\d\d\.\d\d\.(-RC\d\d+)?)$" casesensitive="false"/>
+            <matches string="${teamcity.branch}" pattern="^(main|\d\d\.\d\d\.\d\d(-RC\d\d+)?)$" casesensitive="false"/>
          </and>
       </condition>
-
+      <echo message="Images for ${teamcity.branch} will be deployed: ${isdeployed}"/>
       <if>
          <and>
             <isset property="teamcity.branch"/>
