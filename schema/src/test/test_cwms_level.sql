@@ -39,6 +39,8 @@ c_elev_unit             varchar2(16)  := 'ft';
 c_stor_unit             varchar2(16)  := 'ac-ft';
 c_top_of_normal_elev_id varchar2(404) := c_location_id||'.Elev.Inst.0.Top of Normal';
 c_top_of_normal_stor_id varchar2(404) := c_location_id||'.Stor.Inst.0.Top of Normal';
+c_location_retrieve     varchar2(57)  := 'LocLvlRetriev';
+c_only_used_to_test_retrieve varchar2(404) := c_location_retrieve||'.Elev.Inst.0.Top of Normal';
 end test_cwms_level;
 /
 show errors;
@@ -55,6 +57,11 @@ begin
       p_location_id   => c_location_id,
       p_delete_action => cwms_util.delete_all,
       p_db_office_id  => c_office_id);
+
+   cwms_loc.delete_location(
+      p_location_id   => c_location_retrieve,
+      p_delete_action => cwms_util.delete_all,
+      p_db_office_id  => c_office_id);
 exception
    when exc_location_id_not_found then null;
 end teardown;
@@ -67,6 +74,12 @@ begin
    teardown;
    cwms_loc.store_location(
       p_location_id    => c_location_id,
+      p_time_zone_id   => c_timezone_id,
+      p_vertical_datum => 'NGVD-29',
+      p_db_office_id   => c_office_id);
+
+   cwms_loc.store_location(
+      p_location_id    => c_location_retrieve,
       p_time_zone_id   => c_timezone_id,
       p_vertical_datum => 'NGVD-29',
       p_db_office_id   => c_office_id);
@@ -538,6 +551,7 @@ end test_irregularly_varying_location_levels;
 --------------------------------------------------------------------------------
 procedure test_virtual_location_levels
 is
+   l_the_level            location_level_t;
    l_value                number;
    l_expected_value       number;
    l_elev_limit           number := 1005;
@@ -709,6 +723,7 @@ begin
       p_timezone_id             => c_timezone_id,
       p_office_id               => c_office_id);
    commit;
+
    for year in 1..3 loop
       dbms_output.put_line('Year = '||year);
       ---------------------------------------------------------
@@ -797,6 +812,57 @@ begin
          ut.expect(round(l_value / l_expected_value, 4)).to_equal(1);
       end loop;
    end loop;
+
+   -- A separate name was used here to make sure all parts of the query used internally
+   -- had to match correctly.
+   cwms_level.store_virtual_location_level(
+      p_location_level_id       => c_only_used_to_test_retrieve,
+      p_constituents            => cwms_t_str_tab_tab( -- using table constituents overloadd
+                                      cwms_t_str_tab('L1', 'LOCATION_LEVEL', c_top_of_normal_elev_id),
+                                      cwms_t_str_tab('F1', 'FORMULA',        'MIN($I1, '||l_elev_limit||') {ft;ft}')),
+      p_constituent_connections => 'L1=F1I1',
+      p_effective_date          => add_months(l_effective_date, 12),           -- start of year 2
+      p_expiration_date         => add_months(l_effective_date, 24) - 1/86400, -- end of year 2
+      p_timezone_id             => c_timezone_id,
+      p_office_id               => c_office_id);
+   commit;
+
+   -- get by effective date with exact match
+   l_the_level := cwms_level.retrieve_location_level(
+         p_location_level_id => c_only_used_to_test_retrieve,
+         p_level_units  => 'm',
+         p_date => add_months(l_effective_date, 12),
+         p_timezone_id => c_timezone_id,
+         p_attribute_id => null,
+         p_attribute_value => null,
+         p_attribute_units => null,
+         p_match_date => 'T',
+         p_office_id => c_office_id,
+         p_level_precedence =>  'VN');
+
+   ut.expect(anydata.convertObject(l_the_level), 'unable to retrieve exact').to_be_not_null();
+
+
+   -- get by effective date without exact match
+   l_the_level := cwms_level.retrieve_location_level(
+         p_location_level_id => c_only_used_to_test_retrieve,
+         p_level_units  => 'm',
+         p_date => add_months(l_effective_date, 24),
+         p_timezone_id => c_timezone_id,
+         p_attribute_id => null,
+         p_attribute_value => null,
+         p_attribute_units => null,
+         p_match_date => 'F',
+         p_office_id => c_office_id,
+         p_level_precedence =>  'VN');
+
+   ut.expect(anydata.convertObject(l_the_level), 'unable to retrieve previous').to_be_not_null();
+
+   cwms_level.delete_location_level3(
+      p_location_level_id   => c_only_used_to_test_retrieve,
+      p_office_id           => c_office_id,
+      p_level_type          => 'V',
+      p_all_effective_dates => 'T');
    -----------------------------------------------------------
    -- test delete_location_level3 with level type specified --
    -----------------------------------------------------------
