@@ -204,10 +204,6 @@ as
    begin
       cwms_util.check_office_permission(p_office_id);
 
-      if p_text is null or dbms_lob.getlength(p_text) = 0 then
-         cwms_err.raise('NULL_ARGUMENT', 'P_TEXT');
-      end if;
-
       select count(*)
         into l_count
         from at_clob
