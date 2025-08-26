@@ -229,6 +229,8 @@ is
    l_interval_origin date := date '2000-01-01';
    l_interval_months integer := 12;
    l_count           pls_integer;
+
+
    l_seasonal_values_existlevel cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
       cwms_t_seasonal_value( 0,  0 * CWMS_TS.min_in_dy, 1020),  -- 01 Jan
       cwms_t_seasonal_value( 3, 14 * CWMS_TS.min_in_dy, 1010),  -- 15 April
@@ -242,9 +244,9 @@ is
       cwms_t_seasonal_value(11,  0 * CWMS_TS.min_in_dy, 1000)); -- 01 Dec
 begin
    setup;
-   ---------------------------------------
+   ------------------------------------------------------------
    -- store the seasonal location level and create new level --
-   ---------------------------------------
+   ------------------------------------------------------------
    cwms_level.store_location_level4(
       p_location_level_id => c_top_of_normal_elev_id,
       p_level_value       => null,
@@ -316,9 +318,9 @@ begin
       ut.expect(round(l_value / l_expected_value, 4)).to_equal(1);
    end loop;
 
-   ---------------------------------------
-   -- store the seasonal location level to level already created--
-   ---------------------------------------
+   ----------------------------------------------------------------
+   -- store the seasonal location level to level already created --
+   ----------------------------------------------------------------
 
    cwms_level.store_location_level3(
       p_location_level_id => c_top_of_normal_elev_id,
@@ -332,9 +334,9 @@ begin
       p_fail_if_exists    => 'F',
       p_office_id         => c_office_id);
 
-   -------------------------------------------------------------------------
+   ------------------------------------
    -- test number of seasonal values --
-   -------------------------------------------------------------------------
+   ------------------------------------
    select count(*)
      into l_count
      from cwms_v_location_level
@@ -345,9 +347,9 @@ begin
 
    ut.expect(l_count).to_equal(l_seasonal_values_existlevel.count);
 
-  --------------------------------------------------------------------------
-  --  test individual seasonal dates are present
-  -----------------------------------
+  -------------------------------------------------
+  --  test individual seasonal dates are present --
+  -------------------------------------------------
 
    for i in 1..l_seasonal_values_existlevel.count loop
         l_date := cwms_util.change_timezone(
@@ -372,7 +374,7 @@ begin
    -------------------------------------------------------------------------
 
    cwms_level.delete_location_level3(
-     p_location_level_id          => c_top_of_normal_elev_id,
+      p_location_level_id          => c_top_of_normal_elev_id,
       p_cascade                    => 'T',
       p_office_id                  => c_office_id,
       p_most_recent_effective_date => 'T');
@@ -387,7 +389,54 @@ begin
 
    ut.expect(l_count).to_equal(0);
 
+   ----------------------------------------------------------------------------
+   -- store a constant level and retrieve with retrieve_location_level2      --
+   -- https://github.com/HydrologicEngineeringCenter/cwms-database/issues/49 --
+   ----------------------------------------------------------------------------
+   cwms_level.store_location_level4(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_value       => 1000,
+      p_level_units       => c_elev_unit,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_office_id         => c_office_id);
+   commit;
+
+   declare
+      l_value_out            number;
+      l_comment_out          varchar2(256);
+      l_effective_date_out   varchar2(64);
+      l_interval_origin_out  varchar2(64);
+      l_interval_months_out  integer;
+      l_interval_minutes_out integer;
+      l_interpolate_out      varchar2(1);
+      l_seasonal_values_out  varchar2(32767);
+   begin
+      cwms_level.retrieve_location_level2(
+         p_level_value       => l_value_out,
+         p_level_comment     => l_comment_out,
+         p_effective_date    => l_effective_date_out,
+         p_interval_origin   => l_interval_origin_out,
+         p_interval_months   => l_interval_months_out,
+         p_interval_minutes  => l_interval_minutes_out,
+         p_interpolate       => l_interpolate_out,
+         p_seasonal_values   => l_seasonal_values_out,
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_level_units       => c_elev_unit,
+         p_office_id         => c_office_id);
+
+      dbms_output.put_line('l_level_value       = ' || l_value_out);
+      dbms_output.put_line('l_level_comment     = ' || l_comment_out);
+      dbms_output.put_line('l_effective_date    = ' || l_effective_date_out);
+      dbms_output.put_line('l_interval_origin   = ' || l_interval_origin_out);
+      dbms_output.put_line('l_interval_months   = ' || l_interval_months_out);
+      dbms_output.put_line('l_interval_minutes  = ' || l_interval_minutes_out);
+      dbms_output.put_line('l_interpolate       = ' || l_interpolate_out);
+      dbms_output.put_line('l_seasonal_values   = ' || l_seasonal_values_out);
+   end;
+
 end test_regularly_varying_location_levels;
+
 --------------------------------------------------------------------------------
 --procedure test_irregularly_varying_location_levels
 --------------------------------------------------------------------------------

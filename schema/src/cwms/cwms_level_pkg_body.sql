@@ -3666,16 +3666,18 @@ begin
 
    p_effective_date  := to_char(l_effective_date, 'yyyy/mm/dd hh24:mi:ss');
    p_interval_origin := to_char(l_interval_origin, 'yyyy/mm/dd hh24:mi:ss');
-   for i in 1..l_seasonal_values.count loop
-      l_recordset_txt := l_recordset_txt
-         || l_rs
-         || to_char(l_seasonal_values(i).offset_months)
-         || l_gs
-         || to_char(l_seasonal_values(i).offset_minutes)
-         || l_gs
-         || to_char(l_seasonal_values(i).value);
-   end loop;
-   p_seasonal_values := substr(l_recordset_txt, 2);
+   if l_seasonal_values is not null then
+      for i in 1..l_seasonal_values.count loop
+         l_recordset_txt := l_recordset_txt
+            || l_rs
+            || to_char(l_seasonal_values(i).offset_months)
+            || l_gs
+            || to_char(l_seasonal_values(i).offset_minutes)
+            || l_gs
+            || to_char(l_seasonal_values(i).value);
+      end loop;
+      p_seasonal_values := substr(l_recordset_txt, 2);
+   end if;
 
 end retrieve_location_level2;
 --------------------------------------------------------------------------------
