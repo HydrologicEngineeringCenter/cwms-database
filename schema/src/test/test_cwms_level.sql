@@ -425,14 +425,19 @@ begin
          p_level_units       => c_elev_unit,
          p_office_id         => c_office_id);
 
-      dbms_output.put_line('l_level_value       = ' || l_value_out);
-      dbms_output.put_line('l_level_comment     = ' || l_comment_out);
-      dbms_output.put_line('l_effective_date    = ' || l_effective_date_out);
-      dbms_output.put_line('l_interval_origin   = ' || l_interval_origin_out);
-      dbms_output.put_line('l_interval_months   = ' || l_interval_months_out);
-      dbms_output.put_line('l_interval_minutes  = ' || l_interval_minutes_out);
-      dbms_output.put_line('l_interpolate       = ' || l_interpolate_out);
-      dbms_output.put_line('l_seasonal_values   = ' || l_seasonal_values_out);
+      ut.expect(round(l_value_out, 9)).to_equal(1000);
+      ut.expect(l_comment_out).to_be_null;
+      ut.expect(l_effective_date_out).to_equal(
+         to_char(cwms_util.change_timezone(
+            l_effective_date, c_timezone_id, 'UTC'), 'yyyy/mm/dd hh24:mi:ss'
+         )
+      );
+      ut.expect(l_comment_out).to_be_null;
+      ut.expect(l_interval_origin_out).to_be_null;
+      ut.expect(l_interval_months_out).to_be_null;
+      ut.expect(l_interval_minutes_out).to_be_null;
+      ut.expect(l_interpolate_out).to_be_null;
+      ut.expect(l_seasonal_values_out).to_be_null;
    end;
 
 end test_regularly_varying_location_levels;
