@@ -609,9 +609,9 @@ begin
                l_query := replace(l_base_query, 'at_location_level', 'at_virtual_location_level');
                l_query := replace(l_query, 'location_level_date', 'effective_date');
             else
-               l_query := replace(l_base_query, 'at_location_level', 'at_virtual_location_level');
+               l_query := replace(l_base_query, '= :p_effective_date_in', 'in '||l_sub_query);
+               l_query := replace(l_query, 'at_location_level', 'at_virtual_location_level');
                l_query := replace(l_query, 'location_level_date', 'effective_date');
-               l_query := replace(l_query, '= :p_effective_date_in', 'in '||l_sub_query);
             end if;
          end case;
         if p_match_date then
