@@ -846,7 +846,7 @@ begin
    -- a stage/flow rating for stages > 25 ft                                      --
    ---------------------------------------------------------------------------------
    for stage  in 24..26 loop
-      for speed_indx in 9..11 loop
+      for speed_indx in 9..11 loop -- 10 * actual speed_index
          if stage > 25 then
             ----------------------------------------
             -- manually use the stage/flow rating --
@@ -874,7 +874,7 @@ begin
             -----------------------------------------------
             l_rated := cwms_rating.rate_f(
                p_rating_spec => c_location_id||'.Speed-Water Index;Speed-Water.Standard.Production',
-               p_values      => cwms_t_double_tab_tab(cwms_t_double_tab(speed_indx)),
+               p_values      => cwms_t_double_tab_tab(cwms_t_double_tab(speed_indx/10)),
                p_units       => cwms_t_str_tab('mph','ft/s'),
                p_value_times => cwms_t_date_table(sysdate),
                p_office_id   => l_office);
@@ -889,7 +889,7 @@ begin
          ------------------------------------------------
          l_rated := cwms_rating.rate_f(
             p_rating_spec => c_location_id||'.Stage,Speed-Water Index;Flow.Transitional.Production',
-            p_values      => cwms_t_double_tab_tab(cwms_t_double_tab(stage), cwms_t_double_tab(speed_indx)),
+            p_values      => cwms_t_double_tab_tab(cwms_t_double_tab(stage), cwms_t_double_tab(speed_indx/10)),
             p_units       => cwms_t_str_tab('ft','mph','cfs'),
             p_value_times => cwms_t_date_table(sysdate),
             p_office_id   => l_office);
