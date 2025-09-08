@@ -23,6 +23,8 @@ procedure test_expression_rating;
 procedure test_table_rating;
 --%test(Test reverse rate ts)
 procedure test_reverse_rate_ts;
+--%test(Test transitional rating)
+procedure test_transitional_rating;
 
 c_location_id        constant varchar2(57) := 'Test_Ratings_Loc';
 c_inspect_after_test constant boolean := false;
@@ -613,8 +615,8 @@ begin
             p_units       => cwms_t_str_tab('ft', 'ft2'),
             p_round       => 'F',
             p_office_id   => '&&office_id');
-            
-   ut.expect(l_result).to_equal(12.0 * 43560);         
+
+   ut.expect(l_result).to_equal(12.0 * 43560);
    ------------------------
    -- rate a time series --
    ------------------------
@@ -801,6 +803,103 @@ begin
    ut.expect(round(l_result(2).value, 9)).to_equal(398.0);
 
 end test_reverse_rate_ts;
+
+--------------------------------------------------------------------------------
+-- procedure test_transitional_rating
+--------------------------------------------------------------------------------
+procedure test_transitional_rating
+is
+   l_xml       clob;
+   l_errors    clob;
+   l_office    varchar2(16) := '&&office_id';
+   l_clob_code integer;
+   l_rated     cwms_t_double_tab;
+   l_flow      binary_double;
+   l_area      binary_double;
+   l_speed     binary_double;
+begin
+   ----------------------------------------------------------------------------
+   -- create the transitional rating and all source ratings from a test CLOB --
+   ----------------------------------------------------------------------------
+   l_xml := cwms_text.retrieve_text('/TEST_CWMS_RATING/TRANSITIONAL_RATING', 'CWMS');
+   ut.expect(l_xml).to_be_not_null;
+   l_xml := replace(l_xml, ':office_id', l_office);
+   l_xml := replace(l_xml, ':location_id', c_location_id);
+   begin
+      cwms_rating.store_ratings_xml(l_errors, l_xml,'F', 'T');
+      ut.expect(l_errors).to_be_null;
+      if l_errors is not null then
+         cwms_err.raise('ERROR', 'Errors storing XML ratings');
+      end if;
+   exception
+      when others then
+         -------------------------------------------
+         -- store info for post-mortem any errors --
+         -------------------------------------------
+         l_clob_code := cwms_text.store_text(l_xml,'/TEST_CWMS_RATING/TRANSITIONAL_RATING (MODIFIED)', null, 'F');
+         commit;
+         raise;
+   end;
+   ---------------------------------------------------------------------------------
+   -- The transitional rating uses stage/xsec-area and speed-index/speed ratings, --
+   -- internally computing flow as xsec-area * speed for stages <= 25 ft and uses --
+   -- a stage/flow rating for stages > 25 ft                                      --
+   ---------------------------------------------------------------------------------
+   for stage  in 24..26 loop
+      for speed_indx in 9..11 loop
+         if stage > 25 then
+            ----------------------------------------
+            -- manually use the stage/flow rating --
+            ----------------------------------------
+            l_rated := cwms_rating.rate_f(
+               p_rating_spec => c_location_id||'.Stage;Flow.EXSA.PRODUCTION',
+               p_values      => cwms_t_double_tab_tab(cwms_t_double_tab(stage)),
+               p_units       => cwms_t_str_tab('ft','cfs'),
+               p_value_times => cwms_t_date_table(sysdate),
+               p_office_id   => l_office);
+            l_flow := l_rated(1);
+         else
+            ---------------------------------------------
+            -- manually use the stage/xsec-area rating --
+            ---------------------------------------------
+            l_rated := cwms_rating.rate_f(
+               p_rating_spec => c_location_id||'.Stage;Area.Linear.Production',
+               p_values      => cwms_t_double_tab_tab(cwms_t_double_tab(stage)),
+               p_units       => cwms_t_str_tab('ft','ft2'),
+               p_value_times => cwms_t_date_table(sysdate),
+               p_office_id   => l_office);
+            l_area := l_rated(1);
+            -----------------------------------------------
+            -- manually use the speed-index/speed rating --
+            -----------------------------------------------
+            l_rated := cwms_rating.rate_f(
+               p_rating_spec => c_location_id||'.Speed-Water Index;Speed-Water.Standard.Production',
+               p_values      => cwms_t_double_tab_tab(cwms_t_double_tab(speed_indx)),
+               p_units       => cwms_t_str_tab('mph','ft/s'),
+               p_value_times => cwms_t_date_table(sysdate),
+               p_office_id   => l_office);
+            l_speed := l_rated(1);
+            -----------------------------------------------------
+            -- manually compute the flow from the rated values --
+            -----------------------------------------------------
+            l_flow := l_area * l_speed;
+         end if;
+         ------------------------------------------------
+         -- use the transitional rating to do the work --
+         ------------------------------------------------
+         l_rated := cwms_rating.rate_f(
+            p_rating_spec => c_location_id||'.Stage,Speed-Water Index;Flow.Transitional.Production',
+            p_values      => cwms_t_double_tab_tab(cwms_t_double_tab(stage), cwms_t_double_tab(speed_indx)),
+            p_units       => cwms_t_str_tab('ft','mph','cfs'),
+            p_value_times => cwms_t_date_table(sysdate),
+            p_office_id   => l_office);
+         -----------------------------------------------------------
+         -- compare transitional rating result with manual result --
+         -----------------------------------------------------------
+         ut.expect(round(l_rated(1),5), 'stage='||stage||' ft, speed='||speed_indx/10||' mph').to_equal(round(l_flow, 5));
+      end loop;
+   end loop;
+end test_transitional_rating;
 
 end test_cwms_rating;
 /

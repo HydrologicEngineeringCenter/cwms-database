@@ -1919,7 +1919,14 @@ as
       l_unit_specs := cwms_util.split_text(replace(l_parts(2), cwms_rating.separator2, cwms_rating.separator3), cwms_rating.separator3);
       begin
          l_rating_spec := rating_spec_t(l_parts(1), self.office_id);
-         l_parameters := cwms_util.split_text(replace(l_rating_spec.template_id, cwms_rating.separator2, cwms_rating.separator3), cwms_rating.separator3);
+         l_parameters := cwms_util.split_text(
+            replace(
+               cwms_util.split_text(
+                  l_rating_spec.template_id,
+                  cwms_rating.separator1)(1),
+                  cwms_rating.separator2,
+               cwms_rating.separator3),
+            cwms_rating.separator3);
          if l_unit_specs.count != l_parameters.count then
             cwms_err.raise('ERROR', 'Source rating has different numbers of parameters and units: '||p_text);
          end if;
@@ -1967,11 +1974,6 @@ as
                         when others then cwms_err.raise('INVALID_ITEM', l_tokens(i), 'math expression token');
                      end;
                   end case;
-               end loop;
-               for i in 1..l_unit_specs.count loop
-                  if not arg_indexes.exists(i) then
-                     cwms_err.raise('ERROR', 'Math expression has unit but no argument for position '||i);
-                  end if;
                end loop;
                l_value := arg_indexes.first;
                loop
