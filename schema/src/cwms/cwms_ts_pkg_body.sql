@@ -5981,7 +5981,7 @@ AS
          'getting vertical datum offset if parameter is elevation');
 
       if l_base_parameter_id = 'Elev' then
-         l_value_offset  := cwms_loc.get_vertical_datum_offset(l_location_code, p_units);
+         l_value_offset  := nvl(cwms_loc.get_vertical_datum_offset(l_location_code, p_units), 0.0d);
       end if;
 
       DBMS_APPLICATION_INFO.set_action (
@@ -5997,10 +5997,8 @@ AS
       l_units := cwms_util.get_unit_id(p_units, l_office_id);
       if l_units is null then l_units := p_units; end if;
       l_units := cwms_util.get_valid_unit_id (l_units, l_base_parameter_id);
-      if l_value_offset is not null and l_units != 'm' then
+      if l_value_offset != 0.0d and l_units != 'm' then
          l_value_offset := cwms_util.convert_units(l_value_offset, l_units, 'm');
-      else
-         l_value_offset := 0;
       end if;
 
       DBMS_APPLICATION_INFO.set_action ('check for unit conversion factors');
