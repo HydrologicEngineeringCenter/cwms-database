@@ -122,6 +122,9 @@ procedure test_cwdb_289_retrieve_ts_with_session_timezone_not_utc;
 --%test (test_ts_id_not_found_error_message)
 procedure test_ts_id_not_found_error_message;
 
+--%test (Github issue 58 CWMS_TS.STORE_TS_2 may be incorrectly handling vertical_datum offset)
+procedure test_issue_58_store_ts_vertical_datum_problem;
+
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -4119,6 +4122,141 @@ AS
            ut.expect(sqlerrm).to_be_like('ORA-20001: TS_ID_NOT_FOUND: The timeseries identifier "%" was not found for office "&&office_id"%');
      end;
    end test_ts_id_not_found_error_message;
+
+   -------------------------------------------------------------
+   -- procedure test_issue_58_store_ts_vertical_datum_problem --
+   -------------------------------------------------------------
+   procedure test_issue_58_store_ts_vertical_datum_problem
+   is
+      l_tsid cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Elev.Inst.1Day.0.Test';
+      l_ts_data cwms_t_ztsv_array := cwms_t_ztsv_array(
+                                        cwms_t_ztsv(date '2025-10-01', 101.0, 0),
+                                        cwms_t_ztsv(date '2025-10-02', 102.0, 0),
+                                        cwms_t_ztsv(date '2025-10-03', 103.0, 0),
+                                        cwms_t_ztsv(date '2025-10-04', 104.0, 0),
+                                        cwms_t_ztsv(date '2025-10-05', 105.0, 0));
+      l_ts_data2 cwms_t_ztsv_array;
+      l_vert_datum_info varchar2(4000)  := '
+         <vertical-datum-info unit="ft">
+           <native-datum>NAVD88</native-datum>
+           <offset estimate="true">
+             <to-datum>NGVD29</to-datum>
+             <value>-0.1</value>
+           </offset>
+         </vertical-datum-info>';
+      l_crsr sys_refcursor;
+      l_datetimes cwms_t_date_table;
+      l_values cwms_t_double_tab;
+      l_qualities cwms_t_number_tab;
+      l_default_datums cwms_t_str_tab := cwms_t_str_tab(NULL, 'NGVD29', 'NAVD88');
+      l_store_datums cwms_t_str_tab := cwms_t_str_tab(NULL, 'NGVD29', 'NAVD88');
+      l_retrieve_datums cwms_t_str_tab := cwms_t_str_tab(NULL, 'NGVD29', 'NAVD88');
+      l_store_units cwms_t_str_tab := cwms_t_str_tab('ft', 'm');
+      l_retrieve_units cwms_t_str_tab := cwms_t_str_tab('ft', 'm');
+      l_expected_values cwms_t_double_tab;
+      l_unit varchar2(16);
+      l_factor binary_double;
+      l_offset binary_double;
+   begin
+      teardown;
+
+      cwms_loc.store_location (
+         p_location_id    => test_base_location_id,
+         p_active         => 'T',
+         p_db_office_id   => '&&office_id');
+
+      cwms_loc.set_vertical_datum_info(
+         p_location_id     => test_base_location_id,
+         p_vert_datum_info => l_vert_datum_info,
+         p_fail_if_exists  => 'F',
+         p_office_id       => '&&office_id');
+
+      cwms_loc.set_default_vertical_datum(NULL);
+
+      ut.expect(cwms_loc.get_default_vertical_datum).to_be_null;
+
+      for default_datum in (select column_value as name from table(l_default_datums)) loop
+         for store_datum in (select column_value as name from table(l_store_datums)) loop
+            for retrieve_datum in (select column_value as name from table(l_retrieve_datums)) loop
+               for store_unit in (select column_value as name from table(l_store_units)) loop
+                  for retrieve_unit in (select column_value as name from table(l_retrieve_units)) loop
+--                     dbms_output.put_line(
+--                        chr(10)||'default_datum='||nvl(default_datum.name, '<NULL>')
+--                        ||chr(9)||'store_datum='||nvl(store_datum.name, '<NULL>')
+--                        ||chr(9)||'store_unit='||store_unit.name
+--                        ||chr(9)||'retrieve_datum='||nvl(retrieve_datum.name, '<NULL>')
+--                        ||chr(9)||'retrieve_unit='||retrieve_unit.name);
+                     l_ts_data2 := l_ts_data;
+                     l_factor := case when store_unit.name = 'm' then 0.3048d else 1.0d end;
+                     l_offset := case when nvl(store_datum.name, default_datum.name) = 'NGVD29' then -0.1d else 0.0d end;
+                     for i in 1..l_ts_data2.count loop
+                        l_ts_data2(i).value := (l_ts_data2(i).value + l_offset) * l_factor;
+                     end loop;
+                     if store_datum.name is null then
+                        l_unit := store_unit.name;
+                     else
+                        l_unit := 'U='||store_unit.name||'|V='||store_datum.name;
+                     end if;
+
+                     cwms_loc.set_default_vertical_datum(default_datum.name);
+
+                     cwms_ts.zstore_ts(
+                        p_cwms_ts_id        => l_tsid,
+                        p_units             => l_unit,
+                        p_timeseries_data   => l_ts_data2,
+                        p_store_rule        => cwms_util.replace_all,
+                        p_office_id         => '&&office_id');
+
+                     select value bulk collect into l_expected_values from table(l_ts_data);
+                     l_factor := case when retrieve_unit.name = 'm' then 0.3048d else 1.0d end;
+                     l_offset := case when nvl(retrieve_datum.name, default_datum.name) = 'NGVD29' then -0.1d * l_factor else 0.0d end;
+                     for i in 1..l_expected_values.count loop
+                        l_expected_values(i) := l_expected_values(i) * l_factor + l_offset;
+                     end loop;
+
+                     if retrieve_datum.name is null then
+                        l_unit := retrieve_unit.name;
+                     else
+                        l_unit := 'U='||retrieve_unit.name||'|V='||retrieve_datum.name;
+                     end if;
+
+                     cwms_ts.retrieve_ts (
+                        p_at_tsv_rc    => l_crsr,
+                        p_cwms_ts_id   => l_tsid,
+                        p_units        => l_unit,
+                        p_start_time   => l_ts_data(1).date_time,
+                        p_end_time     => l_ts_data(l_ts_data.count).date_time,
+                        p_time_zone    => 'UTC',
+                        p_trim         => 'T',
+                        p_office_id    => '&&office_id');
+
+                     fetch l_crsr
+                      bulk collect
+                      into l_datetimes,
+                           l_values,
+                           l_qualities;
+
+                     close l_crsr;
+
+                     ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
+                     if l_datetimes.count = l_ts_data.count then
+                        for i in 1..l_ts_data.count loop
+                           ut.expect(round(l_values(i), 9)).to_equal(round(l_expected_values(i), 9));
+                        end loop;
+                     end if;
+
+                  end loop;
+               end loop;
+            end loop;
+         end loop;
+      end loop;
+
+      cwms_loc.set_default_vertical_datum(NULL);
+
+   exception
+      when others then cwms_loc.set_default_vertical_datum(NULL);
+
+   end test_issue_58_store_ts_vertical_datum_problem;
 
 END test_cwms_ts;
 /
