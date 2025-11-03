@@ -1021,6 +1021,9 @@ as
          ------------------
          -- sanity check --
          ------------------
+         if rating_values is null or rating_values.count = 0 then
+            cwms_err.raise('ERROR', 'Table rating has no rating points');
+         end if;
          if p_ind_values.count - p_position + 1 = 1 then
             if rating_values(1).dep_value is null then
                cwms_err.raise(
