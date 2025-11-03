@@ -638,6 +638,33 @@ begin
          ut.expect(round(l_ts_out(i).value, 9)).to_equal(round(l_expected_vals(i), 9));
       end loop;
    end if;
+   --------------------------------------------------------------------------
+   -- delete rating points verify rate() generates meaninful error message --
+   --------------------------------------------------------------------------
+    l_xml := regexp_replace(replace(l_xml, '$location-id', c_location_id), '\s+<point>.+?</point>', '');
+    cwms_rating.delete_ratings(
+      p_spec_id_mask   => l_rating_spec,
+      p_office_id_mask => '&&office_id');
+
+    cwms_rating.store_ratings_xml(
+      p_errors         => l_errors,
+      p_xml            =>l_xml,
+      p_fail_if_exists => 'T',
+      p_replace_base   => 'T');
+    ut.expect(l_errors).to_be_null;
+
+    begin
+      l_result := cwms_rating.rate_one_f(
+         p_rating_spec => l_rating_spec,
+         p_values      => cwms_t_double_tab(392.0),
+         p_units       => cwms_t_str_tab('ft', 'acre'),
+         p_round       => 'T',
+         p_office_id   => '&&office_id');
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'Table rating has no rating points', 'mn')).to_be_true;
+   end;
 
 end test_table_rating;
 
