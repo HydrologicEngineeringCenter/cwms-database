@@ -746,14 +746,19 @@ function top_of_interval_on_or_before(
    p_tz   in varchar2 default null)
    return date
 is
-   l_ts               timestamp;
-   l_intvl            timestamp;
-   l_origin           timestamp;
-   l_high             integer;
-   l_low              integer;
-   l_mid              integer;
-   l_expansion_factor integer := 5;
-   l_tz               varchar2(28) := nvl(p_tz, 'UTC');
+   l_ts                timestamp;
+   l_intvl             timestamp;
+   l_origin            timestamp;
+   l_high              integer;
+   l_low               integer;
+   l_mid               integer;
+   l_expansion_factor  integer := 5;
+   l_tz                varchar2(28) := nvl(p_tz, 'UTC');
+   l_ym_offset         yminterval_unconstrained;
+   l_months            binary_integer;
+   l_tmp_time          timestamp;
+   x_invalid_month_day exception;
+   pragma exception_init(x_invalid_month_day, -01839);
 begin
    -------------------------------------
    -- get the date to interpolate for --
@@ -822,7 +827,22 @@ begin
          end loop;
          while l_high - l_low > 1 loop
             l_mid := (l_low + l_high) / 2;
-            if l_origin + l_mid * p_rec.calendar_interval > p_date then
+            l_ym_offset := l_mid * p_rec.calendar_interval;
+            begin
+               l_tmp_time := l_origin + l_ym_offset;
+            exception
+               when x_invalid_month_day then
+                  l_months := cwms_util.yminterval_to_months(l_ym_offset) - 1;
+                  for days in reverse 28..30 loop
+                     begin
+                        l_tmp_time := add_months(l_origin, l_months) + days;
+                        exit;
+                     exception
+                        when x_invalid_month_day then null;
+                     end;
+                  end loop;
+            end;
+            if l_tmp_time > p_date then
                l_high := l_mid;
             else
                l_low := l_mid;
@@ -840,7 +860,22 @@ begin
          end loop;
          while l_high - l_low > 1 loop
             l_mid := (l_low + l_high) / 2;
-            if l_origin + l_mid * p_rec.calendar_interval <= p_date then
+            l_ym_offset := l_mid * p_rec.calendar_interval;
+            begin
+               l_tmp_time := l_origin + l_ym_offset;
+            exception
+               when x_invalid_month_day then
+                  l_months := cwms_util.yminterval_to_months(l_ym_offset) - 1;
+                  for days in reverse 28..30 loop
+                     begin
+                        l_tmp_time := add_months(l_origin, l_months) + days;
+                        exit;
+                     exception
+                        when x_invalid_month_day then null;
+                     end;
+                  end loop;
+            end;
+            if l_tmp_time <= p_date then
                l_low := l_mid;
             else
                l_high := l_mid;

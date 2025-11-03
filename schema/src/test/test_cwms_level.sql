@@ -31,6 +31,8 @@ procedure test_cwdb_251_orphaned_sys_context_values_cause_problems_in_virutal_lo
 procedure test_cwdb_300_null_local_time_zone_breaks_av_location_level_curval;
 --%test(CWDB-304 AV_LOCATION_LEVEL_CURVAL giving Null values at SPK)
 procedure test_cwdb_304_null_values_in_av_location_level_curval;
+--%test(Issue 61: handle locationlevel seasonal values iwth month day greater than 28)
+procedure test_issue_61_monthly_seasonal_values_with_origin_day_gt_28;
 
 c_office_id             varchar2(16)  := '&&office_id';
 c_location_id           varchar2(57)  := 'LocLevelTestLoc';
@@ -2336,6 +2338,49 @@ begin
       and location_level_id = l_loc_lvl_id;
    ut.expect(round(to_number(l_value), 9)).to_equal(999.0);
 end test_cwdb_304_null_values_in_av_location_level_curval;
+
+--------------------------------------------------------------------------------
+-- procedure test_issue_61_monthly_seasonal_values_with_origin_day_gt_28
+--------------------------------------------------------------------------------
+procedure test_issue_61_monthly_seasonal_values_with_origin_day_gt_28
+is
+   l_value           number;
+   l_effective_date  date := date '2021-01-01';
+   l_interval_origin date := date '2020-12-30';
+   l_interval_months integer := 1;
+   l_exception       boolean;
+
+   l_seasonal_values cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
+      cwms_t_seasonal_value( 0,   0 * 1440, 1000),
+      cwms_t_seasonal_value( 0,  10 * 1440, 1020),
+      cwms_t_seasonal_value( 0,  20 * 1440, 1020));
+begin
+   setup;
+   cwms_level.store_location_level4(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_value       => null,
+      p_level_units       => c_elev_unit,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_interval_origin   => l_interval_origin,
+      p_interval_months   => l_interval_months,
+      p_seasonal_values   => l_seasonal_values,
+      p_office_id         => c_office_id);
+   commit;
+
+   begin
+      select current_value_en
+      into l_value
+      from av_location_level_curval
+      where location_level_id = c_top_of_normal_elev_id
+         and office_id = c_office_id;
+      l_exception := false;
+   exception
+      when others then l_exception := true;
+   end;
+   ut.expect(l_exception).to_be_false;
+
+end test_issue_61_monthly_seasonal_values_with_origin_day_gt_28;
 
 end test_cwms_level;
 /
