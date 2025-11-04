@@ -7457,6 +7457,15 @@ AS
          delete from at_shef_decode where ts_code = l_ts_code;
          delete from at_tr_template where ts_code_indep_1 = l_ts_code;
          delete from at_transform_criteria where l_ts_code in (ts_code, resultant_ts_code);
+         delete from at_a2w_ts_codes_by_loc where l_ts_code in (
+            ts_code_cond,      ts_code_do,           ts_code_elev,            ts_code_elev_tw,
+            ts_code_evap,      ts_code_inflow,       ts_code_irrad,           ts_code_opening,
+            ts_code_outflow,   ts_code_pct_con,      ts_code_pct_flood,       ts_code_ph,
+            ts_code_power_gen, ts_code_precip,       ts_code_rule_curve_elev, ts_code_stage,
+            ts_code_stage_tw,  ts_code_stor_drought, ts_code_stor_flood,      ts_code_sur_release,
+            ts_code_temp_air,  ts_code_temp_water,   ts_code_volt,            ts_code_wind_dir,
+            ts_code_wind_speed
+         );
          -------------
          -- ts data --
          -------------
