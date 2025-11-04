@@ -47,6 +47,8 @@ procedure cwdb_290_bounding_office_overrides_lat_lon;
 procedure cwms_305_spk_location_not_creating;
 --%test(Test storing an office location group to a CWMS category)
 procedure store_loc_group_cwms_cat;
+--%test(Test internataional location)
+procedure test_international_location;
 
 procedure setup;
 procedure teardown;
@@ -2031,6 +2033,7 @@ AS
             p_nation_id           => p_nation_id,
             p_nearest_city        => p_nearest_city,
             p_db_office_id        => '&&office_id');
+         commit;
 
          select * into ll_rec from cwms_v_loc where location_id = 'HUB' and unit_system = 'SI';
 
@@ -2164,7 +2167,6 @@ AS
 
       l_us     := 'EN';
       l_test_level := 5360.000000000002d;
-      dbms_output.put_line ('l_test_level  = '||l_test_level);
 
       select seasonal_level
       into   l_level
@@ -2426,7 +2428,49 @@ AS
       'F', 'T', null, null, '&&office_id');
       cwms_loc.delete_loc_group('Default', 'DistrictTestGroup', 'T', '&&office_id');
    end store_loc_group_cwms_cat;
+   -------------------------------------------
+   -- procedure test_international_location --
+   -------------------------------------------
+   procedure test_international_location
+   is
+      l_loc_rec av_loc%rowtype;
+   begin
+      cwms_loc.store_location2(
+         p_location_id => 'International_1',
+         p_state_initial => 'UC',
+         p_nation_id => 'ZZ',
+         p_db_office_id => 'LRE');
 
+      select *
+        into l_loc_rec
+        from av_loc
+       where db_office_id = 'LRE'
+         and location_id = 'International_1'
+         and unit_system = 'SI';
+
+      ut.expect(l_loc_rec.nation_id).to_equal('International');
+      ut.expect(l_loc_rec.state_initial).to_equal('UC');
+      ut.expect(l_loc_rec.county_name).to_equal('No County - Location Shared by USA and Canada');
+
+      cwms_loc.store_location2(
+         p_location_id => 'International_2',
+         p_state_initial => 'UM',
+         p_nation_id => 'ZZ',
+         p_db_office_id => 'SPL');
+
+      select *
+        into l_loc_rec
+        from av_loc
+       where db_office_id = 'SPL'
+         and location_id = 'International_2'
+         and unit_system = 'SI';
+
+      ut.expect(l_loc_rec.nation_id).to_equal('International');
+      ut.expect(l_loc_rec.state_initial).to_equal('UM');
+      ut.expect(l_loc_rec.county_name).to_equal('No County - Location Shared by USA and Mexico');
+
+
+   end test_international_location;
 END test_cwms_loc;
 /
 

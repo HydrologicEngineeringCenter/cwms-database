@@ -1028,7 +1028,7 @@ AS
       -- DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
 
       --
-      --  If get_location_code did not throw an exception, then a valid base_location_id &.
+      --  If get_location_code did not throw an exception, then a valid base_location_id and.
       --  office_id pair was passed in, therefore continue to update the.
       --  at_physical_location table by first retrieving data for the existing location...
       --
@@ -1486,7 +1486,7 @@ AS
       -- DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
 
       --
-      --  If get_location_code did not throw an exception, then a valid base_location_id &.
+      --  If get_location_code did not throw an exception, then a valid base_location_id and.
       --  office_id pair was passed in, therefore continue to update the.
       --  at_physical_location table by first retrieving data for the existing location...
       --
@@ -9264,7 +9264,8 @@ end unassign_loc_groups;
               bulk collect
               into l_codes
               from cwms_nation_sp
-             where sdo_nn(shape,
+             where fips_cntry not in ('XX', 'ZZ')
+               and sdo_nn(shape,
                           sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
                           'distance='||p_buff||' unit='||p_unit||' sdo_num_res=1',
                           1) = 'TRUE';

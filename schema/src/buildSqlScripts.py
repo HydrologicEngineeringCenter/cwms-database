@@ -270,6 +270,8 @@ states = [
     ['90', 'QC',    'Quebec',                     'CA'],
     ['91', 'SK',    'Saskatchewan',               'CA'],
     ['92', 'YT',    'Yukon',                      'CA'],
+    ['101', 'UC',   'Shared by USA and Canada',   'ZZ'],
+    ['102', 'UM',   'Shared by USA and Mexico',   'ZZ'],
 ]
 stateNamesById = {}
 for id, initial, name, nation in states : stateNamesById[id] = name;
@@ -3621,6 +3623,8 @@ counties = [
     [90000, 'Unknown County or County N/A for Quebec'],
     [91000, 'Unknown County or County N/A for Saskatchewan'],
     [92000, 'Unknown County or County N/A for Yukon'],
+    [101000, 'No County - Location Shared by USA and Canada'],
+    [102000, 'No County - Location Shared by USA and Mexico'],
 ]
 
 #---------------#
