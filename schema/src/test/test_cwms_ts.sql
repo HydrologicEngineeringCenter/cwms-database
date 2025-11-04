@@ -125,6 +125,9 @@ procedure test_ts_id_not_found_error_message;
 --%test (Github issue 58 CWMS_TS.STORE_TS_2 may be incorrectly handling vertical_datum offset)
 procedure test_issue_58_store_ts_vertical_datum_problem;
 
+--%test (GitHub issue 65 CWMS_TS.DELETE_TS doesn't delete from AT_A2W_TS_CODES_BY_LOC)
+procedure test_issue_65_delete_ts_doesnt_delete_from_at_a2w_ts_codes_by_loc;
+
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -4257,6 +4260,84 @@ AS
       when others then cwms_loc.set_default_vertical_datum(NULL);
 
    end test_issue_58_store_ts_vertical_datum_problem;
+
+   ---------------------------------------------------------------------------------
+   -- procedure test_issue_65_delete_ts_doesnt_delete_from_at_a2w_ts_codes_by_loc --
+   ---------------------------------------------------------------------------------
+   procedure test_issue_65_delete_ts_doesnt_delete_from_at_a2w_ts_codes_by_loc
+   is
+      l_tsid cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Elev.Inst.1Day.0.Test';
+      l_ts_data cwms_t_ztsv_array := cwms_t_ztsv_array(
+         cwms_t_ztsv(date '2025-10-01', 101.0, 0),
+         cwms_t_ztsv(date '2025-10-02', 102.0, 0),
+         cwms_t_ztsv(date '2025-10-03', 103.0, 0),
+         cwms_t_ztsv(date '2025-10-04', 104.0, 0),
+         cwms_t_ztsv(date '2025-10-05', 105.0, 0));
+      l_count integer;
+   begin
+      teardown;
+
+      cwms_loc.store_location (
+         p_location_id    => test_base_location_id,
+         p_active         => 'T',
+         p_db_office_id   => '&&office_id');
+
+      select count(*)
+        into l_count
+        from at_a2w_ts_codes_by_loc
+       where location_id = test_base_location_id
+         and db_office_id = '&&office_id';
+
+      ut.expect(l_count).to_equal(0);
+
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id        => l_tsid,
+         p_units             => 'ft',
+         p_timeseries_data   => l_ts_data,
+         p_store_rule        => cwms_util.replace_all,
+         p_office_id         => '&&office_id');
+
+      insert
+        into at_a2w_ts_codes_by_loc
+             (location_code,
+              date_refreshed,
+              display_flag,
+              num_ts_codes,
+              lake_summary_tf,
+              location_id,
+              db_office_id,
+              ts_code_elev
+             )
+      values (cwms_loc.get_location_code('&&office_id', test_base_location_id),
+              sysdate,
+              'T',
+               1,
+              'F',
+              test_base_location_id,
+              '&&office_id',
+              cwms_ts.get_ts_code(l_tsid, '&&office_id')
+             );
+      commit;
+
+      select count(*)
+        into l_count
+        from at_a2w_ts_codes_by_loc
+       where location_id = test_base_location_id
+         and db_office_id = '&&office_id';
+
+      ut.expect(l_count).to_equal(1);
+
+      cwms_ts.delete_ts(l_tsid, cwms_util.delete_all, '&&office_id');
+
+      select count(*)
+        into l_count
+        from at_a2w_ts_codes_by_loc
+       where location_id = test_base_location_id
+         and db_office_id = '&&office_id';
+
+      ut.expect(l_count).to_equal(0);
+
+   end test_issue_65_delete_ts_doesnt_delete_from_at_a2w_ts_codes_by_loc;
 
 END test_cwms_ts;
 /
