@@ -5241,8 +5241,8 @@ AS
                --------------------------
                -- ts_code is versioned --
                --------------------------
-               for rec2 in (select distinct version_date from av_tsv where ts_code = p_ts_code) loop
-                  update_ts_extents(p_ts_code, rec2.version_date);
+               for rec2 in (select distinct version_time from at_ts_extents where ts_code = p_ts_code) loop
+                  update_ts_extents(p_ts_code, rec2.version_time);
                end loop;
             end if;
          end loop;
