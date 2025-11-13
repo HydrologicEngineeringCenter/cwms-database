@@ -1659,13 +1659,7 @@ as
          l_time_zone := nvl(p_time_zone, 'UTC');
       else
          l_time_zone := nvl(p_time_zone, cwms_loc.get_local_timezone(substr(l_tsid, 1, instr(l_tsid, '.') - 1), l_office_id));
-         if cwms_ts.require_new_lrts_format_on_input = 'T' then
-            if cwms_ts.is_lrts(l_tsid, l_office_id) = 'T' then
-               if cwms_ts.is_new_lrts_format(l_tsid) = 'F' then
-                  l_tsid := cwms_ts.format_lrts_output(l_tsid, true);
-               end if;
-            end if;
-         end if;
+         l_tsid := cwms_ts.format_lrts_input(l_tsid);
       end if;
 
       l_std_text_id := trim(upper(p_std_text_id));

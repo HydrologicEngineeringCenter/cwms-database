@@ -5267,7 +5267,8 @@ begin
          -- time series --
          -----------------
          declare
-            l_ts_cur sys_refcursor;
+            l_ts_id   at_cwms_ts_id.cwms_ts_id%type;
+            l_ts_cur  sys_refcursor;
             l_dates   date_table_type;
             l_values  double_tab_t;
             l_quality number_tab_t;
@@ -5277,9 +5278,15 @@ begin
             a         pls_integer;
             b         pls_integer;
          begin
+            l_ts_id := cwms_ts.get_ts_id(l_rec.ts_code);
+            if cwms_ts.require_new_lrts_format_on_input = 'T' then
+               l_ts_id := cwms_ts.format_lrts_output(l_ts_id, true);
+            elsif cwms_ts.allow_new_lrts_format_on_input = 'F' then
+               l_ts_id := cwms_ts.format_lrts_output(l_ts_id, false);
+            end if;
             cwms_ts.retrieve_ts(
                p_at_tsv_rc       => l_ts_cur,
-               p_cwms_ts_id      => cwms_ts.get_ts_id(l_rec.ts_code),
+               p_cwms_ts_id      => l_ts_id,
                p_units           => p_level_units,
                p_start_time      => l_start_time_utc,
                p_end_time        => nvl(l_end_time_utc, l_start_time_utc),

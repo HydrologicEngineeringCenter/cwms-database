@@ -15,6 +15,13 @@ AS
    g_ts_id_alias_cache cwms_cache.str_str_cache_t;
    g_is_lrts_cache     cwms_cache.str_str_cache_t;
    g_interval_cache    cwms_cache.str_str_cache_t;
+
+   -- constants for verify_ts_id
+   g_max_base_location_id_len binary_integer;
+   g_max_sub_location_id_len  binary_integer;
+   g_max_base_parameter_id_len binary_integer;
+   g_max_sub_parameter_id_len  binary_integer;
+   g_max_version_id_len binary_integer;
    /*
     * Not documented. Package-specific and session-specific logging properties
     */
@@ -1088,6 +1095,17 @@ AS
       p_revert_format in boolean)
       return varchar2;
    /**
+    * Normalizes an interval id to the old LRTS format base on specified format
+    *
+    * @param p_interval_id   The interval identiier to normalize
+    * @param p_revert_format A flag (T/F) specifying whether to revert the interval from the new (1DayLocal) to old (~1Day) format
+    * @return The normalized interval identifier
+    */
+   function format_lrts_interval_input(
+      p_interval_id   in varchar2,
+      p_revert_format in varchar2)
+      return varchar2;
+   /**
     * Normalizes an interval id to the old LRTS format base on session setting
     *
     * @param p_interval_id   The interval identiier to normalize
@@ -1106,6 +1124,17 @@ AS
    function format_lrts_input(
       p_cwms_ts_id    in varchar2,
       p_revert_format in boolean)
+      return varchar2;
+   /**
+    * Normalizes an time series id to the old LRTS format base on specified format
+    *
+    * @param p_cwms_ts_id    The time series identiier to normalize
+    * @param p_revert_format A flag (T/F) specifying whether to revert the interval from the new (1DayLocal) to old (~1Day) format
+    * @return The normalized interval identifier
+    */
+   function format_lrts_input(
+      p_cwms_ts_id    in varchar2,
+      p_revert_format in varchar2)
       return varchar2;
    /**
     * Normalizes an time series id to the old LRTS format base on session setting
@@ -2355,6 +2384,13 @@ AS
                        p_interval_id            OUT VARCHAR2,
                        p_duration_id            OUT VARCHAR2,
                        p_version_id             OUT VARCHAR2);
+
+   /**
+    * Raises a problem-specific exception if the time series identifier is not valid
+    *
+    * @param p_cwms_ts_id The time series identifier to validate
+    */
+   PROCEDURE validate_ts_id (p_cwms_ts_id in varchar2);
 
    -- not documented
    PROCEDURE zretrieve_ts (p_at_tsv_rc      IN OUT SYS_REFCURSOR,

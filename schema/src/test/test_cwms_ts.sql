@@ -128,6 +128,8 @@ procedure test_issue_58_store_ts_vertical_datum_problem;
 --%test (GitHub issue 65 CWMS_TS.DELETE_TS doesn't delete from AT_A2W_TS_CODES_BY_LOC)
 procedure test_issue_65_delete_ts_doesnt_delete_from_at_a2w_ts_codes_by_loc;
 
+--%test (CWDB-258 Input validity errors should be reported to the user, not just AT_LOG_MESSAGE)
+procedure test_cwdb_258_report_input_validity_errors_to_user;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -4338,6 +4340,70 @@ AS
       ut.expect(l_count).to_equal(0);
 
    end test_issue_65_delete_ts_doesnt_delete_from_at_a2w_ts_codes_by_loc;
+
+   ------------------------------------------------------------------
+   -- procedure test_cwdb_258_report_input_validity_errors_to_user --
+   ------------------------------------------------------------------
+   procedure test_cwdb_258_report_input_validity_errors_to_user
+   is
+      l_bad_ts_ids cwms_t_str_tab := cwms_t_str_tab(
+         'BaseLocationHasTooManyCharacters:Code:Inst:~1Day:0:Test',
+         'BaseLocationHasTooManyCharacters.Code.Inst.~1Day.0.Test',
+         'BaseLocation-Sub_Location_Has_Too_Many_Characters.Code.Inst.~1Day.0.Test',
+         'BaseLocation-SubLocation.Nonsense.Inst.~1Day.0.Test',
+         'BaseLocation-SubLocation.Code.Nonsense.~1Day.0.Test',
+         'BaseLocation-SubLocation.Code.Inst.Nonsense.0.Test',
+         'BaseLocation-SubLocation.Code.Inst.~1Day.Nonsense.Test',
+         'BaseLocation-SubLocation.Code.Inst.~1Day.0.ThisVersionIDHasTooManyCharacters');
+      l_expected_errors cwms_t_str_tab := cwms_t_str_tab(
+         'INVALID Time Series Identifier ".+": Expected 6 parts, got 1',
+         'INVALID Time Series Identifier ".+": Base Location > \d+ characters',
+         'INVALID Time Series Identifier ".+": Sub Location > \d+ characters',
+         'INVALID Time Series Identifier ".+": No such base parameter',
+         'INVALID Time Series Identifier ".+": No such parameter_type',
+         'INVALID Time Series Identifier ".+": No such interval',
+         'INVALID Time Series Identifier ".+": No such duration',
+         'INVALID Time Series Identifier ".+": Version > \d+ characters');
+      l_zts_data cwms_t_ztsv_array := cwms_t_ztsv_array (
+         cwms_t_ztsv (date '2021-10-01' + 1 / 24 + 15 / 1440, 1, 0),
+         cwms_t_ztsv (date '2021-10-01' + 2 / 24 + 15 / 1440, 2, 0),
+         cwms_t_ztsv (date '2021-10-01' + 3 / 24 + 15 / 1440, 3, 0),
+         cwms_t_ztsv (date '2021-10-01' + 4 / 24 + 15 / 1440, 4, 0),
+         cwms_t_ztsv (date '2021-10-01' + 5 / 24 + 15 / 1440, 5, 0),
+         cwms_t_ztsv (date '2021-10-01' + 6 / 24 + 15 / 1440, 6, 0));
+      l_crsr sys_refcursor;
+   begin
+      for i in 1..l_bad_ts_ids.count loop
+         begin
+            cwms_ts.zstore_ts (
+               p_cwms_ts_id      => l_bad_ts_ids(i),
+               p_units           => 'n/a',
+               p_timeseries_data => l_zts_data,
+               p_store_rule      => cwms_util.replace_all,
+               p_office_id       => '&&office_id');
+            cwms_err.raise('ERROR', 'Expected exception not raised.');
+         exception
+            when others then
+               ut.expect(regexp_like(dbms_utility.format_error_stack, l_expected_errors(i), 'mn')).to_be_true;
+               if not regexp_like(dbms_utility.format_error_stack, l_expected_errors(i), 'mn') then
+                  dbms_output.put_line(dbms_utility.format_error_stack);
+               end if;
+         end;
+         -- begin
+         --    cwms_ts.retrieve_ts(
+         --       p_at_tsv_rc  => l_crsr,
+         --       p_cwms_ts_id => l_bad_ts_ids(i),
+         --       p_units      => 'n/a',
+         --       p_start_time => sysdate - 1,
+         --       p_end_time   => sysdate,
+         --       p_office_id  => '&&office_id');
+         --    cwms_err.raise('ERROR', 'Expected exception not raised.');
+         -- exception
+         --    when others then
+         --       ut.expect(regexp_like(dbms_utility.format_error_stack, l_expected_errors(i), 'mn')).to_be_true;
+         -- end;
+      end loop;
+   end test_cwdb_258_report_input_validity_errors_to_user;
 
 END test_cwms_ts;
 /
