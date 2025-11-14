@@ -1089,6 +1089,7 @@ AS
 		l_params_match 			  BOOLEAN;
 		l_param_types_match		  BOOLEAN;
 		l_duration_match			  BOOLEAN;
+		l_ts_id at_cwms_ts_id.cwms_ts_id%type;
 	BEGIN
 
 		IF l_num < 1
@@ -1136,8 +1137,8 @@ AS
 						at_parameter atp
 			 WHERE	mvcti.ts_code = atcts.ts_code
 						AND atcts.parameter_code = atp.parameter_code
-						AND UPPER (mvcti.cwms_ts_id) =
-								 UPPER (cwms_ts.format_lrts_input(p_scr_assign_array (i).cwms_ts_id))
+						AND UPPER (mvcti.cwms_ts_id) = 
+						                 UPPER (cwms_ts.format_lrts_input(p_scr_assign_array(i).cwms_ts_id, 'T'))
 						AND mvcti.db_office_code = l_db_office_code;
 
 			l_params_match := FALSE;
@@ -1187,7 +1188,7 @@ AS
 			  USING	 (SELECT   (SELECT	mvcti.ts_code
 										  FROM	at_cwms_ts_id mvcti
 										 WHERE	UPPER (cwms_ts_id) =
-														UPPER (cwms_ts.format_lrts_input(a.cwms_ts_id))
+														UPPER (cwms_ts.format_lrts_input(a.cwms_ts_id, 'T'))
 													AND mvcti.db_office_code =
 															 l_db_office_code)
 										  ts_code,
@@ -1199,7 +1200,7 @@ AS
 									  (SELECT	mvcti.ts_code
 										  FROM	at_cwms_ts_id mvcti
 										 WHERE	UPPER (cwms_ts_id) =
-														UPPER (cwms_ts.format_lrts_input(a.resultant_ts_id)))
+														UPPER (cwms_ts.format_lrts_input(a.resultant_ts_id, 'T')))
 										  resultant_ts_code
 							 FROM   TABLE (p_scr_assign_array) a) b
 				  ON	 (ats.ts_code = b.ts_code)

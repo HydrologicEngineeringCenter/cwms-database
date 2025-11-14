@@ -5332,7 +5332,7 @@ begin
    ----------------------------
    -- create specified level --
    ----------------------------
-   cwms_level.store_specified_level('Lrts', 'Dummy level', 'F', c_office_id);
+   cwms_level.store_specified_level('Test', 'Dummy level', 'F', c_office_id);
    ---------------------------------
    -- create the ts group catgory --
    ---------------------------------
@@ -5478,7 +5478,6 @@ begin
    cwms_loc.clear_all_caches;
    cwms_ts.clear_all_caches;
    for i in 0..7 loop
-      continue when i = 3; -- invalid value
       begin
          cwms_util.set_session_info('USE_NEW_LRTS_ID_FORMAT', i);
          if i in (3, 7) then
@@ -5487,8 +5486,9 @@ begin
       exception
          when others then
             ut.expect(regexp_like(dbms_utility.format_error_stack, '.+not a valid value for session item USE_NEW_LRTS_ID_FORMAT.+', 'mn')).to_be_true;
+            continue;
       end;
-      if i in (0, 4) then
+      if cwms_ts.require_new_lrts_format_on_input = 'T' or cwms_ts.allow_new_lrts_format_on_input = 'F' then
          -- shouldn't revert
          ut.expect(cwms_ts.format_lrts_input(l_lrts_ts_id_new)).to_equal(l_lrts_ts_id_new);
          ut.expect(cwms_ts.format_lrts_input(l_lrts_ts_id_old)).to_equal(l_lrts_ts_id_old);
@@ -5518,17 +5518,22 @@ begin
       p_duration_id       => l_duration_Id,
       p_version_id        => l_version_id);
    ut.expect(l_interval_id).to_equal(cwms_util.split_text(l_lrts_ts_id_old, 4, '.'));
-   cwms_ts.parse_ts(
-      p_cwms_ts_id        => l_lrts_ts_id_new,
-      p_base_location_id  => l_base_location_id,
-      p_sub_location_id   => l_sub_location_id,
-      p_base_parameter_id => l_base_parameter_id,
-      p_sub_parameter_id  => l_sub_parameter_id,
-      p_parameter_type_id => l_parameter_type_id,
-      p_interval_id       => l_interval_id,
-      p_duration_id       => l_duration_Id,
-      p_version_id        => l_version_id);
-   ut.expect(l_interval_id).to_equal(cwms_util.split_text(l_lrts_ts_id_new, 4, '.'));
+   begin
+      cwms_ts.parse_ts(
+         p_cwms_ts_id        => l_lrts_ts_id_new,
+         p_base_location_id  => l_base_location_id,
+         p_sub_location_id   => l_sub_location_id,
+         p_base_parameter_id => l_base_parameter_id,
+         p_sub_parameter_id  => l_sub_parameter_id,
+         p_parameter_type_id => l_parameter_type_id,
+         p_interval_id       => l_interval_id,
+         p_duration_id       => l_duration_Id,
+         p_version_id        => l_version_id);
+      cwms_err.raise('Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
+   end;
    cwms_shef.parse_criteria_record (
       p_shef_id            => l_shef_id,
       p_shef_pe_code       => l_shef_pe_code,
@@ -6345,13 +6350,14 @@ begin
       p_max_state_notify   => 5,
       p_office_id          => c_office_id);
    --.... other packages
+   l_number := cwms_util.create_parameter_code('Depth-Lrts', 'F', c_office_id);
    cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_old, 'F', 'T', c_office_id);
    begin
       cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_new_copy, 'F', 'F', c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_old_copy, 'F', 'F', c_office_id);
    cwms_vt.assign_screening_id (
@@ -6410,7 +6416,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+1DayLocal is not a valid interval.+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.update_ts_id(
@@ -6420,7 +6426,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.zstore_ts(
@@ -6433,7 +6439,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+INVALID_INTERVAL_ID: "1DayLocal" is not a valid CWMS timeseries interval.+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       dbms_output.put_line('allow_new_lrts_format_on_input   = '||cwms_ts.allow_new_lrts_format_on_input);
@@ -6449,7 +6455,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    --.... rename_ts
    begin
@@ -6457,24 +6463,36 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    --.... get IDs and codes
-   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_new, c_office_id)).to_be_null;
+   begin
+      ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_new, c_office_id)).to_be_null;
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
+   end;
    begin
       ut.expect(cwms_ts.get_ts_code(l_lrts_ts_id_new, c_office_id)).to_be_null;
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
-   ut.expect(cwms_ts.get_db_unit_id(l_lrts_ts_id_new)).to_equal('m');
+   begin
+      ut.expect(cwms_ts.get_db_unit_id(l_lrts_ts_id_new)).to_equal('m');
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
+   end;
    begin
       ut.expect(cwms_ts.get_location_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_location_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    --.... get/set info
    begin
@@ -6482,28 +6500,28 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.set_tsid_versioned(l_lrts_ts_id_new, 'T', c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       ut.expect(cwms_ts.is_tsid_versioned_f(l_lrts_ts_id_new, c_office_id)).to_equal('T');
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.get_tsid_version_dates(l_crsr, l_lrts_ts_id_new, date '1000-01-01', date '3000-01-01', 'UTC', c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    ut.expect(cwms_ts.get_ts_interval(l_lrts_ts_id_new)).to_equal(0);
    cwms_ts.set_use_new_lrts_format_on_output('T');
@@ -6515,70 +6533,70 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       ut.expect(cwms_ts.get_ts_max_date(l_lrts_ts_id_new, 'UTC', cwms_util.non_versioned, c_office_id)).to_equal(l_end_time);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.get_value_extents(l_min_value, l_max_value, l_lrts_ts_id_new, 'ft', l_start_time, l_end_time, 'UTC', c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       l_ts_data_out := cwms_ts.get_values_in_range(l_lrts_ts_id_new, 1, l_count, 'ft', l_start_time, l_end_time, 'UTC', c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.set_nulls_storage_policy_ts(cwms_Ts.filter_out_null_values, l_lrts_ts_id_new, c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       ut.expect(cwms_ts.get_nulls_storage_policy_ts(l_lrts_ts_id_new, c_office_id)).to_equal(cwms_ts.filter_out_null_values);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.set_filter_duplicates_ts('T', l_lrts_ts_id_new, c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       ut.expect(cwms_ts.get_filter_duplicates(l_lrts_ts_id_new, c_office_id)).to_equal('T');
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.set_historic(l_lrts_ts_id_new, 'T', c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       ut.expect(cwms_ts.is_historic(l_lrts_ts_id_new, c_office_id)).to_equal('T');
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    --.... group operations
    begin
@@ -6590,7 +6608,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    cwms_ts.store_ts_group(
       p_ts_category_id   => 'TestCategory',
@@ -6601,28 +6619,28 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 'F', c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new)), c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_str_tab(l_lrts_ts_id_new), 'F', c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
    --.... cwms_cat package
@@ -6646,7 +6664,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_level.store_location_level3(
@@ -6658,7 +6676,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    --.... cwms_forecast package
    l_crsr := cwms_forecast.cat_ts_f(
@@ -6702,7 +6720,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    --.... cwms_pool package
    begin
@@ -6720,7 +6738,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_pool.get_elev_offsets(
@@ -6737,7 +6755,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_pool.get_pool_limit_elevs(
@@ -6755,7 +6773,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_pool.get_pool_limit_elevs(
@@ -6772,7 +6790,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    --.... other packages
    begin
@@ -6780,7 +6798,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_vt.assign_screening_id (
@@ -6808,7 +6826,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_shef.delete_shef_spec (
@@ -6818,7 +6836,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    --.... delete, undelete
    begin
@@ -6826,14 +6844,14 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.delete_ts(l_lrts_ts_id_new_copy, cwms_util.delete_all, c_office_id);
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
 
    -------------------------
@@ -8556,7 +8574,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+ERROR: Session requires new LRTS ID format.+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'Session requires new LRTS ID format', 'mn')).to_be_true;
    end;
    begin
       cwms_ts.update_ts_id(
@@ -8579,7 +8597,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+ERROR: Session requires new LRTS ID format.+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'Session requires new LRTS ID format', 'mn')).to_be_true;
    end;
    --.... retrieve ts
    begin
@@ -8940,25 +8958,33 @@ begin
    exception
       when no_data_found then null;
    end;
-   cwms_shef.store_shef_spec (
-      p_cwms_ts_id          => l_lrts_ts_id_old, -- doesn't fail; created as PRTS
-      p_data_stream_id      => 'Test_Data_Stream',
-      p_shef_loc_id         => 'SHEFO2',
-      p_shef_pe_code        => 'HP',
-      p_shef_tse_code       => 'RGZ',
-      p_shef_duration_code  => 'I',
-      p_shef_unit_id        => 'ft',
-      p_time_zone_id        => 'UTC',
-      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
-                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
-                                  1440),
-      p_db_office_id        => c_office_id);
-   cwms_shef.delete_shef_spec (
-      p_cwms_ts_id     => l_lrts_ts_id_old,
-      p_data_stream_id => 'Test_Data_Stream',
-      p_db_office_id   => c_office_id);
+   begin
+      cwms_shef.store_shef_spec (
+         p_cwms_ts_id          => l_lrts_ts_id_old, -- doesn't fail; created as PRTS
+         p_data_stream_id      => 'Test_Data_Stream',
+         p_shef_loc_id         => 'SHEFO2',
+         p_shef_pe_code        => 'HP',
+         p_shef_tse_code       => 'RGZ',
+         p_shef_duration_code  => 'I',
+         p_shef_unit_id        => 'ft',
+         p_time_zone_id        => 'UTC',
+         p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
+                                    cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
+                                    1440),
+         p_db_office_id        => c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
    --.... delete, undelete
-   cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id); -- doesn't fail, created by store_shef_spec
+   begin
+      cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_all, c_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
+   end;
    -- should succeed
    --.... create, update, store ts
    cwms_ts.create_ts(
@@ -9011,10 +9037,7 @@ begin
    cwms_ts.rename_ts(l_lrts_ts_id_new, l_lrts_ts_id_new||'2', null, c_office_id);
    cwms_ts.rename_ts(l_lrts_ts_id_new||'2', l_lrts_ts_id_new, null, c_office_id);
    --.... get IDs and codes
-   cwms_ts.set_use_new_lrts_format_on_output('T');
    ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_lrts_ts_id_new);
-   cwms_ts.set_use_new_lrts_format_on_output('F');
-   ut.expect(cwms_ts.get_ts_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_lrts_ts_id_old);
    ut.expect(cwms_ts.get_ts_code(l_lrts_ts_id_new, c_office_id)).to_be_not_null;
    ut.expect(cwms_ts.get_db_unit_id(l_lrts_ts_id_new)).to_equal('m');
    ut.expect(cwms_ts.get_location_id(l_lrts_ts_id_new, c_office_id)).to_equal(l_location_id);
@@ -9071,7 +9094,7 @@ begin
    cwms_level.store_location_level(cwms_t_location_level(
       c_office_id, l_location_id, 'Elev-Lrts', 'Inst', '0', 'Test',
       null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-      'T', l_lrts_ts_id_old,
+      'T', l_lrts_ts_id_new,
       null, null, null, null, null, null));
    cwms_level.store_location_level3(
       p_location_level_id => l_location_id||'.Elev-Lrts.Inst.0.Test',
@@ -9750,7 +9773,7 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+ERROR: Session requires new LRTS ID format.+', 'mn')).to_be_true;
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'Session requires new LRTS ID format', 'mn')).to_be_true;
    end;
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_new_copy, 'F', 'F', c_office_id);
    cwms_vt.assign_screening_id (
