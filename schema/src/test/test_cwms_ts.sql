@@ -4389,19 +4389,19 @@ AS
                   dbms_output.put_line(dbms_utility.format_error_stack);
                end if;
          end;
-         -- begin
-         --    cwms_ts.retrieve_ts(
-         --       p_at_tsv_rc  => l_crsr,
-         --       p_cwms_ts_id => l_bad_ts_ids(i),
-         --       p_units      => 'n/a',
-         --       p_start_time => sysdate - 1,
-         --       p_end_time   => sysdate,
-         --       p_office_id  => '&&office_id');
-         --    cwms_err.raise('ERROR', 'Expected exception not raised.');
-         -- exception
-         --    when others then
-         --       ut.expect(regexp_like(dbms_utility.format_error_stack, l_expected_errors(i), 'mn')).to_be_true;
-         -- end;
+         begin
+            cwms_ts.retrieve_ts(
+               p_at_tsv_rc  => l_crsr,
+               p_cwms_ts_id => l_bad_ts_ids(i),
+               p_units      => 'n/a',
+               p_start_time => sysdate - 1,
+               p_end_time   => sysdate,
+               p_office_id  => '&&office_id');
+            cwms_err.raise('ERROR', 'Expected exception not raised.');
+         exception
+            when others then
+               ut.expect(regexp_like(dbms_utility.format_error_stack, l_expected_errors(i), 'mn')).to_be_true;
+         end;
       end loop;
    end test_cwdb_258_report_input_validity_errors_to_user;
 
