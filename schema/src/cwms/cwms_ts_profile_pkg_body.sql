@@ -264,7 +264,9 @@ begin
    -------------------
    if p_location_id      is null then cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_ID'  );    end if;
    if p_key_parameter_id is null then cwms_err.raise('NULL_ARGUMENT', 'P_KEY_PARAMETER_ID'); end if;
-   cwms_ts.validate_ts_id(p_ref_ts_id);
+   if p_ref_ts_id is not null then
+      cwms_ts.validate_ts_id(p_ref_ts_id);
+   end if;
    --------------------------------------
    -- populate the ts_profile_t object --
    --------------------------------------
@@ -738,7 +740,9 @@ is
    l_ts_profile  ts_profile_t;
    l_copy_parser boolean;
 begin
-   cwms_ts.validate_ts_id(p_dest_ref_ts_id);
+   if p_dest_ref_ts_id is not null then
+      cwms_ts.validate_ts_id(p_dest_ref_ts_id);
+   end if;
    l_copy_parser := cwms_util.return_true_or_false(p_copy_parser);
 
    l_ts_profile := retrieve_ts_profile_f(
