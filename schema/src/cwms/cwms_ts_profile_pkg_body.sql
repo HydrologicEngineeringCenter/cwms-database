@@ -740,7 +740,9 @@ is
    l_ts_profile  ts_profile_t;
    l_copy_parser boolean;
 begin
-   cwms_ts.validate_ts_id(p_dest_ref_ts_id);
+   if p_dest_ref_ts_id is not null then
+      cwms_ts.validate_ts_id(p_dest_ref_ts_id);
+   end if;
    l_copy_parser := cwms_util.return_true_or_false(p_copy_parser);
 
    l_ts_profile := retrieve_ts_profile_f(
