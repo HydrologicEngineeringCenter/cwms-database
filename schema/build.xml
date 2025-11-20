@@ -1076,6 +1076,8 @@
       <echo message="Creating baseline docker image"/>
       <exec dir="${root}/.." executable="docker"  failonerror="true">
          <arg value="build"/>
+         <arg value="--build-arg" if:set="isdeployed"/>
+         <arg value="branch=${teamcity.branch}" if:set="isdeployed"/>
          <arg value="--tag"/>
          <arg value="${docker.props.image_name}"/>
          <arg value="."/>

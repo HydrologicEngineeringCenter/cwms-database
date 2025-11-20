@@ -24,7 +24,9 @@ RUN unzip instantclient-basiclite-linux.x64-19.6.0.0.0dbru.zip && \
 RUN mkdir /after.install.d
 
 COPY . /cwmsdb
-
+WORKDIR /cwmsdb
+ARG branch
+RUN if [ "${branch}" != "" ]; then sed -i "s/99.99.99-SNAPSHOT/${branch}/" pom.xml; fi
 WORKDIR /cwmsdb/schema
 
 ENV PATH=$PATH:/opt/oracle/instantclient_19_6

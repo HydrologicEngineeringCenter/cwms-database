@@ -65,17 +65,11 @@ jobs:
         run: echo "VERSION=${{inputs.branch}}" >> $GITHUB_ENV
       - name: show version
         run: echo ${VERSION}
-      - name: Update pom.xml
-        run: |
-          if [[ "${{inputs.branch}}" =~ ^[0-9][0-9]\.[0-9][0-9]\.[0-9](-RC[0-9][0-9]+)? ]]; then
-            with_dash=`sed 's/\./-/g' <<< "${{inputs.branch}}"`
-            sed -i "s/99-99-99-SNAPSHOT/${with_dash}/" pom.xml
-          fi
       - name: Start Database
         uses: ./.github/actions/start-database
       - name: Generate Bundle (docs and schemas)
         working-directory: schema
-        run: ant bundle -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
+        run: ant bundle -Dteamcity.branch=${VERSION} -Drevision=${VERSION} -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2.1.0
@@ -110,7 +104,7 @@ jobs:
         run: |
           #HEC_PUB_REGISTRY="${{secrets.registry != null && secrets.registry ||secrets.HEC_PUB_REGISTRY}}"
           REPO=`echo "${{github.repository}}" | tr  '[:upper:]' '[:lower:]'`
-          ant docker.push -Dteamcity.branch=$VERSION \
+          ant docker.push -Dteamcity.branch=$VERSION -Drevision=${VERSION} \
              -Ddocker.registry=ghcr.io/$REPO \
              -Ddocker.registry_public=$HEC_PUB_REGISTRY
       - name: Publish package
@@ -127,7 +121,7 @@ jobs:
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
       - name: Publish package
-        run: mvn --batch-mode deploy -Dbuilduser.overrides=schema/build/overrides.external.xml -Phec
+        run: mvn --batch-mode deploy -Dbuilduser.overrides=schema/build/overrides.external.xml -Phec -Drevision=${VERSION}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_USERNAME: ${{ secrets.registry_user != null && secrets.registry_user || secrets.ALT_REG_USER }}
