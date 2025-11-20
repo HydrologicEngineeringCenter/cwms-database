@@ -108,7 +108,7 @@ jobs:
              -Ddocker.registry=ghcr.io/$REPO \
              -Ddocker.registry_public=$HEC_PUB_REGISTRY
       - name: Publish package
-        run: mvn --batch-mode deploy -Dbuilduser.overrides=schema/build/overrides.external.xml -Pgithub
+        run: mvn --batch-mode deploy -Dbuilduser.overrides=schema/build/overrides.external.xml -Pgithub -Drevision=${VERSION}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: setup java for hec push
