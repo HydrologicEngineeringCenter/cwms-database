@@ -208,3 +208,29 @@ Mike Perryman
 
 Some documentation is currently hosted on an internal wiki, we will move it to the github wiki on a time permitting basis. Please
 ask questions on the discussion if you have them. We will use such questions to prioritize moving documentation.
+
+
+# Release procedure
+
+## In repo
+1. Create release branch (ex. release/25.12.01)
+2. Verify that schema/src/updateScripts ends with a folder name the same as the target version and the contents are correct.
+3. Create appropriate update scripts - if will looking at https://github.com/usace/cwms-data-api and it's .github folder for update scripts for 
+cwbi-dev environment and create or modify for use there.
+
+## On github
+
+1. Create a new release with Tag `<version>-RCxx` (e.g `25.12.01-RC01)
+2. Create notes as appropriate
+3. wait for artifacts to be created an publish
+
+Use artifacts as appropriate. If known, create PRs to appropriate projects to update version for test.
+
+## Testing
+
+1. Begin appropriate in-situ testing at test sites.
+2. return to In repo:3 and begin process end.
+
+## Final
+
+1. Tag final release as just `<version>`

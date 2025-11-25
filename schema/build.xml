@@ -1032,10 +1032,10 @@
       <condition property="isdeployed" value="true" else="false">
          <and>
             <isset property="teamcity.branch"/>
-            <matches string="${teamcity.branch}" pattern="^(master|main|release/*)" casesensitive="false"/>
+            <matches string="${teamcity.branch}" pattern="^(main|\d\d\.\d\d\.\d\d(-RC\d\d+)?)$" casesensitive="false"/>
          </and>
       </condition>
-
+      <echo message="Images for ${teamcity.branch} will be deployed: ${isdeployed}"/>
       <if>
          <and>
             <isset property="teamcity.branch"/>
@@ -1076,6 +1076,8 @@
       <echo message="Creating baseline docker image"/>
       <exec dir="${root}/.." executable="docker"  failonerror="true">
          <arg value="build"/>
+         <arg value="--build-arg" if:set="isdeployed"/>
+         <arg value="branch=${teamcity.branch}" if:set="isdeployed"/>
          <arg value="--tag"/>
          <arg value="${docker.props.image_name}"/>
          <arg value="."/>
