@@ -131,6 +131,9 @@ procedure test_issue_65_delete_ts_doesnt_delete_from_at_a2w_ts_codes_by_loc;
 --%test (CWDB-258 Input validity errors should be reported to the user, not just AT_LOG_MESSAGE)
 procedure test_cwdb_258_report_input_validity_errors_to_user;
 
+--%test (GitHub issue 76 RetrieveTS is inconsistent across folded DST transition)
+procedure test_issue_76_inconsistent_retrieve_ts_across_folded_dst_boundary;
+
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
@@ -4404,6 +4407,77 @@ AS
          end;
       end loop;
    end test_cwdb_258_report_input_validity_errors_to_user;
+
+   ---------------------------------------------------------------------------------
+   -- procedure test_issue_76_inconsistent_retrieve_ts_across_folded_dst_boundary --
+   ---------------------------------------------------------------------------------
+   procedure test_issue_76_inconsistent_retrieve_ts_across_folded_dst_boundary
+   is
+      l_ts_id av_loc.location_id%type := test_base_location_id||'.Code.Inst.1Hour.0.Test';
+      l_zts_data cwms_t_ztsv_array := cwms_t_ztsv_array (
+         cwms_t_ztsv (date '2025-11-02' + 1 / 24 , 0, 0),
+         cwms_t_ztsv (date '2025-11-02' + 2 / 24 , 0, 0),
+         cwms_t_ztsv (date '2025-11-02' + 3 / 24 , 0, 0),
+         cwms_t_ztsv (date '2025-11-02' + 4 / 24 , 0, 0),
+         cwms_t_ztsv (date '2025-11-02' + 5 / 24 , 0, 0),
+         cwms_t_ztsv (date '2025-11-02' + 6 / 24 , 0, 0),
+         cwms_t_ztsv (date '2025-11-02' + 7 / 24 , 0, 0),
+         cwms_t_ztsv (date '2025-11-02' + 8 / 24 , 0, 0),
+         cwms_t_ztsv (date '2025-11-02' + 9 / 24 , 0, 0));
+      l_crsr sys_refcursor;
+      l_times date_table_type;
+      l_values double_tab_t;
+      l_qualities number_tab_t;
+   begin
+      teardown;
+
+      cwms_loc.store_location (
+         p_location_id    => test_base_location_id,
+         p_active         => 'T',
+         p_db_office_id   => '&&office_id');
+
+      for i in 1..2 loop
+         dbms_output.put_line('i = '||i);
+         l_zts_data(7).quality_code := case i when 1 then 5 else 0 end; -- 0700 UTC flag
+         cwms_ts.zstore_ts (
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => 'n/a',
+            p_timeseries_data => l_zts_data,
+            p_store_rule      => cwms_util.replace_all,
+            p_office_id       => '&&office_id');
+
+         cwms_ts.retrieve_ts (	
+            p_at_tsv_rc  => l_crsr,
+            p_cwms_ts_id => l_ts_id,
+            p_units      => 'n/a',
+            p_start_time => cwms_util.change_timezone(l_zts_data(1).date_time, 'UTC', 'US/Central'),
+            p_end_time   => cwms_util.change_timezone(l_zts_data(9).date_time, 'UTC', 'US/Central'),
+            p_time_zone	 => 'US/Central',
+            p_office_id	 => '&&office_id');
+
+         fetch l_crsr
+          bulk collect
+          into l_times,
+               l_values,
+               l_qualities;
+         close l_crsr;
+
+         for j in 1..l_times.count loop
+            dbms_output.put_line(
+               chr(9)||j
+               ||chr(9)||to_char(l_times(j), 'yyyy-mm-dd hh24:mi')
+               ||chr(9)||to_char(round(l_values(j),9))
+               ||chr(9)||l_qualities(j));
+         end loop;
+
+         ut.expect(l_times.count).to_equal(9);
+         if l_times.count = 9 then
+            for j in 1..9 loop
+               ut.expect(l_values(j)).to_equal(0);
+            end loop;
+         end if;
+      end loop;
+   end test_issue_76_inconsistent_retrieve_ts_across_folded_dst_boundary;
 
 END test_cwms_ts;
 /

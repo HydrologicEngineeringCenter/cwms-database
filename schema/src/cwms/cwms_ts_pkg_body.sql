@@ -3492,43 +3492,65 @@ AS
                    order by 1;
             end if;
          else
-            --------------------------------------------------------------------------------------------------
-            -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
-            --------------------------------------------------------------------------------------------------
-            if l_retrieve_data_entry then
-               open l_crsr for
-                  select distinct
-                     nvl(q1.date_time, q2.date_time) as date_time,
-                     value,
-                     nvl(quality_code, 0) as quality_code,
-                     data_entry_date
-                  from (select date_time,
-                               value,
-                               quality_code,
-                               data_entry_date
+            if l_reg_ts_times.count = 0 then
+               if l_retrieve_data_entry then
+                  open l_crsr for
+                     select date_time,
+                              value,
+                              quality_code,
+                              data_entry_date
                         from table(l_ts_retrieved)
-                       ) q1
-                          full outer join
-                       (select column_value as date_time
-                        from table(l_reg_ts_times)
-                       ) q2 on q2.date_time = q1.date_time
-                  order by 1;
+                        where date_time is not null;
+               else
+                  open l_crsr for
+                     select date_time,
+                           value,
+                           quality_code
+                     from table(l_ts_retrieved)
+                     where date_time is not null;
+               end if;
             else
-               open l_crsr for
-                  select distinct
-                         nvl(q1.date_time, q2.date_time) as date_time,
-                         value,
-                         nvl(quality_code, 0) as quality_code
-                    from (select date_time,
+               ----------------------------------------------------------------------------------
+               -- Use programmatic approach because                                            --
+               -- 1. Select without Distinct (as above) puts too many folded (duplicate) times --
+               --    in the results when crossing the Fall DST boundary with a DST time zone.  --
+               -- 2. Select Distinct eliminates folded (duplicate) times unless the values     --
+               --    or quality are different                                                  --
+               ----------------------------------------------------------------------------------
+               declare
+                  l_results ztsv_entry_array := ztsv_entry_array();
+                  i binary_integer := 1;
+                  j binary_integer := 1;
+                  k binary_integer := 1;
+               begin
+                  l_results.extend(l_ts_retrieved.count + l_reg_ts_times.count);
+                  while i <= l_reg_ts_times.count loop
+                     if j > l_ts_retrieved.count or l_reg_ts_times(i) < l_ts_retrieved(j).date_time then
+                        l_results(k) := ztsv_entry_type(l_reg_ts_times(i), null, 0, null);
+                     else
+                        l_results(k) := l_ts_retrieved(j);
+                        j := j + 1;
+                     end if;
+                     i := i + 1;
+                     k := k + 1;
+                  end loop;
+                  if l_retrieve_data_entry then
+                     open l_crsr for
+                        select date_time,
                                  value,
-                                 quality_code
-                            from table(l_ts_retrieved)
-                         ) q1
-                         full outer join
-                         (select column_value as date_time
-                            from table(l_reg_ts_times)
-                         ) q2 on q2.date_time = q1.date_time
-                   order by 1;
+                                 quality_code,
+                                 data_entry_date
+                           from table(l_results)
+                           where date_time is not null;
+                  else
+                     open l_crsr for
+                        select date_time,
+                              value,
+                              quality_code
+                        from table(l_results)
+                        where date_time is not null;
+                  end if;
+               end;
             end if;
          end if;
       when 'TIMESTAMP' then
@@ -3570,43 +3592,65 @@ AS
                    order by 1;
             end if;
          else
-            --------------------------------------------------------------------------------------------------
-            -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
-            --------------------------------------------------------------------------------------------------
-            if l_retrieve_data_entry then
-               open l_crsr for
-                  select distinct -- distinct is to remove duplicate times/values when crossing Fall DST boundary
-                         cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
-                         value,
-                         nvl(quality_code, 0) as quality_code,
-                         data_entry_date
-                  from (select date_time,
-                               value,
-                               quality_code,
-                               data_entry_date
+            if l_reg_ts_times.count = 0 then
+               if l_retrieve_data_entry then
+                  open l_crsr for
+                     select date_time,
+                              value,
+                              quality_code,
+                              data_entry_date
                         from table(l_ts_retrieved)
-                       ) q1
-                          full outer join
-                       (select column_value as date_time
-                        from table(l_reg_ts_times)
-                       ) q2 on q2.date_time = q1.date_time
-                  order by 1;
+                        where date_time is not null;
+               else
+                  open l_crsr for
+                     select date_time,
+                           value,
+                           quality_code
+                     from table(l_ts_retrieved)
+                     where date_time is not null;
+               end if;
             else
-               open l_crsr for
-                  select distinct -- distinct is to remove duplicate times/values when crossing Fall DST boundary
-                         cast(nvl(q1.date_time, q2.date_time) as timestamp) as date_time,
-                         value,
-                         nvl(quality_code, 0) as quality_code
-                    from (select date_time,
+               ----------------------------------------------------------------------------------
+               -- Use programmatic approach because                                            --
+               -- 1. Select without Distinct (as above) puts too many folded (duplicate) times --
+               --    in the results when crossing the Fall DST boundary with a DST time zone.  --
+               -- 2. Select Distinct eliminates folded (duplicate) times unless the values     --
+               --    or quality are different                                                  --
+               ----------------------------------------------------------------------------------
+               declare
+                  l_results ztsv_entry_array := ztsv_entry_array();
+                  i binary_integer := 1;
+                  j binary_integer := 1;
+                  k binary_integer := 1;
+               begin
+                  l_results.extend(l_ts_retrieved.count + l_reg_ts_times.count);
+                  while i <= l_reg_ts_times.count loop
+                     if j > l_ts_retrieved.count or l_reg_ts_times(i) < l_ts_retrieved(j).date_time then
+                        l_results(k) := ztsv_entry_type(l_reg_ts_times(i), null, 0, null);
+                     else
+                        l_results(k) := l_ts_retrieved(j);
+                        j := j + 1;
+                     end if;
+                     i := i + 1;
+                     k := k + 1;
+                  end loop;
+                  if l_retrieve_data_entry then
+                     open l_crsr for
+                        select cast(date_time as timestamp),
                                  value,
-                                 quality_code
-                            from table(l_ts_retrieved)
-                         ) q1
-                         full outer join
-                         (select column_value as date_time
-                            from table(l_reg_ts_times)
-                         ) q2 on q2.date_time = q1.date_time
-                   order by 1;
+                                 quality_code,
+                                 data_entry_date
+                           from table(l_results)
+                           where date_time is not null;
+                  else
+                     open l_crsr for
+                        select cast(date_time as timestamp),
+                              value,
+                              quality_code
+                        from table(l_results)
+                        where date_time is not null;
+                  end if;
+               end;
             end if;
          end if;
       when 'TIMESTAMP WITH TIME ZONE' then
@@ -3648,46 +3692,65 @@ AS
                    order by 1;
             end if;
          else
-            if l_retrieve_data_entry then
-               open l_crsr for
-               --------------------------------------------------------------------------------------------------
-               -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
-               --------------------------------------------------------------------------------------------------
-                  select distinct
-                     from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
-                     value,
-                     nvl(quality_code, 0) as quality_code,
-                     data_entry_date
-                  from (select date_time,
-                               value,
-                               quality_code,
-                               data_entry_date
+            if l_reg_ts_times.count = 0 then
+               if l_retrieve_data_entry then
+                  open l_crsr for
+                     select from_tz(cast(date_time as timestamp), l_date_range.time_zone),
+                              value,
+                              quality_code,
+                              data_entry_date
                         from table(l_ts_retrieved)
-                       ) q1
-                          full outer join
-                       (select column_value as date_time
-                        from table(l_reg_ts_times)
-                       ) q2 on q2.date_time = q1.date_time
-                  order by 1;
+                        where date_time is not null;
+               else
+                  open l_crsr for
+                     select from_tz(cast(date_time as timestamp), l_date_range.time_zone),
+                           value,
+                           quality_code
+                     from table(l_ts_retrieved)
+                     where date_time is not null;
+               end if;
             else
-               open l_crsr for
-               --------------------------------------------------------------------------------------------------
-               -- use DISTINCT select to eliminate duplate times when crossing from summer time to winter time --
-               --------------------------------------------------------------------------------------------------
-                  select distinct
-                         from_tz(cast(nvl(q1.date_time, q2.date_time) as timestamp), l_date_range.time_zone),
-                         value,
-                         nvl(quality_code, 0) as quality_code
-                    from (select date_time,
+               ----------------------------------------------------------------------------------
+               -- Use programmatic approach because                                            --
+               -- 1. Select without Distinct (as above) puts too many folded (duplicate) times --
+               --    in the results when crossing the Fall DST boundary with a DST time zone.  --
+               -- 2. Select Distinct eliminates folded (duplicate) times unless the values     --
+               --    or quality are different                                                  --
+               ----------------------------------------------------------------------------------
+               declare
+                  l_results ztsv_entry_array := ztsv_entry_array();
+                  i binary_integer := 1;
+                  j binary_integer := 1;
+                  k binary_integer := 1;
+               begin
+                  l_results.extend(l_ts_retrieved.count + l_reg_ts_times.count);
+                  while i <= l_reg_ts_times.count loop
+                     if j > l_ts_retrieved.count or l_reg_ts_times(i) < l_ts_retrieved(j).date_time then
+                        l_results(k) := ztsv_entry_type(l_reg_ts_times(i), null, 0, null);
+                     else
+                        l_results(k) := l_ts_retrieved(j);
+                        j := j + 1;
+                     end if;
+                     i := i + 1;
+                     k := k + 1;
+                  end loop;
+                  if l_retrieve_data_entry then
+                     open l_crsr for
+                        select from_tz(cast(date_time as timestamp), l_date_range.time_zone),
                                  value,
-                                 quality_code
-                            from table(l_ts_retrieved)
-                         ) q1
-                         full outer join
-                         (select column_value as date_time
-                            from table(l_reg_ts_times)
-                         ) q2 on q2.date_time = q1.date_time
-                   order by 1;
+                                 quality_code,
+                                 data_entry_date
+                           from table(l_results)
+                           where date_time is not null;
+                  else
+                     open l_crsr for
+                        select from_tz(cast(date_time as timestamp), l_date_range.time_zone),
+                              value,
+                              quality_code
+                        from table(l_results)
+                        where date_time is not null;
+                  end if;
+               end;
             end if;
             ---------------------------------------------------------------------------------------------
             -- With TIMESTAMP WITH TIME ZONE, although the DISTINCT select eliminates duplicate times  --

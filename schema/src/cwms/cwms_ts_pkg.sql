@@ -1296,6 +1296,7 @@ AS
     * @param p_start_time      The start time of the time window
     * @param p_end_time        The end time of the time window
     * @param p_time_zone       The time zone for the time window and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified.
+    *                          If NULL or not specified, the location time zone is used.
     * @param p_date_time_type  The data type to retrieve for date_time values in the cursor. Valid values are 'DATE', 'TIMESTAMP', and 'TIMESTAMP WITH TIME ZONE'. If not specified, 'DATE' is used
     * @param p_units           The unit to retrieve the data values in. If unspecified or NULL, default unit for the specified unit system is used. The unit used will be determined in this order:
     *                          <ol>
@@ -1546,6 +1547,7 @@ AS
     * @param p_start_time      The start time of the time window
     * @param p_end_time        The end time of the time window
     * @param p_time_zone       The time zone for the time window and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings) time zone can be specified.
+    *                          If NULL or not specified, the location time zone is used.
     * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
     * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window begins on ('T') or after ('F') the start time
     * @param p_end_inclusive   A flag ('T' or 'F') that specifies whether the time window ends on ('T') or before ('F') the end time
