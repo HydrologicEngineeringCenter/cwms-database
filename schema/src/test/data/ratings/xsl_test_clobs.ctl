@@ -16,3 +16,4 @@ begindata
 -1,53,/XSLT_TEST/RATING_4,USGS stream rating,xsl_test_4-usgs_rating.xml
 -1,53,/XSLT_TEST/RATING_5,Virtual rating,xsl_test_5-virtual_rating.xml
 -1,53,/XSLT_TEST/RATING_6,Transitional rating,xsl_test_6-transitional_rating.xml
+-1,53,/TEST_CWMS_RATING/TRANSITIONAL_RATING,Transitional rating,transitional_rating.xml
