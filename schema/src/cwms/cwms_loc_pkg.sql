@@ -37,19 +37,45 @@ AS
     */
    v_package_log_prop_text varchar2(30);
    function package_log_property_text return varchar2;
-   /*
-    * undocumented function store_local_datum_name
+   /**
+    * Normalizes and stores the local vertical datum for a location.
+    * <ul>
+    * <li>If P_Vertical_Datum_Id is some recognized form of 'NGVD29' or 'NAVD88' then stores the normalized form in AT_PHYSICAL_LOCATION.</li>
+    * <li>Otherwise
+    *   <ul>
+    *     <li>Stores 'LOCAL' in AT_PHYSICAL_LOCATION</li>
+    *     <li>Stores P_Vertical_Datum_Id in AT_VERT_DATUM_LOCAL if not 'LOCAL' or 'OTHER'</li>
+    *   </ul></li>
+    * </ul>
     *
-    * If p_vertical_datum_id is not a standard vertical datum id, then store the
-    * value as the local datum name for the location and return 'LOCAL'.
-    *
-    * Otherwise return p_vertical_datum_id unchanged.
+    * @param p_location_code The unique numeric identifier associated with the location in the database
+    * @param p_vertical_datum_id The vertical datum identifier
+    * @return The value stored in AT_PHYSICAL_LOCATION: 'NGVD29', 'NAVD88', or 'LOCAL'
    */
    function store_local_datum_name(
       p_location_code     in integer,
       p_vertical_datum_id in varchar2)
       return varchar2 deterministic;
-
+   /**
+    * Normalizes recognized forms of 'NGVD29' and 'NAVD88' (accepts any case and space or hyphen before digits) and converts 'OTHER' to 'LOCAL'.
+    * If P_Vertical_Datum_Id is not recognized as one of these forms its value is returned unaltered.
+    *
+    * @param p_vertical_datum_id The vertical datum id to normalize.
+    * @return 'NGVD29', 'NAVD88', 'LOCAL', or p_vertical_datum_id
+    */
+   function normalize_vertical_datum_in(
+      p_vertical_datum_id in varchar2)
+      return varchar2 deterministic;
+   /**
+    * Normalizes recognized forms of 'NGVD-29' and 'NAVD-88' (accepts any case and space or lack of hyphen before digits) and converts 'LOCAL' to 'OTHER'.
+    * If P_Vertical_Datum_Id is not recognized as one of these forms its value is returned unaltered.
+    *
+    * @param p_vertical_datum_id The vertical datum id to normalize.
+    * @return 'NGVD29', 'NAVD88', 'LOCAL', or p_vertical_datum_id
+    */
+   function normalize_vertical_datum_out(
+      p_vertical_datum_id in varchar2)
+      return varchar2 deterministic;
    /**
     * Clears all session-level caches associated with this package
     */
@@ -2097,7 +2123,7 @@ AS
       p_office_id   in varchar2 default null)
       return varchar2;
    /**
-    * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
+    * Retrieves a XML string containing the elevation, native datum, and current elevation offsets to other datums for the specified location
     *
     * @since CWMS 2.2
     *
@@ -2110,7 +2136,7 @@ AS
       p_location_code   in  number,
       p_unit            in  varchar2);
    /**
-    * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location or locations.
+    * Retrieves a XML string containing the elevation, native datum, and current elevation offsets to other datums for the specified location or locations.
     * The in and out parmeters are limited to 4000 characters since they are of type varchar2.
     *
     * @since CWMS 2.2
@@ -2171,7 +2197,7 @@ AS
       p_unit            in  varchar2,
       p_office_id       in  varchar2 default null);
    /**
-    * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location or locations
+    * Retrieves a XML string containing the elevation, native datum, and current elevation offsets to other datums for the specified location or locations
     * The in and out parmeters (except p_unit) are not limited in length.
     *
     * @param p_vert_datum_info The XML-encoded vertical datum information string. If p_location_id is a recordset the XML root element will be
@@ -2230,7 +2256,7 @@ AS
       p_unit            in  varchar2,
       p_office_id       in  clob default null);
    /**
-    * Returns a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
+    * Returns a XML string containing the elevation, native datum, and current elevation offsets to other datums for the specified location
     *
     * @since CWMS 2.2
     *
@@ -2244,7 +2270,7 @@ AS
       p_unit          in varchar2)
       return varchar2;
    /**
-    * Returns a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
+    * Returns a XML string containing the elevation, native datum, and current elevation offsets to other datums for the specified location
     *
     * @since CWMS 2.2
     *
@@ -2304,6 +2330,177 @@ AS
       p_unit        in varchar2,
       p_office_id   in varchar2 default null)
       return varchar2;
+   /**
+    * Returns a XML string containing the elevation, native datum, and series of elevation offsets to other datums for the specified location.
+    *
+    * @param p_location_code   The unique numeric code that identifies the location in the database
+    * @param p_unit            The unit to return the elevation and elevation offsets in
+    *
+    * @return The XML-encoded vertical datum information string in the following format:
+    * <pre><big>
+    * &lt;vertical-datum-info-series office="SWT" unit="ft"&gt;
+    *   &lt;location&gt;TestLoc1&lt;/location&gt;
+    *   &lt;native-datum&gt;OTHER&lt;/native-datum&gt;
+    *   &lt;elevation&gt;500&lt;/elevation&gt;
+    *   &lt;local-datum-name&gt;TestDatum&lt;/local-datum-name&gt;
+    *   &lt;offset time="2000-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.1&lt;/value&gt;
+    *     &lt;description&gt;1st Offset&lt;/description&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2000-01-01T00:00:00Z" estimate="true"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.15&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2010-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.3&lt;/value&gt;
+    *     &lt;description&gt;2nd Offset&lt;/description&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2010-01-01T00:00:00Z" estimate="true"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.35&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2012-05-11T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.785&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2020-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.5&lt;/value&gt;
+    *     &lt;description&gt;3rd Offset&lt;/description&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2020-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.985&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    * &lt;/vertical-datum-info-series&gt;
+    * </big></pre>
+    */
+   function get_vertical_datum_info_series_f(
+      p_location_code in number,
+      p_unit          in varchar2)
+      return clob;
+   /**
+    * Returns a XML string containing the elevation, native datum, and series of elevation offsets to other datums for the specified location.
+    *
+    * @param p_location_id     The text name the location
+    * @param p_unit            The unit to return the elevation and elevation offsets in
+    * @param p_office_id       The office that owns the location. If not specified or NULL, the session user's default office is used.
+    *
+    * @return The XML-encoded vertical datum information string in the following format:
+    * <pre><big>
+    * &lt;vertical-datum-info-series office="SWT" unit="ft"&gt;
+    *   &lt;location&gt;TestLoc1&lt;/location&gt;
+    *   &lt;native-datum&gt;OTHER&lt;/native-datum&gt;
+    *   &lt;elevation&gt;500&lt;/elevation&gt;
+    *   &lt;local-datum-name&gt;TestDatum&lt;/local-datum-name&gt;
+    *   &lt;offset time="2000-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.1&lt;/value&gt;
+    *     &lt;description&gt;1st Offset&lt;/description&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2000-01-01T00:00:00Z" estimate="true"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.15&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2010-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.3&lt;/value&gt;
+    *     &lt;description&gt;2nd Offset&lt;/description&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2010-01-01T00:00:00Z" estimate="true"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.35&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2012-05-11T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.785&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2020-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.5&lt;/value&gt;
+    *     &lt;description&gt;3rd Offset&lt;/description&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2020-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.985&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    * &lt;/vertical-datum-info-series&gt;
+    * </big></pre>
+    */
+   function get_vertical_datum_info_series_f(
+      p_location_id in varchar2,
+      p_unit        in varchar2,
+      p_office_id   in varchar2)
+      return clob;
+   /**
+    * Sets the vertical datum info for a location, overwriting any existing vertical datum info with the following exceptions:
+    * <ul>
+    * <li>A missing (null) elevation in the XML will not overwrite an existing elevation in the database</li>
+    * <li>A missing (null) local datum name (if the native datum in 'LOCAL' or 'OTHER') will not overwrite an existing local datum name in the database</li>
+    * </ul>
+    * The vertical datum information is specified in the following format:
+    * <pre><big>
+    * &lt;vertical-datum-info-series office="SWT" unit="ft"&gt;
+    *   &lt;location&gt;TestLoc1&lt;/location&gt;
+    *   &lt;native-datum&gt;OTHER&lt;/native-datum&gt;
+    *   &lt;elevation&gt;500&lt;/elevation&gt;
+    *   &lt;local-datum-name&gt;TestDatum&lt;/local-datum-name&gt;
+    *   &lt;offset time="2000-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.1&lt;/value&gt;
+    *     &lt;description&gt;1st Offset&lt;/description&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2000-01-01T00:00:00Z" estimate="true"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.15&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2010-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.3&lt;/value&gt;
+    *     &lt;description&gt;2nd Offset&lt;/description&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2010-01-01T00:00:00Z" estimate="true"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.35&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2012-05-11T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.785&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2020-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.5&lt;/value&gt;
+    *     &lt;description&gt;3rd Offset&lt;/description&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset time="2020-01-01T00:00:00Z" estimate="false"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.985&lt;/value&gt;
+    *     &lt;description/&gt;
+    *   &lt;/offset&gt;
+    * &lt;/vertical-datum-info-series&gt;
+    * </big></pre>
+    * Note that specifying an XML instance with no <pre><big>&lt;offset&gt;</big></pre> elements will remove all vertical datum offsets for the location from the database.
+    *
+    * @param p_vert_datum_info The vertical datum information in the format above
+    * @param p_fail_if_exists A flag ('T'/'F') specifying whether to fail if existing vertical datum information would be overwritten.
+    */
+   procedure set_vertical_datum_info_series(
+      p_vert_datum_info in varchar2,
+      p_fail_if_exists  in varchar2);
+
    /**
     * Sets vertical datum info for one or more locations
     *

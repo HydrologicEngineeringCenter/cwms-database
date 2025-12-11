@@ -288,28 +288,47 @@ AS
    is
       l_vertical_datum_id at_vert_datum_local.local_datum_name%type;
    begin
-      if upper(regexp_replace(upper(p_vertical_datum_id), '(N[AG]VD)[ -]', '\1', 1, 0)) not in ('NAVD88', 'NGVD29') then
-         if p_vertical_datum_id not in ('LOCAL', 'OTHER') then
-            begin
-               select local_datum_name
-                 into l_vertical_datum_id
-                 from at_vert_datum_local
-                where location_code = p_location_code;
-
-               update at_vert_datum_local
-                  set local_datum_name = p_vertical_datum_id
-                where location_code = p_location_code;
-            exception
-               when no_data_found then
-                  insert into at_vert_datum_local values (p_location_code, p_vertical_datum_id);
-            end;
-         end if;
-         l_vertical_datum_id := 'LOCAL';
-      else
-         l_vertical_datum_id := p_vertical_datum_id;
+      l_vertical_datum_id := normalize_vertical_datum_in(p_vertical_datum_id);
+      if l_vertical_datum_id in ('NAVD88', 'NGVD29', 'LOCAL') then
+         return l_vertical_datum_id;
       end if;
-      return l_vertical_datum_id;
+      begin
+         select local_datum_name
+            into l_vertical_datum_id
+            from at_vert_datum_local
+            where location_code = p_location_code;
+
+         update at_vert_datum_local
+            set local_datum_name = p_vertical_datum_id
+            where location_code = p_location_code;
+      exception
+         when no_data_found then
+            if p_vertical_datum_id is not null then
+               insert into at_vert_datum_local values (p_location_code, p_vertical_datum_id);
+            end if;
+      end;
+      return p_vertical_datum_id;
    end;
+
+   function normalize_vertical_datum_in(
+      p_vertical_datum_id in varchar2)
+      return varchar2 deterministic
+   is
+      l_normalized varchar2(32767);
+   begin
+      l_normalized := replace(regexp_replace(upper(p_vertical_datum_id), '(N[AG]VD)[ -]?(29|88)', '\1\2', 1, 0), 'OTHER', 'LOCAL');
+      return case when l_normalized in ('NGVD29', 'NAVD88', 'LOCAL') then l_normalized else p_vertical_datum_id end;
+   end normalize_vertical_datum_in;
+
+   function normalize_vertical_datum_out(
+      p_vertical_datum_id in varchar2)
+      return varchar2 deterministic
+   is
+      l_normalized varchar2(32767);
+   begin
+      l_normalized := replace(regexp_replace(upper(p_vertical_datum_id), '(N[AG]VD)[ -]?(29|88)', '\1-\2', 1, 0), 'LOCAL', 'OTHER');
+      return case when l_normalized in ('NGVD-29', 'NAVD-88', 'OTHER') then l_normalized else p_vertical_datum_id end;
+   end normalize_vertical_datum_out;
    --------------------------------------------------------------------------------
    -- local procedure update_local_datum_name
    --
@@ -3262,7 +3281,7 @@ AS
       NULL;
    END copy_location;
 
-   
+
    --********************************************************************** -
 
    PROCEDURE store_location2 (
@@ -3579,18 +3598,18 @@ AS
          if l_vert_datum is not null then
             l_vert_datum_xml := xmltype(get_vertical_datum_info_f(p_location_code, l_elev_unit));
             case
-               when regexp_like(l_vert_datum, 'ngvd[ -]?(19)?29', 'i') then
-                  if cwms_util.get_xml_text(l_vert_datum_xml, '/vertical-datum-info/native-datum') != 'NGVD-29' then
-                     l_offset_xml := cwms_util.get_xml_node(l_vert_datum_xml, './vertical-datum-info/offset[to-datum=''NGVD-29'']');
+               when normalize_vertical_datum_out(l_vert_datum) = normalize_vertical_datum_out('NGVD29') then
+                  if cwms_util.get_xml_text(l_vert_datum_xml, '/vertical-datum-info/native-datum') != normalize_vertical_datum_out('NGVD29') then
+                     l_offset_xml := cwms_util.get_xml_node(l_vert_datum_xml, './vertical-datum-info/offset[to-datum='''||normalize_vertical_datum_out('NGVD-29')||''']');
                      p_location.elevation := p_location.elevation + cwms_util.get_xml_number(l_offset_xml, '/offset/value');
-                     p_location.vertical_datum := 'NGVD29';
+                     p_location.vertical_datum := normalize_vertical_datum_in('NGVD29');
                      l_estimate := cwms_util.get_xml_text(l_offset_xml, '/offset/@estimate');
                   end if;
-               when regexp_like(l_vert_datum, 'navd[ -]?(19)?88', 'i') then
-                  if cwms_util.get_xml_text(l_vert_datum_xml, '/vertical-datum-info/native-datum') != 'NAVD-88' then
-                     l_offset_xml := cwms_util.get_xml_node(l_vert_datum_xml, './vertical-datum-info/offset[to-datum=''NAVD-88'']');
+               when normalize_vertical_datum_out(l_vert_datum) = normalize_vertical_datum_out('NAVD88') then
+                  if cwms_util.get_xml_text(l_vert_datum_xml, '/vertical-datum-info/native-datum') != normalize_vertical_datum_out('NAVD88') then
+                     l_offset_xml := cwms_util.get_xml_node(l_vert_datum_xml, './vertical-datum-info/offset[to-datum='''||normalize_vertical_datum_out('NAVD-88')||''']');
                      p_location.elevation := p_location.elevation + cwms_util.get_xml_number(l_offset_xml, '/offset/value');
-                     p_location.vertical_datum := 'NAVD88';
+                     p_location.vertical_datum := normalize_vertical_datum_in('NAVD88');
                      l_estimate := cwms_util.get_xml_text(l_offset_xml, '/offset/@estimate');
                   end if;
                else
@@ -6530,8 +6549,8 @@ end unassign_loc_groups;
       ---------------------------
       -- normalize datum names --
       ---------------------------
-      l_vertical_datum_id_1 := replace(regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
-      l_vertical_datum_id_2 := replace(regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
+      l_vertical_datum_id_1 := normalize_vertical_datum_in(p_vertical_datum_id_1);
+      l_vertical_datum_id_2 := normalize_vertical_datum_in(p_vertical_datum_id_2);
       ------------------------
       -- handle local datum --
       ------------------------
@@ -6542,7 +6561,7 @@ end unassign_loc_groups;
           where exists(select location_code
                          from at_vert_datum_local
                         where location_code = l_location_code
-                          and upper(local_datum_name) = l_vertical_datum_id_1
+                          and upper(local_datum_name) = upper(l_vertical_datum_id_1)
                       );
       end if;
       if l_vertical_datum_id_2 not in('NGVD29', 'NAVD88', 'LOCAL') then
@@ -6552,7 +6571,7 @@ end unassign_loc_groups;
           where exists(select location_code
                          from at_vert_datum_local
                         where location_code = l_location_code
-                          and upper(local_datum_name) = l_vertical_datum_id_2
+                          and upper(local_datum_name) = upper(l_vertical_datum_id_2)
                       );
       end if;
       -----------------
@@ -6635,13 +6654,12 @@ end unassign_loc_groups;
       -------------------------
       -- normalize datum ids --
       -------------------------
-      l_vertical_datum_id_1 := regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0);
-      if l_vertical_datum_id_1 in ('NAVD88', 'NGVD29', 'OTHER', 'LOCAL') then
+      l_vertical_datum_id_1 := normalize_vertical_datum_in(p_vertical_datum_id_1);
+      if l_vertical_datum_id_1 in ('NAVD88', 'NGVD29', 'LOCAL') then
          -- standard datum id
          if length(p_vertical_datum_id_1) > l_max_id_length then
             cwms_err.raise('ERROR', 'Vertical datum IDs may be only '||l_max_id_length||' characters long.');
          end if;
-         l_vertical_datum_id_1 := replace(l_vertical_datum_id_1, 'OTHER', 'LOCAL');
       else
          -- datum id is local datum name
          if length(p_vertical_datum_id_1) > l_max_name_length then
@@ -6650,13 +6668,12 @@ end unassign_loc_groups;
          l_local_datum := p_vertical_datum_id_1;
          l_vertical_datum_id_1 := 'LOCAL';
       end if;
-      l_vertical_datum_id_2 := regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0);
-      if l_vertical_datum_id_2 in ('NAVD88', 'NGVD29', 'OTHER', 'LOCAL') then
+      l_vertical_datum_id_2 := normalize_vertical_datum_in(p_vertical_datum_id_2);
+      if l_vertical_datum_id_2 in ('NAVD88', 'NGVD29', 'LOCAL') then
          -- standard datum id
          if length(p_vertical_datum_id_2) > l_max_id_length then
             cwms_err.raise('ERROR', 'Vertical datum IDs may be only '||l_max_id_length||' characters long.');
          end if;
-         l_vertical_datum_id_2 := replace(l_vertical_datum_id_2, 'OTHER', 'LOCAL');
       else
          -- datum id is local datum name
          if l_local_datum is not null then
@@ -6982,8 +6999,8 @@ end unassign_loc_groups;
       ---------------------------
       -- normalize datum names --
       ---------------------------
-      l_vertical_datum_id_1 := replace(regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
-      l_vertical_datum_id_2 := replace(regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
+      l_vertical_datum_id_1 := normalize_vertical_datum_in(p_vertical_datum_id_1);
+      l_vertical_datum_id_2 := normalize_vertical_datum_in(p_vertical_datum_id_2);
       ------------------------
       -- handle local datum --
       ------------------------
@@ -6994,7 +7011,7 @@ end unassign_loc_groups;
           where exists(select location_code
                          from at_vert_datum_local
                         where location_code = l_location_code
-                          and upper(local_datum_name) = l_vertical_datum_id_1
+                          and upper(local_datum_name) = upper(l_vertical_datum_id_1)
                       );
       end if;
       if l_vertical_datum_id_2 not in('NGVD29', 'NAVD88', 'LOCAL') then
@@ -7004,7 +7021,7 @@ end unassign_loc_groups;
           where exists(select location_code
                          from at_vert_datum_local
                         where location_code = l_location_code
-                          and upper(local_datum_name) = l_vertical_datum_id_2
+                          and upper(local_datum_name) = upper(l_vertical_datum_id_2)
                       );
       end if;
       l_effective_date := nvl(p_effective_date_in, sysdate);
@@ -7076,8 +7093,8 @@ end unassign_loc_groups;
       ---------------------------
       -- normalize datum names --
       ---------------------------
-      l_vertical_datum_id_1 := replace(regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
-      l_vertical_datum_id_2 := replace(regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
+      l_vertical_datum_id_1 := normalize_vertical_datum_in(p_vertical_datum_id_1);
+      l_vertical_datum_id_2 := normalize_vertical_datum_in(p_vertical_datum_id_2);
       ------------------------
       -- handle local datum --
       ------------------------
@@ -7088,7 +7105,7 @@ end unassign_loc_groups;
           where exists(select location_code
                          from at_vert_datum_local
                         where location_code = p_location_code
-                          and upper(local_datum_name) = l_vertical_datum_id_1
+                          and upper(local_datum_name) = upper(l_vertical_datum_id_1)
                       );
       end if;
       if l_vertical_datum_id_2 not in('NGVD29', 'NAVD88', 'LOCAL') then
@@ -7098,7 +7115,7 @@ end unassign_loc_groups;
           where exists(select location_code
                          from at_vert_datum_local
                         where location_code = p_location_code
-                          and upper(local_datum_name) = l_vertical_datum_id_2
+                          and upper(local_datum_name) = upper(l_vertical_datum_id_2)
                       );
       end if;
       if l_vertical_datum_id_2 = l_vertical_datum_id_1 then
@@ -7870,25 +7887,24 @@ end unassign_loc_groups;
          ||dbms_xmlgen.convert(l_location_id)
          ||'</location>'
          ||chr(10);
+      l_native_datum := normalize_vertical_datum_in(l_native_datum);
+      if l_native_datum not in ('NGVD29', 'NAVD88', 'LOCAL') then
+         l_local_datum_name := l_native_datum;
+         l_native_datum := 'LOCAL';
+      else
+         l_local_datum_name := get_local_vert_datum_name_f(p_location_code);
+      end if;
       l_vert_datum_info := l_vert_datum_info
          ||'  <native-datum>'
-         ||nvl(replace(l_native_datum, 'LOCAL', 'OTHER'), 'UNKNOWN')
+         ||normalize_vertical_datum_out(l_native_datum)
          ||'</native-datum>'
          ||chr(10);
-      l_native_datum := regexp_replace(upper(l_native_datum), '(N[AG]VD)[ -]', '\1', 1, 0);
-      if l_native_datum in ('OTHER', 'LOCAL') then
-         l_local_datum_name := get_local_vert_datum_name_f(p_location_code);
-         if l_local_datum_name is null then
-            l_vert_datum_info := l_vert_datum_info
-               ||'  <local-datum-name/>'
-               ||chr(10);
-         else
-            l_vert_datum_info := l_vert_datum_info
-               ||'  <local-datum-name>'
-               ||dbms_xmlgen.convert(l_local_datum_name)
-               ||'</local-datum-name>'
-               ||chr(10);
-         end if;
+      if l_local_datum_name is not null then
+         l_vert_datum_info := l_vert_datum_info
+            ||'  <local-datum-name>'
+            ||dbms_xmlgen.convert(l_local_datum_name)
+            ||'</local-datum-name>'
+            ||chr(10);
       end if;
       if l_elevation is not null then
          l_vert_datum_info := l_vert_datum_info
@@ -7898,8 +7914,7 @@ end unassign_loc_groups;
             ||chr(10);
       end if;
 
-      for rec in (select vertical_datum_id
-                    from cwms_vertical_datum
+      for rec in (select vertical_datum_id from cwms_vertical_datum
                    where vertical_datum_id != l_native_datum
                    order by vertical_datum_id
                  )
@@ -7910,7 +7925,7 @@ end unassign_loc_groups;
                l_effective_date,
                l_estimate,
                p_location_code,
-               replace(l_native_datum, 'OTHER', 'LOCAL'),
+               l_native_datum,
                rec.vertical_datum_id);
             if l_datum_offset is not null then
                l_vert_datum_info := l_vert_datum_info
@@ -7919,7 +7934,7 @@ end unassign_loc_groups;
                   ||'">'
                   ||chr(10)
                   ||'    <to-datum>'
-                  ||rec.vertical_datum_id
+                  ||normalize_vertical_datum_out(rec.vertical_datum_id)
                   ||'</to-datum>'
                   ||chr(10)
                   ||'    <value>'
@@ -7936,7 +7951,6 @@ end unassign_loc_groups;
       end loop;
       l_vert_datum_info := l_vert_datum_info
          ||'</vertical-datum-info>';
-      l_vert_datum_info := regexp_replace(l_vert_datum_info, '(N[AG]VD)(29|88)', '\1-\2');
       p_vert_datum_info := l_vert_datum_info;
    end get_vertical_datum_info;
 
@@ -8120,7 +8134,7 @@ end unassign_loc_groups;
       l_native_datum := upper(cwms_util.get_xml_text(l_node, '/vertical-datum-info/native-datum'));
       if l_native_datum is not null then
          l_native_datum := replace(l_native_datum, 'OTHER', 'LOCAL');
-         l_native_datum := regexp_replace(l_native_datum, '(N[AG]VD).+(29|88)', '\1\2');
+         l_native_datum := normalize_vertical_datum_in(l_native_datum);
          if l_fail_if_exists then
             -----------------------------------
             -- verify specified native datum --
@@ -8157,7 +8171,7 @@ end unassign_loc_groups;
             -- update native datum in database --
             -------------------------------------
             update at_physical_location
-               set vertical_datum = store_local_datum_name(p_location_code, regexp_replace(l_native_datum, '(N[AG]VD).+(29|88)', '\1\2'))
+               set vertical_datum = store_local_datum_name(p_location_code, normalize_vertical_datum_in(l_native_datum))
              where location_code = p_location_code;
             l_local_datum_name := cwms_util.get_xml_text(l_node, '/vertical-datum-info/local-datum-name');
             if l_local_datum_name is not null then
@@ -8243,6 +8257,221 @@ end unassign_loc_groups;
       return l_vert_datum_info;
    end get_vertical_datum_info_f;
 
+   function get_vertical_datum_info_series_f(
+      p_location_code in number,
+      p_unit          in varchar2)
+      return clob
+   is
+      type offset_rec_t is record(
+         datum1      at_vert_datum_offset.vertical_datum_id_1%type,
+         datum2      at_vert_datum_offset.vertical_datum_id_2%type,
+         offset      at_vert_datum_offset.offset%type,
+         description at_vert_datum_offset.description%type);
+      type offset_tab_t is table of offset_rec_t index by varchar2(32767);
+      l_xml            clob;
+      l_location_id    av_loc.location_id%type;
+      l_office_id      cwms_office.office_id%type;
+      l_elevation      at_physical_location.elevation%type;
+      l_unit           cwms_unit.unit_id%type;
+      l_native_datum   av_loc.vertical_datum%type;
+      l_local_datum    at_vert_datum_local.local_datum_name%type;
+      l_offsets        offset_tab_t;
+      l_offset_rec     offset_rec_t;
+      l_estimate       boolean;
+      l_cur_offset1    number;
+      l_cur_offset2    number;
+      l_offset_1_2     number;
+      l_estimate_1_2   boolean;
+      l_eff_datestr    varchar2(32767);
+      c_date_format    constant varchar2(32767) := 'yyyy-mm-dd"T"hh24:mi:ss"Z"';
+   begin
+      dbms_lob.createtemporary(l_xml, true);
+      ------------------------------
+      -- get the base information --
+      ------------------------------
+      select o.office_id,
+             bl.base_location_id||substr('.',1,length(pl.sub_location_id))||pl.sub_location_id,
+             pl.vertical_datum,
+             pl.elevation
+        into l_office_id,
+             l_location_id,
+             l_native_datum,
+             l_elevation
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where pl.location_code = p_location_code
+         and bl.base_location_code = pl.base_location_code
+         and o.office_code = bl.db_office_code;
+
+      l_unit := cwms_util.get_unit_id(p_unit);
+      l_xml  := '<vertical-datum-info-series office="'||l_office_id||'" unit="'||l_unit||'">'||chr(10);
+
+      if l_native_datum = 'LOCAL' then
+         begin
+            select local_datum_name
+            into l_local_datum
+            from at_vert_datum_local
+            where location_code = p_location_code;
+         exception
+            when no_data_found then null;
+         end;
+      end if;
+      ---------------------------------
+      -- output the base information --
+      ---------------------------------
+      l_xml := l_xml || '  <location>'||l_location_id||'</location>'||chr(10);
+      l_xml := l_xml || '  <native-datum>'||nvl(l_local_datum, normalize_vertical_datum_out(l_native_datum))||'</native-datum>'||chr(10);
+      if l_elevation is null then
+         l_xml := l_xml || '  <elevation/'||chr(10);
+      else
+         l_xml := l_xml || '  <elevation>'||round(cwms_util.convert_units(l_elevation, 'm', l_unit), 9)||'</elevation>'||chr(10);
+      end if;
+
+      --------------------------------
+      -- get the offset information --
+      --------------------------------
+      for rec in (select *
+                  from at_vert_datum_offset
+                  where location_code = p_location_code
+               )
+      loop
+         l_offsets(to_char(rec.effective_date, c_date_format)) := offset_rec_t(
+            rec.vertical_datum_id_1,
+            rec.vertical_datum_id_2,
+            rec.offset,
+            rec.description);
+      end loop;
+
+      l_eff_datestr := l_offsets.first;
+
+      loop
+         exit when l_eff_datestr is null;
+         l_offset_rec := l_offsets(l_eff_datestr);
+         ------------------------------------------------------------------------------------------------------------
+         -- for local datums, don't output based on NGVD29 <-> NAVD88 unless it affects a currently-defined offset --
+         ------------------------------------------------------------------------------------------------------------
+         if l_offset_rec.datum1 != l_native_datum and l_offset_rec.datum2 != l_native_datum then
+            if (l_offset_rec.datum1 = 'NGVD29' and l_cur_offset1 is null) or
+               (l_offset_rec.datum1 = 'NAVD88' and l_cur_offset2 is null)
+            then
+               if l_offset_rec.datum1 = 'NGVD29' then
+                  l_offset_1_2 := round(to_number(cwms_util.convert_units(l_offset_rec.offset, 'm', l_unit)), 9);
+                  l_estimate_1_2 := regexp_like(l_offset_rec.description, '^.*estimate.*$', 'i');
+               else
+                  l_offset_1_2 := round(to_number(cwms_util.convert_units(-l_offset_rec.offset, 'm', l_unit)), 9);
+                  l_estimate_1_2 := regexp_like(l_offset_rec.description, '^.*estimate.*$', 'i');
+               end if;
+               l_eff_datestr := l_offsets.next(l_eff_datestr);
+               continue;
+            end if;
+         end if;
+         ------------------------
+         -- output this offset --
+         ------------------------
+         l_estimate := regexp_like(l_offset_rec.description, '^.*estimate.*$', 'i');
+         l_xml := l_xml ||
+            '  <offset time="'||l_eff_datestr||'" estimate="'
+            ||case l_estimate when true then 'true' else 'false' end
+            ||'">'||chr(10);
+
+         case
+         when l_offset_rec.datum1 = l_native_datum then
+            -----------------------
+            -- from native datum --
+            -----------------------
+            l_xml := l_xml || '    <to-datum>'||normalize_vertical_datum_out(l_offset_rec.datum2)||'</to-datum>'||chr(10);
+            if l_offset_rec.datum2 = 'NGVD29' then
+               l_cur_offset1 := round(to_number(cwms_util.convert_units(l_offset_rec.offset, 'm', l_unit)), 9);
+               l_xml := l_xml || '    <value>'||l_cur_offset1||'</value>'||chr(10);
+            else
+               l_cur_offset2 := round(to_number(cwms_util.convert_units(l_offset_rec.offset, 'm', l_unit)), 9);
+               l_xml := l_xml || '    <value>'||l_cur_offset2||'</value>'||chr(10);
+            end if;
+         when l_offset_rec.datum2 = l_native_datum then
+            ---------------------
+            -- to native datum --
+            ---------------------
+            l_xml := l_xml || '    <to-datum>'||normalize_vertical_datum_out(l_offset_rec.datum1)||'</to-datum>'||chr(10);
+            if l_offset_rec.datum1 = 'NGVD29' then
+               l_cur_offset1 := round(to_number(cwms_util.convert_units(-l_offset_rec.offset, 'm', l_unit)), 9);
+               l_xml := l_xml || '    <value>'||l_cur_offset1||'</value>'||chr(10);
+            else
+               l_cur_offset2 := round(to_number(cwms_util.convert_units(-l_offset_rec.offset, 'm', l_unit)), 9);
+               l_xml := l_xml || '    <value>'||l_cur_offset2||'</value>'||chr(10);
+            end if;
+         else
+            ----------------------------------------------------------------------
+            -- NGVD29 <-> NAVD88 on LOCAL datum, but affects existing offset(s) --
+            ----------------------------------------------------------------------
+            l_xml := l_xml || '    <to-datum>'||normalize_vertical_datum_out(l_offset_rec.datum2)||'</to-datum>'||chr(10);
+            if l_offset_rec.datum2 = 'NGVD29' then
+               l_offset_1_2 := round(to_number(cwms_util.convert_units(-l_offset_rec.offset, 'm', l_unit)), 9);
+               l_estimate_1_2 := regexp_like(l_offset_rec.description, '^.*estimate.*$', 'i');
+               l_xml := l_xml || '    <value>'||(l_cur_offset2 - l_offset_1_2)||'</value>'||chr(10);
+               l_offset_rec.description := null;
+            else
+               l_offset_1_2 := round(to_number(cwms_util.convert_units(l_offset_rec.offset, 'm', l_unit)), 9);
+               l_estimate_1_2 := regexp_like(l_offset_rec.description, '^.*estimate.*$', 'i');
+               l_xml := l_xml || '    <value>'||(l_cur_offset1 + l_offset_1_2)||'</value>'||chr(10);
+               l_offset_rec.description := null;
+            end if;
+         end case;
+
+         if l_offset_rec.description is null then
+            l_xml := l_xml || '    <description/>'||chr(10);
+         else
+            l_xml := l_xml || '    <description>'||l_offset_rec.description||'</description>'||chr(10);
+         end if;
+         l_xml := l_xml || '  </offset>'||chr(10);
+         ------------------------------------------------------------------------
+         -- output the 2nd offset affected by NGVD29 <-> NAVD88, if applicable --
+         ------------------------------------------------------------------------
+         if l_offset_1_2 is not null then
+            for pass in 1..1 loop
+               if l_offset_rec.datum2 = 'NGVD29' then
+                  exit when l_cur_offset1 is null;
+                  l_xml := l_xml ||
+                     '  <offset time="'||l_eff_datestr||'" estimate="'
+                     ||case l_estimate or l_estimate_1_2 when true then 'true' else 'false' end
+                     ||'">'||chr(10)
+                     ||'    <to-datum>'||normalize_vertical_datum_out('NAVD88')||'</to-datum>'||chr(10);
+                  l_xml := l_xml || '    <value>'||(l_cur_offset1 + l_offset_1_2)||'</value>'||chr(10);
+                  l_xml := l_xml || '    <description/>'||chr(10);
+                  l_xml := l_xml || '  </offset>'||chr(10);
+               elsif l_offset_rec.datum2 = 'NAVD88' then
+                  exit when l_cur_offset2 is null;
+                  l_xml := l_xml ||
+                     '  <offset time="'||l_eff_datestr||'" estimate="'
+                     ||case l_estimate or l_estimate_1_2 when true then 'true' else 'false' end
+                     ||'">'||chr(10)
+                     ||'    <to-datum>'||normalize_vertical_datum_out('NGVD29')||'</to-datum>'||chr(10);
+                  l_xml := l_xml || '    <value>'||(l_cur_offset2 - l_offset_1_2)||'</value>'||chr(10);
+                  l_xml := l_xml || '    <description/>'||chr(10);
+                  l_xml := l_xml || '  </offset>'||chr(10);
+               end if;
+            end loop;
+         end if;
+
+         l_eff_datestr := l_offsets.next(l_eff_datestr);
+      end loop;
+
+      l_xml := l_xml || '</vertical-datum-info-series>';
+      return l_xml;
+   end get_vertical_datum_info_series_f;
+
+   function get_vertical_datum_info_series_f(
+      p_location_id in varchar2,
+      p_unit        in varchar2,
+      p_office_id   in varchar2)
+      return clob
+   is
+   begin
+      return get_vertical_datum_info_series_f(
+         get_location_code(p_office_id, p_location_id),
+         p_unit);
+   end get_vertical_datum_info_series_f;
+
    procedure set_vertical_datum_info(
       p_vert_datum_info in varchar2,
       p_fail_if_exists  in varchar2)
@@ -8313,6 +8542,173 @@ end unassign_loc_groups;
          p_vert_datum_info,
          p_fail_if_exists);
    end set_vertical_datum_info;
+
+   procedure set_vertical_datum_info_series(
+      p_vert_datum_info in varchar2,
+      p_fail_if_exists  in varchar2)
+   is
+      type offset_t is record(
+         date_time date,
+         datum at_vert_datum_offset.vertical_datum_id_1%type,
+         is_estimate varchar2(1),
+         offset_value number,
+         description at_vert_datum_offset.description%type);
+      type offset_tab_t is table of offset_t index by varchar2(32767);
+      l_xml  xmltype;
+      l_node xmltype;
+      l_location_code at_physical_location.location_code%type;
+      l_native_datum at_physical_location.vertical_datum%type;
+      l_elevation binary_double;
+      l_unit cwms_unit.unit_id%type;
+      l_local_datum_name at_vert_datum_local.local_datum_name%type;
+      l_offset offset_t;
+      l_offsets offset_tab_t;
+      l_offset_key varchar2(32767);
+
+      function get_location_code(p_node in xmltype) return varchar2
+      is
+         l_location_id varchar2(57);
+         l_office_id   varchar2(16);
+      begin
+         l_office_id := cwms_util.get_xml_text(p_node, '/vertical-datum-info-series/@office');
+         if l_office_id is null then
+               cwms_err.raise('ERROR', 'Office attribute is missing from <vertical-datum-info-series> element');
+         end if;
+         l_location_id := cwms_util.get_xml_text(p_node, '/vertical-datum-info-series/location');
+         if l_location_id is null then
+               cwms_err.raise('ERROR', '<vertical-datum-info-series> does not specify location in <location> element');
+         end if;
+         return cwms_loc.get_location_code(l_office_id, l_location_id);
+      end get_location_code;
+
+      function get_offset_info(p_node in xmltype) return offset_t
+      is
+         l_offset offset_t;
+      begin
+         l_offset.date_time := cast(cwms_util.to_timestamp(cwms_util.get_xml_text(p_node, '/offset/@time')) as date);
+         l_offset.datum := normalize_vertical_datum_in(cwms_util.get_xml_text(p_node, '/offset/to-datum'));
+         if l_offset.datum not in ('NGVD29', 'NAVD88', 'LOCAL') then
+            l_offset.datum := 'LOCAL';
+         end if;
+         l_offset.is_estimate := case lower(cwms_util.get_xml_text(p_node, '/offset/@estimate')) when 'true' then 'T' else 'F' end;
+         l_offset.offset_value := cwms_util.get_xml_number(p_node, '/offset/value');
+         l_offset.description := cwms_util.get_xml_text(p_node, '/offset/description');
+         return l_offset;
+      end get_offset_info;
+
+      function get_offset_key(p_offset in offset_t) return varchar2
+      is
+      begin
+         return to_char(p_offset.date_time, 'yyyy-mm-dd hh24:mi:ss')||' '||substr(p_offset.datum, 5);
+      end get_offset_key;
+   begin
+      ------------------------------------
+      -- get the base info from the XML --
+      ------------------------------------
+      l_xml := xmltype(p_vert_datum_info);
+      if l_xml.getrootelement != 'vertical-datum-info-series' then
+         cwms_err.raise(
+            'ERROR',
+            'Expected vertical-datum-info-series for vertical datum info series, got '
+            ||l_xml.getrootelement);
+      end if;
+      l_location_code := get_location_code(l_xml);
+      l_unit := cwms_util.get_xml_text(l_xml, '/vertical-datum-info-series/@unit');
+      l_native_datum := normalize_vertical_datum_in(cwms_util.get_xml_text(l_xml, '/vertical-datum-info-series/native-datum'));
+      if l_native_datum not in ('NGVD29', 'NAVD88', 'LOCAL') then
+         l_local_datum_name := l_native_datum;
+         l_native_datum := 'LOCAL';
+      end if;
+      l_elevation := cwms_util.get_xml_number(l_xml, '/vertical-datum-info-series/elevation');
+      l_elevation := cwms_util.convert_units(l_elevation, l_unit, 'm');
+      ------------------------------------------------------------------------------
+      -- raise exception on fail-if-exists and incoming XML would change existing --
+      ------------------------------------------------------------------------------
+      if cwms_util.return_true_or_false(p_fail_if_exists) then
+         declare
+            l_different integer := 0;
+         begin
+            if l_elevation is not null then
+               select count(*)
+                 into l_different
+                 from at_physical_location
+                where location_code = l_location_code
+                  and round(elevation, 4) != round(l_elevation, 4);
+            end if;
+            if l_different = 0 then
+               if l_local_datum_name is not null then
+                  select count(*)
+                    into l_different
+                    from at_vert_datum_local
+                   where location_code = l_location_code
+                     and local_datum_name != l_local_datum_name;
+               end if;
+            end if;
+            if l_different = 0 then
+               select count(*)
+                 into l_different
+                 from at_vert_datum_offset
+                where location_code = l_location_code;
+            end if;
+            if l_different != 0 then
+               cwms_err.raise(
+                  'ERROR',
+                  'Vertical datum info would be overwritten');
+            end if;
+         end;
+      end if;
+      -------------------------------------------
+      -- update the base info for the location --
+      -------------------------------------------
+      update at_physical_location
+         set vertical_datum = l_native_datum,
+             elevation = case
+                         when l_elevation is null then elevation
+                         else l_elevation
+                         end
+      where location_code = l_location_code;
+      if l_local_datum_name is not null then
+         set_local_vert_datum_name(l_location_code, l_local_datum_name, 'F');
+      end if;
+      -----------------------------------------------------------
+      -- collect the datum offsets by effective date and datum --
+      -----------------------------------------------------------
+      for i in 1..999999 loop
+         l_node := cwms_util.get_xml_node(l_xml, '/vertical-datum-info-series/offset['||i||']');
+         exit when l_node is null;
+         l_offset := get_offset_info(l_node);
+         l_offsets(get_offset_key(l_offset)) := l_offset;
+      end loop;
+      ---------------------------------------
+      -- apply the offsets in sorted order --
+      ---------------------------------------
+      delete from at_vert_datum_offset where location_code = l_location_code;
+      l_offset_key := l_offsets.first;
+      loop
+         exit when l_offset_key is null;
+         l_offset := l_offsets(l_offset_key);
+         insert
+           into at_vert_datum_offset
+                (
+                  location_code,
+                  vertical_datum_id_1,
+                  vertical_datum_id_2,
+                  effective_date,
+                  offset,
+                  description
+                )
+         values (
+                  l_location_code,
+                  l_native_datum,
+                  l_offset.datum,
+                  l_offset.date_time,
+                  cwms_util.convert_units(l_offset.offset_value, l_unit, 'm'),
+                  nvl(l_offset.description, case l_offset.is_estimate when 'T' then 'ESTIMATE' else null end)
+                );
+         l_offset_key := l_offsets.next(l_offset_key);
+      end loop;
+
+   end set_vertical_datum_info_series;
 
    procedure get_local_vert_datum_name (
       p_local_vert_datum_name out varchar2,
