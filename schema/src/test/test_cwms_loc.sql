@@ -2528,7 +2528,7 @@ AS
 </vertical-datum-info-series>';
 
       l_empty_xml clob :=
-'<vertical-datum-info-series office="SWT" unit="ft">
+'<vertical-datum-info-series office="&&office_id" unit="ft">
   <location>TestLoc1</location>
   <native-datum>OTHER</native-datum>
   <elevation>500</elevation>
