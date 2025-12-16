@@ -2915,7 +2915,7 @@ as
    function APEX_USER_CHECK
       return varchar2
    is
-      l_apex_check varchar2(400) := q'{v('''APP_USER''')}';
+      l_apex_check varchar2(400) := q'[select v('APP_USER') from dual]';
       l_user varchar2(400);
    begin
       if have_apex = 0 then
