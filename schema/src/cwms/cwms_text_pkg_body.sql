@@ -2593,10 +2593,6 @@ as
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
 
-      if p_text is null then
-         cwms_err.raise('NULL_ARGUMENT', 'P_TEXT');
-      end if;
-
       if p_times is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TIMES');
       end if;
