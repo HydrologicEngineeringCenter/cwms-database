@@ -91,6 +91,8 @@ procedure test_cwdb_153;
 procedure test_lrts_id_output_formatting;
 --%test(Test formatting LRTS IDs on input)
 procedure test_lrts_id_input_formatting;
+--%test(Test Issue #79 - Recent LRTS change breaks saving screening entries)
+procedure test_issue_79;
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
 c_office_id     constant varchar2(3)  := '&&office_id';
@@ -9839,6 +9841,86 @@ begin
    cwms_loc.delete_location(l_location_id, cwms_util.delete_all, c_office_id);
 
 end test_lrts_id_input_formatting;
+
+--------------------------------------------------------------------------------
+-- procedure test_issue_79
+--------------------------------------------------------------------------------
+procedure test_issue_79
+is
+   l_location_id av_loc.location_id%type := 'TESTSITE1';                                              -- from issue 79
+   l_input_tsid  at_cwms_ts_id.cwms_ts_id%type := 'TESTSITE1.Stage.Inst.1Hour.0.cwmsScreening-input'; -- from issue 79
+   l_output_tsid at_cwms_ts_id.cwms_ts_id%type := 'TESTSITE1.Stage.Inst.1Hour.0.cwmsScreening-output';
+   x_item_does_not_exist exception;
+   x_location_id_not_found exception;
+   pragma exception_init(x_item_does_not_exist, -20034);
+   pragma exception_init(x_location_id_not_found, -20025);
+begin
+   dbms_output.enable(null);
+   for lrts_input in 0..2 loop
+      case lrts_input
+      when 0 then cwms_ts.set_allow_new_lrts_format_on_input('F');
+      when 1 then cwms_ts.set_allow_new_lrts_format_on_input('T');
+      when 2 then cwms_ts.set_require_new_lrts_format_on_input('T');
+      end case;
+      for lrts_output in 0..1 loop
+         case lrts_output
+         when 0 then cwms_ts.set_use_new_lrts_format_on_output('F');
+         when 1 then cwms_ts.set_use_new_lrts_format_on_output('T');
+         end case;
+         dbms_output.put_line('lrts input  = '||lrts_input||', output = '||lrts_output);
+         begin
+            cwms_loc.delete_location(
+               p_location_id   => l_location_id,
+               p_delete_action => cwms_util.delete_all,
+               p_db_office_id  => null);
+         exception
+            when x_location_id_not_found then null;
+         end;
+         begin
+            cwms_vt.delete_screening_id (
+               p_screening_id      => 'TEST1.Stag.92ze',
+               p_parameter_id      => 'Stage',
+               p_parameter_type_id => null,
+               p_duration_id       => null,
+               p_cascade           => 'T',
+               p_db_office_id      => null);
+         exception
+            when x_item_does_not_exist then null;
+         end;
+         cwms_loc.store_location(
+            p_location_id  => l_location_id,
+            p_db_office_id => null);
+
+         cwms_ts.create_ts(
+            p_cwms_ts_id  => l_input_tsid,
+            p_active_flag => 'T',
+            p_office_id   => null);
+
+         cwms_ts.create_ts(
+            p_cwms_ts_id  => l_output_tsid,
+            p_active_flag => 'T',
+            p_office_id   => null);
+         commit;
+
+         cwms_vt.create_screening_id (
+            p_screening_id      => 'TEST1.Stag.92ze',
+            p_screening_id_desc => 'Test Screening',
+            p_parameter_id      => 'Stage',
+            p_db_office_id      => null);
+
+         cwms_vt.assign_screening_id (
+            p_screening_id     => 'TEST1.Stag.92ze',
+            p_scr_assign_array => cwms_t_screen_assign_array(
+                                    cwms_t_screen_assign(
+                                       cwms_ts_id      => l_input_tsid,
+                                       active_flag     => 'T',
+                                       resultant_ts_id => l_output_tsid)),
+            p_db_office_id     => null);
+         commit;
+      end loop;
+   end loop;
+
+end test_issue_79;
 
 end test_lrts_updates;
 /

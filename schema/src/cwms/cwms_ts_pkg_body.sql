@@ -7561,6 +7561,7 @@ AS
          delete from at_shef_decode where ts_code = l_ts_code;
          delete from at_tr_template where ts_code_indep_1 = l_ts_code;
          delete from at_transform_criteria where l_ts_code in (ts_code, resultant_ts_code);
+         delete from at_screening where l_ts_code in (ts_code, resultant_ts_code);
          delete from at_a2w_ts_codes_by_loc where l_ts_code in (
             ts_code_cond,      ts_code_do,           ts_code_elev,            ts_code_elev_tw,
             ts_code_evap,      ts_code_inflow,       ts_code_irrad,           ts_code_opening,
