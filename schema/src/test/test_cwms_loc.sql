@@ -49,6 +49,8 @@ procedure cwms_305_spk_location_not_creating;
 procedure store_loc_group_cwms_cat;
 --%test(Test internataional location)
 procedure test_international_location;
+--%test(Test issue #57 - query vertical datum offset)
+procedure test_query_vertical_datum_offset;
 
 procedure setup;
 procedure teardown;
@@ -2471,6 +2473,41 @@ AS
 
 
    end test_international_location;
+   --------------------------------------------------------------------------------
+   -- procedure test_query_vertical_datum_offset
+   --------------------------------------------------------------------------------
+   procedure test_query_vertical_datum_offset
+   is
+      l_office_id   av_loc.db_office_id%TYPE;
+      l_location_id av_loc.location_id%TYPE;
+      l_offset      binary_double;
+   begin
+      setup;
+
+      l_office_id := '&&office_id';
+      l_location_id := 'TestLoc1';
+
+      cwms_loc.store_location (
+         p_location_id    => l_location_id,
+         p_db_office_id   => l_office_id,
+         p_latitude       => 34.25,
+         p_longitude      => -96.5,
+         p_vertical_datum => 'NGVD29');
+
+      select cwms_loc.get_vertical_datum_offset(
+            p_location_id         => l_location_id,
+            p_vertical_datum_id_1 => 'NGVD29',
+            p_vertical_datum_id_2 => 'NAVD88',
+            p_datetime            => sysdate,
+            p_time_zone           => 'UTC',
+            p_unit                => 'ft',
+            p_office_id           => l_office_id)
+        into l_offset
+        from dual;
+
+      ut.expect(l_offset).to_be_not_null;
+
+   end test_query_vertical_datum_offset;
 END test_cwms_loc;
 /
 
