@@ -7306,14 +7306,20 @@ end unassign_loc_groups;
                         l_description := substr(sqlerrm, 1, 64);
                   end;
                   l_effective_date := date '1000-01-01';
-                  insert
-                    into at_vert_datum_offset
-                  values (p_location_code,
-                          'NGVD29',
-                          'NAVD88',
-                          l_effective_date,
-                          l_offset,
-                          l_description);
+                  begin
+                     insert
+                     into at_vert_datum_offset
+                     values (p_location_code,
+                           'NGVD29',
+                           'NAVD88',
+                           l_effective_date,
+                           l_offset,
+                           l_description);
+                  exception
+                     -- can't perform the insert inside a query,
+                     -- so just fail the insert and return the offset
+                     when others then null;
+                  end;
                   if l_vertical_datum_id_1 = 'NAVD88' then
                      l_offset := -l_offset;
                   end if;
