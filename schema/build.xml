@@ -1555,7 +1555,7 @@
                   <matches string="${pom.version}" pattern="^.*-SNAPSHOT$" casesensitive="false"/>
                </and>
             </condition>
-            <echo message="Tagging images for registry"/>
+            <echo message="Tagging images for registry latest value = '${latest_value}', pom.version = '${pom.version}'"/>
             <docker.tag_image source="${docker.props.image_name}" target="${image_with_reg}:${pom.version}"/>
             <docker.tag_image source="${docker.props.image_name}" target="${image_with_reg}:${latest_value}"/>
             <docker.tag_image source="${docker.props.image_name}" target="${image_with_reg_public}:${pom.version}"/>
