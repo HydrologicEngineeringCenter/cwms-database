@@ -73,7 +73,7 @@ jobs:
         uses: ./.github/actions/start-database
       - name: Generate Bundle (docs and schemas)
         working-directory: schema
-        run: ant bundle -Dteamcity.branch=${VERSION} -Drevision=${MAVEN_VERSION} -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
+        run: ant bundle -Dteamcity.branch=${{inputs.branch}} -Drevision=${MAVEN_VERSION} -Dbuilduser.overrides=build/overrides.external.xml -Doracle.image=gvenzl/oracle-free:23.4-full-faststart
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2.1.0
