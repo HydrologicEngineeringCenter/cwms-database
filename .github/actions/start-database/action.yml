@@ -1,4 +1,5 @@
 name: 'Start Oracle Database and Install Cwms Schema'
+description: Prepares a database for further action
 runs:
   using: "composite"
   steps:

@@ -35,6 +35,11 @@
 					<name>GitHub Packages</name>
 					<url>https://maven.pkg.github.com/hydrologicengineeringcenter/cwms-database</url>
 				</repository>
+				<snapshotRepository>
+					<id>github</id>
+					<name>GitHub Packages Snapshots</name>
+					<url>https://maven.pkg.github.com/hydrologicengineeringcenter/cwms-database</url>
+				</snapshotRepository>
 			</distributionManagement>
 		</profile>
 			<profile>

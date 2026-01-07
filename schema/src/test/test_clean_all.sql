@@ -49,7 +49,8 @@ AS
         begin test_cwms_fcst.teardown; exception when others then null; end;
         begin test_cwms_forecast.teardown; exception when others then null; end;
         begin test_cwms_xchg.teardown; exception when others then null; end;
-        begin test_cwms_cache.teardown; exception when others then null; end;
+        begin test_cwms_cache.teardown; exception when others then null; end;      
+        begin test_cwms_text.teardown; exception when others then null; end;   
     END teardown_all;
 
     PROCEDURE delete_test_clobs
