@@ -108,7 +108,7 @@ jobs:
         run: |
           #HEC_PUB_REGISTRY="${{secrets.registry != null && secrets.registry ||secrets.HEC_PUB_REGISTRY}}"
           REPO=`echo "${{github.repository}}" | tr  '[:upper:]' '[:lower:]'`
-          ant docker.push -Dteamcity.branch=$VERSION -Drevision=${VERSION} \
+          ant docker.push -Dteamcity.branch=${{inputs.branch}} -Drevision=${VERSION} \
              -Ddocker.registry=ghcr.io/$REPO \
              -Ddocker.registry_public=$HEC_PUB_REGISTRY
       - name: Publish package
