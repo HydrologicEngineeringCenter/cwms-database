@@ -33,6 +33,8 @@ procedure test_cwdb_300_null_local_time_zone_breaks_av_location_level_curval;
 procedure test_cwdb_304_null_values_in_av_location_level_curval;
 --%test(Issue 61: handle locationlevel seasonal values iwth month day greater than 28)
 procedure test_issue_61_monthly_seasonal_values_with_origin_day_gt_28;
+--%test(Issue 83: level-as-timeseries retrieval bug for seasonal data)
+procedure test_issue_83_retrieve_seasonal_as_timeseries;
 
 c_office_id             varchar2(16)  := '&&office_id';
 c_location_id           varchar2(57)  := 'LocLevelTestLoc';
@@ -2381,6 +2383,134 @@ begin
    ut.expect(l_exception).to_be_false;
 
 end test_issue_61_monthly_seasonal_values_with_origin_day_gt_28;
+
+--------------------------------------------------------------------------------
+-- procedure test_issue_83_retrieve_seasonal_as_timeseries
+--------------------------------------------------------------------------------
+procedure test_issue_83_retrieve_seasonal_as_timeseries
+is
+   l_seasonal_data seasonal_value_tab_t := seasonal_value_tab_t (
+      seasonal_value_t (00, 0, 100.0),  -- Jan 01
+      seasonal_value_t (01, 0, 110.0),  -- Feb 01
+      seasonal_value_t (02, 0, 120.0),  -- Mar 01
+      seasonal_value_t (03, 0, 130.0),  -- Apr 01
+      seasonal_value_t (04, 0, 140.0),  -- May 01
+      seasonal_value_t (05, 0, 150.0),  -- Jun 01
+      seasonal_value_t (06, 0, 160.0),  -- Jul 01
+      seasonal_value_t (07, 0, 150.0),  -- Aug 01
+      seasonal_value_t (08, 0, 140.0),  -- Sep 01
+      seasonal_value_t (09, 0, 130.0),  -- Oct 01
+      seasonal_value_t (10, 0, 120.0),  -- Nov 01
+      seasonal_value_t (11, 0, 110.0)); -- Dec 01
+   l_specified_times ztsv_array := ztsv_array();
+   l_interval_origin date := date '2025-01-01';
+   l_date1 date;
+   l_date2 date;
+   l_interval_months number_tab_t := number_tab_t(1, 12);
+   l_interpolate str_tab_t := str_tab_t('F', 'T');
+   l_values ztsv_array;
+   l_prev binary_integer;
+   l_next binary_integer;
+   l_prev_val number;
+   l_next_val number;
+   l_interp_flag varchar2(1);
+   x_item_does_not_exist exception;
+   pragma exception_init(x_item_does_not_exist, -20034);
+begin
+   setup;
+   --------------------------------
+   -- create the specified times --
+   --------------------------------
+   l_specified_times.extend(25);
+   for i in 1..12 loop
+      l_date1 := add_months(l_interval_origin, i-1);
+      l_date2 := l_date1 + (add_months(l_interval_origin, i) - l_date1) / 2;
+      l_specified_times(2*(i-1)+1) := ztsv_type(l_date1, null, null);
+      l_specified_times(2*(i-1)+2) := ztsv_type(l_date2, null, null);
+   end loop;
+   l_specified_times(25) := ztsv_type(add_months(l_interval_origin, 12), null, null);
+   ------------------------------
+   -- store the location level --
+   ------------------------------
+   for i in 1..l_interpolate.count loop
+      for j in 1..l_interval_months.count loop
+         begin
+            cwms_level.delete_location_level3 (
+               p_location_level_id   => c_top_of_normal_elev_id,
+               p_office_id           => c_office_id,
+               p_cascade             => 'T',
+               p_all_effective_dates => 'T');
+         exception
+            when x_item_does_not_exist then null;
+         end;
+         begin
+            cwms_level.store_location_level3 (
+               p_location_level_id => c_top_of_normal_elev_id,
+               p_level_value       => null,
+               p_level_units       => 'm',
+               p_effective_date    => l_interval_origin,
+               p_timezone_id       => 'UTC',
+               p_interval_origin   => l_interval_origin,
+               p_interval_months   => l_interval_months(j),
+               p_interpolate       => l_interpolate(i),
+               p_seasonal_values   => l_seasonal_data,
+               p_fail_if_exists    => 'T' ,
+               p_office_id         => c_office_id);
+            if l_interval_months(j) != 12 then
+               cwms_err.raise('ERROR', 'Expected exception not raised');
+            else
+               select interpolate
+                 into l_interp_flag
+                 from at_location_level
+                where location_level_code = (select location_level_code
+                                               from av_location_level2
+                                              where location_level_id = c_top_of_normal_elev_id
+                                            );
+               ut.expect(l_interp_flag).to_equal(l_interpolate(i));
+            end if;
+         exception
+            when others then
+               ut.expect(regexp_like(dbms_utility.format_error_stack, '.+Seasonal values contains value with offset greater than interval+', 'mn')).to_be_true;
+         end;
+      end loop;
+      --------------------------------------------------------------------------
+      -- retrieve and verify the location level values at the specified times --
+      --------------------------------------------------------------------------
+      cwms_level.retrieve_loc_lvl_values3 (
+         p_level_values      => l_values,
+         p_specified_times   => l_specified_times,
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_level_units       => 'm',
+         p_timezone_id       => 'UTC',
+         p_office_id         => c_office_id);
+
+      for j in 1..l_values.count loop
+         if mod(j, 2) = 0 then
+            ------------------------------------------
+            -- even indices are between value times --
+            ------------------------------------------
+            l_prev := j/2;
+            l_next := mod(j/2, l_seasonal_data.count)+1;
+            l_prev_val := round(l_seasonal_data(l_prev).value, 5);
+            l_next_val := round(l_seasonal_data(l_next).value, 5);
+            if l_interpolate(i) = 'T' then
+               ut.expect(round(l_values(j).value, 5)).to_equal((l_prev_val + l_next_val) / 2);
+            else
+               ut.expect(round(l_values(j).value, 5)).to_equal(l_seasonal_data(j/2).value);
+            end if;
+         else
+            ------------------------------------
+            -- odd indices are at value times --
+            ------------------------------------
+            l_prev := mod((j-1)/2, l_seasonal_data.count)+1;
+            l_prev_val := round(l_seasonal_data(l_prev).value, 5);
+            ut.expect(round(l_values(j).value, 5)).to_equal(l_prev_val);
+         end if;
+         ut.expect(l_values(i).quality_code).to_equal(case l_interp_flag when 'T' then 1 else 0 end);
+      end loop;
+   end loop;
+
+end test_issue_83_retrieve_seasonal_as_timeseries;
 
 end test_cwms_level;
 /
