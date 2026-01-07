@@ -1954,6 +1954,7 @@ is
    l_attr_param_is_elev        boolean;
    l_level_vert_datum_offset   binary_double;
    l_attr_vert_datum_offset    binary_double;
+   l_minimum_bad_seasonal_date date;
 
 begin
    l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
@@ -2001,9 +2002,18 @@ begin
             || 'in CREATE_LOCATION_LEVEL');
       when nvl(p_interval_months, 0) > 0 then
          l_calendar_interval := cwms_util.months_to_yminterval(p_interval_months);
+         l_minimum_bad_seasonal_date := cast(cast(p_interval_origin as timestamp) + l_calendar_interval as date);
       when nvl(p_interval_minutes, 0) > 0 then
          l_time_interval := cwms_util.minutes_to_dsinterval(p_interval_minutes);
+         l_minimum_bad_seasonal_date := cast(cast(p_interval_origin as timestamp) + l_time_interval as date);
       end case;
+      for i in 1..p_seasonal_values.count loop
+         if add_months(p_interval_origin, p_seasonal_values(i).offset_months) + p_seasonal_values(i).offset_minutes / 1440 >= l_minimum_bad_seasonal_date then
+            cwms_err.raise(
+               'ERROR',
+               'Seasonal values contains value with offset greater than interval of '||l_calendar_interval||l_time_interval);
+         end if;
+      end loop;
    end if;
    if p_level_value is null then
       l_interpolate := p_interpolate;
@@ -6147,6 +6157,7 @@ begin
                -- interpolation --
                -------------------
                p_level_values(i).value := l_level_values(l_lo_idx).value + l_ratio * (l_level_values(l_hi_idx).value - l_level_values(l_lo_idx).value);
+               p_level_values(i).quality_code := 1;
             end if;
          end if;
       end loop;
