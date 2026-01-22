@@ -8,6 +8,9 @@ AS
     -- %test(Normal user cannot arbitrarily set user context)
     -- %throws(-20998)
     procedure cannot_set_context_users;
+
+    --%test(Normal user has no READ access to sensitive tables)
+    procedure no_read_access;
 END;
 /
 
@@ -31,6 +34,45 @@ AS
         cwms_20.cwms_env.set_session_user_direct(l_other_user);
         ut.expect(cwms_util.get_user_id()).not_to_equal(upper(l_other_user));
         ut.fail('This should not have worked');
+    end;
+
+    procedure no_read_access is
+        c_owner constant varchar2(128) := '&&cwms_schema';
+        type t_table_list is table of varchar2(128);
+        c_tables constant t_table_list := t_table_list(
+              'AT_API_KEYS',
+              'AT_SEC_ALLOW',
+              'AT_SEC_CWMS_USERS',
+              'AT_SEC_LOCKED_USERS',
+              'AT_SEC_SERVICE_USER',
+              'AT_SEC_SESSION',
+              'AT_SEC_TS_GROUPS',
+              'AT_SEC_TS_GROUP_MASKS',
+              'AT_SEC_USERS',
+              'AT_SEC_USER_GROUPS',
+              'AT_SEC_USER_OFFICE'
+            );
+
+        l_cnt number;
+    begin
+        for i in 1 .. c_tables.count loop
+            select count(*)
+            into l_cnt
+            from all_tab_privs p
+            where p.table_schema = c_owner
+              and p.table_name   = c_tables(i)
+              and p.privilege    = 'SELECT'
+              and (
+                p.grantee = user
+                    or p.grantee = 'PUBLIC'
+                    or p.grantee in (select granted_role from user_role_privs)
+                );
+
+            ut.expect(l_cnt).to_equal(0).comment(
+                    'Expected no SELECT on ' || c_owner || '.' || c_tables(i) ||
+                    ' for user=' || user || '. Found count=' || l_cnt
+            );
+        end loop;
     end;
 END;
 /
