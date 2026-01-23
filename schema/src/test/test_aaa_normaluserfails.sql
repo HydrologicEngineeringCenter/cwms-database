@@ -68,10 +68,12 @@ AS
                     or p.grantee in (select granted_role from user_role_privs)
                 );
 
-            ut.expect(l_cnt).to_equal(0).comment(
-                    'Expected no SELECT on ' || c_owner || '.' || c_tables(i) ||
-                    ' for user=' || user || '. Found count=' || l_cnt
-            );
+            if l_cnt <> 0 then
+                ut.fail(
+                        'Expected no SELECT on ' || c_owner || '.' || c_tables(i) ||
+                        ' for user=' || user || '. Found count=' || l_cnt
+                );
+            end if;
         end loop;
     end;
 END;
