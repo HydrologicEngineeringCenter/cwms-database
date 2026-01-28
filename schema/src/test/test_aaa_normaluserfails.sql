@@ -84,7 +84,7 @@ AS
                 );
             exception
                 when others then
-                    if sqlcode not in (-942, -1031) then
+                    if sqlcode not in (-942, -1031, -41900) then
                         ut.fail(
                                 'Expected permission error on ' || c_owner || '.' || c_tables(i) ||
                                 ' for user=' || user || '. Got ' || sqlcode || ' ' || sqlerrm
