@@ -74,6 +74,23 @@ AS
                         ' for user=' || user || '. Found count=' || l_cnt
                 );
             end if;
+
+            begin
+                execute immediate
+                    'select * from ' || c_owner || '.' || c_tables(i) || ' where rownum = 1';
+                ut.fail(
+                        'Expected SELECT to fail on ' || c_owner || '.' || c_tables(i) ||
+                        ' for user=' || user
+                );
+            exception
+                when others then
+                    if sqlcode not in (-942, -1031) then
+                        ut.fail(
+                                'Expected permission error on ' || c_owner || '.' || c_tables(i) ||
+                                ' for user=' || user || '. Got ' || sqlcode || ' ' || sqlerrm
+                        );
+                    end if;
+            end;
         end loop;
     end;
 END;
