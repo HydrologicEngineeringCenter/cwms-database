@@ -10602,6 +10602,19 @@ end retrieve_existing_item_counts;
                               p_ts_group_id      IN VARCHAR2,
                               p_db_office_id     IN VARCHAR2 DEFAULT NULL)
    IS
+   BEGIN
+      delete_ts_group (p_ts_category_id   => p_ts_category_id,
+                       p_ts_group_id      => p_ts_group_id,
+                       p_cascade          => 'F',
+                       p_db_office_id     => p_db_office_id
+                      );
+   END delete_ts_group;
+
+   PROCEDURE delete_ts_group (p_ts_category_id   IN VARCHAR2,
+                              p_ts_group_id      IN VARCHAR2,
+                              p_cascade          IN VARCHAR2 DEFAULT 'F',
+                              p_db_office_id     IN VARCHAR2 DEFAULT NULL)
+   IS
       l_office_code   NUMBER (14);
       l_rec           at_ts_group%ROWTYPE;
    BEGIN
@@ -10651,18 +10664,24 @@ end retrieve_existing_item_counts;
             || ' can only be deleted by owner.');
       END IF;
 
-      FOR rec IN (SELECT ts_code
-                    FROM at_ts_group_assignment
-                   WHERE ts_group_code = l_rec.ts_group_code)
-      LOOP
-         cwms_err.raise (
-            'ERROR',
-               'Cannot delete time series group '
-            || p_ts_category_id
-            || '/'
-            || p_ts_group_id
-            || ' because it is not empty.');
-      END LOOP;
+      IF cwms_util.is_true (p_cascade)
+      THEN
+         DELETE FROM at_ts_group_assignment
+               WHERE ts_group_code = l_rec.ts_group_code;
+      END IF;
+
+     FOR rec IN (SELECT ts_code
+                   FROM at_ts_group_assignment
+                  WHERE ts_group_code = l_rec.ts_group_code)
+     LOOP
+        cwms_err.raise (
+           'ERROR',
+              'Cannot delete time series group '
+           || p_ts_category_id
+           || '/'
+           || p_ts_group_id
+           || ' because it is not empty.');
+     END LOOP;
 
       ----------------------
       -- delete the group --
