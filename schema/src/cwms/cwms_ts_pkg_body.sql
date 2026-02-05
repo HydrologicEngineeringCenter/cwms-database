@@ -10345,47 +10345,16 @@ end retrieve_existing_item_counts;
       -----------------
       IF l_cascade
       THEN
-         ----------------------------------------------------------------------------
-         -- delete any groups in the category (will fail if there are assignments) --
-         ----------------------------------------------------------------------------
-         FOR group_rec
-            IN (SELECT ts_group_code
-                  FROM at_ts_group
-                 WHERE ts_category_code = l_category_rec.ts_category_code)
-         LOOP
-            FOR assign_rec
-               IN (SELECT ts_code
-                     FROM at_ts_group_assignment
-                    WHERE ts_group_code = group_rec.ts_group_code)
-            LOOP
-               cwms_err.raise (
-                  'ERROR',
-                     'Cannot delete time series category '
-                  || p_ts_category_id
-                  || ' because at least one of its groups is not empty.');
-            END LOOP;
-
-            ----------------------
-            -- delete the group --
-            ----------------------
-            DELETE FROM at_ts_group
-                  WHERE ts_group_code = group_rec.ts_group_code;
-         END LOOP;
-      ELSE
-         ------------------------------
-         -- test for existing groups --
-         ------------------------------
-         FOR group_rec
-            IN (SELECT ts_group_code
-                  FROM at_ts_group
-                 WHERE ts_category_code = l_category_rec.ts_category_code)
-         LOOP
-            cwms_err.raise (
-               'ERROR',
-                  'Cannot delete time series category '
-               || p_ts_category_id
-               || ' because it is not empty.');
-         END LOOP;
+          FOR group_rec IN (SELECT ts_group_id
+                              FROM at_ts_group
+                             WHERE ts_category_code = l_category_rec.ts_category_code)
+          LOOP
+             delete_ts_group (p_ts_category_id => p_ts_category_id,
+                              p_ts_group_id    => group_rec.ts_group_id,
+                              p_cascade        => p_cascade,
+                              p_db_office_id   => cwms_util.get_db_office_id (l_category_rec.db_office_code)
+                             );
+          END LOOP;
       END IF;
 
       -------------------------

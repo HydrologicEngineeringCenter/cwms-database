@@ -3102,7 +3102,7 @@ AS
     */
    PROCEDURE delete_ts_group (p_ts_category_id   IN VARCHAR2,
                               p_ts_group_id      IN VARCHAR2,
-                              p_cascade          IN VARCHAR2,
+                              p_cascade          IN VARCHAR2 DEFAULT 'F',
                               p_db_office_id     IN VARCHAR2 DEFAULT NULL);
 
    /**
