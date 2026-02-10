@@ -199,7 +199,27 @@ begin
 end;
 /
 @@cwms/User-Roles/web_user_role_grants.sql
-alter session set current_schema = &builduser
+
+-- Grant select on tables to normal users.
+
+begin
+   for rec in (select object_name
+                 from dba_objects
+                where owner = '&cwms_schema'
+                  and object_type = 'TABLE'
+                  and (instr(object_name, 'AT_') = 1 or instr(object_name, 'CWMS_') = 1)
+                  and instr(object_name, 'AT_SEC_') = 0
+		            and object_name != 'AT_API_KEYS'
+                order by 1
+              )
+   loop
+      execute immediate 'grant select on '||rec.object_name||' to cwms_user';
+   end loop;
+end;
+/
+
+
+alter session set current_schema = &builduser;
 
 -- create CWMS service user
 begin execute immediate 'create user ' || cwms_sec.cac_service_user || ' PROFILE CWMS_PROF IDENTIFIED BY "FEDCBA9876543210" '; end; 

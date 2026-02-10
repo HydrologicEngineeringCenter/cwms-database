@@ -1255,6 +1255,7 @@ BEGIN
           rec.phys_trans_type_tooltip,
           rec.phys_trans_type_active),
         rec.pump_flow * rec.factor + rec.offset,
+        nvl(p_units, 'cms'),
         -- rec.units_id,
         cwms_util.change_timezone(
            rec.transfer_start_datetime,
@@ -1362,24 +1363,6 @@ BEGIN
 
     -- dbms_output.put_line('wuc code: '|| l_contract_code);
 
-    --get the offset and factor
-    ----------------------------------
-    -- get the unit conversion info --
-    ----------------------------------
-    SELECT uc.factor,
-          uc.offset
-     INTO l_factor,
-          l_offset
-     from cwms_base_parameter bp,
-          cwms_unit_conversion uc,
-          cwms_unit u
-    WHERE bp.base_parameter_id = 'Flow'
-      and uc.to_unit_code = bp.unit_code
-      and uc.from_unit_code = u.unit_code
-      and u.unit_id = nvl(p_flow_unit_id,'cms');
-
-    -- dbms_output.put_line('unit conv: '|| l_factor ||', '||l_offset);
-
 --    select count(*) into l_count from at_wat_usr_contract_accounting;
 --    dbms_output.put_line('row count: '|| l_count);
     -- delete existing data
@@ -1427,7 +1410,11 @@ BEGIN
             l_contract_code contract_code,
             acct_tab.pump_location_ref.get_location_code('F') pump_code,
             ptt.phys_trans_type_code xfer_code,
-            acct_tab.pump_flow * l_factor + l_offset flow,
+               cwms_util.convert_units(
+                       acct_tab.pump_flow,
+                       nvl(acct_tab.pump_flow_unit, nvl(p_flow_unit_id,'cms')),
+                       'cms'
+               ) flow,
             cwms_util.change_timezone(
                   acct_tab.transfer_start_datetime,
                   l_time_zone,
