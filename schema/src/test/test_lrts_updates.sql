@@ -93,6 +93,9 @@ procedure test_lrts_id_output_formatting;
 procedure test_lrts_id_input_formatting;
 --%test(Test Issue #79 - Recent LRTS change breaks saving screening entries)
 procedure test_issue_79;
+--%test(CWMS database allowed storage of LRTS using the older identifier)
+procedure test_cwms_2378_PRTS_ID_allowed_as_LRTS_ID;
+
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
 c_office_id     constant varchar2(3)  := '&&office_id';
@@ -8849,31 +8852,24 @@ begin
       ut.expect(ll_count).to_equal(1);
    end;
    close l_crsr;
-   cwms_forecast.retrieve_ts(
-      p_ts_cursor      => l_crsr,
-      p_version_date   => l_version_date,
-      p_location_id    => l_location_id,
-      p_forecast_id    => 'TEST',
-      p_cwms_ts_id     => replace(l_lrts_ts_id_old, '.Test', '.Forecast'), -- doesn't fail; not required to be LRTS
-      p_units          => 'ft',
-      p_forecast_time  => l_end_time,
-      p_issue_time     => l_start_time,
-      p_start_time     => l_start_time,
-      p_end_time       => l_end_time,
-      p_time_zone      => c_timezone_ids(1),
-      p_office_id      => c_office_id);
-   fetch l_crsr
-    bulk collect
-    into l_date_times,
-         l_values,
-         l_quality_codes;
-   close l_crsr;
-   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
-   for i in 1..l_date_times.count loop
-      ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
-      ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
-      ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
-   end loop;
+   begin
+      cwms_forecast.retrieve_ts(
+         p_ts_cursor      => l_crsr,
+         p_version_date   => l_version_date,
+         p_location_id    => l_location_id,
+         p_forecast_id    => 'TEST',
+         p_cwms_ts_id     => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
+         p_units          => 'ft',
+         p_forecast_time  => l_end_time,
+         p_issue_time     => l_start_time,
+         p_start_time     => l_start_time,
+         p_end_time       => l_end_time,
+         p_time_zone      => c_timezone_ids(1),
+         p_office_id      => c_office_id);
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, 'Session requires new LRTS ID format', 'mn')).to_be_true;
+   end;
    --.... cwms_pool package
    begin
       cwms_pool.get_elev_offsets(
@@ -9921,6 +9917,456 @@ begin
    end loop;
 
 end test_issue_79;
+--------------------------------------------------------------------------------
+-- procedure test_cwms_2378_PRTS_ID_allowed_as LRTS_ID
+--------------------------------------------------------------------------------
+procedure test_cwms_2378_PRTS_ID_allowed_as_LRTS_ID
+is
+   l_office_id     cwms_office.office_id%type := '&&office_id';
+   l_location_id_1 av_loc.location_id%type := 'Allenville-1';
+   l_location_id_2 av_loc.location_id%type := 'Allenville-2';
+   l_time_zone_id  cwms_time_zone.time_zone_name%type := 'US/Central';
+   l_prts_id       at_cwms_ts_id.cwms_ts_id%type := l_location_id_1||'.Stage.Inst.~1Day.0.RMA_Test';
+   l_lrts_id       at_cwms_ts_id.cwms_ts_id%type := l_location_id_2||'.Stage.Inst.1DayLocal.0.RMA_Test';
+   l_intvl_offset  integer := 360; -- minutes
+   l_count         integer;                   
+   l_ts_data       ztsv_array := ztsv_array(
+                      ztsv_type(date '2025-03-06' + l_intvl_offset/1440,  6, 0),
+                      ztsv_type(date '2025-03-07' + l_intvl_offset/1440,  7, 0),
+                      ztsv_type(date '2025-03-08' + l_intvl_offset/1440,  8, 0),
+                      ztsv_type(date '2025-03-09' + l_intvl_offset/1440,  9, 0),
+                      ztsv_type(date '2025-03-10' + l_intvl_offset/1440, 10, 0),
+                      ztsv_type(date '2025-03-11' + l_intvl_offset/1440, 11, 0));
+   l_crsr          sys_refcursor;
+   l_datetimes     date_table_type;
+   l_values        double_tab_t;
+   l_qualities     number_tab_t;
+   x_location_id_not_found exception;
+   pragma exception_init(x_location_id_not_found, -20025);
+begin
+   -------------------------------
+   -- delete any left-over data --
+   -------------------------------
+   cwms_ts.set_require_new_lrts_format_on_input('F');
+   cwms_ts.set_allow_new_lrts_format_on_input('T');
+   begin
+      cwms_loc.delete_location(
+         p_location_id   => l_location_id_1,
+         p_delete_action => cwms_util.delete_all,
+         p_db_office_id  => l_office_id);
+   exception
+      when x_location_id_not_found then null;
+   end;   
+   begin
+      cwms_loc.delete_location(
+         p_location_id   => l_location_id_2,
+         p_delete_action => cwms_util.delete_all,
+         p_db_office_id  => l_office_id);
+   exception
+      when x_location_id_not_found then null;
+   end;   
+   ------------------------------------------------
+   -- move the time series from time zone to UTC --
+   ------------------------------------------------
+   for i in 1..l_ts_data.count loop
+      l_ts_data(i).date_time := cwms_util.change_timezone(l_ts_data(i).date_time, l_time_zone_id, 'UTC');
+   end loop;
+   /***************************************************
+    * WORK WITH PRTS AND LRTS AS SEPARATE TIME SERIES *
+    ***************************************************/
+   -------------------------------------------
+   -- require new LRTS IDs for this session --
+   -------------------------------------------
+   cwms_ts.set_require_new_lrts_format_on_input('T');
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+   --------------------------
+   -- create the locations --
+   --------------------------
+   cwms_loc.store_location(
+      p_location_id  => l_location_id_1,
+      p_time_zone_id => l_time_zone_id,
+      p_db_office_id => l_office_id);
+   
+   cwms_loc.store_location(
+      p_location_id  => l_location_id_2,
+      p_time_zone_id => l_time_zone_id,
+      p_db_office_id => l_office_id);
+   ---------------------------------------------------------
+   -- verify we can't create an PRTS with interval offset --
+   ---------------------------------------------------------
+   begin
+      cwms_ts.create_ts(
+         p_cwms_ts_id  => l_prts_id,
+         p_utc_offset  => l_intvl_offset,
+         p_active_flag => 'T',
+         p_office_id   => l_office_id);
+      cwms_err.raise('ERROR', 'Expected exception not raised');   
+   exception
+      when others then
+         commit; -- release table lock
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.*Session requires new LRTS ID format.*', 'm')).to_be_true;
+   end;   
+   -----------------------------------------------
+   -- create the PRTS, store, and retrieve data --
+   -----------------------------------------------
+   cwms_ts.create_ts(
+      p_cwms_ts_id  => l_prts_id,
+      p_active_flag => 'T',
+      p_office_id   => l_office_id);
+      
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_prts_id,
+      p_units           => 'ft',
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => l_office_id);
+      
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc  => l_crsr,
+      p_cwms_ts_id => l_prts_id,
+      p_units      => 'ft',
+      p_start_time => l_ts_data(1).date_time,
+      p_end_time   => l_ts_data(l_ts_data.count).date_time,
+      p_office_id  => l_office_id);
+      
+   fetch l_crsr
+    bulk collect
+    into l_datetimes,
+         l_values,
+         l_qualities;
+   close l_crsr;
+   ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
+   -----------------------------------------------
+   -- create the LRTS, store, and retrieve data --
+   -----------------------------------------------
+   cwms_ts.create_ts(
+      p_cwms_ts_id  => l_lrts_id,
+      p_utc_offset  => l_intvl_offset,
+      p_active_flag => 'T',
+      p_office_id   => l_office_id);
+      
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_lrts_id,
+      p_units           => 'ft',
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => l_office_id);
+      
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc  => l_crsr,
+      p_cwms_ts_id => l_lrts_id,
+      p_units      => 'ft',
+      p_start_time => l_ts_data(1).date_time,
+      p_end_time   => l_ts_data(l_ts_data.count).date_time,
+      p_office_id  => l_office_id);
+      
+   fetch l_crsr
+    bulk collect
+    into l_datetimes,
+         l_values,
+         l_qualities;
+   close l_crsr;
+   ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
+   -----------------------------------------------------
+   -- verify correct interval offsets for time series --
+   -----------------------------------------------------
+   l_count := 0;
+   for rec in (select interval_utc_offset from av_cwms_ts_id where cwms_ts_id = l_prts_id) loop
+      l_count := l_count + 1;
+      ut.expect(rec.interval_utc_offset).to_equal(cwms_util.utc_offset_irregular);
+   end loop;
+   ut.expect(l_count).to_equal(1);
+   l_count := 0;
+   for rec in (select interval_utc_offset from av_cwms_ts_id where cwms_ts_id = l_lrts_id) loop
+      l_count := l_count + 1;
+      ut.expect(rec.interval_utc_offset).to_equal(-l_intvl_offset);
+   end loop;
+   ut.expect(l_count).to_equal(1);
+   ---------------------------------------------------
+   -- delete the PRTS and re-create by storing data --
+   ---------------------------------------------------
+   cwms_ts.delete_ts(
+      p_cwms_ts_id    => l_prts_id,
+      p_delete_action => cwms_util.delete_all,
+      p_db_office_id  => l_office_id);
+      
+   select count(*) into l_count from at_cwms_ts_id where cwms_ts_id = l_prts_id;
+   ut.expect(l_count).to_equal(0);
+      
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_prts_id,
+      p_units           => 'ft',
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => l_office_id);
+      
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc  => l_crsr,
+      p_cwms_ts_id => l_prts_id,
+      p_units      => 'ft',
+      p_start_time => l_ts_data(1).date_time,
+      p_end_time   => l_ts_data(l_ts_data.count).date_time,
+      p_office_id  => l_office_id);
+      
+   fetch l_crsr
+    bulk collect
+    into l_datetimes,
+         l_values,
+         l_qualities;
+   close l_crsr;
+   ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
+   ---------------------------------------------------
+   -- delete the LRTS and re-create by storing data --
+   ---------------------------------------------------
+   cwms_ts.delete_ts(
+      p_cwms_ts_id    => l_lrts_id,
+      p_delete_action => cwms_util.delete_all,
+      p_db_office_id  => l_office_id);
+      
+   select count(*) into l_count from at_cwms_ts_id where cwms_ts_id = l_lrts_id;
+   ut.expect(l_count).to_equal(0);
+      
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_lrts_id,
+      p_units           => 'ft',
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => l_office_id);
+      
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc  => l_crsr,
+      p_cwms_ts_id => l_lrts_id,
+      p_units      => 'ft',
+      p_start_time => l_ts_data(1).date_time,
+      p_end_time   => l_ts_data(l_ts_data.count).date_time,
+      p_office_id  => l_office_id);
+      
+   fetch l_crsr
+    bulk collect
+    into l_datetimes,
+         l_values,
+         l_qualities;
+   close l_crsr;
+   ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
+   -----------------------------------------------------
+   -- verify correct interval offsets for time series --
+   -----------------------------------------------------
+   l_count := 0;
+   for rec in (select interval_utc_offset from av_cwms_ts_id where cwms_ts_id = l_prts_id) loop
+      l_count := l_count + 1;
+      ut.expect(rec.interval_utc_offset).to_equal(cwms_util.utc_offset_irregular);
+   end loop;
+   ut.expect(l_count).to_equal(1);
+   l_count := 0;
+   for rec in (select interval_utc_offset from av_cwms_ts_id where cwms_ts_id = l_lrts_id) loop
+      l_count := l_count + 1;
+      ut.expect(rec.interval_utc_offset).to_equal(-l_intvl_offset);
+   end loop;
+   ut.expect(l_count).to_equal(1);
+   ---------------------------------------------------
+   -- verify we can't create an LRTS with a PRTS ID --
+   ---------------------------------------------------
+   cwms_ts.delete_ts(
+      p_cwms_ts_id    => l_prts_id,
+      p_delete_action => cwms_util.delete_all,
+      p_db_office_id  => l_office_id);
+      
+   select count(*) into l_count from at_cwms_ts_id where cwms_ts_id = l_prts_id;
+   ut.expect(l_count).to_equal(0);
+      
+   begin
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_prts_id,
+         p_units           => 'ft',
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_office_id       => l_office_id,
+         p_create_as_lrts  => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised');   
+   exception
+      when others then
+         commit; -- release table lock
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.*Session requires new LRTS ID format.*', 'm')).to_be_true;
+   end;   
+   --------------------------------------------------------------------------------
+   -- verify storing with LRTS ID creates LRTS regardless of create_as_lrts flag --
+   --------------------------------------------------------------------------------
+   cwms_ts.delete_ts(
+      p_cwms_ts_id    => l_lrts_id,
+      p_delete_action => cwms_util.delete_all,
+      p_db_office_id  => l_office_id);
+      
+   select count(*) into l_count from at_cwms_ts_id where cwms_ts_id = l_lrts_id;
+   ut.expect(l_count).to_equal(0);
+
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_lrts_id,
+      p_units           => 'ft',
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => l_office_id,
+      p_create_as_lrts  => 'F');
+      
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc  => l_crsr,
+      p_cwms_ts_id => l_lrts_id,
+      p_units      => 'ft',
+      p_start_time => l_ts_data(1).date_time,
+      p_end_time   => l_ts_data(l_ts_data.count).date_time,
+      p_office_id  => l_office_id);
+      
+   fetch l_crsr
+    bulk collect
+    into l_datetimes,
+         l_values,
+         l_qualities;
+   close l_crsr;
+   ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
+      
+   l_count := 0;
+   for rec in (select interval_utc_offset from av_cwms_ts_id where cwms_ts_id = l_lrts_id) loop
+      l_count := l_count + 1;
+      ut.expect(rec.interval_utc_offset).to_equal(-l_intvl_offset);
+   end loop;
+   ut.expect(l_count).to_equal(1);
+   /***********************************************
+    * WORK WITH PRTS AND LRTS AS SAME TIME SERIES *
+    ***********************************************/
+   cwms_ts.delete_ts(
+      p_cwms_ts_id    => l_lrts_id,
+      p_delete_action => cwms_util.delete_all,
+      p_db_office_id  => l_office_id);
+      
+   l_lrts_id := replace(l_lrts_id, l_location_id_2, l_location_id_1);
+   --------------------------------------------
+   -- disallow new LRTS IDs for this session --
+   --------------------------------------------
+   cwms_ts.set_allow_new_lrts_format_on_input('F');
+   cwms_ts.set_use_new_lrts_format_on_output('F');
+   ------------------------------------
+   -- try to store using the LRTS ID --
+   ------------------------------------
+   begin
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_lrts_id,
+         p_units           => 'ft',
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_office_id       => l_office_id,
+         p_create_as_lrts  => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised');   
+   exception
+      when others then
+         commit; -- release table lock
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.*INVALID Time Series Identifier*', 'm')).to_be_true;
+   end;   
+   ---------------------------------------
+   -- store an LRTS (using the PRTS ID) --
+   ---------------------------------------
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_prts_id,
+      p_units           => 'ft',
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => l_office_id,
+      p_create_as_lrts  => 'T');
+      
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc  => l_crsr,
+      p_cwms_ts_id => l_prts_id,
+      p_units      => 'ft',
+      p_start_time => l_ts_data(1).date_time,
+      p_end_time   => l_ts_data(l_ts_data.count).date_time,
+      p_office_id  => l_office_id);
+      
+   fetch l_crsr
+    bulk collect
+    into l_datetimes,
+         l_values,
+         l_qualities;
+   close l_crsr;
+   ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
+      
+   l_count := 0;
+   for rec in (select interval_utc_offset from av_cwms_ts_id where cwms_ts_id = l_prts_id) loop
+      l_count := l_count + 1;
+      ut.expect(rec.interval_utc_offset).to_equal(-l_intvl_offset);
+   end loop;
+   ut.expect(l_count).to_equal(1);
+   -------------------------------------------
+   -- require new LRTS IDs for this session --
+   -------------------------------------------
+   cwms_ts.set_require_new_lrts_format_on_input('T');
+   cwms_ts.set_use_new_lrts_format_on_output('T');
+      
+   l_count := 0;
+   for rec in (select interval_utc_offset from av_cwms_ts_id where cwms_ts_id = l_lrts_id) loop
+      l_count := l_count + 1;
+      ut.expect(rec.interval_utc_offset).to_equal(-l_intvl_offset);
+   end loop;
+   ut.expect(l_count).to_equal(1);
+   -------------------------------------------
+   -- verify we can store using the LRTS ID --
+   -------------------------------------------
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_lrts_id,
+      p_units           => 'ft',
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => l_office_id,
+      p_create_as_lrts  => 'T');
+      
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc  => l_crsr,
+      p_cwms_ts_id => l_lrts_id,
+      p_units      => 'ft',
+      p_start_time => l_ts_data(1).date_time,
+      p_end_time   => l_ts_data(l_ts_data.count).date_time,
+      p_office_id  => l_office_id);
+      
+   fetch l_crsr
+    bulk collect
+    into l_datetimes,
+         l_values,
+         l_qualities;
+   close l_crsr;
+   ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
+   ---------------------------------------------
+   -- verify we can't store using the PRTS ID --
+   ---------------------------------------------
+   begin
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_prts_id,
+         p_units           => 'ft',
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_office_id       => l_office_id,
+         p_create_as_lrts  => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised');   
+   exception
+      when others then
+         commit; -- release table lock
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.*Session requires new LRTS ID format.*', 'm')).to_be_true;
+   end;   
+   ------------------------------------------------
+   -- verify we can't retrieve using the PRTS ID --
+   ------------------------------------------------
+   begin
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc  => l_crsr,
+         p_cwms_ts_id => l_prts_id,
+         p_units      => 'ft',
+         p_start_time => l_ts_data(1).date_time,
+         p_end_time   => l_ts_data(l_ts_data.count).date_time,
+         p_office_id  => l_office_id);
+      close l_crsr;
+      cwms_err.raise('ERROR', 'Expected exception not raised');   
+   exception
+      when others then
+         ut.expect(regexp_like(dbms_utility.format_error_stack, '.*Session requires new LRTS ID format.*', 'm')).to_be_true;
+   end;   
+      
+end test_cwms_2378_PRTS_ID_allowed_as_LRTS_ID;
 
 end test_lrts_updates;
 /

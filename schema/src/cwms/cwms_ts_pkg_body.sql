@@ -41,6 +41,24 @@ AS
          'Session requires new LRTS ID format. Invalid ID: '||p_cwms_ts_id);
    end new_lrts_id_required_error;
 
+   procedure old_lrts_id_required_error(
+      p_cwms_ts_id in varchar2)
+   is
+   begin
+      cwms_err.raise(
+         'ERROR',
+         'Session requires old LRTS ID format. Invalid ID: '||p_cwms_ts_id);
+   end old_lrts_id_required_error;
+
+   procedure not_lrts_error(
+      p_cwms_ts_id in varchar2)
+   is
+   begin
+      cwms_err.raise(
+         'ERROR',
+         'Invalid ID for PRTS: '||p_cwms_ts_id);
+   end not_lrts_error;
+
    procedure clear_all_caches
    is
    begin
@@ -3026,7 +3044,7 @@ AS
       clear_all_caches;
    end set_require_new_lrts_format_on_input;
    --------------------------------------------------------------------------------
-   -- function function require_new_lrts_format_on_input
+   -- function require_new_lrts_format_on_input
    --------------------------------------------------------------------------------
    function require_new_lrts_format_on_input
       return varchar2
@@ -3038,7 +3056,7 @@ AS
              end;
    end require_new_lrts_format_on_input;
    --------------------------------------------------------------------------------
-   -- function retrieve_ts_raw
+   -- procedure retrieve_ts_raw
    --------------------------------------------------------------------------------
    procedure retrieve_ts_raw(
       p_ts_retrieved          in out nocopy ztsv_entry_array,
@@ -3229,9 +3247,11 @@ AS
       l_ts_code               at_cwms_ts_id.ts_code%type;
       l_office_id             cwms_office.office_id%type;
       l_cwms_ts_id            at_cwms_ts_id.cwms_ts_id%type;
+      l_parts                 str_tab_t;
       l_location_id           av_loc.location_id%type;
       l_location_code         at_physical_location.location_code%type;
       l_parameter_id          at_cwms_ts_id.parameter_id%type;
+      l_interval_id           at_cwms_ts_id.interval_id%type;
       l_unit_id               at_cwms_ts_id.unit_id%type;
       l_time_zone_in          cwms_time_zone.time_zone_name%type;
       l_time_zone_out         cwms_time_zone.time_zone_name%type;
@@ -3276,10 +3296,11 @@ AS
       l_office_id  := cwms_util.get_db_office_id(p_office_id);
       l_cwms_ts_id := get_ts_id(p_cwms_ts_id, l_office_id);
       l_retrieve_data_entry := cwms_util.return_true_or_false(p_retrieve_data_entry);
+      l_interval_id   := cwms_util.split_text(p_cwms_ts_id, 4, '.');
       if l_cwms_ts_id is null then
          cwms_err.raise('TS_ID_NOT_FOUND', p_cwms_ts_id, l_office_id);
       elsif use_new_lrts_format_on_output = 'T'
-         and substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 1, 1) = '~'
+         and substr(l_interval_id, 1, 1) = '~'
          and upper(substr(cwms_util.split_text(l_cwms_ts_id, 4, '.'), -5)) = 'LOCAL'
       then
          ----------------------------------
@@ -3287,10 +3308,26 @@ AS
          ----------------------------------
          l_cwms_ts_id := regexp_replace(l_cwms_ts_id, '\.([[:digit:]]+[[:alpha:]]+)Local\.', '.~\1.', 1, 1, 'i');
       end if;
+      l_ts_code := get_ts_code(p_cwms_ts_id, l_office_id);
+      ----------------------------------------------
+      -- verify correct TSID format for actual TS --
+      ----------------------------------------------
+      if is_lrts(l_ts_code) = 'T' then
+         if require_new_lrts_format_on_input = 'T' then
+            if substr(l_interval_id, 1, 1) = '~' then
+               new_lrts_id_required_error(l_cwms_ts_id);
+            end if;
+         elsif upper(substr(l_interval_id, -5)) = 'LOCAL' then
+            if 'T' not in (require_new_lrts_format_on_input, allow_new_lrts_format_on_input) then
+               old_lrts_id_required_error(l_cwms_ts_id);
+            end if;
+         end if;
+      elsif upper(substr(l_interval_id, -5)) = 'LOCAL' then
+         not_lrts_error(l_cwms_ts_id);
+      end if;
       l_location_id   := cwms_util.split_text(l_cwms_ts_id, 1, '.');
       l_location_code := cwms_loc.get_location_code(l_office_id, l_location_id);
       l_parameter_id  := cwms_util.split_text(l_cwms_ts_id, 2, '.');
-      l_ts_code       := get_ts_code(p_cwms_ts_id, l_office_id);
       l_location_code := cwms_loc.get_location_code(l_office_id, cwms_util.split_text(l_cwms_ts_id, 1, '.'));
       l_time_zone_out := cwms_loc.get_local_timezone(substr(l_cwms_ts_id, 1, instr(l_cwms_ts_id, '.') - 1), l_office_id);
       l_time_zone_in  := case when p_time_zone is null then l_time_zone_out else cwms_util.get_timezone(p_time_zone) end;
@@ -5724,12 +5761,18 @@ AS
             get_ts_code (p_cwms_ts_id     => l_cwms_ts_id,
                          p_db_office_code => l_office_code);
 
+         l_is_lrts := is_lrts(l_ts_code) = 'T';
+         if l_is_lrts and
+            require_new_lrts_format_on_input = 'T' and
+            substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 1, 1) = '~'
+         then
+            new_lrts_id_required_error(l_cwms_ts_id);
+         end if;
+
          SELECT interval_utc_offset
            INTO existing_utc_offset
            FROM at_cwms_ts_spec
           WHERE ts_code = l_ts_code;
-
-         l_is_lrts := is_lrts(l_ts_code) = 'T';
 
          if l_is_lrts then
             l_irr_offset := existing_utc_offset;
@@ -5792,7 +5835,6 @@ AS
                             p_utc_offset        => l_utc_offset);
             existing_utc_offset := l_utc_offset;
          WHEN OTHERS THEN
-            dbms_output.put_line('==> ERROR is '||sqlerrm);
             cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
       END;                                               -- END - Find TS_CODE
 
@@ -6038,16 +6080,6 @@ AS
                     from table(l_timeseries_data);
                exception
                   when too_many_rows then
-                     dbms_output.enable;
-                     dbms_output.put_line('time series id  = '||l_cwms_ts_id);
-                     dbms_output.put_line('interval        = '||l_irr_interval);
-                     dbms_output.put_line('local time zone = '||l_loc_tz);
-                     for i in 1..l_timeseries_data.count loop
-                        dbms_output.put(i||chr(9)||l_timeseries_data(i).date_time);
-                        dbms_output.put(chr(9)||from_tz(cwms_util.change_timezone(cast(l_timeseries_data(i).date_time as timestamp), extract(timezone_region from l_timeseries_data(i).date_time), l_loc_tz), l_loc_tz));
-                        dbms_output.put(chr(9)||get_utc_interval_offset(from_tz(cwms_util.change_timezone(cast(l_timeseries_data(i).date_time as timestamp), extract(timezone_region from l_timeseries_data(i).date_time), l_loc_tz), l_loc_tz), l_irr_interval));
-                        dbms_output.new_line;
-                     end loop;
                      raise_application_error (
                         -20110,
                         'ERROR: Incoming data set contains multiple interval offsets. Unable to store data for '

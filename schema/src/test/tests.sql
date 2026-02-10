@@ -48,6 +48,7 @@ show errors;
 @test_timeseries_snapping.sql;
 @test_cwms_cat.sql;
 @test_cwms_level.sql;
+@test_cwms_water_supply.sql;
 @test_cwms_display.sql;
 @test_cwms_data_dissem.sql;
 @test_cwms_fcst.sql;
