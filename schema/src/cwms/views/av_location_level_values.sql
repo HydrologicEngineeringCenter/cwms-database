@@ -276,6 +276,3 @@ exception
 end;
 /
 create or replace public synonym cwms_v_location_level_values for av_location_level_values;
-SELECT *
-FROM av_location_level_values
-WHERE ROWNUM <= 10;
