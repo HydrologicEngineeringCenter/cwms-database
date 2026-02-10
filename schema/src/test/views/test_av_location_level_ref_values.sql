@@ -38,6 +38,13 @@ create or replace package test_av_location_level_ref_values as
    c_constant_date constant date := DATE '2025-04-10';
    c_constant_value constant number := 123.4;
    c_expiration_date constant date := DATE '2026-07-22';
+   c_elev_param constant varchar2(4) := 'Elev';
+   c_stage_param constant varchar2(5) := 'Stage';
+   c_inst_param constant varchar2(4) := 'Inst';
+   c_0_duration constant varchar2(1) := '0';
+   c_top_of_dam constant varchar2(10) := 'Top of Dam';
+   c_top_of_spillway constant varchar2(15) := 'Top of Spillway';
+   c_bottom_of_dam constant varchar2(13) := 'Bottom of Dam';
 
    l_ts_data     cwms_t_ztsv_array
       := cwms_t_ztsv_array (
@@ -55,15 +62,15 @@ create or replace package test_av_location_level_ref_values as
       seasonal_value_t (0, 0, 128.4),
       seasonal_value_t (1, 0, 130.6),
       seasonal_value_t (2, 0, 145.7),
-      seasonal_value_t (3, 0, 128.9),
-      seasonal_value_t (4, 0, 115.1),
+      seasonal_value_t (3, 0, 127.9),
+      seasonal_value_t (4, 0, 115.9),
       seasonal_value_t (5, 0, 110.3),
       seasonal_value_t (6, 0, 120.2),
-      seasonal_value_t (7, 0, 130.6),
-      seasonal_value_t (8, 0, 145.7),
+      seasonal_value_t (7, 0, 130.5),
+      seasonal_value_t (8, 0, 145.2),
       seasonal_value_t (9, 0, 128.9),
       seasonal_value_t (10, 0, 115.1),
-      seasonal_value_t (11, 0, 110.3)
+      seasonal_value_t (11, 0, 109.3)
    );
 end test_av_location_level_ref_values;
 /
@@ -107,7 +114,7 @@ create or replace package body test_av_location_level_ref_values as
    is
    begin
       teardown;
-      cwms_loc.store_location(p_location_id => 'Murphysboro-Big Muddy',
+      cwms_loc.store_location(p_location_id => c_loc,
                               p_active => 'T',
                               p_db_office_id => c_office_id,
                               p_time_zone_id => c_timezone_id
@@ -168,17 +175,16 @@ create or replace package body test_av_location_level_ref_values as
                 c_base_loc as base_location_id,
                 c_sub_loc as sub_location_id,
                 c_loc as location_id,
-                'Elev' as base_parameter_id,
-                'Elev' as parameter_id,
-                'Inst' as parameter_type,
-                '0' as duration,
-                'Top of Spillway' as specified_level
+                c_elev_param as base_parameter_id,
+                c_elev_param as parameter_id,
+                c_inst_param as parameter_type,
+                c_0_duration as duration,
+                c_top_of_spillway as specified_level
          from dual;
       l_expected_data_count INTEGER := 1;
       l_actual_data_count INTEGER;
       cursor l_expected_value_data is
-         select 'T' as interpolate,
-                c_constant_value as level_value,
+         select c_constant_value as level_value,
                 'm' as level_unit_si,
                 'ft' as level_unit_en,
                 c_expiration_date as expiration_date
@@ -223,7 +229,7 @@ create or replace package body test_av_location_level_ref_values as
             AND v.constant_level_en is not null
             AND v.seasonal_value_en is null
             AND v.seasonal_value_si is null
-            AND v.interpolate = r_expected.interpolate
+            AND v.interpolate is null
             AND v.interval_origin is null
             AND v.calendar_interval is null
             AND v.time_interval is null
@@ -250,7 +256,7 @@ create or replace package body test_av_location_level_ref_values as
       l_expected_count INTEGER := 1;
       l_actual_count INTEGER;
       cursor l_expected_data is
-         select c_ts_id as location_level_id,
+         select c_ts_level_id as location_level_id,
                 'm' as level_units,
                 c_ts_date as effective_date,
                 c_office_id as office_id,
@@ -258,11 +264,11 @@ create or replace package body test_av_location_level_ref_values as
                 c_base_loc as base_location_id,
                 c_sub_loc as sub_location_id,
                 c_loc as location_id,
-                'Elev' as base_parameter_id,
-                'Elev' as parameter_id,
-                'Inst' as parameter_type,
-                '0' as duration,
-                'Top of Dam' as specified_level
+                c_elev_param as base_parameter_id,
+                c_elev_param as parameter_id,
+                c_inst_param as parameter_type,
+                c_0_duration as duration,
+                c_top_of_dam as specified_level
          from dual;
       l_expected_data_count INTEGER := 1;
       l_actual_data_count INTEGER;
@@ -348,11 +354,11 @@ create or replace package body test_av_location_level_ref_values as
                 c_base_loc as base_location_id,
                 c_sub_loc as sub_location_id,
                 c_loc as location_id,
-                'Stage' as base_parameter_id,
-                'Stage' as parameter_id,
-                'Inst' as parameter_type,
-                '0' as duration,
-                'Bottom of Dam' as specified_level
+                c_stage_param as base_parameter_id,
+                c_stage_param as parameter_id,
+                c_inst_param as parameter_type,
+                c_0_duration as duration,
+                c_bottom_of_dam as specified_level
          from dual;
       l_expected_data_count INTEGER := 12;
       l_actual_data_count INTEGER;
@@ -361,7 +367,10 @@ create or replace package body test_av_location_level_ref_values as
                 c_ts_id as ts_id,
                 'm' as level_unit_si,
                 'ft' as level_unit_en,
-                c_expiration_date as expiration_date
+                c_expiration_date as expiration_date,
+                c_seasonal_date as seasonal_date,
+                '1-0' as cal_interval,
+                '0 0:0:0.0' as time_offset
          from dual;
       l_seasonal_count INTEGER;
    begin
@@ -404,14 +413,14 @@ create or replace package body test_av_location_level_ref_values as
               AND v.constant_level_en is null
               AND v.seasonal_value_en is not null
               AND v.seasonal_value_si is not null
-              AND v.seasonal_value_si >= 128.4
+              AND v.seasonal_value_si >= 109.3
               AND v.seasonal_value_si <= 145.7
               AND v.interpolate = r_expected.interpolate
-              AND v.interval_origin is null
-              AND v.calendar_interval is null
+              AND v.interval_origin = r_expected.seasonal_date
+              AND v.calendar_interval = r_expected.cal_interval
               AND v.time_interval is null
-              AND v.calendar_offset is null
-              AND v.time_offset is null
+              AND v.calendar_offset is not null
+              AND v.time_offset = r_expected.time_offset
               AND v.tsid is null
               AND v.attribute_value_en is null
               AND v.attribute_value_si is null
@@ -433,12 +442,12 @@ create or replace package body test_av_location_level_ref_values as
               AND v.constant_level_en is null
               AND v.seasonal_value_si = l_seasonal_data(i).value
               AND v.interpolate = 'T'
-              AND v.interval_origin is null
-              AND v.calendar_interval is null
+              AND v.interval_origin = c_seasonal_date
+              AND v.calendar_interval is not null
               AND v.time_interval is null
-              AND v.calendar_offset is null
-              AND v.time_offset is null
-              AND v.tsid is null  -- Note: should be null for seasonal, not ts_id
+              AND v.calendar_offset is not null
+              AND v.time_offset is not null
+              AND v.tsid is null  -- Note: should be null for seasonal, not ts
               AND v.attribute_value_en is null
               AND v.attribute_value_si is null
               AND v.level_unit_en = 'ft'
