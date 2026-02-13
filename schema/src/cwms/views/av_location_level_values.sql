@@ -1,35 +1,35 @@
--- delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES';
--- insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES', null,
---                             '
---                             /**
---                              * Displays information about concrete location levels
---                              *
---                              * @since CWMS 2.1 (extended in 3.0)
---                              *
---                              * @field office_id           Office that owns the location level
---                              * @field attribute_id        The attribute identifier, if any, for the location level
---                              * @field location_level_date          The effective data for the location level
---                              * @field base_location_id    The base location portion of the location level
---                              * @field sub_location_id     The sub-location portion of the location level
---                              * @field location_id         The full location portion of the location level
---                              * @field base_parameter_id   The base parameter portion of the location level
---                              * @field sub_parameter_id    The sub-parameter portion of the location level
---                              * @field parameter_id        The full parameter portion of the location level
---                              * @field duration_id         The duration portion of the location level
---                              * @field specified_level_id  The specified level portion of the location level
---                              * @field location_code       The unique numeric code that identifies the location in the database
---                              * @field location_level_code The unique numeric code that identifies the location level in the database
---                              * @field expiration_date             The date/time at which the level expires
---                              * @field parameter_type_id           The parameter type of the location level
---                              * @field attribute_parameter_id      The attribute of the parameter, if any
---                              * @field attribute_base_parameter_id The base parameter of the attribute, if any
---                              * @field attribute_sub_parameter_id  The sub-parameter of the attribute, if any
---                              * @field attribute_parameter_type_id The parameter type of the attribute, if any
---                              * @field attribute_duration_id       The duration of the attribute, if any
---                              * @field default_label               The label associated with the location level and the ''GENERAL/OTHER'' configuration, if any
---                              * @field source                      The source entity for the location level values
---                              */
---                             ');
+delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES';
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES', null,
+                            '
+                            /**
+                             * Displays information about concrete location levels
+                             *
+                             * @since CWMS 2.1 (extended in 3.0)
+                             *
+                             * @field location_level_code The unique numeric code that identifies the location level in the database
+                             * @field constant_level_en   The constant level value in English units
+                             * @field constant_level_si   The constant level value in SI units
+                             * @field seasonal_value_en   The seasonal level value in English units
+                             * @field seasonal_value_si   The seasonal level value in SI units
+                             * @field interpolate         Indicates whether the level is interpolated
+                             * @field interval_origin     Indicates the date/time origin of the interval for seasonal levels
+                             * @field calendar_interval   Indicates the calendar interval for seasonal levels
+                             * @field time_interval       Indicates the time interval for seasonal levels
+                             * @field calendar_offset     The calendar offset for the seasonal level
+                             * @field time_offset         The time offset for the seasonal level
+                             * @field tsid                The time series identifier for a time series backed location level
+                             * @field attribute_value_en        The attribute value in English units
+                             * @field attribute_value_si        The attribute value in SI units
+                             * @field level_unit_en       The unit of measure for the level value in English units
+                             * @field level_unit_si       The unit of measure for the level value in SI units
+                             * @field attribute_unit_en   The unit of measure for the attribute value in English units
+                             * @field attribute_unit_si   The unit of measure for the attribute value in SI units
+                             * @field connections         The list of constituent connections that make up the virtual location level
+                             * @field expiration_date     The date/time at which the level expires
+                             * @field default_label       The label associated with the location level and the ''GENERAL/OTHER'' configuration, if any
+                             * @field source              The source entity for the location level values
+                             */
+                            ');
 
 create or replace view av_location_level_values
       (

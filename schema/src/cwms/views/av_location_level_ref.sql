@@ -7,54 +7,30 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_R
                              * @since CWMS 2.1 (extended in 3.0)
                              *
                              * @field office_id           Office that owns the location level
+                             * @field location_level_id   The unique identifier for the location level
                              * @field attribute_id        The attribute identifier, if any, for the location level
-                             * @field location_level_date          The effective data for the location level
+                             * @field location_level_code The unique numeric code that identifies the location level in the database
+                             * @field location_level_date         The effective data for the location level
+                             * @field expiration_date             The date/time at which the level expires
                              * @field base_location_id    The base location portion of the location level
                              * @field sub_location_id     The sub-location portion of the location level
                              * @field location_id         The full location portion of the location level
+                             * @field location_code       The unique numeric code that identifies the location in the database
                              * @field base_parameter_id   The base parameter portion of the location level
                              * @field sub_parameter_id    The sub-parameter portion of the location level
                              * @field parameter_id        The full parameter portion of the location level
+                             * @field parameter_type_id   The parameter type of the location level
+                             * @field location_level_comment      The comment associated with the location level
                              * @field duration_id         The duration portion of the location level
                              * @field specified_level_id  The specified level portion of the location level
-                             * @field location_code       The unique numeric code that identifies the location in the database
-                             * @field location_level_code The unique numeric code that identifies the location level in the database
-                             * @field expiration_date             The date/time at which the level expires
-                             * @field parameter_type_id           The parameter type of the location level
-                             * @field location_level_comment      The comment associated with the location level
+
                              * @field attribute_parameter_id      The attribute of the parameter, if any
                              * @field attribute_base_parameter_id The base parameter of the attribute, if any
                              * @field attribute_sub_parameter_id  The sub-parameter of the attribute, if any
                              * @field attribute_parameter_type_id The parameter type of the attribute, if any
                              * @field attribute_duration_id       The duration of the attribute, if any
-                             * @field default_label               The label assoicated with the location level and the ''GENERAL/OTHER'' configuration, if any
-                             * @field source                      The source entity for the location level values
                              */
                             ');
-
--- office_id
---
--- location_level_code
--- location_level_date
--- expiration_date
---
--- base_location_id
--- sub_location_id
--- location_id
--- location_code
---
--- base_parameter_id
--- sub_parameter_id
--- parameter_id
--- parameter_type_id
--- duration_id
--- specified_level_id
---
--- attribute_parameter_id
--- attribute_base_parameter_id
--- attribute_sub_parameter_id
--- attribute_parameter_type_id
--- attribute_duration_id
 
 create or replace force view av_location_level_ref
       (
@@ -201,10 +177,7 @@ from
                 on c_pt2.parameter_type_code = v_ll.attribute_parameter_type_code
       left join cwms_duration c_d2
                 on c_d2.duration_code = v_ll.attribute_duration_code;
-
-
 /
-
 
 begin
    execute immediate 'grant select on av_location_level_ref to cwms_user';
@@ -212,6 +185,5 @@ exception
    when others then null;
 end;
 /
-
 
 create or replace public synonym cwms_v_location_level_ref for av_location_level_ref;
