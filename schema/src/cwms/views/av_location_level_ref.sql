@@ -21,6 +21,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_R
                              * @field location_level_code The unique numeric code that identifies the location level in the database
                              * @field expiration_date             The date/time at which the level expires
                              * @field parameter_type_id           The parameter type of the location level
+                             * @field location_level_comment      The comment associated with the location level
                              * @field attribute_parameter_id      The attribute of the parameter, if any
                              * @field attribute_base_parameter_id The base parameter of the attribute, if any
                              * @field attribute_sub_parameter_id  The sub-parameter of the attribute, if any
@@ -73,6 +74,7 @@ create or replace force view av_location_level_ref
        sub_parameter_id,
        parameter_id,
        parameter_type_id,
+       location_level_comment,
        duration_id,
        specified_level_id,
 
@@ -105,6 +107,7 @@ select
    a_p1.sub_parameter_id,
    dash(c_bp1.base_parameter_id, a_p1.sub_parameter_id)   as parameter_id,
    c_pt1.parameter_type_id,
+   a_ll.location_level_comment,
    c_d1.duration_id,
    a_sl.specified_level_id,
 
@@ -163,6 +166,7 @@ select
    a_p1.sub_parameter_id,
    dash(c_bp1.base_parameter_id, a_p1.sub_parameter_id)   as parameter_id,
    c_pt1.parameter_type_id,
+   v_ll.location_level_comment,
    c_d1.duration_id,
    a_sl.specified_level_id,
 
