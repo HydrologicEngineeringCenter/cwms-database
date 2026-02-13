@@ -564,6 +564,7 @@ create or replace package body test_av_location_level_ref_values as
          from dual;
       l_expected_data_count INTEGER := 1;
       l_actual_data_count INTEGER;
+      l_constant_code NUMBER(14);
       cursor l_expected_value_data is
          select c_constant_value as level_value,
                 'm' as level_unit_si,
@@ -600,12 +601,19 @@ create or replace package body test_av_location_level_ref_values as
       end loop;
       ut.expect(l_actual_count).to_equal(l_expected_count);
 
+      SELECT LOCATION_LEVEL_CODE
+      INTO l_constant_code
+      FROM cwms_20.av_location_level_ref
+      WHERE LOCATION_LEVEL_ID = c_constant_id
+      AND LOCATION_LEVEL_DATE = c_constant_date
+      AND OFFICE_ID = c_office_id;
+
       -- check values
       FOR r_expected IN l_expected_value_data LOOP
          SELECT COUNT(*)
          INTO l_actual_data_count
          FROM cwms_20.av_location_level_values v
-         WHERE v.location_level_code is not null
+         WHERE v.location_level_code = l_constant_code
             AND v.constant_level_si = r_expected.level_value
             AND v.constant_level_en is not null
             AND v.seasonal_value_en is null
@@ -653,6 +661,7 @@ create or replace package body test_av_location_level_ref_values as
          from dual;
       l_expected_data_count INTEGER := 1;
       l_actual_data_count INTEGER;
+      l_ts_level_code NUMBER(14);
       cursor l_expected_value_data is
          select 'T' as interpolate,
                 c_ts_id as ts_id,
@@ -690,12 +699,19 @@ create or replace package body test_av_location_level_ref_values as
          end loop;
       ut.expect(l_actual_count).to_equal(l_expected_count);
 
+      SELECT location_level_code
+      INTO l_ts_level_code
+      FROM cwms_20.av_location_level_ref
+      WHERE location_level_id = c_ts_level_id
+      AND location_level_date = c_ts_date
+      AND office_id = c_office_id;
+
       -- check values
       FOR r_expected IN l_expected_value_data LOOP
             SELECT COUNT(*)
             INTO l_actual_data_count
             FROM cwms_20.av_location_level_values v
-            WHERE v.location_level_code is not null
+            WHERE v.location_level_code = l_ts_level_code
               AND v.constant_level_si is null
               AND v.constant_level_en is null
               AND v.seasonal_value_en is null
@@ -754,6 +770,7 @@ create or replace package body test_av_location_level_ref_values as
                 '0 0:0:0.0' as time_offset
          from dual;
       l_seasonal_count INTEGER;
+      l_seasonal_code NUMBER(14);
    begin
       -- check reference values
       FOR r_expected IN l_expected_data LOOP
@@ -784,12 +801,19 @@ create or replace package body test_av_location_level_ref_values as
          end loop;
       ut.expect(l_actual_count).to_equal(l_expected_count);
 
+      SELECT location_level_code
+      INTO l_seasonal_code
+      FROM cwms_20.av_location_level_ref
+      WHERE location_level_id = c_seasonal_id
+      AND location_level_date = c_seasonal_date
+      AND office_id = c_office_id;
+
       -- check values
       FOR r_expected IN l_expected_value_data LOOP
             SELECT COUNT(*)
             INTO l_actual_data_count
             FROM cwms_20.av_location_level_values v
-            WHERE v.location_level_code is not null
+            WHERE v.location_level_code = l_seasonal_code
               AND v.constant_level_si is null
               AND v.constant_level_en is null
               AND v.seasonal_value_en is not null
@@ -818,7 +842,7 @@ create or replace package body test_av_location_level_ref_values as
             SELECT COUNT(*)
             INTO l_seasonal_count
             FROM cwms_20.av_location_level_values v
-            WHERE v.location_level_code is not null
+            WHERE v.location_level_code = l_seasonal_code
               AND v.constant_level_si is null
               AND v.constant_level_en is null
               AND v.seasonal_value_si = l_seasonal_data(i).value
@@ -850,7 +874,7 @@ create or replace package body test_av_location_level_ref_values as
       l_expected_count INTEGER := 1;
       l_actual_count INTEGER;
       cursor l_expected_data is
-         select c_constant_id as location_level_id,
+         select c_virtual_id as location_level_id,
                 'm' as level_units,
                 c_virtual_date as effective_date,
                 c_office_id as office_id,
@@ -866,6 +890,7 @@ create or replace package body test_av_location_level_ref_values as
          from dual;
       l_expected_data_count INTEGER := 1;
       l_actual_data_count INTEGER;
+      l_virt_code NUMBER(14);
       cursor l_expected_value_data is
          select c_connections as connections,
                 'm' as level_unit_si,
@@ -902,12 +927,19 @@ create or replace package body test_av_location_level_ref_values as
          end loop;
       ut.expect(l_actual_count).to_equal(l_expected_count);
 
+      SELECT LOCATION_LEVEL_CODE
+      INTO l_virt_code
+      FROM cwms_20.av_location_level_ref
+      WHERE location_level_id = c_virtual_id
+      AND LOCATION_LEVEL_DATE = c_virtual_date
+      AND OFFICE_ID = c_office_id;
+
       -- check values
       FOR r_expected IN l_expected_value_data LOOP
             SELECT COUNT(*)
             INTO l_actual_data_count
             FROM cwms_20.av_location_level_values v
-            WHERE v.location_level_code is not null
+            WHERE v.location_level_code = l_virt_code
               AND v.constant_level_si is null
               AND v.constant_level_en is null
               AND v.seasonal_value_en is null
@@ -921,8 +953,8 @@ create or replace package body test_av_location_level_ref_values as
               AND v.tsid is null
               AND v.attribute_value_en is null
               AND v.attribute_value_si is null
-              AND v.level_unit_en = r_expected.level_unit_en
-              AND v.level_unit_si = r_expected.level_unit_si
+              AND v.level_unit_en is null
+              AND v.level_unit_si is null
               AND v.connections = r_expected.connections
               AND v.expiration_date = r_expected.expiration_date
               AND v.default_label is null
