@@ -26,7 +26,7 @@
 --                              * @field attribute_sub_parameter_id  The sub-parameter of the attribute, if any
 --                              * @field attribute_parameter_type_id The parameter type of the attribute, if any
 --                              * @field attribute_duration_id       The duration of the attribute, if any
---                              * @field default_label               The label assoicated with the location level and the ''GENERAL/OTHER'' configuration, if any
+--                              * @field default_label               The label associated with the location level and the ''GENERAL/OTHER'' configuration, if any
 --                              * @field source                      The source entity for the location level values
 --                              */
 --                             ');
@@ -235,7 +235,7 @@ with
 /* ============================================================
    Final projection
    ============================================================ */
-select p.location_level_code,
+select coalesce(p.location_level_code, v.location_level_code) as location_level_code,
        p.constant_level_en,
        p.constant_level_si,
        s.seasonal_value_en,
@@ -260,7 +260,7 @@ select p.location_level_code,
 from phys p
         left join seasonal s
                   on s.location_level_code = p.location_level_code
-        left join virt v
+        full join virt v
                   on v.location_level_code = p.location_level_code
         left join at_loc_lvl_label lbl
                   on lbl.loc_lvl_label_code = p.location_level_code
