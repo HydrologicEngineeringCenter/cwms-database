@@ -10567,96 +10567,99 @@ end retrieve_existing_item_counts;
        WHERE ts_group_code = l_rec.ts_group_code;
    END rename_ts_group;
 
-   PROCEDURE delete_ts_group (p_ts_category_id   IN VARCHAR2,
-                              p_ts_group_id      IN VARCHAR2,
-                              p_db_office_id     IN VARCHAR2 DEFAULT NULL)
-   IS
+   PROCEDURE delete_ts_group(p_ts_category_id IN VARCHAR2,
+                             p_ts_group_id IN VARCHAR2,
+                             p_cascade IN VARCHAR2 DEFAULT 'F',
+                             p_db_office_id IN VARCHAR2 DEFAULT NULL)
+       IS
+       l_office_code NUMBER(14);
+       l_rec         at_ts_group%ROWTYPE;
    BEGIN
-      delete_ts_group (p_ts_category_id   => p_ts_category_id,
-                       p_ts_group_id      => p_ts_group_id,
-                       p_cascade          => 'F',
-                       p_db_office_id     => p_db_office_id
-                      );
+       -------------------
+       -- sanity checks --
+       -------------------
+       l_office_code := cwms_util.get_db_office_code(p_db_office_id);
+
+       -----------------------------------
+       -- determine if the group exists --
+       -----------------------------------
+       BEGIN
+           SELECT g.ts_group_code,
+                  g.ts_category_code,
+                  g.ts_group_id,
+                  g.ts_group_desc,
+                  g.db_office_code,
+                  g.shared_ts_alias_id,
+                  g.shared_ts_ref_code
+           INTO l_rec
+           FROM at_ts_category c,
+                at_ts_group g
+           WHERE UPPER(c.ts_category_id) = UPPER(p_ts_category_id)
+             AND UPPER(g.ts_group_id) = UPPER(p_ts_group_id)
+             AND g.ts_category_code = c.ts_category_code
+             AND g.db_office_code IN
+                 (l_office_code, cwms_util.db_office_code_all);
+       EXCEPTION
+           WHEN NO_DATA_FOUND
+               THEN
+                   cwms_err.raise('ITEM_DOES_NOT_EXIST',
+                                  'Time series group',
+                                  p_ts_category_id || '/' || p_ts_group_id);
+       END;
+
+       ----------------------------------------
+       -- raise exceptions on invalid states --
+       ----------------------------------------
+       IF l_rec.db_office_code = cwms_util.db_office_code_all
+           AND l_office_code != cwms_util.db_office_code_all
+       THEN
+           cwms_err.raise(
+                   'ERROR',
+                   'CWMS time series group '
+                       || p_ts_category_id
+                       || '/'
+                       || p_ts_group_id
+                       || ' can only be deleted by owner.');
+       END IF;
+
+       IF cwms_util.is_true(p_cascade)
+       THEN
+           DELETE
+           FROM at_ts_group_assignment
+           WHERE ts_group_code = l_rec.ts_group_code;
+       END IF;
+
+       FOR rec IN (SELECT ts_code
+                   FROM at_ts_group_assignment
+                   WHERE ts_group_code = l_rec.ts_group_code)
+           LOOP
+               cwms_err.raise(
+                       'ERROR',
+                       'Cannot delete time series group '
+                           || p_ts_category_id
+                           || '/'
+                           || p_ts_group_id
+                           || ' because it is not empty.');
+           END LOOP;
+
+       ----------------------
+       -- delete the group --
+       ----------------------
+       DELETE
+       FROM at_ts_group
+       WHERE ts_group_code = l_rec.ts_group_code;
    END delete_ts_group;
 
-   PROCEDURE delete_ts_group (p_ts_category_id   IN VARCHAR2,
-                              p_ts_group_id      IN VARCHAR2,
-                              p_cascade          IN VARCHAR2 DEFAULT 'F',
-                              p_db_office_id     IN VARCHAR2 DEFAULT NULL)
-   IS
-      l_office_code   NUMBER (14);
-      l_rec           at_ts_group%ROWTYPE;
+   PROCEDURE delete_ts_group(p_ts_category_id IN VARCHAR2,
+                             p_ts_group_id IN VARCHAR2,
+                             p_db_office_id IN VARCHAR2 DEFAULT NULL)
+       IS
    BEGIN
-      -------------------
-      -- sanity checks --
-      -------------------
-      l_office_code := cwms_util.get_db_office_code (p_db_office_id);
-
-      -----------------------------------
-      -- determine if the group exists --
-      -----------------------------------
-      BEGIN
-         SELECT g.ts_group_code,
-                g.ts_category_code,
-                g.ts_group_id,
-                g.ts_group_desc,
-                g.db_office_code,
-                g.shared_ts_alias_id,
-                g.shared_ts_ref_code
-           INTO l_rec
-           FROM at_ts_category c, at_ts_group g
-          WHERE     UPPER (c.ts_category_id) = UPPER (p_ts_category_id)
-                AND UPPER (g.ts_group_id) = UPPER (p_ts_group_id)
-                AND g.ts_category_code = c.ts_category_code
-                AND g.db_office_code IN
-                       (l_office_code, cwms_util.db_office_code_all);
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            cwms_err.raise ('ITEM_DOES_NOT_EXIST',
-                            'Time series group',
-                            p_ts_category_id || '/' || p_ts_group_id);
-      END;
-
-      ----------------------------------------
-      -- raise exceptions on invalid states --
-      ----------------------------------------
-      IF     l_rec.db_office_code = cwms_util.db_office_code_all
-         AND l_office_code != cwms_util.db_office_code_all
-      THEN
-         cwms_err.raise (
-            'ERROR',
-               'CWMS time series group '
-            || p_ts_category_id
-            || '/'
-            || p_ts_group_id
-            || ' can only be deleted by owner.');
-      END IF;
-
-      IF cwms_util.is_true (p_cascade)
-      THEN
-         DELETE FROM at_ts_group_assignment
-               WHERE ts_group_code = l_rec.ts_group_code;
-      END IF;
-
-     FOR rec IN (SELECT ts_code
-                   FROM at_ts_group_assignment
-                  WHERE ts_group_code = l_rec.ts_group_code)
-     LOOP
-        cwms_err.raise (
-           'ERROR',
-              'Cannot delete time series group '
-           || p_ts_category_id
-           || '/'
-           || p_ts_group_id
-           || ' because it is not empty.');
-     END LOOP;
-
-      ----------------------
-      -- delete the group --
-      ----------------------
-      DELETE FROM at_ts_group
-            WHERE ts_group_code = l_rec.ts_group_code;
+       delete_ts_group(p_ts_category_id => p_ts_category_id,
+                       p_ts_group_id => p_ts_group_id,
+                       p_cascade => 'F',
+                       p_db_office_id => p_db_office_id
+       );
    END delete_ts_group;
 
    procedure assign_ts_group (
