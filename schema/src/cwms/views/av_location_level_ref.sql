@@ -23,7 +23,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_R
                              * @field location_level_comment      The comment associated with the location level
                              * @field duration_id         The duration portion of the location level
                              * @field specified_level_id  The specified level portion of the location level
-
                              * @field attribute_parameter_id      The attribute of the parameter, if any
                              * @field attribute_base_parameter_id The base parameter of the attribute, if any
                              * @field attribute_sub_parameter_id  The sub-parameter of the attribute, if any
@@ -40,12 +39,10 @@ create or replace force view av_location_level_ref
        location_level_code,
        location_level_date,
        expiration_date,
-
        base_location_id,
        sub_location_id,
        location_id,
        location_code,
-
        base_parameter_id,
        sub_parameter_id,
        parameter_id,
@@ -53,32 +50,27 @@ create or replace force view av_location_level_ref
        location_level_comment,
        duration_id,
        specified_level_id,
-
        attribute_parameter_id,
        attribute_base_parameter_id,
        attribute_sub_parameter_id,
        attribute_parameter_type_id,
        attribute_duration_id
-         )
+      )
 as
-
 /* ===========================
  * PHYSICAL LOCATION LEVELS
  * =========================== */
 select
    c_o.office_id,
-
    (dash(a_bl.base_location_id, a_pl.sub_location_id) || '.' || dash(c_bp1.base_parameter_id, a_p1.sub_parameter_id) || '.' || c_pt1.parameter_type_id || '.' || c_d1.duration_id || '.' || a_sl.specified_level_id) as location_level_id,
    (dash(c_bp2.base_parameter_id, a_p2.sub_parameter_id) || substr ('.', 1, length (c_pt2.parameter_type_id)) || c_pt2.parameter_type_id || substr ('.', 1, length (c_d2.duration_id)) || c_d2.duration_id) as attribute_id,
    a_ll.location_level_code,
    a_ll.location_level_date,
    a_ll.expiration_date,
-
    a_bl.base_location_id,
    a_pl.sub_location_id,
    dash(a_bl.base_location_id, a_pl.sub_location_id)      as location_id,
    a_ll.location_code,
-
    c_bp1.base_parameter_id,
    a_p1.sub_parameter_id,
    dash(c_bp1.base_parameter_id, a_p1.sub_parameter_id)   as parameter_id,
@@ -86,7 +78,6 @@ select
    a_ll.location_level_comment,
    c_d1.duration_id,
    a_sl.specified_level_id,
-
    dash(c_bp2.base_parameter_id, a_p2.sub_parameter_id)   as parameter_id,
    c_bp2.base_parameter_id as attribute_base_parameter_id,
    a_p2.sub_parameter_id as attribute_sub_parameter_id,
@@ -118,7 +109,6 @@ from
                 on c_pt2.parameter_type_code = a_ll.attribute_parameter_type_code
       left join cwms_duration c_d2
                 on c_d2.duration_code = a_ll.attribute_duration_code
-
 union all
 
 /* ===========================
@@ -126,18 +116,15 @@ union all
  * =========================== */
 select
    c_o.office_id,
-
    (dash(a_bl.base_location_id, a_pl.sub_location_id) || '.' || dash(c_bp1.base_parameter_id, a_p1.sub_parameter_id) || '.' || c_pt1.parameter_type_id || '.' || c_d1.duration_id || '.' || a_sl.specified_level_id) as location_level_id,
    (dash(c_bp2.base_parameter_id, a_p2.sub_parameter_id) || substr ('.', 1, length (c_pt2.parameter_type_id)) || c_pt2.parameter_type_id || substr ('.', 1, length (c_d2.duration_id)) || c_d2.duration_id) as attribute_id,
    v_ll.location_level_code,
    v_ll.effective_date          as location_level_date,
    v_ll.expiration_date,
-
    a_bl.base_location_id,
    a_pl.sub_location_id,
    dash(a_bl.base_location_id, a_pl.sub_location_id)      as location_id,
    v_ll.location_code,
-
    c_bp1.base_parameter_id,
    a_p1.sub_parameter_id,
    dash(c_bp1.base_parameter_id, a_p1.sub_parameter_id)   as parameter_id,
@@ -145,7 +132,6 @@ select
    v_ll.location_level_comment,
    c_d1.duration_id,
    a_sl.specified_level_id,
-
    dash(c_bp2.base_parameter_id, a_p2.sub_parameter_id)   as parameter_id,
    c_bp2.base_parameter_id as attribute_base_parameter_id,
    a_p2.sub_parameter_id as attribute_sub_parameter_id,
@@ -178,12 +164,10 @@ from
       left join cwms_duration c_d2
                 on c_d2.duration_code = v_ll.attribute_duration_code;
 /
-
 begin
    execute immediate 'grant select on av_location_level_ref to cwms_user';
 exception
    when others then null;
 end;
 /
-
 create or replace public synonym cwms_v_location_level_ref for av_location_level_ref;

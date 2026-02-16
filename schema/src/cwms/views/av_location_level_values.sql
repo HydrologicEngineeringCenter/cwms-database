@@ -267,7 +267,6 @@ from phys p
                      and lbl.configuration_code = 1
         left join at_loc_lvl_source src
                   on src.loc_lvl_source_code = p.location_level_code;
-
 /
 begin
    execute immediate 'grant select on av_location_level_values to cwms_user';
