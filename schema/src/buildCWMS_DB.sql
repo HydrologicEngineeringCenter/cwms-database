@@ -118,6 +118,8 @@ whenever sqlerror exit -1
 @@cwms/views/av_ts_profile_inst_elev
 @@cwms/views/av_ts_profile_inst_sp
 @@cwms/views/av_active_api_keys
+@@cwms/views/av_location_level_values
+@@cwms/views/av_location_level_ref
 
 --
 -- Create pd/test user accounts...
