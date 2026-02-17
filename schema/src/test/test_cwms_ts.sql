@@ -4507,7 +4507,7 @@ AS
                                 from at_ts_group 
                                where ts_category_code = (select ts_category_code 
                                                            from at_ts_category 
-                                                          where db_office_id = cwms_util.get_office_code('&&office_id') 
+                                                          where db_office_code = cwms_util.get_office_code('&&office_id')
                                                             and upper(ts_category_id) = 'TESTCATEGORY')
                                  and upper(ts_group_id) = 'TESTGROUP');
       ut.expect(l_count).to_equal(1);
@@ -4529,7 +4529,7 @@ AS
         from at_ts_group
        where ts_category_code = (select ts_category_code 
                                    from at_ts_category 
-                                  where db_office_id = cwms_util.get_office_code('&&office_id') 
+                                  where db_office_code = cwms_util.get_office_code('&&office_id')
                                     and upper(ts_category_id) = 'TESTCATEGORY')
          and upper(ts_group_id) = 'TESTGROUP';
       ut.expect(l_count).to_equal(0);
