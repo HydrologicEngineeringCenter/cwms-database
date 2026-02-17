@@ -61,8 +61,6 @@ DECLARE
       'av_loc_ts_id_count',
       'av_location_level',
       'av_location_level_curval',
-      'av_location_level_ref',
-      'av_location_level_values',
       'av_location_level2',        -- created in at_schema_2
       'av_log_message',            -- created in at_schema_2
       'av_nation',
@@ -204,8 +202,6 @@ END;
 @@cwms/views/av_location_kind
 @@cwms/views/av_location_level
 @@cwms/views/av_location_level_curval
-@@cwms/views/av_location_level_ref
-@@cwms/views/av_location_level_values
 @@cwms/views/av_location_type
 @@cwms/views/av_nation
 @@cwms/views/av_office
