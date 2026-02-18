@@ -27,7 +27,7 @@ create or replace package test_av_location_level_ref_values as
    c_base_loc constant varchar2(11) := 'Murphysboro';
    c_sub_loc constant varchar2(9) := 'Big Muddy';
    c_loc constant varchar2(21) := 'Murphysboro-Big Muddy';
-   c_office_id constant varchar2(3) := 'SPK';
+   c_office_id constant varchar2(3) := '&&office_id';
    c_timezone_id constant varchar2(3) := 'UTC';
    c_ts_level_id constant varchar2(44) := 'Murphysboro-Big Muddy.Elev.Inst.0.Top of Dam';
    c_ts_id constant varchar2(49) := 'Murphysboro-Big Muddy.Elev.Inst.1Day.0.Top of Dam';
@@ -88,7 +88,7 @@ create or replace package test_av_location_level_ref_values as
    l_xml varchar2(15000)
       := '<?xml version="1.0" encoding="utf-8"?>
         <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
-        <rating-template office-id="SPK">
+        <rating-template office-id="&&office_id">
           <parameters-id>Stage;Flow</parameters-id>
           <version>COE</version>
           <ind-parameter-specs>
@@ -102,7 +102,7 @@ create or replace package test_av_location_level_ref_values as
           <dep-parameter>Flow</dep-parameter>
           <description></description>
         </rating-template>
-        <rating-spec office-id="SPK">
+        <rating-spec office-id="&&office_id">
           <rating-spec-id>Murphysboro-Big Muddy.Stage;Flow.COE.Production</rating-spec-id>
           <template-id>Stage;Flow.COE</template-id>
           <location-id>Murphysboro-Big Muddy</location-id>
@@ -121,7 +121,7 @@ create or replace package test_av_location_level_ref_values as
           <dep-rounding-spec>4444444444</dep-rounding-spec>
           <description></description>
         </rating-spec>
-        <simple-rating office-id="SPK">
+        <simple-rating office-id="&&office_id">
           <rating-spec-id>Murphysboro-Big Muddy.Stage;Flow.COE.Production</rating-spec-id>
           <units-id>ft;cfs</units-id>
           <effective-date>2002-04-09T13:53:01Z</effective-date>
