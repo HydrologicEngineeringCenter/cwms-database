@@ -134,6 +134,9 @@ procedure test_cwdb_258_report_input_validity_errors_to_user;
 --%test (GitHub issue 76 RetrieveTS is inconsistent across folded DST transition)
 procedure test_issue_76_inconsistent_retrieve_ts_across_folded_dst_boundary;
 
+--%test (Test delete_ts_group with cascade parameter)
+procedure test_delete_ts_group_cascade;
+
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
@@ -4478,6 +4481,63 @@ AS
          end if;
       end loop;
    end test_issue_76_inconsistent_retrieve_ts_across_folded_dst_boundary;
+
+   ---------------------------------------------------------------------------------
+   -- procedure test_delete_ts_group_cascade
+   ---------------------------------------------------------------------------------
+   procedure test_delete_ts_group_cascade
+   is
+      l_count integer;
+      l_ts_id varchar2(200) := test_base_location_id||'.Flow.Inst.1Hour.0.Test';
+   begin
+      setup;
+      cwms_ts.create_ts('&&office_id', l_ts_id);
+      
+      -- Create a test category and group
+      cwms_ts.store_ts_category('TestCategory', 'Category for unit tests', '&&office_id');
+      cwms_ts.store_ts_group('TestCategory', 'TestGroup', 'Group for unit tests', 'F', 'T', null, null, '&&office_id');
+      
+      -- Assign TS to group
+      cwms_ts.assign_ts_group('TestCategory', 'TestGroup', l_ts_id, null, null, null, '&&office_id');
+      
+      -- Verify assignment exists
+      select count(*) into l_count
+        from at_ts_group_assignment
+       where ts_group_code = (select ts_group_code 
+                                from at_ts_group 
+                               where ts_category_code = (select ts_category_code 
+                                                           from at_ts_category 
+                                                          where db_office_code = cwms_util.get_office_code('&&office_id')
+                                                            and upper(ts_category_id) = 'TESTCATEGORY')
+                                 and upper(ts_group_id) = 'TESTGROUP');
+      ut.expect(l_count).to_equal(1);
+      
+      -- Test non-cascade delete (should fail)
+      begin
+         cwms_ts.delete_ts_group('TestCategory', 'TestGroup', 'F', '&&office_id');
+         cwms_err.raise('ERROR', 'Expected exception not raised for non-cascade delete of non-empty group.');
+      exception
+         when others then
+            null; -- expected
+      end;
+      
+      -- Test cascade delete
+      cwms_ts.delete_ts_group('TestCategory', 'TestGroup', 'T', '&&office_id');
+      
+      -- Verify group is gone
+      select count(*) into l_count
+        from at_ts_group
+       where ts_category_code = (select ts_category_code 
+                                   from at_ts_category 
+                                  where db_office_code = cwms_util.get_office_code('&&office_id')
+                                    and upper(ts_category_id) = 'TESTCATEGORY')
+         and upper(ts_group_id) = 'TESTGROUP';
+      ut.expect(l_count).to_equal(0);
+      
+      -- Cleanup category
+      cwms_ts.delete_ts_category('TestCategory', '&&office_id');
+      teardown;
+   end test_delete_ts_group_cascade;
 
 END test_cwms_ts;
 /

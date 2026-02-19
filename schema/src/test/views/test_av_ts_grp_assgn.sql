@@ -54,9 +54,9 @@ create or replace package body test_av_ts_grp_assgn as
       is
    begin
       clear_caches;
-      cwms_ts.delete_ts_group('Default', c_location_id, c_district_office_id);
-      cwms_ts.delete_ts_group(c_temp_air, c_location_id, c_district_office_id);
-      cwms_ts.delete_ts_group(c_rdl_aliases, c_reporting, c_district_office_id);
+      cwms_ts.delete_ts_group(p_ts_category_id => 'Default', p_ts_group_id => c_location_id, p_cascade => 'F', p_db_office_id => c_district_office_id);
+      cwms_ts.delete_ts_group(p_ts_category_id => c_temp_air, p_ts_group_id =>  c_location_id, p_cascade => 'F', p_db_office_id => c_district_office_id);
+      cwms_ts.delete_ts_group(p_ts_category_id => c_rdl_aliases, p_ts_group_id => c_reporting, p_cascade => 'F', p_db_office_id => c_district_office_id);
       cwms_ts.delete_ts_category(c_temp_air, 'T', c_district_office_id);
       cwms_ts.delete_ts_category(c_rdl_aliases, 'T', c_district_office_id);
       cwms_loc.delete_location(
