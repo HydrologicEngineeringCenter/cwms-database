@@ -7854,7 +7854,7 @@ begin
    cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 'F', c_office_id);
    cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new)), c_office_id);
    cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_str_tab(l_lrts_ts_id_new), 'F', c_office_id);
-   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', 'F', c_office_id);
+   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
    --.... cwms_cat package
    cwms_cat.cat_ts_aliases(
       p_cwms_cat     => l_crsr,
