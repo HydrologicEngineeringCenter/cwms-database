@@ -3100,7 +3100,7 @@ AS
     * @param p_cascade        A flag ('T' or 'F') that specifies whether to delete all time series assignments to the group before deleting the group itself.
     * @param p_db_office_id   The office that owns the time series group. If not specified or NULL, the session user's default office is used.
     */
-   PROCEDURE delete_ts_group (p_ts_category_id   IN VARCHAR2,
+   PROCEDURE delete_ts_group_cascade (p_ts_category_id   IN VARCHAR2,
                               p_ts_group_id      IN VARCHAR2,
                               p_cascade          IN VARCHAR2 DEFAULT 'F',
                               p_db_office_id     IN VARCHAR2 DEFAULT NULL);

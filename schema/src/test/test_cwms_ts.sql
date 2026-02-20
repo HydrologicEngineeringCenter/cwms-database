@@ -134,7 +134,7 @@ procedure test_cwdb_258_report_input_validity_errors_to_user;
 --%test (GitHub issue 76 RetrieveTS is inconsistent across folded DST transition)
 procedure test_issue_76_inconsistent_retrieve_ts_across_folded_dst_boundary;
 
---%test (Test delete_ts_group with cascade parameter)
+--%test (Test delete_ts_group_cascade with cascade parameter)
 procedure test_delete_ts_group_cascade;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
@@ -4514,7 +4514,7 @@ AS
       
       -- Test non-cascade delete (should fail)
       begin
-         cwms_ts.delete_ts_group('TestCategory', 'TestGroup', 'F', '&&office_id');
+         cwms_ts.delete_ts_group_cascade('TestCategory', 'TestGroup', 'F', '&&office_id');
          cwms_err.raise('ERROR', 'Expected exception not raised for non-cascade delete of non-empty group.');
       exception
          when others then
@@ -4522,7 +4522,7 @@ AS
       end;
       
       -- Test cascade delete
-      cwms_ts.delete_ts_group('TestCategory', 'TestGroup', 'T', '&&office_id');
+      cwms_ts.delete_ts_group_cascade('TestCategory', 'TestGroup', 'T', '&&office_id');
       
       -- Verify group is gone
       select count(*) into l_count
