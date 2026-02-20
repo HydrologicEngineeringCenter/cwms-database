@@ -5674,7 +5674,7 @@ begin
    cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 'F', c_office_id);
    cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old)), c_office_id);
    cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_str_tab(l_lrts_ts_id_old), 'F', c_office_id);
-   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
+   cwms_ts.delete_ts_group(p_ts_category_id => 'TestCategory', p_ts_group_id => 'TestGroup_old', p_cascade => 'F', p_db_office_id => c_office_id);
    --.... cwms_cat package
    cwms_cat.cat_ts_aliases(
       p_cwms_cat     => l_crsr,
@@ -6647,7 +6647,7 @@ begin
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
-   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
+   cwms_ts.delete_ts_group(p_ts_category_id => 'TestCategory', p_ts_group_id => 'TestGroup_new', p_cascade => 'F', p_db_office_id => c_office_id);
    --.... cwms_cat package
    cwms_cat.cat_ts_aliases(
       p_cwms_cat     => l_crsr,
@@ -6961,7 +6961,7 @@ begin
    cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_old', l_lrts_ts_id_old, 'F', c_office_id);
    cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_old, 1, null, l_lrts_ts_id_old)), c_office_id);
    cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_old', cwms_t_str_tab(l_lrts_ts_id_old), 'F', c_office_id);
-   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
+   cwms_ts.delete_ts_group(p_ts_category_id => 'TestCategory', p_ts_group_id => 'TestGroup_old', p_cascade => 'F', p_db_office_id => c_office_id);
    --.... cwms_cat package
    cwms_cat.cat_ts_aliases(
       p_cwms_cat     => l_crsr,
@@ -7854,7 +7854,7 @@ begin
    cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 'F', c_office_id);
    cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new)), c_office_id);
    cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_str_tab(l_lrts_ts_id_new), 'F', c_office_id);
-   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
+   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', 'F', c_office_id);
    --.... cwms_cat package
    cwms_cat.cat_ts_aliases(
       p_cwms_cat     => l_crsr,
@@ -8791,7 +8791,7 @@ begin
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
-   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_old', c_office_id);
+   cwms_ts.delete_ts_group(p_ts_category_id => 'TestCategory', p_ts_group_id => 'TestGroup_old', p_cascade => 'F', p_db_office_id => c_office_id);
    --.... cwms_cat package
    cwms_cat.cat_ts_aliases(
       p_cwms_cat     => l_crsr,
@@ -9076,7 +9076,7 @@ begin
    cwms_ts.unassign_ts_group('TestCategory', 'TestGroup_new', l_lrts_ts_id_new, 'F', c_office_id);
    cwms_ts.assign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_ts_alias_tab(cwms_t_ts_alias(l_lrts_ts_id_new, 1, null, l_lrts_ts_id_new)), c_office_id);
    cwms_ts.unassign_ts_groups('TestCategory', 'TestGroup_new', cwms_t_str_tab(l_lrts_ts_id_new), 'F', c_office_id);
-   cwms_ts.delete_ts_group('TestCategory', 'TestGroup_new', c_office_id);
+   cwms_ts.delete_ts_group(p_ts_category_id => 'TestCategory', p_ts_group_id => 'TestGroup_new', p_cascade => 'F', p_db_office_id => c_office_id);
    --.... cwms_cat package
    cwms_cat.cat_ts_aliases(
       p_cwms_cat     => l_crsr,
