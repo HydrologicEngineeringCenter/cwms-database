@@ -88,7 +88,7 @@ create or replace package test_av_location_level_ref_values as
    l_xml varchar2(15000)
       := '<?xml version="1.0" encoding="utf-8"?>
         <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
-        <rating-template office-id="&&office_id">
+        <rating-template office-id="__OFFICE__">
           <parameters-id>Stage;Flow</parameters-id>
           <version>COE</version>
           <ind-parameter-specs>
@@ -102,7 +102,7 @@ create or replace package test_av_location_level_ref_values as
           <dep-parameter>Flow</dep-parameter>
           <description></description>
         </rating-template>
-        <rating-spec office-id="&&office_id">
+        <rating-spec office-id="__OFFICE__">
           <rating-spec-id>Murphysboro-Big Muddy.Stage;Flow.COE.Production</rating-spec-id>
           <template-id>Stage;Flow.COE</template-id>
           <location-id>Murphysboro-Big Muddy</location-id>
@@ -121,7 +121,7 @@ create or replace package test_av_location_level_ref_values as
           <dep-rounding-spec>4444444444</dep-rounding-spec>
           <description></description>
         </rating-spec>
-        <simple-rating office-id="&&office_id">
+        <simple-rating office-id="__OFFICE__">
           <rating-spec-id>Murphysboro-Big Muddy.Stage;Flow.COE.Production</rating-spec-id>
           <units-id>ft;cfs</units-id>
           <effective-date>2002-04-09T13:53:01Z</effective-date>
@@ -227,6 +227,7 @@ create or replace package body test_av_location_level_ref_values as
                                        p_timezone_id => c_timezone_id,
                                        p_office_id => c_office_id
       );
+      l_xml := replace(l_xml, '__OFFICE__', c_office_id);
       cwms_rating.store_ratings_xml(p_xml => l_xml,
                                        p_fail_if_exists => 'F',
                                        p_replace_base => 'F'
@@ -668,5 +669,4 @@ create or replace package body test_av_location_level_ref_values as
    end virtual_level;
 end test_av_location_level_ref_values;
 /
-
 show errors;
