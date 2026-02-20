@@ -61,6 +61,8 @@ DECLARE
       'av_loc_ts_id_count',
       'av_location_level',
       'av_location_level_curval',
+      'av_location_level_ref',     -- created in at_schema_2
+      'av_location_level_values',  -- created in at_schema_2
       'av_location_level2',        -- created in at_schema_2
       'av_log_message',            -- created in at_schema_2
       'av_nation',
