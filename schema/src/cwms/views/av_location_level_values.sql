@@ -2,9 +2,8 @@ delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES', null,
                             '
                             /**
-                             * Displays information about concrete location levels
+                             * Displays information about location level values
                              *
-                             * @since CWMS 2.1 (extended in 3.0)
                              *
                              * @field location_level_code The unique numeric code that identifies the location level in the database
                              * @field constant_level_en   The constant level value in English units

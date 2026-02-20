@@ -277,7 +277,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
       FOR r_expected IN l_expected_data LOOP
          SELECT COUNT(*)
          INTO l_actual_count
-         FROM cwms_20.av_location_level_ref v
+         FROM av_location_level_ref v
          WHERE v.location_level_id = r_expected.location_level_id
             AND v.location_level_date = r_expected.effective_date
             AND v.office_id = r_expected.office_id
@@ -304,7 +304,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
 
       SELECT LOCATION_LEVEL_CODE
       INTO l_constant_code
-      FROM cwms_20.av_location_level_ref
+      FROM av_location_level_ref
       WHERE LOCATION_LEVEL_ID = c_constant_id
       AND LOCATION_LEVEL_DATE = c_constant_date
       AND OFFICE_ID = c_office_id;
@@ -313,7 +313,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
       FOR r_expected IN l_expected_value_data LOOP
          SELECT COUNT(*)
          INTO l_actual_data_count
-         FROM cwms_20.av_location_level_values v
+         FROM av_location_level_values v
          WHERE v.location_level_code = l_constant_code
             AND v.constant_level_si = r_expected.level_value
             AND v.constant_level_en is not null
@@ -375,7 +375,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
       FOR r_expected IN l_expected_data LOOP
             SELECT COUNT(*)
             INTO l_actual_count
-            FROM cwms_20.av_location_level_ref v
+            FROM av_location_level_ref v
             WHERE v.location_level_id = r_expected.location_level_id
               AND v.location_level_date = r_expected.effective_date
               AND v.office_id = r_expected.office_id
@@ -402,7 +402,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
 
       SELECT location_level_code
       INTO l_ts_level_code
-      FROM cwms_20.av_location_level_ref
+      FROM av_location_level_ref
       WHERE location_level_id = c_ts_level_id
       AND location_level_date = c_ts_date
       AND office_id = c_office_id;
@@ -411,7 +411,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
       FOR r_expected IN l_expected_value_data LOOP
             SELECT COUNT(*)
             INTO l_actual_data_count
-            FROM cwms_20.av_location_level_values v
+            FROM av_location_level_values v
             WHERE v.location_level_code = l_ts_level_code
               AND v.constant_level_si is null
               AND v.constant_level_en is null
@@ -477,7 +477,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
       FOR r_expected IN l_expected_data LOOP
             SELECT COUNT(*)
             INTO l_actual_count
-            FROM cwms_20.av_location_level_ref v
+            FROM av_location_level_ref v
             WHERE v.location_level_id = r_expected.location_level_id
               AND v.location_level_date = r_expected.effective_date
               AND v.office_id = r_expected.office_id
@@ -504,7 +504,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
 
       SELECT location_level_code
       INTO l_seasonal_code
-      FROM cwms_20.av_location_level_ref
+      FROM av_location_level_ref
       WHERE location_level_id = c_seasonal_id
       AND location_level_date = c_seasonal_date
       AND office_id = c_office_id;
@@ -513,7 +513,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
       FOR r_expected IN l_expected_value_data LOOP
             SELECT COUNT(*)
             INTO l_actual_data_count
-            FROM cwms_20.av_location_level_values v
+            FROM av_location_level_values v
             WHERE v.location_level_code = l_seasonal_code
               AND v.constant_level_si is null
               AND v.constant_level_en is null
@@ -542,7 +542,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
       FOR i IN 1..l_seasonal_data.COUNT LOOP
             SELECT COUNT(*)
             INTO l_seasonal_count
-            FROM cwms_20.av_location_level_values v
+            FROM av_location_level_values v
             WHERE v.location_level_code = l_seasonal_code
               AND v.constant_level_si is null
               AND v.constant_level_en is null
@@ -603,7 +603,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
       FOR r_expected IN l_expected_data LOOP
             SELECT COUNT(*)
             INTO l_actual_count
-            FROM cwms_20.av_location_level_ref v
+            FROM av_location_level_ref v
             WHERE v.location_level_id = r_expected.location_level_id
               AND v.location_level_date = r_expected.effective_date
               AND v.office_id = r_expected.office_id
@@ -630,7 +630,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
 
       SELECT LOCATION_LEVEL_CODE
       INTO l_virt_code
-      FROM cwms_20.av_location_level_ref
+      FROM av_location_level_ref
       WHERE location_level_id = c_virtual_id
       AND LOCATION_LEVEL_DATE = c_virtual_date
       AND OFFICE_ID = c_office_id;
@@ -639,7 +639,7 @@ create or replace package body &&cwms_schema..test_av_location_level_ref_values 
       FOR r_expected IN l_expected_value_data LOOP
             SELECT COUNT(*)
             INTO l_actual_data_count
-            FROM cwms_20.av_location_level_values v
+            FROM av_location_level_values v
             WHERE v.location_level_code = l_virt_code
               AND v.constant_level_si is null
               AND v.constant_level_en is null
