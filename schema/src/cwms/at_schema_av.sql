@@ -204,8 +204,6 @@ END;
 @@cwms/views/av_location_kind
 @@cwms/views/av_location_level
 @@cwms/views/av_location_level_curval
-@@cwms/views/av_location_level_ref
-@@cwms/views/av_location_level_values
 @@cwms/views/av_location_type
 @@cwms/views/av_nation
 @@cwms/views/av_office

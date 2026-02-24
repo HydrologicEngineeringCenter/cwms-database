@@ -46,6 +46,8 @@ create unique index at_fcst_spec_idx2 on at_fcst_spec (
 @@cwms/views/av_ts_profile_inst
 @@cwms/views/av_ts_profile_inst_ts
 @@cwms/views/av_location_level2
+@@cwms/views/av_location_level_ref
+@@cwms/views/av_location_level_values
 @@cwms/views/av_virtual_location_level
 @@cwms/views/av_vloc_lvl_constituent
 ---------------------------------------------------------
