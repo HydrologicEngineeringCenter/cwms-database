@@ -5,7 +5,7 @@
  * Source may not be released without written approval from HEC
  */
 
-create or replace package &&cwms_schema..test_av_location_level_ref_values as
+create or replace package test_av_location_level_ref_values as
    --%suite(Test schema for av_location_level_ref and av_location_level_values views)
    --%rollback(manual)
    --%afterall(teardown)
@@ -139,7 +139,7 @@ create or replace package &&cwms_schema..test_av_location_level_ref_values as
 end test_av_location_level_ref_values;
 /
 show errors;
-create or replace package body &&cwms_schema..test_av_location_level_ref_values as
+create or replace package body test_av_location_level_ref_values as
 --------------------------------------------------------------------------------
 -- procedure teardown
 --------------------------------------------------------------------------------
