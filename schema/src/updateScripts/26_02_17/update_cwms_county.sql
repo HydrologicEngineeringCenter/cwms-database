@@ -1,0 +1,3 @@
+REM INSERTING into CWMS_20.CWMS_COUNTY
+Insert into CWMS_20.CWMS_COUNTY (COUNTY_CODE,COUNTY_ID,STATE_CODE,COUNTY_NAME) values (101000,'000',101,'No County - Location Shared by USA and Canada');
+Insert into CWMS_20.CWMS_COUNTY (COUNTY_CODE,COUNTY_ID,STATE_CODE,COUNTY_NAME) values (102000,'000',102,'No County - Location Shared by USA and Mexico');
