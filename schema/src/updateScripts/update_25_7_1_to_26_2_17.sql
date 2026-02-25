@@ -72,34 +72,32 @@ select systimestamp from dual;
 PROMPT ################################################################################
 PROMPT ALTERING TABLE DATA
 select systimestamp from dual;
-@@./26_02_17/update_cwms_county;
+whenever sqlerror continue;
 @@./26_02_17/update_cwms_nation_sp;
 @@./26_02_17/update_cwms_state;
-
-PROMPT ################################################################################
-PROMPT adding Data acquisition groups
-select systimestamp from dual;
+@@./26_02_17/update_cwms_county;
+whenever sqlerror exit;
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING TYPE SPECIFICATIONS
 select systimestamp from dual;
 
 drop type wat_usr_contract_acct_obj_t force;
-@../cwms/types/wat_usr_contract_acct_obj_t
+@@../cwms/types/wat_usr_contract_acct_obj_t
 
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING TYPE BODIES
 select systimestamp from dual;
 
-@../cwms/types/rating_ind_parameter_t-body
-@../cwms/types/rating_t-body
+@@../cwms/types/rating_ind_parameter_t-body
+@@../cwms/types/rating_t-body
 
 PROMPT ################################################################################
 PROMPT UPDATING PACKAGE SPECIFICATIONS
 
-@../cwms/cwms_loc_pkg
-@../cwms/cwms_ts_pkg
+@@../cwms/cwms_loc_pkg
+@@../cwms/cwms_ts_pkg
 
 
 PROMPT ################################################################################
@@ -107,22 +105,17 @@ PROMPT UPDATING PACKAGE BODIES
 select systimestamp from dual;
 
 define builduser = BUILDUSER
-@../cwms/cwms_level_pkg_body
-@../cwms/cwms_loc_pkg_body
-@../cwms/cwms_text_pkg_body
-@../cwms/cwms_ts_pkg_body
-@../cwms/cwms_ts_profile_pkg_body
-@../cwms/cwms_util_profile_pkg_body
-@../cwms/cwms_vt_pkg_body
-@../cwms/cwms_water_supply_pkg_body
+@@../cwms/cwms_level_pkg_body
+@@../cwms/cwms_loc_pkg_body
+@@../cwms/cwms_text_pkg_body
+@@../cwms/cwms_ts_pkg_body
+@@../cwms/cwms_ts_profile_pkg_body
+@@../cwms/cwms_util_profile_pkg_body
+@@../cwms/cwms_vt_pkg_body
+@@../cwms/cwms_water_supply_pkg_body
 
 PROMPT ################################################################################
 PROMPT UPDATING TRIGGERS
-select systimestamp from dual;
-
-
-PROMPT ################################################################################
-PROMPT GRANT SELECT ON TABLES TO USERS
 select systimestamp from dual;
 
 
@@ -164,7 +157,7 @@ PROMPT RESTORING PRE-UPDATE PRIVILEGES
 PROMPT ################################################################################
 PROMPT RECOMPILING SCHEMA
 select systimestamp from dual;
-@./util/compile_objects
+@@./util/compile_objects
 
 promp ################################################################################
 PROMPT REMAINING INVALID OBJECTS...
