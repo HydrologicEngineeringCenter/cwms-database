@@ -1,0 +1,2 @@
+REM INSERTING into CWMS_20.AT_TS_CATEGORY
+Insert into CWMS_20.AT_TS_CATEGORY (TS_CATEGORY_CODE,TS_CATEGORY_ID,DB_OFFICE_CODE,TS_CATEGORY_DESC) values (11,'SHEF Export',53,'Category for local groups for exporting SHEF data');
