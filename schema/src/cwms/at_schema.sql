@@ -1961,6 +1961,7 @@ INSERT INTO at_ts_category VALUES (0, 'Default',        53, 'Default');
 INSERT INTO at_ts_category VALUES (1, 'Agency Aliases', 53, 'Time series aliases for various agencies');
 INSERT INTO at_ts_category VALUES (3, 'Data Dissemination', 53, 'These TS Groups are used to manage which TS Ids are streamed to various data dissemination databases.');
 INSERT INTO at_ts_category VALUES (10, 'Data Acquisition', 53, 'These TS Groups are used to manage data aquisition from other organizations');
+INSERT INTO at_ts_category VALUES (11, 'SHEF Export', 53, 'Category for local groups for exporting SHEF data');
 
 
 --------
