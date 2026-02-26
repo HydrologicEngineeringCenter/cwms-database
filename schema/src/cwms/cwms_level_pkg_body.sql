@@ -907,6 +907,12 @@ is
    l_date_after   date;
    l_value_before number;
    l_value_after  number;
+   l_day          integer;
+   l_mon          integer;
+   l_yr           integer;
+   l_date_str     varchar2(64);
+   l_date_dummy   date;
+   l_date_offset  dsinterval_unconstrained;
 begin
    l_date := cwms_util.change_timezone(p_date, 'UTC', p_tz);
    l_intvl := top_of_interval_on_or_before(p_rec, l_date, 'UTC');
@@ -942,6 +948,31 @@ begin
          p_nearest_value := l_value_after;
       end if;
    else
+      ---------------------------------------------------------------------------
+      -- ensure we don't create invalid dates by having the day > end of month --
+      ---------------------------------------------------------------------------
+      begin
+         l_yr := extract(year from l_date);
+         l_mon := extract(month from l_date);
+         l_date_offset := to_dsinterval('0 00:00:00');
+         for i in 1..4 loop
+            if i = 4 then
+               cwms_err.raise(
+                  'ERROR',
+                  'Problem finding seasonal date nearest to '||top_of_interval_on_or_before(p_rec, l_date, 'UTC'));
+            end if;
+            l_day  := extract(day from l_intvl);
+            begin
+               l_date_str := l_yr||'-'||trim(to_char(l_mon, '09'))||'-'||trim(to_char(l_day, '09'));
+               l_date_dummy := to_date(l_date_str, 'yyyy-mm-dd'); -- raises an exception on invalid day of month
+               exit;
+            exception
+               when others then
+                  l_intvl := l_intvl - interval '1 00:00:00' day to second;
+                  l_date_offset := cwms_util.minutes_to_dsinterval(cwms_util.dsinterval_to_minutes(l_date_offset) + 1440);
+            end;
+         end loop;
+      end;
       if l_after then
          ------------------------
          -- ON OR AFTER P_DATE --
@@ -957,16 +988,16 @@ begin
                --------------------------------------------------------------------------------
                with query as
                   (select distinct
-                         cast(l_intvl + calendar_offset + time_offset as date) as date_time,
+                         cast(l_intvl + calendar_offset + time_offset + l_date_offset as date) as date_time,
                          value,
                          calendar_offset
                    from at_seasonal_location_level
                    where location_level_code = p_rec.location_level_code
-                      and cast(l_intvl + calendar_offset + time_offset as date) =
-                            (select min(cast(l_intvl + calendar_offset + time_offset as date))
+                      and cast(l_intvl + calendar_offset + time_offset  + l_date_offset as date) =
+                            (select min(cast(l_intvl + calendar_offset + time_offset + l_date_offset as date))
                                from at_seasonal_location_level
                                where location_level_code = p_rec.location_level_code
-                                     and cast(l_intvl + calendar_offset + time_offset as date) >= l_date)
+                                     and cast(l_intvl + calendar_offset + time_offset + l_date_offset as date) >= l_date)
                   )
                select date_time,
                       value
@@ -1009,16 +1040,16 @@ begin
                --------------------------------------------------------------------------------
                with query as
                   (select distinct
-                         cast(l_intvl + calendar_offset + time_offset as date) as date_time,
+                         cast(l_intvl + calendar_offset + time_offset + l_date_offset as date) as date_time,
                          value,
                          calendar_offset
                    from at_seasonal_location_level
                    where location_level_code = p_rec.location_level_code
-                      and cast(l_intvl + calendar_offset + time_offset as date) =
-                            (select max(cast(l_intvl + calendar_offset + time_offset as date))
+                      and cast(l_intvl + calendar_offset + time_offset + l_date_offset as date) =
+                            (select max(cast(l_intvl + calendar_offset + time_offset + l_date_offset as date))
                                from at_seasonal_location_level
                                where location_level_code = p_rec.location_level_code
-                                     and cast(l_intvl + calendar_offset + time_offset as date) <= l_date)
+                                     and cast(l_intvl + calendar_offset + time_offset + l_date_offset as date) <= l_date)
                   )
                select date_time,
                       value
