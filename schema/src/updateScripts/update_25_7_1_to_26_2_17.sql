@@ -76,7 +76,7 @@ whenever sqlerror continue;
 @@./26_02_17/update_cwms_nation_sp;
 @@./26_02_17/update_cwms_state;
 @@./26_02_17/update_cwms_county;
-@@./26_02_17/update_at_ts_cagegory;
+@@./26_02_17/update_at_ts_category;
 whenever sqlerror exit;
 
 PROMPT ################################################################################
