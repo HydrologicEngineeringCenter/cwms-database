@@ -10349,7 +10349,7 @@ end retrieve_existing_item_counts;
                               FROM at_ts_group
                              WHERE ts_category_code = l_category_rec.ts_category_code)
           LOOP
-             delete_ts_group (p_ts_category_id => p_ts_category_id,
+                  delete_ts_group_cascade (p_ts_category_id => p_ts_category_id,
                               p_ts_group_id    => group_rec.ts_group_id,
                               p_cascade        => p_cascade,
                               p_db_office_id   => cwms_util.get_db_office_id (l_category_rec.db_office_code)
@@ -10567,7 +10567,7 @@ end retrieve_existing_item_counts;
        WHERE ts_group_code = l_rec.ts_group_code;
    END rename_ts_group;
 
-   PROCEDURE delete_ts_group(p_ts_category_id IN VARCHAR2,
+   PROCEDURE delete_ts_group_cascade(p_ts_category_id IN VARCHAR2,
                              p_ts_group_id IN VARCHAR2,
                              p_cascade IN VARCHAR2 DEFAULT 'F',
                              p_db_office_id IN VARCHAR2 DEFAULT NULL)
@@ -10645,17 +10645,16 @@ end retrieve_existing_item_counts;
        ----------------------
        -- delete the group --
        ----------------------
-       DELETE
-       FROM at_ts_group
+       DELETE FROM at_ts_group
        WHERE ts_group_code = l_rec.ts_group_code;
-   END delete_ts_group;
+   END delete_ts_group_cascade;
 
    PROCEDURE delete_ts_group(p_ts_category_id IN VARCHAR2,
                              p_ts_group_id IN VARCHAR2,
                              p_db_office_id IN VARCHAR2 DEFAULT NULL)
        IS
    BEGIN
-       delete_ts_group(p_ts_category_id => p_ts_category_id,
+       delete_ts_group_cascade(p_ts_category_id => p_ts_category_id,
                        p_ts_group_id => p_ts_group_id,
                        p_cascade => 'F',
                        p_db_office_id => p_db_office_id
