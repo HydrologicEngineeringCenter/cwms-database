@@ -137,6 +137,9 @@ procedure test_issue_76_inconsistent_retrieve_ts_across_folded_dst_boundary;
 --%test (Test delete_ts_group with cascade parameter)
 procedure test_delete_ts_group_cascade;
 
+--%test (Test existence of expected time series categories)
+procedure test_ts_categories;
+
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
@@ -4492,26 +4495,26 @@ AS
    begin
       setup;
       cwms_ts.create_ts('&&office_id', l_ts_id);
-      
+
       -- Create a test category and group
       cwms_ts.store_ts_category('TestCategory', 'Category for unit tests', '&&office_id');
       cwms_ts.store_ts_group('TestCategory', 'TestGroup', 'Group for unit tests', 'F', 'T', null, null, '&&office_id');
-      
+
       -- Assign TS to group
       cwms_ts.assign_ts_group('TestCategory', 'TestGroup', l_ts_id, null, null, null, '&&office_id');
-      
+
       -- Verify assignment exists
       select count(*) into l_count
         from at_ts_group_assignment
-       where ts_group_code = (select ts_group_code 
-                                from at_ts_group 
-                               where ts_category_code = (select ts_category_code 
-                                                           from at_ts_category 
+       where ts_group_code = (select ts_group_code
+                                from at_ts_group
+                               where ts_category_code = (select ts_category_code
+                                                           from at_ts_category
                                                           where db_office_code = cwms_util.get_office_code('&&office_id')
                                                             and upper(ts_category_id) = 'TESTCATEGORY')
                                  and upper(ts_group_id) = 'TESTGROUP');
       ut.expect(l_count).to_equal(1);
-      
+
       -- Test non-cascade delete (should fail)
       begin
          cwms_ts.delete_ts_group('TestCategory', 'TestGroup', 'F', '&&office_id');
@@ -4520,24 +4523,67 @@ AS
          when others then
             null; -- expected
       end;
-      
+
       -- Test cascade delete
       cwms_ts.delete_ts_group('TestCategory', 'TestGroup', 'T', '&&office_id');
-      
+
       -- Verify group is gone
       select count(*) into l_count
         from at_ts_group
-       where ts_category_code = (select ts_category_code 
-                                   from at_ts_category 
+       where ts_category_code = (select ts_category_code
+                                   from at_ts_category
                                   where db_office_code = cwms_util.get_office_code('&&office_id')
                                     and upper(ts_category_id) = 'TESTCATEGORY')
          and upper(ts_group_id) = 'TESTGROUP';
       ut.expect(l_count).to_equal(0);
-      
+
       -- Cleanup category
       cwms_ts.delete_ts_category('TestCategory', '&&office_id');
       teardown;
    end test_delete_ts_group_cascade;
+
+   ---------------------------------------------------------------------------------
+   -- procedure test_ts_categories
+   ---------------------------------------------------------------------------------
+   procedure test_ts_categories
+   is
+      type ts_cat_tab_t is table of at_ts_category%rowtype;
+      l_expected_categories ts_cat_tab_t;
+      l_count binary_integer;
+   begin
+      l_expected_categories := ts_cat_tab_t();
+      l_expected_categories.extend(5);
+      l_expected_categories(1).ts_category_code := 0;
+      l_expected_categories(1).ts_category_id := 'Default';
+      l_expected_categories(1).db_office_code := 53;
+      l_expected_categories(1).ts_category_desc := 'Default';
+      l_expected_categories(2).ts_category_code := 1;
+      l_expected_categories(2).ts_category_id := 'Agency Aliases';
+      l_expected_categories(2).db_office_code := 53;
+      l_expected_categories(2).ts_category_desc := 'Time series aliases for various agencies';
+      l_expected_categories(3).ts_category_code := 3;
+      l_expected_categories(3).ts_category_id := 'Data Dissemination';
+      l_expected_categories(3).db_office_code := 53;
+      l_expected_categories(3).ts_category_desc := 'These TS Groups are used to manage which TS Ids are streamed to various data dissemination databases.';
+      l_expected_categories(4).ts_category_code := 10;
+      l_expected_categories(4).ts_category_id := 'Data Acquisition';
+      l_expected_categories(4).db_office_code := 53;
+      l_expected_categories(4).ts_category_desc := 'These TS Groups are used to manage data aquisition from other organizations';
+      l_expected_categories(5).ts_category_code := 11;
+      l_expected_categories(5).ts_category_id := 'SHEF Export';
+      l_expected_categories(5).db_office_code := 53;
+      l_expected_categories(5).ts_category_desc := 'Category for local groups for exporting SHEF data';
+
+      l_count := 0;
+      for rec in (select * from at_ts_category where db_office_code = 53 order by ts_category_code) loop
+         l_count := l_count + 1;
+         ut.expect(rec.ts_category_code).to_equal(l_expected_categories(l_count).ts_category_code);
+         ut.expect(rec.ts_category_id).to_equal(l_expected_categories(l_count).ts_category_id);
+         ut.expect(rec.ts_category_desc).to_equal(l_expected_categories(l_count).ts_category_desc);
+      end loop;
+      ut.expect(l_count).to_equal(l_expected_categories.count);
+
+   end test_ts_categories;
 
 END test_cwms_ts;
 /
