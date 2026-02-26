@@ -159,9 +159,6 @@
 @@runstats_pkg
 @@runstats_pkg_body
 
-@@cwms/views/av_location_level_values.sql
-@@cwms/views/av_location_level_ref.sql
-
 @@cwms/functions/str2tbl.sql
 
 @@cwms/procedures/download_file
