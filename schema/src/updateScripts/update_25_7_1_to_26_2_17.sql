@@ -111,7 +111,7 @@ define builduser = BUILDUSER
 @@../cwms/cwms_text_pkg_body
 @@../cwms/cwms_ts_pkg_body
 @@../cwms/cwms_ts_profile_pkg_body
-@@../cwms/cwms_util_profile_pkg_body
+@@../cwms/cwms_util_pkg_body
 @@../cwms/cwms_vt_pkg_body
 @@../cwms/cwms_water_supply_pkg_body
 
