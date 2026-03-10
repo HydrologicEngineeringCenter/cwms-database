@@ -1,4 +1,4 @@
-delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES';
+-- delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES', null,
                             '
                             /**
