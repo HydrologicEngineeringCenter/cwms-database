@@ -162,3 +162,5 @@
 @@cwms/functions/str2tbl.sql
 
 @@cwms/procedures/download_file
+
+@@cwms/oracle_text/setup_indexes.sql

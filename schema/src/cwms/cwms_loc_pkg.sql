@@ -3167,6 +3167,11 @@ AS
       p_datums      in  varchar2 default null,
       p_office_id   in  varchar2 default null)
       return clob;
+
+   procedure build_search_doc(
+      p_rowid in rowid,
+      p_doc   out varchar2
+   );
 END cwms_loc;
 /
 
