@@ -163,6 +163,6 @@
 
 @@cwms/procedures/download_file
 
-connect &cwms_schema;
+connect &cwms_schema
 @@cwms/oracle_text/setup_indexes.sql
-connect &builduser;
+connect &builduser
