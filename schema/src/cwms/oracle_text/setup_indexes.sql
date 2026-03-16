@@ -7,7 +7,7 @@
 
 begin
    ctx_ddl.create_preference('loc_search_ds', 'USER_DATASTORE');
-   ctx_ddl.set_attribute('loc_search_ds', 'PROCEDURE', 'cwms_loc.build_search_doc');
+   ctx_ddl.set_attribute('loc_search_ds', 'PROCEDURE', 'cwms_20.cwms_loc.build_search_doc');
    ctx_ddl.create_preference('loc_search_lexer', 'BASIC_LEXER');
    ctx_ddl.create_preference('loc_search_wordlist', 'BASIC_WORDLIST');
 end;
