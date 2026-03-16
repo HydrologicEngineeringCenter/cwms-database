@@ -11058,7 +11058,7 @@ end unassign_loc_groups;
 
    procedure build_search_doc(
       p_rowid in rowid,
-      p_doc   out varchar2
+      p_doc   out clob
    )
    is
    begin
