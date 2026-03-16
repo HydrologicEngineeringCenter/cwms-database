@@ -15,6 +15,7 @@ end;
 begin
    execute immediate 'DROP INDEX IF EXISTS at_physical_location_search_idx';
 end;
+/
 create index at_physical_location_search_idx
    on at_physical_location (search_doc)
    indextype is ctxsys.context
