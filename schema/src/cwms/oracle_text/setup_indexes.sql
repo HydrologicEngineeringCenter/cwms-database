@@ -4,6 +4,7 @@
  * All Rights Reserved.  USACE PROPRIETARY/CONFIDENTIAL.
  * Source may not be released without written approval from HEC
  */
+alter session set current_schema = &cwms_schema;
 
 begin
    ctx_ddl.create_preference('loc_search_ds', 'USER_DATASTORE');
@@ -26,3 +27,4 @@ create index at_physical_location_search_idx
        wordlist loc_search_wordlist
        sync (on commit)');
 /
+alter session set current_schema = &builduser;
