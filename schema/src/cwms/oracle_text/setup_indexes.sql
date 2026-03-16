@@ -5,9 +5,24 @@
  * Source may not be released without written approval from HEC
  */
 
+prompt Rebuilding all disabled function-based indexes...
+begin
+   for rec in (select index_name from all_indexes where owner = '&cwms_schema' and funcidx_status = 'DISABLED') loop
+         execute immediate 'alter index &cwms_schema..'||rec.index_name||' rebuild';
+      end loop;
+end;
+/
+
+prompt Creating Oracle Text preferences and indexes
+
+begin
+   ctx_ddl.drop_preference('loc_search_ds');
+exception when others then null;
+end;
+/
 begin
    ctx_ddl.create_preference('loc_search_ds', 'USER_DATASTORE');
-   ctx_ddl.set_attribute('loc_search_ds', 'PROCEDURE', 'cwms_20.cwms_loc.build_search_doc');
+   ctx_ddl.set_attribute('loc_search_ds', 'PROCEDURE', '&cwms_schema..cwms_loc.build_search_doc');
    ctx_ddl.create_preference('loc_search_lexer', 'BASIC_LEXER');
    ctx_ddl.create_preference('loc_search_wordlist', 'BASIC_WORDLIST');
 end;
@@ -15,7 +30,10 @@ end;
 commit;
 
 begin
-   execute immediate 'DROP INDEX IF EXISTS at_physical_location_search_idx';
+   execute immediate 'drop index at_physical_location_search_idx';
+exception
+   when others then
+      if sqlcode != -1418 then raise; end if;
 end;
 /
 create index at_physical_location_search_idx

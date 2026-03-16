@@ -162,7 +162,3 @@
 @@cwms/functions/str2tbl.sql
 
 @@cwms/procedures/download_file
-
-connect &cwms_schema/&cwms_passwd
-@@cwms/oracle_text/setup_indexes.sql
-connect &builduser
