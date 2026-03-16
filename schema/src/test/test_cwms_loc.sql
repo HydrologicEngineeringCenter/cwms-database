@@ -72,6 +72,7 @@ AS
     IS
         exc_location_id_not_found   EXCEPTION;
         PRAGMA EXCEPTION_INIT (exc_location_id_not_found, -20025);
+        v_msg clob := null;
     BEGIN
         commit; -- finish out any existing transactions
         FOR rec
@@ -90,6 +91,22 @@ AS
             END;
         END LOOP;
         commit;
+        for r in (
+           select err_text
+           from ctxsys.ctx_index_errors
+           where index_name = 'AT_PHYSICAL_LOCATION_SEARCH_IDX'
+           order by err_timestamp
+           )
+           loop
+              v_msg := v_msg || r.err_text || chr(10);
+           end loop;
+
+        if v_msg is not null then
+           raise_application_error(
+              -20001,
+              'Oracle Text indexing errors:' || chr(10) || v_msg
+           );
+        end if;
     END setup;
 
 
