@@ -12,6 +12,8 @@ begin
    ctx_ddl.create_preference('loc_search_wordlist', 'BASIC_WORDLIST');
 end;
 /
+commit;
+
 begin
    execute immediate 'DROP INDEX IF EXISTS at_physical_location_search_idx';
 end;
