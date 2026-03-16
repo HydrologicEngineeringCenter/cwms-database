@@ -137,7 +137,7 @@ BEGIN
 	FOR i IN view_names.FIRST .. view_names.LAST
 	LOOP
 		BEGIN
-			EXECUTE IMMEDIATE 'drop view' || view_names (i);
+			EXECUTE IMMEDIATE 'drop view ' || view_names (i);
 
 			DBMS_OUTPUT.put_line ('Dropped view ' || view_names (i));
 		EXCEPTION
