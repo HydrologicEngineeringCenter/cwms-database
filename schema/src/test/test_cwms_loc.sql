@@ -100,13 +100,9 @@ AS
            loop
               v_msg := v_msg || r.err_text || chr(10);
            end loop;
-
-        if v_msg is not null then
-           raise_application_error(
-              -20001,
-              'Oracle Text indexing errors:' || chr(10) || v_msg
-           );
-        end if;
+        ut.expect(v_msg)
+           .to_be_null()
+           .comment('Oracle Text indexing errors:' || chr(10) || v_msg);
     END setup;
 
 
