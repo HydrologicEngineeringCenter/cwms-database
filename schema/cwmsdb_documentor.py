@@ -1401,7 +1401,7 @@ def build_main_page() :
       HtmlElem('dd', content=build_item_lists(
          packages = ['cwms_level', 'cwms_pool', 'cwms_rating'],
          views    = ['av_loc_lvl_cur_max_ind', 'av_loc_lvl_indicator', 'av_loc_lvl_indicator_2', 'av_loc_lvl_ts_map', 'av_location_level',
-         	     'av_pool_name', 'av_pool',
+         	     'av_pool_name', 'av_pool', 'av_location_level_ref', 'av_location_level_values',
                      'av_rating', 'av_rating_local', 'av_rating_spec','av_rating_template', 'av_rating_values', 'av_rating_values_native']))])
    items_list.add_content([
       HtmlElem('a', attrs=[('name', 'Forecasts and Model Runs')]),
