@@ -2768,7 +2768,7 @@ AS
        );
 
        commit;
-
+       ctx_ddl.sync_index('AT_PHYSICAL_LOCATION_SEARCH_IDX');
        -- search using Oracle Text through the view
        select count(*)
        into l_count
@@ -2805,11 +2805,11 @@ AS
        );
 
        commit;
-
+       ctx_ddl.sync_index('AT_PHYSICAL_LOCATION_SEARCH_IDX');
        select count(*)
        into l_count
        from av_loc2
-       where contains(search_doc, 'Oracle') > 0
+       where contains(search_doc, 'VanBuren') > 0
          and location_id = l_loc_id;
 
        ut.expect(l_count).to_equal(1);
