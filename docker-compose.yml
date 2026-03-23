@@ -10,9 +10,16 @@ services:
       - ORACLE_PASSWORD=password
     ports:
       - "1521:1521"
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'SELECT 1 FROM dual;' | sqlplus -s sys/${ORACLE_PASSWORD}@localhost/FREEPDB1 as sysdba | grep -q '1'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
   schema:
     build:
-      context: ./schema
+      context: .
     container_name: cwms-dev-schema
     environment:
       - DB_HOST_PORT=cwms-dev-db:1521
@@ -25,6 +32,6 @@ services:
       - OFFICE_EROC=S0
       # With installonce set to 0 the schema will be removed (equivalent to ant clean build) each time this runs.
       - INSTALLONCE=0
-      - QUIET=0  
+      - QUIET=0
 volumes:
   cwms-dev-oracle:
