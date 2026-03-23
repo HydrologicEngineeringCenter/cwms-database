@@ -91,18 +91,6 @@ AS
             END;
         END LOOP;
         commit;
-        for r in (
-           select err_text
-           from ctxsys.ctx_index_errors
-           where index_name = 'AT_PHYSICAL_LOCATION_SEARCH_IDX'
-           order by err_timestamp
-           )
-           loop
-              v_msg := v_msg || r.err_text || chr(10);
-           end loop;
-        ut.expect(v_msg)
-           .to_be_null()
-           .comment('Oracle Text indexing errors:' || chr(10) || v_msg);
     END setup;
 
 

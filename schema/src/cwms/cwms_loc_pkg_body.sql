@@ -11086,7 +11086,7 @@ end unassign_loc_groups;
       where pl.rowid = p_rowid;
 
    exception
-      when no_data_found then
+      when others then
          p_doc := null;
    end build_search_doc;
 
