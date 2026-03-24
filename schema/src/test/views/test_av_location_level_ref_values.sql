@@ -138,7 +138,7 @@ create or replace package test_av_location_level_ref_values as
       </ratings>';
 end test_av_location_level_ref_values;
 /
-show errors;
+
 grant execute on test_av_location_level_ref_values to cwms_user;
 create or replace package body test_av_location_level_ref_values as
 --------------------------------------------------------------------------------
@@ -667,3 +667,4 @@ create or replace package body test_av_location_level_ref_values as
 end test_av_location_level_ref_values;
 /
 show errors;
+/

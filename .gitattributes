@@ -1,0 +1,12 @@
+# Shell scripts must be LF to run reliably in Linux containers
+*.sh text eol=lf
+
+# Docker-related files are also typically LF
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+*.env text eol=lf
+
+# Windows scripts should be CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

@@ -1,5 +1,6 @@
-delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_REF';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_REF', null,
+begin
+   delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_REF';
+   insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_REF', null,
                             '
                             /**
                              * Displays information about location level IDs
@@ -28,7 +29,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_R
                              * @field attribute_duration_id       The duration of the attribute, if any
                              */
                             ');
-
+end;
+/
 create or replace force view av_location_level_ref
       (
        office_id,
@@ -108,7 +110,6 @@ from
       left join cwms_duration c_d2
                 on c_d2.duration_code = a_ll.attribute_duration_code
 union all
-
 /* ===========================
  * VIRTUAL LOCATION LEVELS
  * =========================== */
@@ -169,3 +170,4 @@ exception
 end;
 /
 create or replace public synonym cwms_v_location_level_ref for av_location_level_ref;
+/

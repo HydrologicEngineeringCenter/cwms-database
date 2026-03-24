@@ -1,5 +1,6 @@
-delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES', null,
+begin
+   delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES';
+   insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_VALUES', null,
                             '
                             /**
                              * Displays information about location level values
@@ -29,7 +30,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_V
                              * @field source              The source entity for the location level values
                              */
                             ');
-
+end;
+/
 create or replace force view av_location_level_values
       (
        location_level_code,
@@ -274,3 +276,4 @@ exception
 end;
 /
 create or replace public synonym cwms_v_location_level_values for av_location_level_values;
+/
