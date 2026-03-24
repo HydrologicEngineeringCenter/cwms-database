@@ -4,15 +4,6 @@
  * All Rights Reserved.  USACE PROPRIETARY/CONFIDENTIAL.
  * Source may not be released without written approval from HEC
  */
-
-prompt Rebuilding all disabled function-based indexes...
-begin
-   for rec in (select index_name from all_indexes where owner = '&cwms_schema' and funcidx_status = 'DISABLED') loop
-         execute immediate 'alter index &cwms_schema..'||rec.index_name||' rebuild';
-      end loop;
-end;
-/
-
 prompt Creating Oracle Text preferences and indexes
 
 begin
@@ -43,4 +34,13 @@ create index at_physical_location_search_idx
        lexer loc_search_lexer
        wordlist loc_search_wordlist
        sync (on commit)');
+/
+
+prompt Rebuilding all disabled function-based indexes...
+alter index CWMS_20.AT_PHYSICAL_LOCATION_SEARCH_IDX rebuild;
+begin
+   for rec in (select index_name from all_indexes where owner = '&cwms_schema' and funcidx_status = 'DISABLED') loop
+         execute immediate 'alter index &cwms_schema..'||rec.index_name||' rebuild';
+      end loop;
+end;
 /
