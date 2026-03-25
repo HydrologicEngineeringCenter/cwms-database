@@ -402,7 +402,13 @@ begin
 end;
 /
 
-@@cwms/oracle_text/setup_indexes.sql
+prompt Rebuilding all disabled function-based indexes...
+begin
+   for rec in (select index_name from all_indexes where owner = '&cwms_schema' and funcidx_status = 'DISABLED') loop
+         execute immediate 'alter index &cwms_schema..'||rec.index_name||' rebuild';
+   end loop;
+end;
+/
 
 ----------------------------------------------------------------------------------------------------------------------------
 -- I hate having this here, but for some reason this SAYS it works when in AT_SCHEMA, but the constraint is missing after --
@@ -416,6 +422,8 @@ exception
 end;
 /
 
+
+@@cwms/oracle_text/setup_indexes.sql
 --
 -- all done
 --

@@ -2774,6 +2774,7 @@ AS
        into l_count
        from av_loc
        where contains(search_doc, 'Van Buren') > 0
+         and unit_system = 'SI'
          and location_id = l_loc_id;
 
        ut.expect(l_count).to_equal(1);
@@ -2810,6 +2811,7 @@ AS
        into l_count
        from av_loc2
        where contains(search_doc, 'VanBuren') > 0
+         and unit_system = 'SI'
          and location_id = l_loc_id;
 
        ut.expect(l_count).to_equal(1);

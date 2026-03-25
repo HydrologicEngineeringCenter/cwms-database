@@ -11058,36 +11058,36 @@ end unassign_loc_groups;
 
    procedure build_search_doc(
       p_rowid in rowid,
-      p_doc   out clob
+      p_doc   out varchar2
    )
-   is
+      is
    begin
-      select
-         coalesce(b.base_location_id,'') || ' '
-            || coalesce(pl.sub_location_id,'') || ' '
-            || case
-                  when pl.sub_location_id is not null
-                     then b.base_location_id || '-' || pl.sub_location_id || ' '
-                  else ''
-            end
-            || coalesce(pl.public_name,'') || ' '
-            || coalesce(pl.long_name,'') || ' '
-            || coalesce(pl.description,'') || ' '
-            || coalesce(pl.map_label,'') || ' '
-            || coalesce(pl.nearest_city,'') || ' '
-            || coalesce(k.location_kind_id,'') || ' '
-            || coalesce(pl.location_type,'')
+      select max(
+                coalesce(b.base_location_id,'') || ' '
+                   || coalesce(pl.sub_location_id,'') || ' '
+                   || case
+                         when pl.sub_location_id is not null
+                            then b.base_location_id || '-' || pl.sub_location_id || ' '
+                         else ''
+                   end
+                   || coalesce(pl.public_name,'') || ' '
+                   || coalesce(pl.long_name,'') || ' '
+                   || coalesce(pl.description,'') || ' '
+                   || coalesce(pl.map_label,'') || ' '
+                   || coalesce(pl.nearest_city,'') || ' '
+                   || coalesce(k.location_kind_id,'') || ' '
+                   || coalesce(pl.location_type,'')
+             )
       into p_doc
       from at_physical_location pl
-              join at_base_location b
-                   on b.base_location_code = pl.base_location_code
-              join cwms_location_kind k
-                   on k.location_kind_code = pl.location_kind
+              left join at_base_location b
+                        on b.base_location_code = pl.base_location_code
+              left join cwms_location_kind k
+                        on k.location_kind_code = pl.location_kind
       where pl.rowid = p_rowid;
 
-   exception
-      when others then
-         p_doc := null;
+      p_doc := coalesce(p_doc, '');
+
    end build_search_doc;
 
 begin

@@ -3221,7 +3221,7 @@ AS
     */
    procedure build_search_doc(
       p_rowid in rowid,
-      p_doc   out clob
+      p_doc   out varchar2
    );
 END cwms_loc;
 /

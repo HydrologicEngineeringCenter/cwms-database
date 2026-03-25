@@ -36,11 +36,9 @@ create index at_physical_location_search_idx
        sync (on commit)');
 /
 
-prompt Rebuilding all disabled function-based indexes...
 alter index CWMS_20.AT_PHYSICAL_LOCATION_SEARCH_IDX rebuild;
+
 begin
-   for rec in (select index_name from all_indexes where owner = '&cwms_schema' and funcidx_status = 'DISABLED') loop
-         execute immediate 'alter index &cwms_schema..'||rec.index_name||' rebuild';
-      end loop;
+   ctx_ddl.sync_index('AT_PHYSICAL_LOCATION_SEARCH_IDX');
 end;
 /
