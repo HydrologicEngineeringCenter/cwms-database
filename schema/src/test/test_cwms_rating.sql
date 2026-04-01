@@ -25,6 +25,8 @@ procedure test_table_rating;
 procedure test_reverse_rate_ts;
 --%test(Test transitional rating)
 procedure test_transitional_rating;
+--%test(Test Storing Spec with a Location that does not Exist)
+procedure test_store_spec_when_loc_does_not_exist;
 
 c_location_id        constant varchar2(57) := 'Test_Ratings_Loc';
 c_inspect_after_test constant boolean := false;
@@ -900,6 +902,59 @@ begin
       end loop;
    end loop;
 end test_transitional_rating;
+--------------------------------------------------------------------------------
+-- procedure test_store_spec_when_loc_does_not_exist
+--------------------------------------------------------------------------------
+procedure test_store_spec_when_loc_does_not_exist
+   is
+   l_xml           varchar2(32767) := '
+<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
+  <rating-template office-id="&&office_id">
+    <parameters-id>Elev;Flow</parameters-id>
+    <version>Standard</version>
+    <ind-parameter-specs>
+      <ind-parameter-spec position="1">
+        <parameter>Elev</parameter>
+        <in-range-method>LINEAR</in-range-method>
+        <out-range-low-method>NEAREST</out-range-low-method>
+        <out-range-high-method>NEAREST</out-range-high-method>
+      </ind-parameter-spec>
+    </ind-parameter-specs>
+    <dep-parameter>Flow</dep-parameter>
+  </rating-template>
+  <rating-spec office-id="&&office_id">
+    <rating-spec-id>DOES-NOT-EXIST.Elev;Flow.Standard.Test</rating-spec-id>
+    <template-id>Elev;Flow.Standard</template-id>
+    <location-id>DOES-NOT-EXIST</location-id>
+    <version>Test</version>
+    <source-agency/>
+    <in-range-method>LINEAR</in-range-method>
+    <out-range-low-method>NEAREST</out-range-low-method>
+    <out-range-high-method>NEAREST</out-range-high-method>
+    <active>true</active>
+    <auto-update>true</auto-update>
+    <auto-activate>true</auto-activate>
+    <auto-migrate-extension>true</auto-migrate-extension>
+    <ind-rounding-specs>
+      <ind-rounding-spec position="1">4444444444</ind-rounding-spec>
+      <ind-rounding-spec position="2">4444444444</ind-rounding-spec>
+    </ind-rounding-specs>
+    <dep-rounding-spec>4444444444</dep-rounding-spec>
+  </rating-spec>
+</ratings>
+';
+begin
+   begin
+      cwms_rating.store_specs(
+         p_xml            => l_xml,
+         p_fail_if_exists => 'T');
+      ut.fail('Expected ORA-20034 was not raised');
+   exception
+      when others then
+         ut.expect(sqlcode).to_equal(-20034);
+         ut.expect(sqlerrm).to_be_like('ORA-20034: ITEM_DOES_NOT_EXIST: Rating Specification Location % does not exist.');
+   end;
+end test_store_spec_when_loc_does_not_exist;
 
 end test_cwms_rating;
 /
