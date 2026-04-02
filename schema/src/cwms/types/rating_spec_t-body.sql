@@ -399,16 +399,12 @@ as
          l_code := cwms_loc.get_location_code(self.office_id, self.location_id);
       exception
          when LOCATION_ID_NOT_FOUND then
-            declare
-               l_base_code number(14);
-            begin
-               cwms_loc.create_location_raw (
-                  l_base_code, -- out param (not used here)
-                  l_code,      -- out param
-                  cwms_util.get_base_id(self.location_id),
-                  cwms_util.get_sub_id(self.location_id),
-                  cwms_util.get_db_office_code(self.office_id));
-            end;
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Rating Specification Location',
+               self.office_id
+                  ||'/'
+                  ||self.location_id);
       end;
       -----------------
       -- template_id --
