@@ -1,8 +1,9 @@
 create or replace view av_active_api_keys as 
 select
+   key_id,
    userid,
    key_name,
-   apikey,
+   secret_hash,
    created,
    expires
 from 
