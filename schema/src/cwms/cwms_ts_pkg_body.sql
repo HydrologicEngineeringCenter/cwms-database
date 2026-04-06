@@ -1734,14 +1734,18 @@ AS
       l_start_time := cwms_util.change_timezone(p_start_time, p_time_zone, 'UTC');
       l_end_time   := cwms_util.change_timezone(p_end_time,   p_time_zone, 'UTC');
       OPEN p_date_cat FOR
-           SELECT DISTINCT
+           SELECT
                   case
-                     when version_date = cwms_util.non_versioned then version_date
-                     else cwms_util.change_timezone(version_date, 'UTC', p_time_zone)
+                     when version_time = cwms_util.non_versioned then version_time
+                     else cwms_util.change_timezone(version_time, 'UTC', p_time_zone)
                   end as version_date
-             FROM av_tsv
+             FROM at_ts_extents
             WHERE ts_code = p_cwms_ts_code
-              AND date_time BETWEEN l_start_time AND l_end_time
+              AND version_time IS NOT NULL
+              AND earliest_time IS NOT NULL
+              AND latest_time IS NOT NULL
+              AND earliest_time <= l_end_time
+              AND latest_time >= l_start_time
          ORDER BY version_date;
    END get_ts_version_dates;
 
@@ -11883,11 +11887,11 @@ end retrieve_existing_item_counts;
 	is
       l_version_dates date_table_type;
 	begin
-		select distinct
-             version_date
+		select
+             version_time
         bulk collect
         into l_version_dates
-        from av_tsv
+        from at_ts_extents
        where ts_code = p_ts_code
        order by 1;
 
