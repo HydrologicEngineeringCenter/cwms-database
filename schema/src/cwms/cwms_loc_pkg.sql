@@ -3167,6 +3167,62 @@ AS
       p_datums      in  varchar2 default null,
       p_office_id   in  varchar2 default null)
       return clob;
+
+
+   /**
+    * Builds the search document for a location specifically for use by Oracle Text.
+    *
+    * <p>This procedure is used by the Oracle Text <code>USER_DATASTORE</code> defined
+    * for the <code>AT_PHYSICAL_LOCATION.SEARCH_DOC</code> column. During text index
+    * creation or synchronization, the procedure constructs a denormalized text document
+    * containing ids and metadata which are tokenized and stored in the text index.</p>
+    *
+    * <p>The resulting text is not stored in the <code>SEARCH_DOC</code> column itself.
+    * It is used by the Oracle Text indexing engine and stored in the text index tables associated with the
+    * <code>AT_PHYSICAL_LOCATION_SEARCH_IDX</code> index.</p>
+    *
+    * <p>The generated document may include values such as:</p>
+    * <ul>
+    *   <li>Base location id</li>
+    *   <li>Sub-location id</li>
+    *   <li>Combined location identifier (<code>BASE-SUB</code>)</li>
+    *   <li>Public name</li>
+    *   <li>Long name</li>
+    *   <li>Description</li>
+    *   <li>Map label</li>
+    *   <li>Nearest city</li>
+    *   <li>Location kind id</li>
+    *   <li>Location type</li>
+    * </ul>
+    *
+    * <p>This enables full-text search queries such as:</p>
+    *
+    * <pre>
+    * SELECT  SCORE(1) AS relevance,
+    *   location_id,
+    *   public_name,
+    *   long_name,
+    *   nearest_city
+    *  FROM av_loc
+    *  WHERE CONTAINS(search_doc, '(FOLSOM AND DAM) OR (AMERICAN AND RIVER)', 1) > 0
+    *  ORDER BY SCORE(1) DESC;
+    * </pre>
+    *
+    * <p>The procedure is executed automatically during:</p>
+    * <ul>
+    *   <li>Initial creation of the Oracle Text index</li>
+    *   <li>Index synchronization operations</li>
+    *   <li>Row updates when the index is configured with <code>SYNC (ON COMMIT)</code></li>
+    * </ul>
+    *
+    * @param p_rowid The <code>ROWID</code> of the <code>AT_PHYSICAL_LOCATION</code> row
+    *
+    * @param p_doc The generated search document text returned to the Oracle Text engine for tokenization and indexing.
+    */
+   procedure build_search_doc(
+      p_rowid in rowid,
+      p_doc   out varchar2
+   );
 END cwms_loc;
 /
 

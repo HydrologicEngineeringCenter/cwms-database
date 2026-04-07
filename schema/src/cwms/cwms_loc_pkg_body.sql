@@ -2483,6 +2483,10 @@ AS
             UPDATE   at_base_location abl
                SET   base_location_id = l_base_location_id_new
              WHERE   abl.base_location_code = l_base_location_code_old;
+            -- innocuous update that will force a reindex on at_physical_location.search_doc
+            UPDATE at_physical_location
+               SET search_doc = search_doc
+               WHERE base_location_code = l_base_location_code_old;
          --
          WHEN l_sub_location_id_new IS NULL
          THEN                             -- Old Loc renamed to new Base Loc --
@@ -11051,6 +11055,40 @@ end unassign_loc_groups;
    begin
       v_package_log_prop_text := nvl(p_text, sys_context('userenv', 'sid'));
    end set_package_log_property_text;
+
+   procedure build_search_doc(
+      p_rowid in rowid,
+      p_doc   out varchar2
+   )
+      is
+   begin
+      select max(
+                coalesce(b.base_location_id,'') || ' '
+                   || coalesce(pl.sub_location_id,'') || ' '
+                   || case
+                         when pl.sub_location_id is not null
+                            then b.base_location_id || '-' || pl.sub_location_id || ' '
+                         else ''
+                   end
+                   || coalesce(pl.public_name,'') || ' '
+                   || coalesce(pl.long_name,'') || ' '
+                   || coalesce(pl.description,'') || ' '
+                   || coalesce(pl.map_label,'') || ' '
+                   || coalesce(pl.nearest_city,'') || ' '
+                   || coalesce(k.location_kind_id,'') || ' '
+                   || coalesce(pl.location_type,'')
+             )
+      into p_doc
+      from at_physical_location pl
+              left join at_base_location b
+                        on b.base_location_code = pl.base_location_code
+              left join cwms_location_kind k
+                        on k.location_kind_code = pl.location_kind
+      where pl.rowid = p_rowid;
+
+      p_doc := coalesce(p_doc, '');
+
+   end build_search_doc;
 
 begin
    g_location_code_cache.name := 'cwms_loc.g_location_code_cache';
