@@ -135,7 +135,7 @@ BEGIN
 	FOR i IN view_names.FIRST .. view_names.LAST
 	LOOP
 		BEGIN
-			EXECUTE IMMEDIATE 'drop view' || view_names (i);
+			EXECUTE IMMEDIATE 'drop view ' || view_names (i);
 
 			DBMS_OUTPUT.put_line ('Dropped view ' || view_names (i));
 		EXCEPTION
@@ -201,6 +201,8 @@ END;
 @@cwms/views/av_loc_ts_id_count
 @@cwms/views/av_location_kind
 @@cwms/views/av_location_level
+@@cwms/views/av_location_level_ref
+@@cwms/views/av_location_level_values
 @@cwms/views/av_location_level_curval
 @@cwms/views/av_location_type
 @@cwms/views/av_nation

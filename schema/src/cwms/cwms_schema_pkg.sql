@@ -313,6 +313,8 @@ view_names constant object_tab_t := object_tab_t(
    'AV_LOC5_TEST',
    'AV_LOCATION_KIND',
    'AV_LOCATION_LEVEL',
+   'AV_LOCATION_LEVEL_REF',
+   'AV_LOCATION_LEVEL_VALUES',
    'AV_LOCATION_LEVEL_CURVAL',
    'AV_LOCATION_TYPE',
    'AV_LOCK',

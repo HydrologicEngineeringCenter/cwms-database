@@ -62,6 +62,7 @@ show errors;
 @test_cwms_text.sql;
 @views/test_av_ts_grp_assgn.sql;
 @views/test_av_loc_grp_assgn.sql;
+@views/test_av_location_level_ref_values.sql;
 show errors;
 @test_multiple_office_perms.sql;
 show errors;
