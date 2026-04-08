@@ -53,6 +53,10 @@ procedure test_international_location;
 procedure test_vertical_datum_info_series_f;
 --%test(Test issue #57 - query vertical datum offset)
 procedure test_query_vertical_datum_offset;
+--%test(Search location using Oracle Text via AV_LOC)
+procedure test_av_loc_text_search;
+--%test(Search location using Oracle Text via AV_LOC2)
+procedure test_av_loc2_text_search;
 
 procedure setup;
 procedure teardown;
@@ -68,6 +72,7 @@ AS
     IS
         exc_location_id_not_found   EXCEPTION;
         PRAGMA EXCEPTION_INIT (exc_location_id_not_found, -20025);
+        v_msg clob := null;
     BEGIN
         commit; -- finish out any existing transactions
         FOR rec
@@ -2734,6 +2739,84 @@ AS
       ut.expect(l_offset).to_be_not_null;
 
    end test_query_vertical_datum_offset;
+
+    --------------------------------------------------------------------------------
+    -- procedure test_av_loc_text_search
+    --------------------------------------------------------------------------------
+   procedure test_av_loc_text_search
+       is
+       l_count number;
+       l_loc_id varchar2(64) := 'VANL';
+    begin
+       -- ensure clean state
+       teardown;
+
+       -- create test location
+       cwms_loc.store_location(
+          p_location_id  => l_loc_id,
+          p_db_office_id => '&&office_id',
+          p_county_name => 'Crawford',
+          p_longitude => -94.3927778,
+          p_latitude => 35.4844444,
+          p_horizontal_datum => 'NAD83',
+          p_time_zone_id => 'US/Central',
+          p_state_initial => 'AR',
+          p_public_name => 'Lee Creek at Lee Creek Reservoir',
+          p_long_name => 'Lee Creek at Lee Creek Reservoir near Van Buren,AR',
+          p_description => 'Lee Creek at Lee Creek Reservoir near Van Buren,AR',
+          p_location_type => 'Stream Gauge'
+       );
+
+       commit;
+       ctx_ddl.sync_index('AT_PHYSICAL_LOCATION_SEARCH_IDX');
+       -- search using Oracle Text through the view
+       select count(*)
+       into l_count
+       from av_loc
+       where contains(search_doc, 'Van Buren') > 0
+         and unit_system = 'SI'
+         and location_id = l_loc_id;
+
+       ut.expect(l_count).to_equal(1);
+
+    end test_av_loc_text_search;
+
+    --------------------------------------------------------------------------------
+    -- procedure test_av_loc2_text_search
+    --------------------------------------------------------------------------------
+    procedure test_av_loc2_text_search
+       is
+       l_count number;
+       l_loc_id varchar2(64) := 'VANB';
+    begin
+       teardown;
+
+       cwms_loc.store_location(
+          p_location_id  => l_loc_id,
+          p_db_office_id => '&&office_id',
+          p_county_name => 'Crawford',
+          p_longitude => -94.3565139,
+          p_latitude => 35.43085,
+          p_horizontal_datum => 'NAD83',
+          p_time_zone_id => 'US/Central',
+          p_state_initial => 'AR',
+          p_public_name => 'AR Rvr VanBuren',
+          p_long_name => 'Arkansas River near Van Buren, AR',
+          p_description => 'Arkansas River near Van Buren, AR'
+       );
+
+       commit;
+       ctx_ddl.sync_index('AT_PHYSICAL_LOCATION_SEARCH_IDX');
+       select count(*)
+       into l_count
+       from av_loc2
+       where contains(search_doc, 'VanBuren') > 0
+         and unit_system = 'SI'
+         and location_id = l_loc_id;
+
+       ut.expect(l_count).to_equal(1);
+
+    end test_av_loc2_text_search;
 END test_cwms_loc;
 /
 
