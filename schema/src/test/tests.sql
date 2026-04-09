@@ -58,6 +58,7 @@ show errors;
 @test_aq_user.sql;
 @test_webuser_abilities.sql;
 @test_cwms_ts_profile.sql;
+@test_level_as_ts.sql
 @test_cwms_outlet.sql;
 @test_cwms_text.sql;
 @views/test_av_ts_grp_assgn.sql;
