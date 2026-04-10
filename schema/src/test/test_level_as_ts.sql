@@ -7,6 +7,9 @@ CREATE OR REPLACE package &&cwms_schema..test_level_as_ts as
 
 --%test (Test RETRIEVE_LOC_LVL_VALUES3)
 procedure retrieve_level;
+
+procedure setup;
+procedure teardown;
 END test_level_as_ts;
 /
 grant execute on test_level_as_ts to cwms_user;
@@ -125,6 +128,24 @@ AS
 
       dbms_output.put_line('No duplicate dates found in specified_times array');
    END retrieve_level;
+   PROCEDURE setup
+   IS
+      location varchar(25) := 'test_level_as_ts';
+      office_id varchar2(3) := '&&office_id';
+   BEGIN
+      cwms_loc.CREATE_LOCATION(p_location_id=>location, p_db_office_id=>office_id,
+                               p_elevation=>120, p_elev_unit_id=>'m', p_latitude=>76.5,
+                               p_longitude=>-121.7, p_time_zone_id=>'UTC',
+                               p_vertical_datum=>'NGVD29', p_horizontal_datum=>'NAD83',
+                               p_public_name=>'Test Location', p_active=>'T');
+   END;
+   PROCEDURE teardown
+   IS
+      location varchar(25) := 'test_level_as_ts';
+      office_id varchar2(3) := '&&office_id';
+   BEGIN
+      cwms_loc.DELETE_LOC(office_id, location);
+   END teardown;
 END test_level_as_ts;
 /
 SHOW ERRORS
