@@ -144,7 +144,7 @@ AS
       location varchar(25) := 'test_level_as_ts';
       office_id varchar2(3) := '&&office_id';
    BEGIN
-      cwms_loc.DELETE_LOCATION(p_location_id=>location, p_db_office_id=>office_id);
+      cwms_loc.DELETE_LOCATION_CASCADE(p_location_id=>location, p_db_office_id=>office_id);
    END teardown;
 END test_level_as_ts;
 /
