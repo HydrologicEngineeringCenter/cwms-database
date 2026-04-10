@@ -9,7 +9,7 @@ CREATE OR REPLACE package &&cwms_schema..test_level_as_ts as
 procedure retrieve_level;
 END test_level_as_ts;
 /
-SHOW ERRORS;
+grant execute on test_level_as_ts to cwms_user;
 CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_level_as_ts
 AS
    --------------------------------------------------------------------------------
@@ -128,3 +128,4 @@ AS
 END test_level_as_ts;
 /
 SHOW ERRORS
+/
