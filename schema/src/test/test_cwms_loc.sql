@@ -2932,19 +2932,29 @@ AS
       --------------------------------------
       delete
         from at_location_geometry
-       where location_code in (select column_value from table(l_location_codes));
+       where location_code in (select column_value
+                                 from table(l_location_codes))
+          or location_code in (select base_location_code
+                                 from at_physical_location
+                                where location_code in (select column_value
+                                                          from table(l_location_codes)
+                                                       )
+                              );
       select count(*)
         into l_count
         from at_location_geometry
        where location_code in (select column_value from table(l_location_codes));
       ut.expect(l_count).to_equal(0);
-      ------------------------------------------------------------------
-      -- verify lat/lons are null but computed values are not changed --
-      ------------------------------------------------------------------
+      -------------------------------------------------------------------------------------------------------
+      -- delete from at_location_geometry and verify lat/lons are null but computed values are not changed --
+      ------------------------------------------------------------------------------------------------
       for i in 1..l_data_tab.count loop
          exit when l_data_tab(i).count < 13;
          l_office_id        := l_data_tab(i)(1);
          l_location_id      := l_data_tab(i)(2);
+         delete
+           from at_location_geometry
+          where location_code = l_location_codes(i);
          select *
            into l_view_rec
            from av_loc

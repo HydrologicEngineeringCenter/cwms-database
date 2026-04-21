@@ -369,9 +369,9 @@ begin
       end if;
    end if;
    if :new.latitude is not null and :new.longitude is not null then
-      -------------------------------------
-      -- update for AT_PHYSICAL_LOCATION --
-      -------------------------------------
+      ---------------------------------
+      -- update AT_PHYSICAL_LOCATION --
+      ---------------------------------
       declare
          l_old_county_code at_physical_location.county_code%type;
          l_old_nation_code at_physical_location.nation_code%type;
@@ -406,7 +406,8 @@ begin
                                else l_old_office_code
                                end;
          l_new_nearest_city := case
-                               when l_old_nearest_city is null then cwms_util.join_text(cwms_loc.get_nearest_city(:new.latitude, :new.longitude), ', ')
+                               when l_old_nearest_city is null then trim(',' from trim(' ' from cwms_util.join_text(
+                                       cwms_loc.get_nearest_city(:new.latitude, :new.longitude), ', ')))
                                else l_old_nearest_city
                                end;
 
