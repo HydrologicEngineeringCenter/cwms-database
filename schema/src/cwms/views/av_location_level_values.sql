@@ -224,7 +224,7 @@ with param_units as (select /*+ INLINE */
                    s.time_offset
                 from at_seasonal_location_level s
                         join conversion_ctx cx
-                             on cx.location_level_code = s.location_level_code),
+                             on cx.location_level_code = s.location_level_code)
 /* ============================================================
    Constant+Seasonal projection
    ============================================================ */
