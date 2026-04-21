@@ -57,6 +57,8 @@ procedure test_query_vertical_datum_offset;
 procedure test_av_loc_text_search;
 --%test(Search location using Oracle Text via AV_LOC2)
 procedure test_av_loc2_text_search;
+--%test(CWMS-2430 [DB #54] Change lat/lon to generic geometry)
+procedure test_mods_for_generic_geometry;
 
 procedure setup;
 procedure teardown;
@@ -677,7 +679,7 @@ AS
         ut.expect (l_loc_active).to_equal ('F');
         ut.expect (l_active).to_equal ('F');
         ut.expect (l_bounding_office_id).to_equal ('NWP');
-        ut.expect (l_nearest_city).to_equal ('Springfield');
+        ut.expect (l_nearest_city).to_equal ('Springfield, Oregon');
         ut.expect (l_county).to_equal ('Lane');
         ut.expect (l_country).to_equal ('United States');
         ut.expect (l_location_kind_id).to_equal ('SITE');
@@ -2001,7 +2003,7 @@ AS
       ut.expect(l_rec.state_initial).to_equal('ON');
       ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A for Ontario');
       ut.expect(l_rec.nation_id).to_equal('Canada');
-      ut.expect(l_rec.nearest_city).to_equal('Sault Ste. Marie');
+      ut.expect(l_rec.nearest_city).to_equal('Sault Ste. Marie, Michigan');
    end test_cwdb_159_store_location_in_ontario_canada;
    --------------------------------------------------------------------------------
    -- procedure test_cwdb_239_improve_creation_of_new_locations_with_lat_lon
@@ -2060,7 +2062,7 @@ AS
       ut.expect(l_rec.state_initial).to_equal('AK');
       ut.expect(l_rec.nation_id).to_equal('United States');
       ut.expect(l_rec.bounding_office_id).to_equal('POA');
-      ut.expect(l_rec.nearest_city).to_equal('Juneau');
+      ut.expect(l_rec.nearest_city).to_equal('Juneau, Alaska');
       -- create with null lat/lon with null info
       l_rec := store_location(null, null, null, null, null, null, null);
       ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A for Unknown State or State N/A');
@@ -2097,7 +2099,7 @@ AS
       -- Behavior changed with CWDB-290. P_BOUNDING_OFFICE_ID now overrides P_LATITUDE/P_LONGITUDE (MDP 18Jun2024)
       -- ut.expect(l_rec.bounding_office_id).to_equal('POA');
       ut.expect(l_rec.bounding_office_id).to_equal('NWS');
-      ut.expect(l_rec.nearest_city).to_equal('Juneau');
+      ut.expect(l_rec.nearest_city).to_equal('Juneau, Alaska');
       -- update with valid lat/lon with non-null info (should overwrite existing values)
       l_rec := store_location(59.994444444444, -139.486388888889, 'King', 'WA', 'US', 'NWS', 'Seattle');
       ut.expect(l_rec.county_name).to_equal('King');
@@ -2817,7 +2819,229 @@ AS
        ut.expect(l_count).to_equal(1);
 
     end test_av_loc2_text_search;
+
+   --------------------------------------------------------------------------------
+   -- procedure test_mods_for_generic_geometry
+   --------------------------------------------------------------------------------
+   procedure test_mods_for_generic_geometry
+   is
+      type info_rec_t is record(
+                         county_name   av_loc.county_name%type,
+                         state_initial av_loc.state_initial%type,
+                         nation_id     av_loc.nation_id%type,
+                         nearest_city  av_loc.nearest_city%type);
+      type info_tab_t is table of info_rec_t index by varchar2(32767);
+      l_info             info_tab_t;
+      l_view_rec         av_loc%rowtype;
+      l_view_rec_base    av_loc%rowtype;
+      l_office_id        av_loc.db_office_id%type;
+      l_location_kind_id av_loc.location_kind_id%type;
+      l_elevation        av_loc.elevation%type;
+      l_horizontal_datum av_loc.horizontal_datum%type;
+      l_location_id      av_loc.location_id%type;
+      l_latitude         av_loc.latitude%type;
+      l_vertical_datum   av_loc.vertical_datum%type;
+      l_longitude        av_loc.longitude%type;
+      l_time_zone_id     av_loc.time_zone_name%type;
+      l_data             clob;
+      l_data_tab         str_tab_tab_t;
+      l_county_state     str_tab_t;
+      l_location_codes   number_tab_t;
+      l_count            binary_integer;
+   begin
+      -----------------------------------------------
+      -- retrieve and parse the locations to store --
+      -----------------------------------------------
+      dbms_lob.createtemporary(l_data, true);
+      select value
+        into l_data
+        from at_clob
+       where id = '/TEST/CWMS-2430';
+      l_data_tab := cwms_util.parse_delimited_text (
+         p_text 	         => l_data,
+         p_field_delimiter => chr(9),
+         p_keep_quotes     => 'T');
+      for i in 1..l_data_tab.count loop
+         exit when l_data_tab(i).count < 13;
+         l_office_id        := l_data_tab(i)(1);
+         l_location_id      := l_data_tab(i)(2);
+         l_location_kind_id := l_data_tab(i)(3);
+         l_elevation        := to_number(l_data_tab(i)(4));
+         l_vertical_datum   := l_data_tab(i)(5);
+         l_latitude         := to_number(l_data_tab(i)(6));
+         l_longitude        := to_number(l_data_tab(i)(7));
+         l_vertical_datum   := l_data_tab(i)(8);
+         l_time_zone_id     := l_data_tab(i)(9);
+         ----------------------------------------------------------
+         -- compute data from lat/lon and store as expected data --
+         ----------------------------------------------------------
+         l_county_state := cwms_loc.get_county_id(l_latitude, l_longitude);
+         l_info(l_location_id) := info_rec_t(
+            l_county_state(1),                                                              -- county_name
+            l_county_state(2),                                                              -- state_initial
+            null,                                                                           -- nation_id (populated below)
+            cwms_util.join_text(cwms_loc.get_nearest_city(l_latitude, l_longitude), ', ')); -- nearest_city
+         select cntry_name
+           into l_info(l_location_id).nation_id
+           from cwms_nation_sp
+          where fips_cntry = cwms_loc.get_nation_id(l_latitude, l_longitude);
+         ---------------------------------------------------------------------------
+         -- store location without data computed from lat/lon (will auto-compute) --
+         ---------------------------------------------------------------------------
+         cwms_loc.store_location2 (
+            p_location_id      => l_location_id,
+            p_elevation        => l_elevation,
+            p_elev_unit_id     => 'ft',
+            p_vertical_datum   => l_vertical_datum,
+            p_latitude         => l_latitude,
+            p_longitude        => l_longitude,
+            p_horizontal_datum => l_vertical_datum,
+            p_time_zone_id     => l_time_zone_id,
+            p_active           => 'T',
+            p_db_office_id     => l_office_id,
+            p_location_kind_id => l_location_kind_id);
+      end loop;
+      commit;
+      ------------------------------------------------------------
+      -- validate lat/lon and values auto-computed from lat/lon --
+      ------------------------------------------------------------
+      l_location_codes := number_tab_t();
+      for i in 1..l_data_tab.count loop
+         exit when l_data_tab(i).count < 13;
+         l_location_codes.extend;
+         l_office_id   := l_data_tab(i)(1);
+         l_location_id := l_data_tab(i)(2);
+         l_latitude    := to_number(l_data_tab(i)(6));
+         l_longitude   := to_number(l_data_tab(i)(7));
+         select *
+           into l_view_rec
+           from av_loc
+          where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+         l_location_codes(i) := l_view_rec.location_code;
+         ut.expect(l_view_rec.latitude).to_equal(l_latitude);
+         ut.expect(l_view_rec.longitude).to_equal(l_longitude);
+         ut.expect(l_view_rec.county_name).to_equal(l_info(l_location_id).county_name);
+         ut.expect(l_view_rec.state_initial).to_equal(l_info(l_location_id).state_initial);
+         ut.expect(l_view_rec.nation_id).to_equal(l_info(l_location_id).nation_id);
+         ut.expect(l_view_rec.nearest_city).to_equal(l_info(l_location_id).nearest_city);
+      end loop;
+      --------------------------------------
+      -- clear at_location_geometry table --
+      --------------------------------------
+      delete
+        from at_location_geometry
+       where location_code in (select column_value from table(l_location_codes));
+      select count(*)
+        into l_count
+        from at_location_geometry
+       where location_code in (select column_value from table(l_location_codes));
+      ut.expect(l_count).to_equal(0);
+      ------------------------------------------------------------------
+      -- verify lat/lons are null but computed values are not changed --
+      ------------------------------------------------------------------
+      for i in 1..l_data_tab.count loop
+         exit when l_data_tab(i).count < 13;
+         l_office_id        := l_data_tab(i)(1);
+         l_location_id      := l_data_tab(i)(2);
+         select *
+           into l_view_rec
+           from av_loc
+          where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+         ut.expect(l_view_rec.latitude).to_be_null;
+         ut.expect(l_view_rec.longitude).to_be_null;
+         ut.expect(l_view_rec.county_name).to_equal(l_info(l_location_id).county_name);
+         ut.expect(l_view_rec.state_initial).to_equal(l_info(l_location_id).state_initial);
+         ut.expect(l_view_rec.nation_id).to_equal(l_info(l_location_id).nation_id);
+         ut.expect(l_view_rec.nearest_city).to_equal(l_info(l_location_id).nearest_city);
+      end loop;
+      ---------------------------------
+      -- set computed values to null --
+      ---------------------------------
+      update at_physical_location
+         set county_code = null,
+             nation_code = null,
+             nearest_city = null
+       where location_code in (select column_value from table(l_location_codes));
+      ----------------------------------------------------------------------------------------
+      -- verify computed values are null before setting lat/lons and are correct afterwards --
+      ----------------------------------------------------------------------------------------
+      for i in 1..l_data_tab.count loop
+         exit when l_data_tab(i).count < 13;
+         l_office_id   := l_data_tab(i)(1);
+         l_location_id := l_data_tab(i)(2);
+         select *
+           into l_view_rec
+           from av_loc
+          where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+         if instr(l_location_id, '-') > 0 then
+            -----------------------------------------
+            -- possibly has a base location stored --
+            -----------------------------------------
+            begin
+               select *
+                 into l_view_rec_base
+                 from av_loc
+                where db_office_id = l_office_id
+                  and location_id = cwms_util.split_text(l_location_id, 1, '-')
+                  and unit_system = 'EN';
+               ----------------------------------------------------------------------------
+               -- has a base location stored, info is inherited (may or may not be null) --
+               ----------------------------------------------------------------------------
+               ut.expect(nvl(l_view_rec.county_name,   '@')).to_equal(nvl(l_view_rec_base.county_name,   '@'));
+               ut.expect(nvl(l_view_rec.state_initial, '@')).to_equal(nvl(l_view_rec_base.state_initial, '@'));
+               ut.expect(nvl(l_view_rec.nation_id,     '@')).to_equal(nvl(l_view_rec_base.nation_id,     '@'));
+               ut.expect(nvl(l_view_rec.nearest_city,  '@')).to_equal(nvl(l_view_rec_base.nearest_city,  '@'));
+            exception
+               when no_data_found then
+                  ------------------------------------------------
+                  -- no base location stored, info must be null --
+                  ------------------------------------------------
+                  ut.expect(l_view_rec.county_name).to_be_null;
+                  ut.expect(l_view_rec.state_initial).to_be_null;
+                  ut.expect(l_view_rec.nation_id).to_be_null;
+                  ut.expect(l_view_rec.nearest_city).to_be_null;
+            end;
+         else
+            -------------------------------------------
+            -- is a base location, info must be null --
+            -------------------------------------------
+            ut.expect(l_view_rec.county_name).to_be_null;
+            ut.expect(l_view_rec.state_initial).to_be_null;
+            ut.expect(l_view_rec.nation_id).to_be_null;
+            ut.expect(l_view_rec.nearest_city).to_be_null;
+         end if;
+         ------------------------------------------
+         -- set lat/lon and verify computed_info --
+         ------------------------------------------
+         l_office_id   := l_data_tab(i)(1);
+         l_location_id := l_data_tab(i)(2);
+         l_latitude    := to_number(l_data_tab(i)(6));
+         l_longitude   := to_number(l_data_tab(i)(7));
+         cwms_loc.store_location (
+            p_location_id 	=> l_location_id,
+            p_latitude 	   => l_latitude,
+            p_longitude 	=> l_longitude,
+            p_db_office_id => l_office_id);
+         select *
+           into l_view_rec
+           from av_loc
+          where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+         ut.expect(l_view_rec.latitude).to_equal(l_latitude);
+         ut.expect(l_view_rec.longitude).to_equal(l_longitude);
+         ut.expect(l_view_rec.county_name).to_equal(l_info(l_location_id).county_name);
+         ut.expect(l_view_rec.state_initial).to_equal(l_info(l_location_id).state_initial);
+         ut.expect(l_view_rec.nation_id).to_equal(l_info(l_location_id).nation_id);
+         ut.expect(l_view_rec.nearest_city).to_equal(l_info(l_location_id).nearest_city);
+      end loop;
+   end test_mods_for_generic_geometry;
 END test_cwms_loc;
 /
-
 show errors;

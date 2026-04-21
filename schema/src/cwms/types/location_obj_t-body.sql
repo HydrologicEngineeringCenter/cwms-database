@@ -5,12 +5,14 @@ as
       p_location_ref in location_ref_t)
       return self as result
    is
+      x_location_id_not_found exception;
+      pragma exception_init(x_location_id_not_found, -20025);
    begin
+      self.location_ref := p_location_ref;
       begin
          self.init(p_location_ref.get_location_code);
       exception
-         when no_data_found then
-            self.location_ref := p_location_ref;
+         when x_location_id_not_found then null;
       end;
       return;
    end;
@@ -36,8 +38,10 @@ as
                    s.county_name,
                    tz.time_zone_name,
                    l.location_type,
-                   l.latitude,
-                   l.longitude,
+                   g.geometry,
+                   g.geometry_type,
+                   g.latitude,
+                   g.longitude,
                    l.horizontal_datum,
                    l.elevation,
                    l.vertical_datum,
@@ -61,8 +65,6 @@ as
                             pl.location_type,
                             pl.elevation,
                             pl.vertical_datum,
-                            pl.longitude,
-                            pl.latitude,
                             pl.horizontal_datum,
                             pl.public_name,
                             pl.long_name,
@@ -80,6 +82,14 @@ as
                       where bl.base_location_code = pl.base_location_code
                         and pl.location_code = p_location_code
                    ) l
+                   left outer join
+                   ( select location_code,
+                            geometry,
+                            geometry_type,
+                            latitude,
+                            longitude
+                       from at_location_geometry
+                   ) g on g.location_code = l.location_code
                    left outer join
                    ( select county_code,
                             county_name,

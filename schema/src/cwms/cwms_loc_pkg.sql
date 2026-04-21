@@ -838,6 +838,231 @@ AS
 		p_db_office_id 			IN 	 VARCHAR2 DEFAULT NULL
 	);
    /**
+    * Stores the geometry of a location
+    *
+    * @param p_location_code  The unique database numeric code for the location
+    * @param p_geometry       The geometry (must not be NULL). May be one of
+    * <p>
+    * <table class="desc">
+    *   <tr>
+    *     <td>POINT</td>
+    *     <td>Single point</td>
+    *   </tr>
+    *   <tr>
+    *     <td>LINE / CURVE</td>
+    *     <td>Single line string</td>
+    *   </tr>
+    *   <tr>
+    *     <td>POLYGON</td>
+    *     <td>Single polygon (with or without holes)</td>
+    *   </tr>
+    *   <tr>
+    *     <td>COLLECTION</td>
+    *     <td>Heterogeneous collection of elements</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOINT</td>
+    *     <td>Multiple points</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTILINE</td>
+    *     <td>Multiple line strings</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOLYGON</td>
+    *     <td>Multiple disjoint polygons</td>
+    *   </tr>
+    * </table>
+    * @param p_fail_if_exists A flag (T/F) specifying whether to fail if the location already has a geometry
+    */
+   procedure store_geometry(
+      p_location_code in number,
+      p_geometry      in sdo_geometry,
+      p_fail_if_exists in varchar2 default 'T');
+   /**
+    * Stores the geometry of a location
+    *
+    * @param p_location_id   The location identifier
+    * @param p_geometry      The geometry (must not be NULL). May be one of
+    * <p>
+    * <table class="desc">
+    *   <tr>
+    *     <td>POINT</td>
+    *     <td>Single point</td>
+    *   </tr>
+    *   <tr>
+    *     <td>LINE / CURVE</td>
+    *     <td>Single line string</td>
+    *   </tr>
+    *   <tr>
+    *     <td>POLYGON</td>
+    *     <td>Single polygon (with or without holes)</td>
+    *   </tr>
+    *   <tr>
+    *     <td>COLLECTION</td>
+    *     <td>Heterogeneous collection of elements</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOINT</td>
+    *     <td>Multiple points</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTILINE</td>
+    *     <td>Multiple line strings</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOLYGON</td>
+    *     <td>Multiple disjoint polygons</td>
+    *   </tr>
+    * </table>
+    * @param p_fail_if_exists A flag (T/F) specifying whether to fail if the location already has a geometry
+    * @param p_db_office_id   The office that owns the location. If not specified or NULL the session user's default office is used
+    */
+   procedure store_geometry(
+      p_location_id    in varchar2,
+      p_geometry       in sdo_geometry,
+      p_fail_if_exists in varchar2 default 'T',
+      p_db_office_id   in varchar2);
+   /**
+    * Retrieves the geometry of a location
+    *
+    * @param p_location_code  The unique database numeric code for the location
+    * @return the geometry of the location. May be one of
+    * <p>
+    * <table class="desc">
+    *   <tr>
+    *     <td>NULL</td>
+    *     <td>No geometry stored for location</td>
+    *   </tr>
+    *   <tr>
+    *     <td>POINT</td>
+    *     <td>Single point</td>
+    *   </tr>
+    *   <tr>
+    *     <td>LINE / CURVE</td>
+    *     <td>Single line string</td>
+    *   </tr>
+    *   <tr>
+    *     <td>POLYGON</td>
+    *     <td>Single polygon (with or without holes)</td>
+    *   </tr>
+    *   <tr>
+    *     <td>COLLECTION</td>
+    *     <td>Heterogeneous collection of elements</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOINT</td>
+    *     <td>Multiple points</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTILINE</td>
+    *     <td>Multiple line strings</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOLYGON</td>
+    *     <td>Multiple disjoint polygons</td>
+    *   </tr>
+    * </table>
+    */
+   function retrieve_geometry(
+      p_location_code in number)
+      return sdo_geometry;
+   /**
+    * Retrieves the geometry of a location
+    *
+    * @param p_location_id   The location identifier
+    * @param p_db_office_id   The office that owns the location. If not specified or NULL the session user's default office is used
+    *
+    * @return the geometry of the location. May be one of
+    * <p>
+    * <table class="desc">
+    *   <tr>
+    *     <td>NULL</td>
+    *     <td>No geometry stored for location</td>
+    *   </tr>
+    *   <tr>
+    *     <td>POINT</td>
+    *     <td>Single point</td>
+    *   </tr>
+    *   <tr>
+    *     <td>LINE / CURVE</td>
+    *     <td>Single line string</td>
+    *   </tr>
+    *   <tr>
+    *     <td>POLYGON</td>
+    *     <td>Single polygon (with or without holes)</td>
+    *   </tr>
+    *   <tr>
+    *     <td>COLLECTION</td>
+    *     <td>Heterogeneous collection of elements</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOINT</td>
+    *     <td>Multiple points</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTILINE</td>
+    *     <td>Multiple line strings</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOLYGON</td>
+    *     <td>Multiple disjoint polygons</td>
+    *   </tr>
+    * </table>
+    */
+   function retrieve_geometry(
+      p_location_id  in varchar2,
+      p_db_office_id in varchar2)
+      return sdo_geometry;
+   /**
+    * Deletes a location's geometry
+    *
+    * @param p_location_code  The unique database numeric code for the location
+    */
+   procedure delete_geometry(
+      p_location_code in number);
+   /**
+    * Deletes a location's geometry
+    *
+    * @param p_location_id   The location identifier
+    * @param p_db_office_id  The office that owns the location. If not specified or NULL the session user's default office is used
+    */
+   procedure delete_geometry(
+      p_location_id  in varchar2,
+      p_db_office_id in varchar2);
+   /**
+    * Retrieves the lat/lon for a location or its base location. If the location's lat/lon is NULL, the
+    * base location's lat/lon (which may also be null) is retrieved
+    *
+    * @param p_lat The location's latitude
+    * @param p_lon The location's longitude
+    * @param p_location_code The unique database numeric code for the location
+    */
+   procedure get_location_lat_lon(
+      p_lat in out nocopy at_location_geometry.latitude%type,
+      p_lon in out nocopy at_location_geometry.latitude%type,
+      p_location_code in number);
+   /**
+    * Function to retrieve the latitude for a location or its base location, suitable for use in an SQL query.
+    * If the location's latitude is NULL, the base location's latitude (which may also be NULL) is retrieved
+    *
+    * @param p_location_code The unique database numeric code for the location
+    * @return the location's latitude
+    */
+   function get_location_lat(
+      p_location_code in at_physical_location.location_code%type)
+      return at_location_geometry.latitude%type deterministic;
+   /**
+    * Function to retrieve the longitude for a location or its base location, suitable for use in an SQL query.
+    * If the location's longitude is NULL, the base location's longitude (which may also be NULL) is retrieved
+    *
+    * @param p_location_code The unique database numeric code for the location
+    * @return the location's longitude
+    */
+   function get_location_lon(
+      p_location_code in at_physical_location.location_code%type)
+      return at_location_geometry.latitude%type deterministic;
+   /**
     * Retreives the time zone code of a location
     *
     * @param p_location_code The unique numeric code that identifies the location

@@ -9,8 +9,45 @@ create type location_obj_t
  * @member county_name          County encompassing location
  * @member time_zone_name       Location's local time zone
  * @member location_type        User-defined type for location
- * @member latitude             Actual latitude of location
- * @member longitude            Actual longitude of location
+ * @member geometry             Geometry of location (POINT, POLYGON, etc..)
+ * @member geometry_type        The type of "geometry" member. May be one of
+ * <p>
+ * <table class="desc">
+ *   <tr>
+ *     <td>NULL</td>
+ *     <td>No geometry stored for location</td>
+ *   </tr>
+ *   <tr>
+ *     <td>1</td>
+ *     <td>Single point</td>
+ *   </tr>
+ *   <tr>
+ *     <td>2</td>
+ *     <td>Single line string</td>
+ *   </tr>
+ *   <tr>
+ *     <td>3</td>
+ *     <td>Single polygon (with or without holes)</td>
+ *   </tr>
+ *   <tr>
+ *     <td>4</td>
+ *     <td>Heterogeneous collection of elements</td>
+ *   </tr>
+ *   <tr>
+ *     <td>5</td>
+ *     <td>Multiple points</td>
+ *   </tr>
+ *   <tr>
+ *     <td>6</td>
+ *     <td>Multiple line strings</td>
+ *   </tr>
+ *   <tr>
+ *     <td>7</td>
+ *     <td>Multiple disjoint polygons</td>
+ *   </tr>
+ * </table>
+ * @member latitude             Actual latitude of location if geometry_type = 1
+ * @member longitude            Actual longitude of location if geometry_type = 1
  * @member horizontal_datum     Datum used for actual latitude and longitude
  * @member elevation            Elevation of location
  * @member elev_unit_id         Unit of elevation
@@ -34,6 +71,8 @@ as object
    county_name          VARCHAR2 (60),
    time_zone_name       VARCHAR2 (28),
    location_type        VARCHAR2 (32),
+   geometry             SDO_GEOMETRY,
+   geometry_type        NUMBER,
    latitude             NUMBER,
    longitude            NUMBER,
    horizontal_datum     VARCHAR2 (16),

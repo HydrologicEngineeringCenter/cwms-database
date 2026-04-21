@@ -1424,143 +1424,239 @@ IS
          IF l_base_loc_only
          THEN
             OPEN p_cwms_cat FOR
-                 SELECT   co.office_id db_office_id,
-                             abl.base_location_id
-                          || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
-                          || apl.sub_location_id
-                             location_id, abl.base_location_id,
-                          apl.sub_location_id, cs.state_initial, cc.county_name,
-                          ctz.time_zone_name, apl.location_type, apl.latitude,
-                          apl.longitude, apl.horizontal_datum,
-                          apl.elevation * cuc.factor + cuc.offset elevation,
-                          cuc.to_unit_id elev_unit_id, apl.vertical_datum,
-                          apl.public_name, apl.long_name, apl.description,
-                          apl.active_flag
-                   FROM   at_physical_location apl,
-                          at_base_location abl,
-                          cwms_county cc,
-                          cwms_office co,
-                          cwms_state cs,
-                          cwms_time_zone ctz,
-                          cwms_unit_conversion cuc,
-                          ---
-                          at_loc_group_assignment atlga                     ---
-                  WHERE       abl.db_office_code = l_db_office_code
-                          AND (cc.county_code = NVL (apl.county_code, 0))
-                          AND (cs.state_code = NVL (cc.state_code, 0))
-                          AND (abl.db_office_code = co.office_code)
-                          AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
-                          AND apl.base_location_code = abl.base_location_code
-                          AND apl.location_code != 0
-                          AND cuc.from_unit_id = 'm'
-                          AND cuc.to_unit_id = p_elevation_unit
-                          ---
-                          AND atlga.loc_group_code = l_loc_group_code      ---
-                          AND apl.location_code = atlga.location_code      ---
-                          AND apl.sub_location_id IS NULL                  ---
+                 SELECT   q1.db_office_id,
+                          q1.location_id,
+                          q1.base_location_id,
+                          q1.sub_location_id,
+                          q1.state_initial,
+                          q1.county_name,
+                          q1.time_zone_name,
+                          q1.location_type,
+                          q2.latitude,
+                          q2.longitude,
+                          q1.horizontal_datum,
+                          q1.elevation,
+                          q1.elev_unit_id,
+                          q1.vertical_datum,
+                          q1.public_name,
+                          q1.long_name,
+                          q1.description,
+                          q1.active_flag
+                   FROM   (SELECT   apl.location_code,
+                                    co.office_id db_office_id,
+                                       abl.base_location_id
+                                    || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
+                                    || apl.sub_location_id
+                                       location_id, abl.base_location_id,
+                                    apl.sub_location_id, cs.state_initial, cc.county_name,
+                                    ctz.time_zone_name, apl.location_type, apl.horizontal_datum,
+                                    apl.elevation * cuc.factor + cuc.offset elevation,
+                                    cuc.to_unit_id elev_unit_id, apl.vertical_datum,
+                                    apl.public_name, apl.long_name, apl.description,
+                                    apl.active_flag
+                             FROM   at_physical_location apl,
+                                    at_base_location abl,
+                                    cwms_county cc,
+                                    cwms_office co,
+                                    cwms_state cs,
+                                    cwms_time_zone ctz,
+                                    cwms_unit_conversion cuc,
+                                    at_loc_group_assignment atlga
+                            WHERE       abl.db_office_code = l_db_office_code
+                                    AND (cc.county_code = NVL (apl.county_code, 0))
+                                    AND (cs.state_code = NVL (cc.state_code, 0))
+                                    AND (abl.db_office_code = co.office_code)
+                                    AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
+                                    AND apl.base_location_code = abl.base_location_code
+                                    AND apl.location_code != 0
+                                    AND cuc.from_unit_id = 'm'
+                                    AND cuc.to_unit_id = p_elevation_unit
+                                    AND atlga.loc_group_code = l_loc_group_code
+                                    AND apl.location_code = atlga.location_code
+                                    AND apl.sub_location_id IS NULL
+                          ) q1
+                          LEFT OUTER JOIN
+                          (SELECT   location_code,
+                                    latitude,
+                                    longitude
+                             FROM   at_location_geometry
+                          ) q2 on q2.location_code = q1.location_code
                ORDER BY  UPPER(location_id) ASC;
          ELSE
             OPEN p_cwms_cat FOR
-                 SELECT   co.office_id db_office_id,
-                             abl.base_location_id
-                          || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
-                          || apl.sub_location_id
-                             location_id, abl.base_location_id,
-                          apl.sub_location_id, cs.state_initial, cc.county_name,
-                          ctz.time_zone_name, apl.location_type, apl.latitude,
-                          apl.longitude, apl.horizontal_datum,
-                          apl.elevation * cuc.factor + cuc.offset elevation,
-                          cuc.to_unit_id elev_unit_id, apl.vertical_datum,
-                          apl.public_name, apl.long_name, apl.description,
-                          apl.active_flag
-                   FROM   at_physical_location apl,
-                          at_base_location abl,
-                          cwms_county cc,
-                          cwms_office co,
-                          cwms_state cs,
-                          cwms_time_zone ctz,
-                          cwms_unit_conversion cuc,
-                          ---
-                          at_loc_group_assignment atlga                     ---
-                  WHERE       abl.db_office_code = l_db_office_code
-                          AND (cc.county_code = NVL (apl.county_code, 0))
-                          AND (cs.state_code = NVL (cc.state_code, 0))
-                          AND (abl.db_office_code = co.office_code)
-                          AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
-                          AND apl.base_location_code = abl.base_location_code
-                          AND apl.location_code != 0
-                          AND cuc.from_unit_id = 'm'
-                          AND cuc.to_unit_id = p_elevation_unit
-                          ---
-                          AND atlga.loc_group_code = l_loc_group_code      ---
-                          AND apl.location_code = atlga.location_code      ---
-               ORDER BY   UPPER(location_id) ASC;
+                 SELECT   q1.db_office_id,
+                          q1.location_id,
+                          q1.base_location_id,
+                          q1.sub_location_id,
+                          q1.state_initial,
+                          q1.county_name,
+                          q1.time_zone_name,
+                          q1.location_type,
+                          q2.latitude,
+                          q2.longitude,
+                          q1.horizontal_datum,
+                          q1.elevation,
+                          q1.elev_unit_id,
+                          q1.vertical_datum,
+                          q1.public_name,
+                          q1.long_name,
+                          q1.description,
+                          q1.active_flag
+                   FROM   (SELECT   apl.location_code,
+                                    co.office_id db_office_id,
+                                       abl.base_location_id
+                                    || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
+                                    || apl.sub_location_id
+                                       location_id, abl.base_location_id,
+                                    apl.sub_location_id, cs.state_initial, cc.county_name,
+                                    ctz.time_zone_name, apl.location_type, apl.horizontal_datum,
+                                    apl.elevation * cuc.factor + cuc.offset elevation,
+                                    cuc.to_unit_id elev_unit_id, apl.vertical_datum,
+                                    apl.public_name, apl.long_name, apl.description,
+                                    apl.active_flag
+                             FROM   at_physical_location apl,
+                                    at_base_location abl,
+                                    cwms_county cc,
+                                    cwms_office co,
+                                    cwms_state cs,
+                                    cwms_time_zone ctz,
+                                    cwms_unit_conversion cuc,
+                                    at_loc_group_assignment atlga
+                            WHERE       abl.db_office_code = l_db_office_code
+                                    AND (cc.county_code = NVL (apl.county_code, 0))
+                                    AND (cs.state_code = NVL (cc.state_code, 0))
+                                    AND (abl.db_office_code = co.office_code)
+                                    AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
+                                    AND apl.base_location_code = abl.base_location_code
+                                    AND apl.location_code != 0
+                                    AND cuc.from_unit_id = 'm'
+                                    AND cuc.to_unit_id = p_elevation_unit
+                                    AND atlga.loc_group_code = l_loc_group_code
+                                    AND apl.location_code = atlga.location_code
+                          ) q1
+                          LEFT OUTER JOIN
+                          (SELECT   location_code,
+                                    latitude,
+                                    longitude
+                             FROM   at_location_geometry
+                          ) q2 on q2.location_code = q1.location_code
+                 ORDER BY   UPPER(location_id) ASC;
          END IF;
       ELSE
          IF l_base_loc_only
          THEN
             OPEN p_cwms_cat FOR
-                 SELECT   co.office_id db_office_id,
-                             abl.base_location_id
-                          || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
-                          || apl.sub_location_id
-                             location_id, abl.base_location_id,
-                          apl.sub_location_id, cs.state_initial, cc.county_name,
-                          ctz.time_zone_name, apl.location_type, apl.latitude,
-                          apl.longitude, apl.horizontal_datum,
-                          apl.elevation * cuc.factor + cuc.offset elevation,
-                          cuc.to_unit_id elev_unit_id, apl.vertical_datum,
-                          apl.public_name, apl.long_name, apl.description,
-                          apl.active_flag
-                   FROM   at_physical_location apl,
-                          at_base_location abl,
-                          cwms_county cc,
-                          cwms_office co,
-                          cwms_state cs,
-                          cwms_time_zone ctz,
-                          cwms_unit_conversion cuc
-                  WHERE       abl.db_office_code = l_db_office_code
-                          AND (cc.county_code = NVL (apl.county_code, 0))
-                          AND (cs.state_code = NVL (cc.state_code, 0))
-                          AND (abl.db_office_code = co.office_code)
-                          AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
-                          AND apl.base_location_code = abl.base_location_code
-                          AND apl.location_code != 0
-                          AND cuc.from_unit_id = 'm'
-                          AND cuc.to_unit_id = p_elevation_unit
-                          ---
-                          AND apl.sub_location_id IS NULL                  ---
+                 SELECT   q1.db_office_id,
+                          q1.location_id,
+                          q1.base_location_id,
+                          q1.sub_location_id,
+                          q1.state_initial,
+                          q1.county_name,
+                          q1.time_zone_name,
+                          q1.location_type,
+                          q2.latitude,
+                          q2.longitude,
+                          q1.horizontal_datum,
+                          q1.elevation,
+                          q1.elev_unit_id,
+                          q1.vertical_datum,
+                          q1.public_name,
+                          q1.long_name,
+                          q1.description,
+                          q1.active_flag
+                   FROM   (SELECT   apl.location_code,
+                                    co.office_id db_office_id,
+                                       abl.base_location_id
+                                    || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
+                                    || apl.sub_location_id
+                                       location_id, abl.base_location_id,
+                                    apl.sub_location_id, cs.state_initial, cc.county_name,
+                                    ctz.time_zone_name, apl.location_type, apl.horizontal_datum,
+                                    apl.elevation * cuc.factor + cuc.offset elevation,
+                                    cuc.to_unit_id elev_unit_id, apl.vertical_datum,
+                                    apl.public_name, apl.long_name, apl.description,
+                                    apl.active_flag
+                             FROM   at_physical_location apl,
+                                    at_base_location abl,
+                                    cwms_county cc,
+                                    cwms_office co,
+                                    cwms_state cs,
+                                    cwms_time_zone ctz,
+                                    cwms_unit_conversion cuc
+                            WHERE       abl.db_office_code = l_db_office_code
+                                    AND (cc.county_code = NVL (apl.county_code, 0))
+                                    AND (cs.state_code = NVL (cc.state_code, 0))
+                                    AND (abl.db_office_code = co.office_code)
+                                    AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
+                                    AND apl.base_location_code = abl.base_location_code
+                                    AND apl.location_code != 0
+                                    AND cuc.from_unit_id = 'm'
+                                    AND cuc.to_unit_id = p_elevation_unit
+                                    ---
+                                    AND apl.sub_location_id IS NULL                  ---
+                          ) q1
+                          LEFT OUTER JOIN
+                          (SELECT   location_code,
+                                    latitude,
+                                    longitude
+                             FROM   at_location_geometry
+                          ) q2 on q2.location_code = q1.location_code
                ORDER BY   UPPER(location_id) ASC;
          ELSE
             OPEN p_cwms_cat FOR
-                 SELECT   co.office_id db_office_id,
-                             abl.base_location_id
-                          || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
-                          || apl.sub_location_id
-                             location_id, abl.base_location_id,
-                          apl.sub_location_id, cs.state_initial, cc.county_name,
-                          ctz.time_zone_name, apl.location_type, apl.latitude,
-                          apl.longitude, apl.horizontal_datum,
-                          apl.elevation * cuc.factor + cuc.offset elevation,
-                          cuc.to_unit_id elev_unit_id, apl.vertical_datum,
-                          apl.public_name, apl.long_name, apl.description,
-                          apl.active_flag
-                   FROM   at_physical_location apl,
-                          at_base_location abl,
-                          cwms_county cc,
-                          cwms_office co,
-                          cwms_state cs,
-                          cwms_time_zone ctz,
-                          cwms_unit_conversion cuc
-                  WHERE       abl.db_office_code = l_db_office_code
-                          AND (cc.county_code = NVL (apl.county_code, 0))
-                          AND (cs.state_code = NVL (cc.state_code, 0))
-                          AND (abl.db_office_code = co.office_code)
-                          AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
-                          AND apl.base_location_code = abl.base_location_code
-                          AND apl.location_code != 0
-                          AND cuc.from_unit_id = 'm'
-                          AND cuc.to_unit_id = p_elevation_unit
+                 SELECT   q1.db_office_id,
+                          q1.location_id,
+                          q1.base_location_id,
+                          q1.sub_location_id,
+                          q1.state_initial,
+                          q1.county_name,
+                          q1.time_zone_name,
+                          q1.location_type,
+                          q2.latitude,
+                          q2.longitude,
+                          q1.horizontal_datum,
+                          q1.elevation,
+                          q1.elev_unit_id,
+                          q1.vertical_datum,
+                          q1.public_name,
+                          q1.long_name,
+                          q1.description,
+                          q1.active_flag
+                   FROM   (SELECT   apl.location_code,
+                                    co.office_id db_office_id,
+                                       abl.base_location_id
+                                    || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
+                                    || apl.sub_location_id
+                                       location_id, abl.base_location_id,
+                                    apl.sub_location_id, cs.state_initial, cc.county_name,
+                                    ctz.time_zone_name, apl.location_type, apl.horizontal_datum,
+                                    apl.elevation * cuc.factor + cuc.offset elevation,
+                                    cuc.to_unit_id elev_unit_id, apl.vertical_datum,
+                                    apl.public_name, apl.long_name, apl.description,
+                                    apl.active_flag
+                             FROM   at_physical_location apl,
+                                    at_base_location abl,
+                                    cwms_county cc,
+                                    cwms_office co,
+                                    cwms_state cs,
+                                    cwms_time_zone ctz,
+                                    cwms_unit_conversion cuc
+                            WHERE       abl.db_office_code = l_db_office_code
+                                    AND (cc.county_code = NVL (apl.county_code, 0))
+                                    AND (cs.state_code = NVL (cc.state_code, 0))
+                                    AND (abl.db_office_code = co.office_code)
+                                    AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
+                                    AND apl.base_location_code = abl.base_location_code
+                                    AND apl.location_code != 0
+                                    AND cuc.from_unit_id = 'm'
+                                    AND cuc.to_unit_id = p_elevation_unit
+                          ) q1
+                          LEFT OUTER JOIN
+                          (SELECT   location_code,
+                                    latitude,
+                                    longitude
+                             FROM   at_location_geometry
+                          ) q2 on q2.location_code = q1.location_code
                ORDER BY   UPPER(location_id) ASC;
          END IF;
       END IF;
@@ -1739,7 +1835,8 @@ IS
                       bounding_office_id,
                       nation_id,
                       nearest_city
-                 from ( select co.office_id as db_office_id,
+                 from ( select apl.location_code,
+                               co.office_id as db_office_id,
                                abl.base_location_id
                                || substr ('-', 1, length (apl.sub_location_id))
                                || apl.sub_location_id as location_id,
@@ -1749,8 +1846,6 @@ IS
                                cc.county_name,
                                ctz.time_zone_name,
                                apl.location_type,
-                               apl.latitude,
-                               apl.longitude,
                                apl.horizontal_datum,
                                apl.elevation * cuc.factor + cuc.offset as elevation,
                                cuc.to_unit_id as elev_unit_id,
@@ -1790,6 +1885,12 @@ IS
                            and apl.sub_location_id is null
                       ) loc
                       left outer join
+                      ( select location_code,
+                               latitude,
+                               longitude
+                          from at_location_geometry
+                      ) geom on geom.location_code = loc.location_code
+                      left outer join
                       ( select office_code,
                                office_id as bounding_office_id
                           from cwms_office
@@ -1827,7 +1928,8 @@ IS
                       bounding_office_id,
                       nation_id,
                       nearest_city
-                 from ( select co.office_id as db_office_id,
+                 from ( select apl.location_code,
+                               co.office_id as db_office_id,
                                abl.base_location_id
                                || substr ('-', 1, length (apl.sub_location_id))
                                || apl.sub_location_id as location_id,
@@ -1837,8 +1939,6 @@ IS
                                cc.county_name,
                                ctz.time_zone_name,
                                apl.location_type,
-                               apl.latitude,
-                               apl.longitude,
                                apl.horizontal_datum,
                                apl.elevation * cuc.factor + cuc.offset as elevation,
                                cuc.to_unit_id as elev_unit_id,
@@ -1876,6 +1976,12 @@ IS
                            and atlga.loc_group_code = l_loc_group_code
                            and apl.location_code = atlga.location_code
                       ) loc
+                      left outer join
+                      ( select location_code,
+                               latitude,
+                               longitude
+                          from at_location_geometry
+                      ) geom on geom.location_code = loc.location_code
                       left outer join
                       ( select office_code,
                                office_id as bounding_office_id
@@ -1917,7 +2023,8 @@ IS
                       bounding_office_id,
                       nation_id,
                       nearest_city
-                 from ( select co.office_id as db_office_id,
+                 from ( select apl.location_code,
+                               co.office_id as db_office_id,
                                abl.base_location_id
                                || substr ('-', 1, length (apl.sub_location_id))
                                || apl.sub_location_id as location_id,
@@ -1927,8 +2034,6 @@ IS
                                cc.county_name,
                                ctz.time_zone_name,
                                apl.location_type,
-                               apl.latitude,
-                               apl.longitude,
                                apl.horizontal_datum,
                                apl.elevation * cuc.factor + cuc.offset as elevation,
                                cuc.to_unit_id as elev_unit_id,
@@ -1964,6 +2069,12 @@ IS
                            and clk.location_kind_code = apl.location_kind
                            and apl.sub_location_id is null
                       ) loc
+                      left outer join
+                      ( select location_code,
+                               latitude,
+                               longitude
+                          from at_location_geometry
+                      ) geom on geom.location_code = loc.location_code
                       left outer join
                       ( select office_code,
                                office_id as bounding_office_id
@@ -2002,7 +2113,8 @@ IS
                       bounding_office_id,
                       nation_id,
                       nearest_city
-                 from ( select co.office_id as db_office_id,
+                 from ( select apl.location_code,
+                               co.office_id as db_office_id,
                                abl.base_location_id
                                || substr ('-', 1, length (apl.sub_location_id))
                                || apl.sub_location_id as location_id,
@@ -2012,8 +2124,6 @@ IS
                                cc.county_name,
                                ctz.time_zone_name,
                                apl.location_type,
-                               apl.latitude,
-                               apl.longitude,
                                apl.horizontal_datum,
                                apl.elevation * cuc.factor + cuc.offset as elevation,
                                cuc.to_unit_id as elev_unit_id,
@@ -2048,6 +2158,12 @@ IS
                            and cuc.to_unit_id = p_elevation_unit
                            and clk.location_kind_code = apl.location_kind
                       ) loc
+                      left outer join
+                      ( select location_code,
+                               latitude,
+                               longitude
+                          from at_location_geometry
+                      ) geom on geom.location_code = loc.location_code
                       left outer join
                       ( select office_code,
                                office_id as bounding_office_id
