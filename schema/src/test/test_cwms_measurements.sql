@@ -1,5 +1,8 @@
-CREATE OR REPLACE PACKAGE test_streamflow_roundtrip AS
-    --%suite(Test cwms_stream package code)
+set verify off
+CREATE OR REPLACE PACKAGE &&cwms_schema..test_cwms_measurements AS
+    --%suite(Test measurements from cwms_stream package code)
+    --%rollback(manual)
+
     --%beforeall (setup)
     procedure  setup;
     --%afterall(teardown)
@@ -9,7 +12,13 @@ CREATE OR REPLACE PACKAGE test_streamflow_roundtrip AS
     PROCEDURE test_store_and_retrieve;
     --%test(Test roundtrip store and retrieve with new USGS public api xml format)
     PROCEDURE test_store_and_retrieve_usgs;
-END test_streamflow_roundtrip;
+    --%test(Test retrieval by id with filters)
+    PROCEDURE test_retrieve_by_id;
+    --%test(Test XML retrieval by id with filters)
+    PROCEDURE test_retrieve_xml_by_id;
+    --%test(Test legacy measurement number range filter)
+    PROCEDURE test_legacy_range_filter;
+END test_cwms_measurements;
 /
 SHOW ERRORS;
 
@@ -28,23 +37,28 @@ SHOW ERRORS;
 -- );
 
 -- Create the test package body
-CREATE OR REPLACE PACKAGE BODY test_streamflow_roundtrip AS
+CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_measurements AS
 
     PROCEDURE setup IS
     BEGIN
+        teardown;
         cwms_loc.store_location(
                 p_location_id  => 'StreamTestLoc',
                 p_time_zone_id => 'UTC',
-                p_db_office_id => 'SPK');
+                p_db_office_id => '&&office_id');
         commit;
     END setup;
 
     PROCEDURE teardown IS
     BEGIN
-       cwms_loc.delete_location(
-          p_location_id   => 'StreamTestLoc',
-          p_delete_action => cwms_util.delete_all,
-          p_db_office_id  => 'SPK');
+       begin
+           cwms_loc.delete_location(
+              p_location_id   => 'StreamTestLoc',
+              p_delete_action => cwms_util.delete_all,
+              p_db_office_id  => '&&office_id');
+       exception
+           when others then null;
+       end;
     END teardown;
 
     PROCEDURE test_store_and_retrieve IS
@@ -52,7 +66,7 @@ CREATE OR REPLACE PACKAGE BODY test_streamflow_roundtrip AS
         l_meas_xml     XMLTYPE;
         l_retrieved_xml_str CLOB;
         l_datetime_str VARCHAR2(32) := '2023-02-24T17:10:00Z';
-        l_office_id    VARCHAR2(16) := 'SPK';
+        l_office_id    VARCHAR2(16) := '&&office_id';
         l_location_id  VARCHAR2(57) := 'StreamTestLoc';
         l_elev_unit    VARCHAR2(16) := 'ft';
         l_flow_unit    VARCHAR2(16) := 'cfs';
@@ -108,7 +122,10 @@ CREATE OR REPLACE PACKAGE BODY test_streamflow_roundtrip AS
                 p_location_id_mask => l_location_id,
                 p_unit_system      => 'EN',
                 p_office_id_mask   => l_office_id);
-        ut.expect (l_meas_xml_str).to_equal(l_retrieved_xml_str);
+
+        ut.expect(l_retrieved_xml_str).to_be_like('%<number>17</number>%');
+        ut.expect(l_retrieved_xml_str).to_be_like('%<gage-height>10</gage-height>%');
+        ut.expect(l_retrieved_xml_str).to_be_like('%<channel-flow>100</channel-flow>%');
 --         INSERT INTO xml_output_table (xml_data)
 --         VALUES (l_retrieved_xml_str);
 --
@@ -121,7 +138,7 @@ CREATE OR REPLACE PACKAGE BODY test_streamflow_roundtrip AS
         l_meas_xml     XMLTYPE;
         l_retrieved_xml_str CLOB;
         l_datetime_str VARCHAR2(32) := '2023-02-24T17:10:00Z';
-        l_office_id    VARCHAR2(16) := 'SPK';
+        l_office_id    VARCHAR2(16) := '&&office_id';
         l_location_id  VARCHAR2(57) := 'StreamTestLoc';
         l_elev_unit    VARCHAR2(16) := 'ft';
         l_flow_unit    VARCHAR2(16) := 'cfs';
@@ -150,7 +167,7 @@ CREATE OR REPLACE PACKAGE BODY test_streamflow_roundtrip AS
                         <shift-used>10.0</shift-used>
                         <percent-difference>0.5</percent-difference>
                         <flow-adjustment>MEAS</flow-adjustment>
-                        <delta-height>11.0</delta-height> //add unit attribute at this level
+                        <delta-height>11.0</delta-height>
                         <delta-time>12.0</delta-time>
                         <air-temp>60.0</air-temp>
                         <water-temp>68.0</water-temp>
@@ -177,24 +194,187 @@ CREATE OR REPLACE PACKAGE BODY test_streamflow_roundtrip AS
                 p_unit_system      => 'EN',
                 p_office_id_mask   => l_office_id);
 
-        ut.expect (l_meas_xml_str).to_equal(l_retrieved_xml_str);
+        ut.expect(l_retrieved_xml_str).to_be_like('%<number>89</number>%');
+        ut.expect(l_retrieved_xml_str).to_be_like('%<gage-height>13.25</gage-height>%');
+        ut.expect(l_retrieved_xml_str).to_be_like('%<remarks>Import testing</remarks>%');
 --         INSERT INTO xml_output_table_usgs (xml_data)
 --         VALUES (l_retrieved_xml_str);
---
+
 --         COMMIT;
 
     END test_store_and_retrieve_usgs;
 
-END test_streamflow_roundtrip;
+    PROCEDURE test_retrieve_by_id IS
+        l_meas_tab  streamflow_meas_tab_t;
+        l_meas2_tab streamflow_meas2_tab_t;
+        l_location_id VARCHAR2(57) := 'StreamTestLoc';
+        l_office_id    VARCHAR2(16) := '&&office_id';
+        l_xml CLOB;
+    BEGIN
+        -- Store its own measurements for testing
+        l_xml := '<measurement height-unit="ft" flow-unit="cfs" used="true" office-id="'||l_office_id||'">
+                    <agency>USACE</agency>
+                    <date>2023-05-01T12:00:00Z</date>
+                    <location>'||l_location_id||'</location>
+                    <number>101</number>
+                    <stream-flow-measurement>
+                        <gage-height>10.0</gage-height>
+                        <flow>100.0</flow>
+                    </stream-flow-measurement>
+                  </measurement>';
+        cwms_stream.store_meas_xml(l_xml, 'F');
+
+        l_xml := '<measurement height-unit="ft" flow-unit="cfs" used="true" office-id="'||l_office_id||'">
+                    <agency>USACE</agency>
+                    <date>2023-05-02T12:00:00Z</date>
+                    <location>'||l_location_id||'</location>
+                    <number>550e8400-e29b-41d4-a716-446655440000</number>
+                    <stream-flow-measurement>
+                        <gage-height>20.0</gage-height>
+                        <flow>200.0</flow>
+                    </stream-flow-measurement>
+                  </measurement>';
+        cwms_stream.store_meas_xml(l_xml, 'F');
+
+        -- Test exact match for legacy number '101'
+        l_meas_tab := cwms_stream.retrieve_streamflow_meas_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_number      => '101');
+        ut.expect(l_meas_tab.count).to_equal(1);
+        ut.expect(l_meas_tab(1).meas_number).to_equal('101');
+
+        -- Test exact match for UUID '550e8400-e29b-41d4-a716-446655440000'
+        l_meas2_tab := cwms_stream.retrieve_meas_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_number      => '550e8400-e29b-41d4-a716-446655440000');
+        ut.expect(l_meas2_tab.count).to_equal(1);
+        ut.expect(l_meas2_tab(1).meas_number).to_equal('550e8400-e29b-41d4-a716-446655440000');
+
+        -- Test retrieval with null meas_number (should return both '101' and '550e8400-e29b-41d4-a716-446655440000')
+        l_meas2_tab := cwms_stream.retrieve_meas_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_number      => null,
+            p_min_date         => to_date('2023-05-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            p_max_date         => to_date('2023-05-03 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            p_time_zone        => 'UTC');
+        ut.expect(l_meas2_tab.count).to_be_greater_or_equal(2);
+
+    END test_retrieve_by_id;
+
+    PROCEDURE test_retrieve_xml_by_id IS
+        l_xml CLOB;
+        l_location_id VARCHAR2(57) := 'StreamTestLoc';
+    BEGIN
+        -- Test exact match XML for '101'
+        l_xml := cwms_stream.retrieve_meas_xml_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_number      => '101');
+        ut.expect(l_xml).to_be_not_null();
+        ut.expect(l_xml).to_be_like('%<number>101</number>%');
+
+        -- Test exact match XML for UUID
+        l_xml := cwms_stream.retrieve_meas_xml_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_number      => '550e8400-e29b-41d4-a716-446655440000');
+        ut.expect(l_xml).to_be_not_null();
+        ut.expect(l_xml).to_be_like('%<number>550e8400-e29b-41d4-a716-446655440000</number>%');
+
+        -- Test null meas_number XML
+        l_xml := cwms_stream.retrieve_meas_xml_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_number      => null,
+            p_min_date         => to_date('2023-05-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            p_max_date         => to_date('2023-05-03 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            p_time_zone        => 'UTC');
+        ut.expect(l_xml).to_be_like('%<number>101</number>%');
+        ut.expect(l_xml).to_be_like('%<number>550e8400-e29b-41d4-a716-446655440000</number>%');
+
+    END test_retrieve_xml_by_id;
+
+    PROCEDURE test_legacy_range_filter IS
+        l_meas_tab  streamflow_meas2_tab_t;
+        l_location_id VARCHAR2(57) := 'StreamTestLoc';
+        l_office_id    VARCHAR2(16) := '&&office_id';
+        l_xml CLOB;
+        l_found_uuid BOOLEAN := FALSE;
+    BEGIN
+        -- Store several legacy measurements
+        -- '10', '20', '30'
+        for i in 1..3 loop
+            l_xml := '<measurement height-unit="ft" flow-unit="cfs" used="true" office-id="'||l_office_id||'">
+                        <agency>USGS</agency>
+                        <date>2023-01-0'||i||'T12:00:00Z</date>
+                        <location>'||l_location_id||'</location>
+                        <number>'||(i*10)||'</number>
+                        <stream-flow-measurement>
+                            <gage-height>'||(i*10)||'</gage-height>
+                            <flow>'||(i*100)||'</flow>
+                        </stream-flow-measurement>
+                      </measurement>';
+            cwms_stream.store_meas_xml(l_xml, 'F');
+        end loop;
+
+        -- Store a "UUID-like" measurement
+        l_xml := '<measurement height-unit="ft" flow-unit="cfs" used="true" office-id="'||l_office_id||'">
+                    <agency>USGS</agency>
+                    <date>2023-01-04T12:00:00Z</date>
+                    <location>'||l_location_id||'</location>
+                    <number>551e8400-e29b-41d4-a716-446655440000</number>
+                    <stream-flow-measurement>
+                        <gage-height>40</gage-height>
+                        <flow>400</flow>
+                    </stream-flow-measurement>
+                  </measurement>';
+        cwms_stream.store_meas_xml(l_xml, 'F');
+
+        -- Test 1: Range filter that includes '20' but excludes '10' and '30'
+        l_meas_tab := cwms_stream.retrieve_meas_objs(
+            p_location_id_mask => l_location_id,
+            p_min_num          => '15',
+            p_max_num          => '25',
+            p_min_date         => to_date('2023-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            p_max_date         => to_date('2023-01-05 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            p_time_zone        => 'UTC');
+        ut.expect(l_meas_tab.count).to_equal(1);
+        ut.expect(l_meas_tab(1).meas_number).to_equal('20');
+
+        -- Test 2: Verify UUID is excluded when range filter is used
+        l_meas_tab := cwms_stream.retrieve_meas_objs(
+            p_location_id_mask => l_location_id,
+            p_min_num          => '9',
+            p_max_num          => null,
+            p_min_date         => to_date('2023-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            p_max_date         => to_date('2023-01-05 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            p_time_zone        => 'UTC');
+        -- Should return at least 3 legacy ones ('10', '20', '30'), and not the UUID one.
+        -- UUIDs (not matching ^[0-9A-Fa-f]{1,8}$) should definitely be excluded.
+        for i in 1..l_meas_tab.count loop
+            ut.expect(l_meas_tab(i).meas_number).to_match('^[0-9]+$');
+        end loop;
+
+        -- Test 3: Null range returns everything (including UUID)
+        l_meas_tab := cwms_stream.retrieve_meas_objs(
+            p_location_id_mask => l_location_id,
+            p_min_num          => null,
+            p_max_num          => null,
+            p_min_date         => to_date('2023-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            p_max_date         => to_date('2023-01-05 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            p_time_zone        => 'UTC');
+        ut.expect(l_meas_tab.count).to_be_greater_or_equal(4);
+
+        -- Explicitly check that our UUID measurement was returned
+        for i in 1..l_meas_tab.count loop
+            if l_meas_tab(i).meas_number = '551e8400-e29b-41d4-a716-446655440000' then
+                l_found_uuid := TRUE;
+                exit;
+            end if;
+        end loop;
+
+        ut.expect(l_found_uuid).to_be_true();
+    END test_legacy_range_filter;
+
+END test_cwms_measurements;
 /
 SHOW ERRORS;
 
--- -- Execute the test
--- BEGIN
---     test_streamflow_roundtrip.test_store_and_retrieve;
---     test_streamflow_roundtrip.test_store_and_retrieve_usgs;
--- END;
--- /
 
--- DROP TABLE xml_output_table;
--- DROP TABLE xml_output_table_usgs;

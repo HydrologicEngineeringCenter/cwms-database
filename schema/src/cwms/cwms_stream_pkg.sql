@@ -2107,6 +2107,71 @@ function retrieve_meas_objs(
    p_time_zone        in varchar2 default null,
    p_office_id_mask   in varchar2 default null)
    return streamflow_meas2_tab_t;
+
+-- New UUID-capable retrieval helpers. Prefer these when working with UUID meas_number values.
+function retrieve_streamflow_meas_by_id(
+   p_location_id_mask in varchar2,
+   p_meas_number      in varchar2 default null,
+   p_unit_system      in varchar2 default 'EN',
+   p_min_date         in date     default null,
+   p_max_date         in date     default null,
+   p_min_height       in number   default null,
+   p_max_height       in number   default null,
+   p_min_flow         in number   default null,
+   p_max_flow         in number   default null,
+   p_agencies         in varchar2 default null,
+   p_qualities        in varchar2 default null,
+   p_time_zone        in varchar2 default null,
+   p_office_id_mask   in varchar2 default null)
+   return streamflow_meas_tab_t;
+
+function retrieve_meas_by_id(
+   p_location_id_mask in varchar2,
+   p_meas_number      in varchar2 default null,
+   p_unit_system      in varchar2 default 'EN',
+   p_min_date         in date     default null,
+   p_max_date         in date     default null,
+   p_min_height       in number   default null,
+   p_max_height       in number   default null,
+   p_min_flow         in number   default null,
+   p_max_flow         in number   default null,
+   p_agencies         in varchar2 default null,
+   p_qualities        in varchar2 default null,
+   p_time_zone        in varchar2 default null,
+   p_office_id_mask   in varchar2 default null)
+   return streamflow_meas2_tab_t;
+
+function retrieve_streamflow_meas_xml_by_id(
+   p_location_id_mask in varchar2,
+   p_meas_number      in varchar2 default null,
+   p_unit_system      in varchar2 default 'EN',
+   p_min_date         in date     default null,
+   p_max_date         in date     default null,
+   p_min_height       in number   default null,
+   p_max_height       in number   default null,
+   p_min_flow         in number   default null,
+   p_max_flow         in number   default null,
+   p_agencies         in varchar2 default null,
+   p_qualities        in varchar2 default null,
+   p_time_zone        in varchar2 default null,
+   p_office_id_mask   in varchar2 default null)
+   return clob;
+
+function retrieve_meas_xml_by_id(
+   p_location_id_mask in varchar2,
+   p_meas_number      in varchar2 default null,
+   p_unit_system      in varchar2 default 'EN',
+   p_min_date         in date     default null,
+   p_max_date         in date     default null,
+   p_min_height       in number   default null,
+   p_max_height       in number   default null,
+   p_min_flow         in number   default null,
+   p_max_flow         in number   default null,
+   p_agencies         in varchar2 default null,
+   p_qualities        in varchar2 default null,
+   p_time_zone        in varchar2 default null,
+   p_office_id_mask   in varchar2 default null)
+   return clob;
 /**
  * Retrieves stream flow measurements that match input criteria as an XML document
  *
