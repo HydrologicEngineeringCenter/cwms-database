@@ -1060,6 +1060,7 @@ AS
                                   := cwms_util.get_office_code ('CWMS');
       l_old_time_zone_code      number(14);
    BEGIN
+      dbms_output.put_line('In update_location2');
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
 
@@ -1437,6 +1438,38 @@ AS
       END IF;
 
 
+      ---------------------------------------
+      -- update at_physical_location table --
+      ---------------------------------------
+      UPDATE at_physical_location
+         SET location_type = l_location_type,
+             elevation = l_elevation,
+             vertical_datum = store_local_datum_name(l_location_code, l_vertical_datum),
+             horizontal_datum = l_horizontal_datum,
+             public_name = l_public_name,
+             long_name = l_long_name,
+             description = l_description,
+             time_zone_code = l_time_zone_code,
+             county_code = l_county_code,
+             active_flag = l_active_flag,
+             location_kind = l_location_kind_code,
+             map_label = l_map_label,
+             published_latitude = l_published_latitude,
+             published_longitude = l_published_longitude,
+             office_code = l_bounding_office_code,
+             nation_code = l_nation_code,
+             nearest_city = l_nearest_city
+       WHERE location_code = l_location_code;
+      
+       if l_base_location_code = l_location_code and p_active is not null then
+          -----------------------------------
+          -- update at_base_location table --
+          -----------------------------------
+          update at_base_location
+             set active_flag = l_active_flag
+           where base_location_code = l_base_location_code;
+       end if;
+
       --------------------
       -- update lat/lon --
       --------------------
@@ -1463,58 +1496,7 @@ AS
                        l_geometry
                       );
          end;
-         -------------------------------------------------------
-         -- update info with any just computed as appropriate --
-         -------------------------------------------------------
-         if l_county_code is null
-            or l_nation_code is null
-            or l_bounding_office_code is null
-            or l_nearest_city is null
-         then
-            select nvl(l_county_code, county_code),
-                   nvl(l_nation_code, nation_code),
-                   nvl(l_bounding_office_code, office_code),
-                   nvl(l_nearest_city, nearest_city)
-              into l_county_code,
-                   l_nation_code,
-                   l_bounding_office_code,
-                   l_nearest_city
-              from at_physical_location
-             where location_code = l_location_code;
-         end if;
       end if;
-
-      ---------------------------------------
-      -- update at_physical_location table --
-      ---------------------------------------
-      UPDATE at_physical_location
-         SET location_type = l_location_type,
-             elevation = l_elevation,
-             vertical_datum = store_local_datum_name(l_location_code, l_vertical_datum),
-             horizontal_datum = l_horizontal_datum,
-             public_name = l_public_name,
-             long_name = l_long_name,
-             description = l_description,
-             time_zone_code = l_time_zone_code,
-             county_code = l_county_code,
-             active_flag = l_active_flag,
-             location_kind = l_location_kind_code,
-             map_label = l_map_label,
-             published_latitude = l_published_latitude,
-             published_longitude = l_published_longitude,
-             office_code = l_bounding_office_code,
-             nation_code = l_nation_code,
-             nearest_city = l_nearest_city
-       WHERE location_code = l_location_code;
-
-       if l_base_location_code = l_location_code and p_active is not null then
-          -----------------------------------
-          -- update at_base_location table --
-          -----------------------------------
-          update at_base_location
-             set active_flag = l_active_flag
-           where base_location_code = l_base_location_code;
-       end if;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
@@ -1695,6 +1677,7 @@ AS
       l_hashcode              NUMBER;
    --
    BEGIN
+      dbms_output.put_line('In create_location2');
       --
       --------------------------------------------------------
       -- Set office_id...
@@ -3142,6 +3125,7 @@ AS
       l_office_id     VARCHAR2 (16);
       l_office_code    NUMBER;
    BEGIN
+      dbms_output.put_line('In store_location2');
       --
       -- check if cwms_id for this office already exists...
       BEGIN
@@ -5606,6 +5590,7 @@ end unassign_loc_groups;
       location_id_not_found   EXCEPTION;
       PRAGMA EXCEPTION_INIT (location_id_not_found, -20025);
    BEGIN
+      dbms_output.put_line('In store_location_f');
       BEGIN
          l_location_code :=
             cwms_loc.get_location_code (
