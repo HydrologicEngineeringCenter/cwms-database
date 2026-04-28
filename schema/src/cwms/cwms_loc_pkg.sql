@@ -600,6 +600,89 @@ AS
 		p_db_office_id 			IN VARCHAR2 DEFAULT NULL
 	);
    /**
+    * Stores (inserts or updates) a location in the database
+    *
+    * @param p_location_id         The location identifier
+    * @param p_location_type       A user-defined type for the location
+    * @param p_elevation           The elevation of the location
+    * @param p_elev_unit_id        The elevation unit
+    * @param p_vertical_datum      The datum of the elevation
+    * @param p_geometry            The geometry of the location. May be one of
+    * <p>
+    * <table class="desc">
+    *   <tr>
+    *     <td>POINT</td>
+    *     <td>Single point</td>
+    *   </tr>
+    *   <tr>
+    *     <td>LINE / CURVE</td>
+    *     <td>Single line string</td>
+    *   </tr>
+    *   <tr>
+    *     <td>POLYGON</td>
+    *     <td>Single polygon (with or without holes)</td>
+    *   </tr>
+    *   <tr>
+    *     <td>COLLECTION</td>
+    *     <td>Heterogeneous collection of elements</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOINT</td>
+    *     <td>Multiple points</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTILINE</td>
+    *     <td>Multiple line strings</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOLYGON</td>
+    *     <td>Multiple disjoint polygons</td>
+    *   </tr>
+    * </table>
+    * @param p_horizontal_datum    The datum for the latitude and longitude
+    * @param p_public_name         The public name for the location
+    * @param p_long_name           The long name for the location
+    * @param p_description         A description of the location
+    * @param p_time_zone_id        The time zone name for the location
+    * @param p_county_name         The name of the county that the location is in
+    * @param p_state_initial       The two letter abbreviation of the state that the location is in
+    * @param p_active              A flag ('T' or 'F') that specifies whether the location is marked as active
+    * @param p_location_kind_id    THIS PARAMETER IS IGNORED. A site created with this procedure will have a location kind of SITE.
+    * @param p_map_label           A label to be used on maps for location
+    * @param p_published_latitude  The published latitude for the location
+    * @param p_published_longitude The published longitude for the location
+    * @param p_bounding_office_id  The office whose boundary encompasses the location
+    * @param p_nation_id           The nation that the location is in
+    * @param p_nearest_city        The name of the city nearest to the location
+    * @param p_ignorenulls         A flag ('T' or 'F') that specifies whether to ignore NULL parameters. If 'F', existing data will be updated with NULL parameter values.
+    * @param p_db_office_id        The office that owns the location. If not specified or NULL, the session user's default office will be used
+    */
+	PROCEDURE store_location3 (
+		p_location_id				IN VARCHAR2,
+		p_location_type			IN VARCHAR2 DEFAULT NULL,
+		p_elevation 				IN NUMBER DEFAULT NULL,
+		p_elev_unit_id 			IN VARCHAR2 DEFAULT NULL,
+		p_vertical_datum			IN VARCHAR2 DEFAULT NULL,
+		p_geometry              IN SDO_GEOMETRY DEFAULT NULL,
+		p_horizontal_datum		IN VARCHAR2 DEFAULT NULL,
+		p_public_name				IN VARCHAR2 DEFAULT NULL,
+		p_long_name 				IN VARCHAR2 DEFAULT NULL,
+		p_description				IN VARCHAR2 DEFAULT NULL,
+		p_time_zone_id 			IN VARCHAR2 DEFAULT NULL,
+		p_county_name				IN VARCHAR2 DEFAULT NULL,
+		p_state_initial			IN VARCHAR2 DEFAULT NULL,
+		p_active 					IN VARCHAR2 DEFAULT NULL,
+		p_location_kind_id		IN VARCHAR2 DEFAULT NULL,
+		p_map_label 				IN VARCHAR2 DEFAULT NULL,
+		p_published_latitude 	IN NUMBER DEFAULT NULL,
+		p_published_longitude	IN NUMBER DEFAULT NULL,
+		p_bounding_office_id 	IN VARCHAR2 DEFAULT NULL,
+		p_nation_id 				IN VARCHAR2 DEFAULT NULL,
+		p_nearest_city 			IN VARCHAR2 DEFAULT NULL,
+		p_ignorenulls				IN VARCHAR2 DEFAULT 'T',
+		p_db_office_id 			IN VARCHAR2 DEFAULT NULL
+	);
+   /**
     * Retreives location information from the database
     *
     * @param p_location_id      The location identifier
@@ -819,6 +902,164 @@ AS
 		p_vertical_datum				OUT VARCHAR2,
 		p_latitude						OUT NUMBER,
 		p_longitude 					OUT NUMBER,
+		p_horizontal_datum			OUT VARCHAR2,
+		p_public_name					OUT VARCHAR2,
+		p_long_name 					OUT VARCHAR2,
+		p_description					OUT VARCHAR2,
+		p_time_zone_id 				OUT VARCHAR2,
+		p_county_name					OUT VARCHAR2,
+		p_state_initial				OUT VARCHAR2,
+		p_active 						OUT VARCHAR2,
+		p_location_kind_id			OUT VARCHAR2,
+		p_map_label 					OUT VARCHAR2,
+		p_published_latitude 		OUT NUMBER,
+		p_published_longitude		OUT NUMBER,
+		p_bounding_office_id 		OUT VARCHAR2,
+		p_nation_id 					OUT VARCHAR2,
+		p_nearest_city 				OUT VARCHAR2,
+		p_alias_cursor 				OUT SYS_REFCURSOR,
+		p_db_office_id 			IN 	 VARCHAR2 DEFAULT NULL
+	);
+   /**
+    * Retreives location information from the database
+    *
+    * @param p_location_id         The location identifier
+    * @param p_elev_unit_id        The unit to retrieve the elevation in
+    * @param p_location_type       A user-defined type for the location
+    * @param p_elevation           The elevation of the location
+    * @param p_vertical_datum      The datum of the elevation
+    * @param p_geometry            The geometry of the location. May be one of
+    * <p>
+    * <table class="desc">
+    *   <tr>
+    *     <td>POINT</td>
+    *     <td>Single point</td>
+    *   </tr>
+    *   <tr>
+    *     <td>LINE / CURVE</td>
+    *     <td>Single line string</td>
+    *   </tr>
+    *   <tr>
+    *     <td>POLYGON</td>
+    *     <td>Single polygon (with or without holes)</td>
+    *   </tr>
+    *   <tr>
+    *     <td>COLLECTION</td>
+    *     <td>Heterogeneous collection of elements</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOINT</td>
+    *     <td>Multiple points</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTILINE</td>
+    *     <td>Multiple line strings</td>
+    *   </tr>
+    *   <tr>
+    *     <td>MULTIPOLYGON</td>
+    *     <td>Multiple disjoint polygons</td>
+    *   </tr>
+    * </table>
+    * @param p_horizontal_datum    The datum for the latitude and longitude
+    * @param p_public_name         The public name for the location
+    * @param p_long_name           The long name for the location
+    * @param p_description         A description of the location
+    * @param p_time_zone_id        The time zone name for the location
+    * @param p_county_name         The name of the county that the location is in
+    * @param p_state_initial       The two letter abbreviation of the state that the location is in
+    * @param p_active              A flag ('T' or 'F') that specifies whether the location is marked as active
+    * @param p_location_kind_id    The geographic type of the location
+    * @param p_map_label           A label to be used on maps for location
+    * @param p_published_latitude  The published latitude for the location
+    * @param p_published_longitude The published longitude for the location
+    * @param p_bounding_office_id  The office whose boundary encompasses the location
+    * @param p_nation_id           The nation that the location is in
+    * @param p_nearest_city        The name of the city nearest to the location
+    * @param p_alias_cursor        A cursor containing the aliases for the location. The columns are as follows, ordered by location_id, loc_category_id, and loc_group_id:
+    * <p>
+    * <table class="descr">
+    *    <tr>
+    *       <td class="descr-center">1</td>
+    *       <td class="descr">db_office_id</td>
+    *       <td class="descr">varchar2(16)</td>
+    *       <td class="descr">The office that owns the location</td>
+    *    </tr>
+    *    <tr>
+    *       <td class="descr-center">2</td>
+    *       <td class="descr">location_id</td>
+    *       <td class="descr">varchar2(57)</td>
+    *       <td class="descr">The location identifier</td>
+    *    </tr>
+    *    <tr>
+    *       <td class="descr-center">3</td>
+    *       <td class="descr">cat_db_office_id</td>
+    *       <td class="descr">varchar2(16)</td>
+    *       <td class="descr">The office that owns the location category</td>
+    *    </tr>
+    *    <tr>
+    *       <td class="descr-center">4</td>
+    *       <td class="descr">loc_category_id</td>
+    *       <td class="descr">varchar2(32)</td>
+    *       <td class="descr">The location category identifier</td>
+    *    </tr>
+    *    <tr>
+    *       <td class="descr-center">5</td>
+    *       <td class="descr">grp_db_office_id</td>
+    *       <td class="descr">varchar2(16)</td>
+    *       <td class="descr">The office that owns the location group</td>
+    *    </tr>
+    *    <tr>
+    *       <td class="descr-center">6</td>
+    *       <td class="descr">loc_group_id</td>
+    *       <td class="descr">varchar2(32)</td>
+    *       <td class="descr">The location group identifier</td>
+    *    </tr>
+    *       <tr>
+    *       <td class="descr-center">7</td>
+    *       <td class="descr">loc_group_desc</td>
+    *       <td class="descr">varchar2(256)</td>
+    *       <td class="descr">A description of the location group</td>
+    *    </tr>
+    *       <tr>
+    *       <td class="descr-center">8</td>
+    *       <td class="descr">loc_alias_id</td>
+    *       <td class="descr">varchar2(256)</td>
+    *       <td class="descr">An alias for the location within the location group</td>
+    *    </tr>
+    *    <tr>
+    *       <td class="descr-center">9</td>
+    *       <td class="descr">ref_location_id</td>
+    *       <td class="descr">varchar2(57)</td>
+    *       <td class="descr">A referenced location for the location within the location group</td>
+    *    </tr>
+    *    <tr>
+    *       <td class="descr-center">10</td>
+    *       <td class="descr">shared_loc_alias_id</td>
+    *       <td class="descr">varchar2(256)</td>
+    *       <td class="descr">An alias that applies to all locatations in the location group</td>
+    *    </tr>
+    *    <tr>
+    *       <td class="descr-center">11</td>
+    *       <td class="descr">shared_loc_ref_id</td>
+    *       <td class="descr">varchar2(57)</td>
+    *       <td class="descr">A referenced location that applies to all locations within the location group</td>
+    *    </tr>
+    *   <tr>
+    *     <td class="descr-center">12</td>
+    *     <td class="descr">attribute</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">A numeric attribute for the location with respect to the group. Can be used for sorting, etc...</td>
+    *   </tr>
+    * </table>
+    * @param p_db_office_id     The office that owns the location. If not specified or NULL, the session user's default office will be used
+    */
+	PROCEDURE retrieve_location3 (
+		p_location_id				IN OUT VARCHAR2,
+		p_elev_unit_id 			IN 	 VARCHAR2 DEFAULT 'm',
+		p_location_type				OUT VARCHAR2,
+		p_elevation 					OUT NUMBER,
+		p_vertical_datum				OUT VARCHAR2,
+		p_geometry                 OUT SDO_GEOMETRY,
 		p_horizontal_datum			OUT VARCHAR2,
 		p_public_name					OUT VARCHAR2,
 		p_long_name 					OUT VARCHAR2,

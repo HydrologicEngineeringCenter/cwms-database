@@ -2822,6 +2822,25 @@ AS
     end test_av_loc2_text_search;
 
    --------------------------------------------------------------------------------
+   -- function equivalent_geometries
+   --------------------------------------------------------------------------------
+   function equivalent_geometries (
+      p_geometry_1 in sdo_geometry,
+      p_geometry_2 in sdo_geometry,
+      p_tolerance  in number default 0.001)
+      return boolean
+   is
+   begin
+      if (p_geometry_1 is null) != (p_geometry_2 is null) then
+        return false;
+      else
+         return sdo_geom.relate(p_geometry_1, 'EQUAL', p_geometry_2, p_tolerance) = 'EQUAL';
+      end if;
+   exception
+      when others then return false;
+   end equivalent_geometries;
+
+   --------------------------------------------------------------------------------
    -- procedure test_mods_for_generic_geometry
    --------------------------------------------------------------------------------
    procedure test_mods_for_generic_geometry
@@ -2859,7 +2878,7 @@ AS
       l_crsr                 sys_refcursor;
       l_crsr2                sys_refcursor;
       l_db_office_ids        str_tab_t;
-      l_db_office_ids2        str_tab_t;
+      l_db_office_ids2       str_tab_t;
       l_location_ids         str_tab_t;
       l_base_location_ids    str_tab_t;
       l_sub_location_ids     str_tab_t;
@@ -3394,9 +3413,7 @@ AS
             ----------------------------------------------------------
             -- test cwms_loc.store_geometry with non-point geometry --
             ----------------------------------------------------------
-            ----------------------------------------------
             -- store a line geometry for the embankment --
-            ----------------------------------------------
             l_geometry := sdo_geometry(
                2002,
                4326,
@@ -3410,9 +3427,7 @@ AS
                p_geometry       => l_geometry,
                p_fail_if_exists => 'F',
                p_db_office_id   => l_office_id);
-            ----------------------------
             -- verify lat/lon is null --
-            ----------------------------
             declare
                l_lat at_location_geometry.latitude%type;
                l_lon at_location_geometry.longitude%type;
@@ -3424,9 +3439,7 @@ AS
                ut.expect(l_lat).to_be_null;
                ut.expect(l_lon).to_be_null;
             end;
-            ---------------------------
             -- verify points in line --
-            ---------------------------
             l_geometry := cwms_loc.retrieve_geometry(
                p_location_id  => l_location_id,
                p_db_office_id => l_office_id);
@@ -3511,6 +3524,66 @@ AS
             ut.expect(l_vertical_datums(1)).to_be_null;
          end if;
       end loop;
+      -------------------------------------------------
+      -- test store_location3 and retrieve_location3 --
+      -------------------------------------------------
+      declare
+         l_geom  sdo_geometry;
+         l_geom2 sdo_geometry;
+         l_loc   location_obj_t;
+      begin
+         l_geom := sdo_geometry(
+            2002,
+            4326,
+            null,
+            sdo_elem_info_array(1, 2, 1),
+            sdo_ordinate_array(
+               -95.123, 34.345,
+               -95.234, 34.456));
+         -- store location --
+         l_location_id := 'TestLoc-Geometry';
+         cwms_loc.store_location3(
+            p_location_id  => l_location_id,
+            p_geometry     => l_geom,
+            p_db_office_id => l_office_id);
+         -- verify null lat/lon --
+         cwms_loc.get_location_lat_lon(
+            p_lat           => l_latitude,
+            p_lon           => l_longitude,
+            p_location_code => cwms_loc.get_location_code(l_office_id, l_location_id));
+         ut.expect(l_latitude).to_be_null;
+         ut.expect(l_longitude).to_be_null;
+         -- verify same geometry --
+         l_loc := location_obj_t(location_ref_t(l_location_id, l_office_id));
+         cwms_loc.retrieve_location3(
+            p_location_id        => l_location_id,
+            p_elev_unit_id       => l_loc.elev_unit_id,
+            p_location_type      => l_loc.location_type,
+            p_elevation          => l_loc.elevation,
+            p_vertical_datum     => l_loc.vertical_datum,
+            p_geometry           => l_geom2,
+            p_horizontal_datum   => l_loc.horizontal_datum,
+            p_public_name        => l_loc.public_name,
+            p_long_name          => l_loc.long_name,
+            p_description        => l_loc.description,
+            p_time_zone_id       => l_loc.time_zone_name,
+            p_county_name        => l_loc.county_name,
+            p_state_initial      => l_loc.state_initial,
+            p_active             => l_loc.active_flag,
+            p_location_kind_id   => l_loc.location_kind_id,
+            p_map_label          => l_loc.map_label,
+            p_published_latitude => l_loc.published_latitude,
+            p_published_longitude=> l_loc.published_longitude,
+            p_bounding_office_id => l_loc.bounding_office_id,
+            p_nation_id          => l_loc.nation_id,
+            p_nearest_city       => l_loc.nearest_city,
+            p_alias_cursor       => l_crsr,
+            p_db_office_id       => l_office_id);
+
+         ut.expect(equivalent_geometries(l_geom, l_geom2)).to_be_true;
+
+         cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
+      end;
 
       ------------------------------------------
       -- delete locations stored in this test --

@@ -3201,6 +3201,68 @@ AS
          RAISE;
    END store_location2;
 
+   procedure store_location3 (
+      p_location_id           in varchar2,
+      p_location_type         in varchar2 default null,
+      p_elevation             in number default null,
+      p_elev_unit_id          in varchar2 default null,
+      p_vertical_datum        in varchar2 default null,
+      p_geometry              in sdo_geometry,
+      p_horizontal_datum      in varchar2 default null,
+      p_public_name           in varchar2 default null,
+      p_long_name             in varchar2 default null,
+      p_description           in varchar2 default null,
+      p_time_zone_id          in varchar2 default null,
+      p_county_name           in varchar2 default null,
+      p_state_initial         in varchar2 default null,
+      p_active                in varchar2 default null,
+      p_location_kind_id      in varchar2 default null,
+      p_map_label             in varchar2 default null,
+      p_published_latitude    in number default null,
+      p_published_longitude   in number default null,
+      p_bounding_office_id    in varchar2 default null,
+      p_nation_id             in varchar2 default null,
+      p_nearest_city          in varchar2 default null,
+      p_ignorenulls           in varchar2 default 'T',
+      p_db_office_id          in varchar2 default null)
+   is
+   begin
+      store_location2 (
+         p_location_id           => p_location_id,
+         p_location_type         => p_location_type,
+         p_elevation             => p_elevation,
+         p_elev_unit_id          => p_elev_unit_id,
+         p_vertical_datum        => p_vertical_datum,
+         p_latitude              => null,
+         p_longitude             => null,
+         p_horizontal_datum      => p_horizontal_datum,
+         p_public_name           => p_public_name,
+         p_long_name             => p_long_name,
+         p_description           => p_description,
+         p_time_zone_id          => p_time_zone_id,
+         p_county_name           => p_county_name,
+         p_state_initial         => p_state_initial,
+         p_active                => p_active,
+         p_location_kind_id      => p_location_kind_id,
+         p_map_label             => p_map_label,
+         p_published_latitude    => p_published_latitude,
+         p_published_longitude   => p_published_longitude,
+         p_bounding_office_id    => p_bounding_office_id,
+         p_nation_id             => p_nation_id,
+         p_nearest_city          => p_nearest_city,
+         p_ignorenulls           => p_ignorenulls,
+         p_db_office_id          => p_db_office_id);
+
+      if not cwms_util.return_true_or_false(p_ignorenulls) or p_geometry is not null then
+         store_geometry(
+            p_location_id    => p_location_id,
+            p_geometry       => p_geometry,
+            p_fail_if_exists => 'F',
+            p_db_office_id   => p_db_office_id);
+      end if;
+   end store_location3;
+
+
    --********************************************************************** -
    --
    -- STORE_LOC provides backward compatiblity for the dbi.  It will update a
@@ -3393,6 +3455,66 @@ AS
    --
    --
    END retrieve_location2;
+
+   procedure retrieve_location3 (
+      p_location_id            in out varchar2,
+      p_elev_unit_id           in     varchar2 default 'm',
+      p_location_type             out varchar2,
+      p_elevation                 out number,
+      p_vertical_datum            out varchar2,
+      p_geometry                  out sdo_geometry,
+      p_horizontal_datum          out varchar2,
+      p_public_name               out varchar2,
+      p_long_name                 out varchar2,
+      p_description               out varchar2,
+      p_time_zone_id              out varchar2,
+      p_county_name               out varchar2,
+      p_state_initial             out varchar2,
+      p_active                    out varchar2,
+      p_location_kind_id          out varchar2,
+      p_map_label                 out varchar2,
+      p_published_latitude        out number,
+      p_published_longitude       out number,
+      p_bounding_office_id        out varchar2,
+      p_nation_id                 out varchar2,
+      p_nearest_city              out varchar2,
+      p_alias_cursor              out sys_refcursor,
+      p_db_office_id           in     varchar2 default null)
+   is
+      l_latitude  number;
+      l_longitude number;
+   begin
+      retrieve_location2 (
+         p_location_id            => p_location_id,
+         p_elev_unit_id           => p_elev_unit_id,
+         p_location_type          => p_location_type,
+         p_elevation              => p_elevation,
+         p_vertical_datum         => p_vertical_datum,
+         p_latitude               => l_latitude,
+         p_longitude              => l_longitude,
+         p_horizontal_datum       => p_horizontal_datum,
+         p_public_name            => p_public_name,
+         p_long_name              => p_long_name,
+         p_description            => p_description,
+         p_time_zone_id           => p_time_zone_id,
+         p_county_name            => p_county_name,
+         p_state_initial          => p_state_initial,
+         p_active                 => p_active,
+         p_location_kind_id       => p_location_kind_id,
+         p_map_label              => p_map_label,
+         p_published_latitude     => p_published_latitude,
+         p_published_longitude    => p_published_longitude,
+         p_bounding_office_id     => p_bounding_office_id,
+         p_nation_id              => p_nation_id,
+         p_nearest_city           => p_nearest_city,
+         p_alias_cursor           => p_alias_cursor,
+         p_db_office_id           => p_db_office_id);
+
+      p_geometry := retrieve_geometry(
+         p_location_id  => p_location_id,
+         p_db_office_id => p_db_office_id);
+   end retrieve_location3;
+
 
    function adjust_location_elevation(
       p_location      in out nocopy location_obj_t,
