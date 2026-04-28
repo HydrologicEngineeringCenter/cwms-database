@@ -3639,21 +3639,24 @@ AS
       l_loc at_physical_location%rowtype;
       l_lat at_location_geometry.latitude%type;
       l_lon at_location_geometry.latitude%type;
+      l_geo at_location_geometry.geometry%type;
    begin
       -------------------------------
       -- get lat/lon from location --
       -------------------------------
       begin
-         select latitude,
+         select geometry,
+                latitude,
                 longitude
-           into l_lat,
+           into l_geo,
+                l_lat,
                 l_lon
            from at_location_geometry
           where location_code = p_location_code;
       exception
          when no_data_found then null;
       end;
-      if l_lat is null or l_lon is null then
+      if l_geo is null then
          ------------------------------------
          -- get lat/lon from base location --
          ------------------------------------

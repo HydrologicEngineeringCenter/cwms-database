@@ -2884,6 +2884,8 @@ AS
       l_bounding_office_ids  str_tab_t;
       l_nation_ids           str_tab_t;
       l_nearest_cities       str_tab_t;
+      l_geometry             sdo_geometry;
+      l_vidx                 integer;
       exc_location_id_not_found EXCEPTION;
       PRAGMA EXCEPTION_INIT (exc_location_id_not_found, -20025);
    begin
@@ -3259,12 +3261,12 @@ AS
          null,null,null,null,0,0,0,0,'$',null,null,null,
          null,
          null,null,null,null), 'F');
-         
+
       cwms_project.cat_project (
          p_project_cat  => l_crsr,
          p_basin_cat    => l_crsr2, -- dummy, not used
          p_db_office_id => l_office_id);
-         
+
       close l_crsr2;
       fetch l_crsr
        bulk collect
@@ -3332,7 +3334,7 @@ AS
          lookup_type_obj_t(l_office_id,'Rock Riprap','Rock Riprap','T'),
          lookup_type_obj_t(l_office_id,'Grass-Covered Soil','Grass-Covered Soil','T'),
          0.33,0.36,6500,96,32,'ft'),'F');
-      commit;   
+      commit;
       for rec in (select distinct project_id from av_embankment) loop
          cwms_embank.cat_embankment(l_crsr, rec.project_id, l_office_id);
          fetch l_crsr
@@ -3363,12 +3365,79 @@ AS
          ut.expect(l_time_zone_names(1)).to_equal(l_info(rec.project_id).time_zone);
          l_location_id := rec.project_id||'-'||l_sub_location_ids(1);
          if l_info.exists(l_location_id) then
+            --------------------------------------
+            -- location was stored in this test --
+            --------------------------------------
             ut.expect(round(l_latitudes(1), 6)).to_equal(round(l_info(l_location_id).latitude, 6));
             ut.expect(round(l_longitudes(1), 6)).to_equal(round(l_info(l_location_id).longitude, 6));
             ut.expect(l_horizontal_datums(1)).to_equal(l_info(l_location_id).horiz_datum);
             ut.expect(round(cwms_util.convert_units(l_elevations(1), l_elev_unit_ids(1), 'ft'), 6)).to_equal(round(l_info(l_location_id).elevation, 6));
             ut.expect(replace(l_vertical_datums(1), 'LOCAL', 'OTHER')).to_equal(l_info(l_location_id).vert_datum);
+            ----------------------------------------
+            -- test cwms_loc.get_location_lat_lon --
+            ----------------------------------------
+            l_location_id := rec.project_id||'-Dam';
+            cwms_loc.get_location_lat_lon(
+               p_lat           => l_latitude,
+               p_lon           => l_longitude,
+               p_location_code => cwms_loc.get_location_code(l_office_id, l_location_id));
+            ut.expect(l_latitude).to_equal(l_latitudes(1));
+            ut.expect(l_longitude).to_equal(l_longitudes(1));
+            -------------------------------------
+            -- test cwms_loc.retrieve_geometry --
+            -------------------------------------
+            l_geometry := cwms_loc.retrieve_geometry(
+               p_location_id  => l_location_id,
+               p_db_office_id => l_office_id);
+            ut.expect(l_geometry.sdo_point.x).to_equal(l_longitude);
+            ut.expect(l_geometry.sdo_point.y).to_equal(l_latitude);
+            ----------------------------------------------------------
+            -- test cwms_loc.store_geometry with non-point geometry --
+            ----------------------------------------------------------
+            ----------------------------------------------
+            -- store a line geometry for the embankment --
+            ----------------------------------------------
+            l_geometry := sdo_geometry(
+               2002,
+               4326,
+               null,
+               sdo_elem_info_array(1, 2, 1),
+               sdo_ordinate_array(
+                  l_longitude,      l_latitude,
+                  l_longitude-.005, l_latitude+.005));
+            cwms_loc.store_geometry(
+               p_location_id    => l_location_id,
+               p_geometry       => l_geometry,
+               p_fail_if_exists => 'F',
+               p_db_office_id   => l_office_id);
+            ----------------------------
+            -- verify lat/lon is null --
+            ----------------------------
+            declare
+               l_lat at_location_geometry.latitude%type;
+               l_lon at_location_geometry.longitude%type;
+            begin
+               cwms_loc.get_location_lat_lon(
+                  p_lat           => l_lat,
+                  p_lon           => l_lon,
+                  p_location_code => cwms_loc.get_location_code(l_office_id, l_location_id));
+               ut.expect(l_lat).to_be_null;
+               ut.expect(l_lon).to_be_null;
+            end;
+            ---------------------------
+            -- verify points in line --
+            ---------------------------
+            l_geometry := cwms_loc.retrieve_geometry(
+               p_location_id  => l_location_id,
+               p_db_office_id => l_office_id);
+            ut.expect(l_geometry.sdo_ordinates(1)).to_equal(l_longitude);
+            ut.expect(l_geometry.sdo_ordinates(2)).to_equal(l_latitude);
+            ut.expect(l_geometry.sdo_ordinates(3)).to_equal(l_longitude-.005);
+            ut.expect(l_geometry.sdo_ordinates(4)).to_equal(l_latitude+.005);
          else
+            ------------------------------------------
+            -- location was stored before this test --
+            ------------------------------------------
             ut.expect(l_latitudes(1)).to_be_null;
             ut.expect(l_longitudes(1)).to_be_null;
             ut.expect(l_horizontal_datums(1)).to_be_null;
