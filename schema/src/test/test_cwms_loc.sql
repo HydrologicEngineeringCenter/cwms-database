@@ -3446,16 +3446,16 @@ AS
       ------------------------------------------
       -- delete locations stored in this test --
       ------------------------------------------
---      for i in 1..l_data_tab.count loop
---         exit when l_data_tab(i).count < 13;
---         l_location_id := l_data_tab(i)(2);
---         begin
---            cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
---         exception
---            when exc_location_id_not_found then null;
---         end;   
---      end loop;   
---      commit;
+      for i in 1..l_data_tab.count loop
+         exit when l_data_tab(i).count < 13;
+         l_location_id := l_data_tab(i)(2);
+         begin
+            cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
+         exception
+            when exc_location_id_not_found then null;
+         end;
+      end loop;
+      commit;
    end test_mods_for_generic_geometry;
 END test_cwms_loc;
 /
