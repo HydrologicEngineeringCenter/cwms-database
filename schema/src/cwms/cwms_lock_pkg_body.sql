@@ -140,10 +140,11 @@ begin
                  and bl.base_location_code = pl.base_location_code
                  and tz.time_zone_code = nvl(
                           pl.time_zone_code,
+                          nvl(ppl.time_zone_code,
                           (  select time_zone_code
                                from cwms_time_zone
                               where time_zone_name = 'UTC'
-                          ))
+                          )))
                  and bp.base_parameter_id = 'Elev'
                  and u.unit_code = bp.unit_code
              ) q1

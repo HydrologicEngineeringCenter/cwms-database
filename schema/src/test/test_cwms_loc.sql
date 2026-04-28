@@ -2884,6 +2884,8 @@ AS
       l_bounding_office_ids  str_tab_t;
       l_nation_ids           str_tab_t;
       l_nearest_cities       str_tab_t;
+      exc_location_id_not_found EXCEPTION;
+      PRAGMA EXCEPTION_INIT (exc_location_id_not_found, -20025);
    begin
       -----------------------------------------------
       -- retrieve and parse the locations to store --
@@ -3232,6 +3234,31 @@ AS
          'Bankfull capacity at Council Grove, KS is 3,500 cfs (stage 15.0). Bankfull capacity at Americus, KS is 16,000 cfs (stage 27.50).',
          null,
          null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'CHOU')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         null,
+         null,null,null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'NEWT')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         null,
+         null,null,null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'ROBE')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         null,
+         null,null,null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'WDMA')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         'There are no regulation procedures for sediment, however, W.D. Mayo Reservoir does provide sediment storage for the benefit of the McClellan-Kerr Arkansas River Navigation System. See Plate 2-4 for sedimentation deposition and degradation.',
+         null,null,null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'WEBB')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         null,
+         null,null,null,null), 'F');
          
       cwms_project.cat_project (
          p_project_cat  => l_crsr,
@@ -3269,7 +3296,6 @@ AS
       ---------------------------------------------
       -- test mods to cwms_embank.cat_embankment --
       ---------------------------------------------
-      dbms_output.put_line('CP1');
       cwms_embank.store_embankment(embankment_obj_t(
          location_ref_t('BIGH', l_office_id),location_obj_t(location_ref_t('BIGH-Dam', l_office_id)),
          lookup_type_obj_t(l_office_id,'Rolled Earth-Filled','Rolled Earth-Filled','T'),
@@ -3307,9 +3333,7 @@ AS
          lookup_type_obj_t(l_office_id,'Grass-Covered Soil','Grass-Covered Soil','T'),
          0.33,0.36,6500,96,32,'ft'),'F');
       commit;   
-      dbms_output.put_line('CP2');
       for rec in (select distinct project_id from av_embankment) loop
-         dbms_output.put_line('CP3 - '||rec.project_id);
          cwms_embank.cat_embankment(l_crsr, rec.project_id, l_office_id);
          fetch l_crsr
           bulk collect
@@ -3350,10 +3374,90 @@ AS
             ut.expect(l_horizontal_datums(1)).to_be_null;
             ut.expect(l_elevations(1)).to_be_null;
             ut.expect(l_vertical_datums(1)).to_be_null;
-         end if;   
+         end if;
       end loop;
-      
+      -------------------------------------
+      -- test mods to cwms_lock.cat_lock --
+      -------------------------------------
+      cwms_lock.store_lock(lock_obj_t(
+         location_ref_t(cwms_loc.get_location_code(l_office_id, 'CHOU')),
+         location_obj_t(location_ref_t('CHOU-Lock', l_office_id)),
+         1468800,'ft3',110,600,9,21,'ft',null,'ft',null,null,null,null,null,null,null), 'F');
+      cwms_lock.store_lock(lock_obj_t(
+         location_ref_t(cwms_loc.get_location_code(l_office_id, 'NEWT')),
+         location_obj_t(location_ref_t('NEWT-Lock', l_office_id)),
+         1468800,'ft3',110,600,9,21,'ft',null,'ft',null,null,null,null,null,null,null), 'F');
+      cwms_lock.store_lock(lock_obj_t(
+         location_ref_t(cwms_loc.get_location_code(l_office_id, 'ROBE')),
+         location_obj_t(location_ref_t('ROBE-Lock', l_office_id)),
+         3196800,'ft3',110,600,9,48,'ft',null,'ft',null,null,null,null,null,null,null), 'F');
+      cwms_lock.store_lock(lock_obj_t(
+         location_ref_t(cwms_loc.get_location_code(l_office_id, 'WDMA')),
+         location_obj_t(location_ref_t('WDMA-Lock', l_office_id)),
+         1296000,'ft3',110,600,9,20,'ft',null,'ft',null,null,null,null,null,null,null), 'F');
+      cwms_lock.store_lock(lock_obj_t(
+         location_ref_t(cwms_loc.get_location_code(l_office_id, 'WEBB')),
+         location_obj_t(location_ref_t('WEBB-Lock', l_office_id)),
+         1987200,'ft3',110,600,9,30,'ft',null,'ft',null,null,null,null,null,null,null), 'F');
+      commit;
+      for rec in (select distinct project_id from av_lock where unit_system = 'EN') loop
+         cwms_lock.cat_lock(l_crsr, rec.project_id, l_office_id);
+         fetch l_crsr
+          bulk collect
+          into l_db_office_ids,
+               l_location_ids,
+               l_base_location_ids,
+               l_sub_location_ids,
+               l_time_zone_names,
+               l_latitudes,
+               l_longitudes,
+               l_horizontal_datums,
+               l_elevations,
+               l_elev_unit_ids,
+               l_vertical_datums,
+               l_public_names,
+               l_long_names,
+               l_descriptions,
+               l_active_flags;
+         close l_crsr;
+         ut.expect(l_db_office_ids.count).to_equal(1);
+         ut.expect(l_db_office_ids(1)).to_equal(l_office_id);
+         ut.expect(l_location_ids(1)).to_equal(rec.project_id);
+         ut.expect(l_db_office_ids2(1)).to_equal(l_office_id);
+         ut.expect(l_base_location_ids(1)).to_equal(rec.project_id);
+         ut.expect(l_sub_location_ids(1)).to_equal('Lock');
+         ut.expect(l_time_zone_names(1)).to_equal(l_info(rec.project_id).time_zone);
+         l_location_id := rec.project_id||'-'||l_sub_location_ids(1);
+         if l_info.exists(l_location_id) then
+            ut.expect(round(l_latitudes(1), 6)).to_equal(round(l_info(l_location_id).latitude, 6));
+            ut.expect(round(l_longitudes(1), 6)).to_equal(round(l_info(l_location_id).longitude, 6));
+            ut.expect(l_horizontal_datums(1)).to_equal(l_info(l_location_id).horiz_datum);
+            ut.expect(round(cwms_util.convert_units(l_elevations(1), l_elev_unit_ids(1), 'ft'), 6)).to_equal(round(l_info(l_location_id).elevation, 6));
+            ut.expect(replace(l_vertical_datums(1), 'LOCAL', 'OTHER')).to_equal(l_info(l_location_id).vert_datum);
+         else
+            ut.expect(l_latitudes(1)).to_be_null;
+            ut.expect(l_longitudes(1)).to_be_null;
+            ut.expect(l_horizontal_datums(1)).to_be_null;
+            ut.expect(l_elevations(1)).to_be_null;
+            ut.expect(l_vertical_datums(1)).to_be_null;
+         end if;
+      end loop;
+
+      ------------------------------------------
+      -- delete locations stored in this test --
+      ------------------------------------------
+--      for i in 1..l_data_tab.count loop
+--         exit when l_data_tab(i).count < 13;
+--         l_location_id := l_data_tab(i)(2);
+--         begin
+--            cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
+--         exception
+--            when exc_location_id_not_found then null;
+--         end;   
+--      end loop;   
+--      commit;
    end test_mods_for_generic_geometry;
 END test_cwms_loc;
 /
 show errors;
+set escape off

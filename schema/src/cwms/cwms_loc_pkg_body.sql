@@ -1060,7 +1060,6 @@ AS
                                   := cwms_util.get_office_code ('CWMS');
       l_old_time_zone_code      number(14);
    BEGIN
-      dbms_output.put_line('In update_location2');
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
 
@@ -1677,7 +1676,6 @@ AS
       l_hashcode              NUMBER;
    --
    BEGIN
-      dbms_output.put_line('In create_location2');
       --
       --------------------------------------------------------
       -- Set office_id...
@@ -3125,7 +3123,6 @@ AS
       l_office_id     VARCHAR2 (16);
       l_office_code    NUMBER;
    BEGIN
-      dbms_output.put_line('In store_location2');
       --
       -- check if cwms_id for this office already exists...
       BEGIN
@@ -5590,7 +5587,6 @@ end unassign_loc_groups;
       location_id_not_found   EXCEPTION;
       PRAGMA EXCEPTION_INIT (location_id_not_found, -20025);
    BEGIN
-      dbms_output.put_line('In store_location_f');
       BEGIN
          l_location_code :=
             cwms_loc.get_location_code (
