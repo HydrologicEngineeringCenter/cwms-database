@@ -61,6 +61,7 @@ PROMPT CREATING NEW TABLES
 select systimestamp from dual;
 
 @@../cwms/tables/at_location_geometry
+@@../cwms/tables/at_location_geometry_sidx
 
 PROMPT ################################################################################
 PROMPT ALTERING TABLES
