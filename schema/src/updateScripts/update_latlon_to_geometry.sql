@@ -76,15 +76,15 @@ PROMPT CREATING AND ALTERING TYPE SPECIFICATIONS
 select systimestamp from dual;
 
 drop type location_obj_t force;
-@@../cwms_types/location_obj_t
+@@../cwms/types/location_obj_t
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING VIEWS
 select systimestamp from dual;
 
-delete from at_clob where id in ('/VIEWDOCS/AV_LOC','/VIEWDOCS/AV_LOC2')
-@@../cwms_views/av_loc
-@@../cwms_views/av_loc2
+delete from at_clob where id in ('/VIEWDOCS/AV_LOC','/VIEWDOCS/AV_LOC2');
+@@../cwms/views/av_loc
+@@../cwms/views/av_loc2
 
 PROMPT ################################################################################
 PROMPT UPDATING PACKAGE SPECIFICATIONS
@@ -95,11 +95,11 @@ PROMPT #########################################################################
 PROMPT UPDATING PACKAGE BODIES
 select systimestamp from dual;
 
-@@../cwms_cat_pkg_body
-@@../cwms_embank_pkg_body
-@@../cwms_loc_pkg_body
-@@../cwms_lock_pkg_body
-@@../cwms_project_pkg_body
+@@../cwms/cwms_cat_pkg_body
+@@../cwms/cwms_embank_pkg_body
+@@../cwms/cwms_loc_pkg_body
+@@../cwms/cwms_lock_pkg_body
+@@../cwms/cwms_project_pkg_body
 
 PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
