@@ -63,12 +63,29 @@ select systimestamp from dual;
 @@../cwms/tables/at_location_geometry
 @@../cwms/tables/at_location_geometry_sidx
 
+declare
+   l_lines str_tab_t;
+begin
+   select text
+     bulk collect
+     into l_lines
+     from user_source
+    where name = 'ST_PHYSICAL_LOCATION'
+    order by line;
+
+   execute immediate
+      'create or replace '
+      ||replace(cwms_util.join_text(l_lines, null), 'PHYSICAL_LOCATION', 'LOCATION_GEOMETRY');
+end;
+/
+
 PROMPT ################################################################################
 PROMPT ALTERING TABLES
 select systimestamp from dual;
 
 alter table at_physical_location drop column longitude;
 alter table at_physical_location drop column latitude;
+drop trigger at_physical_location_t02;
 
 @@./latlon_to_geometry/at_physical_location_t03
 
@@ -78,6 +95,12 @@ select systimestamp from dual;
 
 drop type location_obj_t force;
 @@../cwms/types/location_obj_t
+
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING TYPE BODIES
+select systimestamp from dual;
+
+@@../cwms/types/location_obj_t-body
 
 PROMPT ################################################################################
 PROMPT CREATING AND ALTERING VIEWS
