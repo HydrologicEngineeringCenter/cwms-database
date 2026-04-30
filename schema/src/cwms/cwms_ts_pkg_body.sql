@@ -7591,7 +7591,6 @@ AS
          delete from at_xchg_dss_ts_mappings where cwms_ts_code = l_ts_code;
          delete from at_screening where ts_code = l_ts_code;
          delete from at_shef_decode where ts_code = l_ts_code;
-         delete from at_tr_template where ts_code_indep_1 = l_ts_code;
          delete from at_transform_criteria where l_ts_code in (ts_code, resultant_ts_code);
          delete from at_screening where l_ts_code in (ts_code, resultant_ts_code);
          delete from at_a2w_ts_codes_by_loc where l_ts_code in (

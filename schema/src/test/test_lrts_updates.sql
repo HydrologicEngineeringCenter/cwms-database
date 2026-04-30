@@ -135,17 +135,6 @@ begin
    cwms_ts.set_use_new_lrts_format_on_output('F');
    cwms_ts.set_require_new_lrts_format_on_input('F');
    cwms_ts.set_allow_new_lrts_format_on_input('F');
-   begin
-      cwms_vt.delete_screening_id (
-         p_screening_id        => 'Elev Range 1',
-         p_parameter_id        => 'Elev',
-         p_parameter_type_id   => null,
-         p_duration_id         => null,
-         p_cascade             => 'T',
-         p_db_office_id        => 'SWT');
-   exception
-      when others then null;
-   end;
    clear_caches;
    for i in 1..c_location_ids.count loop
       begin
@@ -4349,20 +4338,6 @@ begin
       p_store_rule       => cwms_util.replace_all,
       p_version_date     => cwms_util.non_versioned,
       p_office_id        => c_office_id);
-   --------------------------------
-   -- create some screening info --
-   --------------------------------
-   cwms_vt.create_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_screening_id_desc   => 'Test Screening',
-      p_parameter_id        => 'Elev',
-      p_db_office_id        => c_office_id);
-   cwms_vt.assign_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_scr_assign_array    => cwms_t_screen_assign_array(
-                                  cwms_t_screen_assign(l_lrts_ts_id_old, 'T', replace(l_lrts_ts_id_old, '.Test', '.Rev')),
-                                  cwms_t_screen_assign(l_prts_ts_id, 'T', replace(l_prts_ts_id, '.Test', '.Rev'))),
-      p_db_office_id        => c_office_id);
    commit;
    ----------------------------------
    -- create some data stream info --
@@ -4668,29 +4643,6 @@ begin
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
 
---      dbms_output.put_line('==> Testing CWMS_V_SCREENED_TS_IDS');
-      l_rec_count := 0;
-      for rec in (select * from cwms_v_screened_ts_ids where screening_id = 'Elev Range 1') loop
-         l_rec_count := l_rec_count + 1;
-         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
-            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
-         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
-            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
-         end if;
-      end loop;
-      ut.expect(l_rec_count).to_be_greater_than(0);
-
---      dbms_output.put_line('==> Testing CWMS_V_SCREENING_ASSIGNMENTS');
-      l_rec_count := 0;
-      for rec in (select * from cwms_v_screening_assignments where screening_id = 'Elev Range 1') loop
-         l_rec_count := l_rec_count + 1;
-         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
-            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
-         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
-            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
-         end if;
-      end loop;
-      ut.expect(l_rec_count).to_be_greater_than(0);
 
 --      dbms_output.put_line('==> Testing CWMS_V_SHEF_DECODE_SPEC');
       l_rec_count := 0;
@@ -5166,17 +5118,6 @@ begin
       end loop;
 
    end loop;
-   begin
-      cwms_vt.delete_screening_id (
-         p_screening_id        => 'Elev Range 1',
-         p_parameter_id        => 'Elev',
-         p_parameter_type_id   => null,
-         p_duration_id         => null,
-         p_cascade             => 'T',
-         p_db_office_id        => 'SWT');
-   exception
-      when others then null;
-   end;
    cwms_shef.delete_data_stream (
       p_data_stream_id  => 'Test_Data_Stream',
       p_cascade_all     => 'T',
@@ -5373,23 +5314,6 @@ begin
                               cwms_t_ztimeseries(replace(l_lrts_ts_id_old, '.Test', '.Forecast'), 'ft', l_ts_data)),
       p_store_rule      => cwms_util.replace_all,
       p_office_id       => c_office_id);
-   ---------------------------
-   -- create a screening id --
-   ---------------------------
-   begin
-      cwms_vt.create_screening_id (
-         p_screening_id        => 'Elev Range 1',
-         p_screening_id_desc   => 'Test Screening',
-         p_parameter_id        => 'Elev',
-         p_db_office_id        => c_office_id);
-   exception
-      when others then
-         if regexp_like(dbms_utility.format_error_stack, '.+ITEM_ALREADY_EXISTS.+', 'mn') then
-            null;
-         else
-            raise;
-         end if;
-   end;
    ----------------------------------
    -- create some data stream info --
    ----------------------------------
@@ -6365,14 +6289,6 @@ begin
          ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_old_copy, 'F', 'F', c_office_id);
-   cwms_vt.assign_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_scr_assign_array    => cwms_t_screen_assign_array(cwms_t_screen_assign(l_lrts_ts_id_old, 'T', replace(l_lrts_ts_id_old, '.Test', '.Rev'))),
-      p_db_office_id        => c_office_id);
-   cwms_vt.unassign_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_old)),
-      p_db_office_id        => c_office_id);
    cwms_shef.store_shef_spec (
       p_cwms_ts_id          => l_lrts_ts_id_old,
       p_data_stream_id      => 'Test_Data_Stream',
@@ -6804,15 +6720,6 @@ begin
    exception
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
-   end;
-   begin
-      cwms_vt.assign_screening_id (
-         p_screening_id        => 'Elev Range 1',
-         p_scr_assign_array    => cwms_t_screen_assign_array(cwms_t_screen_assign(l_lrts_ts_id_new, 'T', replace(l_lrts_ts_id_new, '.Test', '.Rev'))),
-         p_db_office_id        => c_office_id);
-      cwms_err.raise('ERROR', 'Expected exception not raised');
-   exception
-      when no_data_found then null;
    end;
    begin
       cwms_shef.store_shef_spec (
@@ -7713,14 +7620,6 @@ begin
    cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_old, 'F', 'T', c_office_id);
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_old_copy, 'F', 'F', c_office_id);
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_new_copy, 'F', 'F', c_office_id);
-   cwms_vt.assign_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_scr_assign_array    => cwms_t_screen_assign_array(cwms_t_screen_assign(l_lrts_ts_id_old, 'T', replace(l_lrts_ts_id_old, '.Test', '.Rev'))),
-      p_db_office_id        => c_office_id);
-   cwms_vt.unassign_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_old)),
-      p_db_office_id        => c_office_id);
    cwms_shef.store_shef_spec (
       p_cwms_ts_id          => l_lrts_ts_id_old,
       p_data_stream_id      => 'Test_Data_Stream',
@@ -8517,14 +8416,6 @@ begin
    cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_new, 'F', 'T', c_office_id);
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_old_copy, 'F', 'F', c_office_id);
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_new_copy, 'F', 'F', c_office_id);
-   cwms_vt.assign_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_scr_assign_array    => cwms_t_screen_assign_array(cwms_t_screen_assign(l_lrts_ts_id_new, 'T', replace(l_lrts_ts_id_new, '.Test', '.Rev'))),
-      p_db_office_id        => c_office_id);
-   cwms_vt.unassign_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_new)),
-      p_db_office_id        => c_office_id);
    cwms_shef.store_shef_spec (
       p_cwms_ts_id          => l_lrts_ts_id_new,
       p_data_stream_id      => 'Test_Data_Stream',
@@ -8947,14 +8838,6 @@ begin
    exception
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
-   end;
-   begin
-      cwms_vt.assign_screening_id (
-         p_screening_id        => 'Elev Range 1',
-         p_scr_assign_array    => cwms_t_screen_assign_array(cwms_t_screen_assign(l_lrts_ts_id_old, 'T', replace(l_lrts_ts_id_old, '.Test', '.Rev'))),
-         p_db_office_id        => c_office_id);
-   exception
-      when no_data_found then null;
    end;
    begin
       cwms_shef.store_shef_spec (
@@ -9774,14 +9657,6 @@ begin
          ut.expect(regexp_like(dbms_utility.format_error_stack, 'Session requires new LRTS ID format', 'mn')).to_be_true;
    end;
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_new_copy, 'F', 'F', c_office_id);
-   cwms_vt.assign_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_scr_assign_array    => cwms_t_screen_assign_array(cwms_t_screen_assign(l_lrts_ts_id_new, 'T', replace(l_lrts_ts_id_new, '.Test', '.Rev'))),
-      p_db_office_id        => c_office_id);
-   cwms_vt.unassign_screening_id (
-      p_screening_id        => 'Elev Range 1',
-      p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_new)),
-      p_db_office_id        => c_office_id);
    cwms_shef.store_shef_spec (
       p_cwms_ts_id          => l_lrts_ts_id_new,
       p_data_stream_id      => 'Test_Data_Stream',
@@ -9823,17 +9698,6 @@ begin
    cwms_ts.set_allow_new_lrts_format_on_input('F');
    cwms_ts.set_use_new_lrts_format_on_output('F');
 
-   begin
-      cwms_vt.delete_screening_id (
-         p_screening_id        => 'Elev Range 1',
-         p_parameter_id        => 'Elev',
-         p_parameter_type_id   => null,
-         p_duration_id         => null,
-         p_cascade             => 'T',
-         p_db_office_id        => 'SWT');
-   exception
-      when others then null;
-   end;
    cwms_loc.delete_location(l_location_id, cwms_util.delete_all, c_office_id);
 
 end test_lrts_id_input_formatting;
@@ -9872,17 +9736,6 @@ begin
          exception
             when x_location_id_not_found then null;
          end;
-         begin
-            cwms_vt.delete_screening_id (
-               p_screening_id      => 'TEST1.Stag.92ze',
-               p_parameter_id      => 'Stage',
-               p_parameter_type_id => null,
-               p_duration_id       => null,
-               p_cascade           => 'T',
-               p_db_office_id      => null);
-         exception
-            when x_item_does_not_exist then null;
-         end;
          cwms_loc.store_location(
             p_location_id  => l_location_id,
             p_db_office_id => null);
@@ -9896,22 +9749,6 @@ begin
             p_cwms_ts_id  => l_output_tsid,
             p_active_flag => 'T',
             p_office_id   => null);
-         commit;
-
-         cwms_vt.create_screening_id (
-            p_screening_id      => 'TEST1.Stag.92ze',
-            p_screening_id_desc => 'Test Screening',
-            p_parameter_id      => 'Stage',
-            p_db_office_id      => null);
-
-         cwms_vt.assign_screening_id (
-            p_screening_id     => 'TEST1.Stag.92ze',
-            p_scr_assign_array => cwms_t_screen_assign_array(
-                                    cwms_t_screen_assign(
-                                       cwms_ts_id      => l_input_tsid,
-                                       active_flag     => 'T',
-                                       resultant_ts_id => l_output_tsid)),
-            p_db_office_id     => null);
          commit;
       end loop;
    end loop;

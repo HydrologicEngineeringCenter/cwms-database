@@ -80,12 +80,6 @@ DECLARE
       'av_rating_template',
       'av_rating_values',
       'av_rating_values_native',
-      'av_screened_ts_ids',
-      'av_screening_assignments',
-      'av_screening_control',
-      'av_screening_criteria',
-      'av_screening_dur_mag',
-      'av_screening_id',
       'av_shef_decode_spec',
       'av_shef_pe_codes',
       'av_specified_level',
@@ -226,12 +220,6 @@ END;
 @@cwms/views/av_rating_template
 @@cwms/views/av_rating_values
 @@cwms/views/av_rating_values_native
-@@cwms/views/av_screened_ts_ids
-@@cwms/views/av_screening_assignments
-@@cwms/views/av_screening_control
-@@cwms/views/av_screening_criteria
-@@cwms/views/av_screening_dur_mag
-@@cwms/views/av_screening_id
 @@cwms/views/av_shef_pe_codes
 @@cwms/views/av_specified_level
 @@cwms/views/av_specified_level_ui
