@@ -68,8 +68,8 @@ drop view av_screening_dur_mag;
 drop view av_screening_id;
 
 drop table at_screening_control;
-drop table at_screening_criteria;
 drop table at_screening_dur_mag;
+drop table at_screening_criteria;
 drop table at_screening_id;
 
 drop type screening_control_t force;
