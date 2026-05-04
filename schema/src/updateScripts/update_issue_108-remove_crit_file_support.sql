@@ -82,7 +82,7 @@ drop table at_data_feed_id;
 drop table at_data_stream_id;
 drop table at_data_stream_properties;
 drop table cwms_shef_extremum_codes;
-drop table cwms_shef_pe;
+drop table cwms_shef_pe_codes;
 drop table cwms_shef_time_zone;
 
 drop type shef_spec_type force;
@@ -92,10 +92,10 @@ drop public synonym cwms_t_shef_spec;
 drop public synonym cwms_t_shef_spec_array;
 drop public synonym cwms_v_shef_decode_spec;
 drop public synonym cwms_v_shef_pe_codes;
-drop public synonym/cwms_shef;
-drop public synonym/cwms_v_active_flag;
-drop public synonym/cwms_v_data_streams;
-drop public synonym/cwms_v_data_streams_current;
+drop public synonym cwms_shef;
+drop public synonym cwms_v_active_flag;
+drop public synonym cwms_v_data_streams;
+drop public synonym cwms_v_data_streams_current;
 
 
 delete
