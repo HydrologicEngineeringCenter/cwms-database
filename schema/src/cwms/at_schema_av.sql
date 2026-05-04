@@ -15,7 +15,6 @@ DECLARE
 	   'av_application_session',    -- created in at_schema_2
       'av_auth_sched_entries',
       'av_db_change_log',
-      'av_active_flag',
       'av_basin',                  -- created in at_schema_2
       'av_clob',
       'av_compound_outlet',
@@ -86,8 +85,6 @@ DECLARE
       'av_screening_criteria',
       'av_screening_dur_mag',
       'av_screening_id',
-      'av_shef_decode_spec',
-      'av_shef_pe_codes',
       'av_specified_level',
       'av_specified_level_ui',
       'av_state',
@@ -148,7 +145,6 @@ END;
 /
 
 ---------------------------------------------------------
-@@cwms/views/av_active_flag
 @@cwms/views/av_auth_sched_entries
 @@cwms/views/av_clob
 @@cwms/views/av_compound_outlet
@@ -168,8 +164,6 @@ END;
 @@cwms/views/av_data_q_test_failed
 @@cwms/views/av_data_q_validity
 @@cwms/views/av_data_quality
-@@cwms/views/av_data_streams
-@@cwms/views/av_data_streams_current
 @@cwms/views/av_dataexchange_job
 @@cwms/views/av_db_change_log
 @@cwms/views/av_deleted_ts_id
@@ -232,7 +226,6 @@ END;
 @@cwms/views/av_screening_criteria
 @@cwms/views/av_screening_dur_mag
 @@cwms/views/av_screening_id
-@@cwms/views/av_shef_pe_codes
 @@cwms/views/av_specified_level
 @@cwms/views/av_specified_level_ui
 @@cwms/views/av_state
@@ -262,7 +255,6 @@ END;
 @@cwms/views/av_vert_datum_offset
 @@cwms/views/av_virtual_rating
 @@cwms/views/zav_cwms_ts_id
-@@cwms/views/zv_current_crit_file_code
 @@cwms/views/stats
 
 --------------------------------------------------------------------------------
