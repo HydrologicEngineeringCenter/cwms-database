@@ -69,11 +69,11 @@ drop view zv_current_crit_file_code;
 
 
 drop table at_shef_decode;
+drop table at_shef_ignore;
 drop table at_data_feed_id;
 drop table at_data_stream_id;
 drop table at_shef_crit_file_rec;
 drop table at_shef_decode_spec;
-drop table at_shef_ignore;
 drop table at_shef_pe_codes;
 drop table at_shef_spec_mapping_update;
 
