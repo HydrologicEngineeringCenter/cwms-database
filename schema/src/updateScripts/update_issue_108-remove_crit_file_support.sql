@@ -107,7 +107,7 @@ delete
 
 delete
   from at_clob
- where id in ('/VIEWD0CS/AV_ACTIVE_FLAG',
+ where id in ('/VIEWDOCS/AV_ACTIVE_FLAG',
               '/VIEWDOCS/AV_DATA_STREAMS',
               '/VIEWDOCS/AV_DATA_STREAMS_CURRENT',
               '/VIEWDOCS/AV_SHEF_DECODE_SPEC',
