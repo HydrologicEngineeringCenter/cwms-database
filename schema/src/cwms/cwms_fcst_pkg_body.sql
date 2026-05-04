@@ -73,7 +73,7 @@ begin
                fs.fcst_spec_code = p_fcst_spec_code
                and o.office_code = fs.office_code;
             cwms_err.raise(
-               'ITEM_DOES_NOT_EXISTS',
+               'ITEM_DOES_NOT_EXIST',
                'Forecast instance',
                l_office_id||'/'||l_fcst_spec_id||'/'||l_fcst_designator
                ||'/'||to_char(p_fcst_time_utc, 'yyyy-mm-dd"T"hh24:mi:ss"Z"')
@@ -526,6 +526,10 @@ begin
             ||'/'||to_char(l_fcst_time_utc, 'yyyy-mm-dd"T"hh24:mi:ss"Z"')
             ||'/'||to_char(l_issue_time_utc, 'yyyy-mm-dd"T"hh24:mi:ss"Z"'));
       end if;
+      select *
+         into l_fcst_inst_rec
+         from at_fcst_inst
+      where fcst_inst_code = l_fcst_inst_code;
    end if;
    -------------------------------------
    -- populate instance record fields --
