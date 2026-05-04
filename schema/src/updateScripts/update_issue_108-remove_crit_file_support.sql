@@ -60,6 +60,8 @@ select systimestamp from dual;
 @@../cwms/cwms_ts_pkg_body
 @@../cwms/cwms_vt_pkg_body
 
+whenever sqlerror continue;
+
 drop package cwms_shef;
 
 drop view av_active_flag;
@@ -78,14 +80,23 @@ drop table at_shef_decode_spec;
 drop table at_shef_pe_codes;
 drop table at_data_feed_id;
 drop table at_data_stream_id;
+drop table at_data_stream_properties;
+drop table cwms_shef_extremum_codes;
+drop table cwms_shef_pe;
+drop table cwms_shef_time_zone;
 
---drop type shef_spec force;
+drop type shef_spec_type force;
 drop type shef_spec_array force;
 
 drop public synonym cwms_t_shef_spec;
 drop public synonym cwms_t_shef_spec_array;
 drop public synonym cwms_v_shef_decode_spec;
 drop public synonym cwms_v_shef_pe_codes;
+drop public synonym/cwms_shef;
+drop public synonym/cwms_v_active_flag;
+drop public synonym/cwms_v_data_streams;
+drop public synonym/cwms_v_data_streams_current;
+
 
 delete
   from at_clob
@@ -94,6 +105,7 @@ delete
               '/VIEWDOCS/ZV_CURRENT_CRIT_FILE_CODE'
              );
 
+whenever sqlerror exit;
 
 PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
