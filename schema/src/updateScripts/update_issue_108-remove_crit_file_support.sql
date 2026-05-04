@@ -77,8 +77,8 @@ drop table at_shef_pe_codes;
 drop table at_data_feed_id;
 drop table at_data_stream_id;
 
-drop type shef_spec_array force;
 drop type shef_spec force;
+drop type shef_spec_array force;
 
 drop public synonym cwms_t_shef_spec;
 drop public synonym cwms_t_shef_spec_array;
