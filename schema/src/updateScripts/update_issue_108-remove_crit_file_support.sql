@@ -56,8 +56,12 @@ PROMPT SAVING PRE-UPDATE PRIVILEGES
 select systimestamp from dual;
 @@./util/preupdate_privs.sql;
 
+@@../cwms/cwms_alarm_pkg
+@@../cwms/cwms_alarm_pkg_body
+@@../cwms/cwms_loc_pkg
 @@../cwms/cwms_loc_pkg_body
 @@../cwms/cwms_ts_pkg_body
+@@../cwms/cwms_vt_pkg
 @@../cwms/cwms_vt_pkg_body
 
 whenever sqlerror continue;
@@ -97,10 +101,16 @@ drop public synonym cwms_v_active_flag;
 drop public synonym cwms_v_data_streams;
 drop public synonym cwms_v_data_streams_current;
 
+delete
+  from cwms_auth_sched_entries
+ where job_name = 'UPDATE_SHEF_SPEC_MAPPING';
 
 delete
   from at_clob
- where id in ('/VIEWDOCS/AV_SHEF_DECODE_SPEC',
+ where id in ('/VIEWD0CS/AV_ACTIVE_FLAG',
+              '/VIEWDOCS/AV_DATA_STREAMS',
+              '/VIEWDOCS/AV_DATA_STREAMS_CURRENT',
+              '/VIEWDOCS/AV_SHEF_DECODE_SPEC',
               '/VIEWDOCS/AV_SHEF_PE_CODES',
               '/VIEWDOCS/ZV_CURRENT_CRIT_FILE_CODE'
              );
