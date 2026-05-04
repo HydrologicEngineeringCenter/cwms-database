@@ -56,7 +56,9 @@ PROMPT SAVING PRE-UPDATE PRIVILEGES
 select systimestamp from dual;
 @@./util/preupdate_privs.sql;
 
+@@../cwms/cwms_loc_pkg_body
 @@../cwms/cwms_ts_pkg_body
+@@../cwms/cwms_vt_pkg_body
 
 drop package cwms_shef;
 
