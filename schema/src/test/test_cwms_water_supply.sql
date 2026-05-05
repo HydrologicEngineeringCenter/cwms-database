@@ -177,9 +177,9 @@ begin
             location_ref_t(c_pump_loc_id, c_office_id),
             lookup_type_obj_t('CWMS','Pipeline','', 'T'),
             l_flow_cfs,
-            'cfs',
             l_start_time,
-            'Roundtrip units test')
+            'Roundtrip units test',
+            'cfs')
       ),
       p_contract_ref => l_contract_ref,
       p_pump_time_window_tab => loc_ref_time_window_tab_t(
