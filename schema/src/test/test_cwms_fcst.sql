@@ -514,7 +514,7 @@ is
    l_fcst_info          varchar2(32767);
    l_client_userid      varchar2(100);
    l_file_contents      clob;
-   l_file_description   cwms_t_blob_file.description%type;
+   l_file_description   at_fcst_spec.description%type;
    l_blob_file          cwms_t_blob_file;
    l_fcst_date_utc      date := cwms_util.change_timezone(c_fcst_date, c_time_zone_id, 'UTC');
    l_issue_date_utc     date := cwms_util.change_timezone(c_issue_date, c_time_zone_id, 'UTC');
@@ -574,11 +574,43 @@ begin
       p_fail_if_exists  => 'F',
       p_ignore_nulls    => 'T',
       p_office_id       => c_office_id);
+   ----------------
+   -- store inst --
+   ----------------
+   cwms_fcst.store_fcst(
+      p_fcst_spec_id       => c_fcst_spec_id,
+      p_fcst_designator    => c_fcst_designator,
+      p_forecast_date_time => c_fcst_date,
+      p_issue_date_time    => c_issue_date,
+      p_time_zone          => c_time_zone_id,
+      p_max_age            => c_max_age,
+      p_notes              => c_fcst_notes,
+      p_fcst_info          => null,
+      p_fcst_file          => null,
+      p_fail_if_exists     => 'T' ,
+      p_ignore_nulls       => 'T' ,
+      p_office_id          => c_office_id);
+   ----------------
+   -- store inst again with no changes from original store other than not failing if exists--
+   ----------------
+   cwms_fcst.store_fcst(
+      p_fcst_spec_id       => c_fcst_spec_id,
+      p_fcst_designator    => c_fcst_designator,
+      p_forecast_date_time => c_fcst_date,
+      p_issue_date_time    => c_issue_date,
+      p_time_zone          => c_time_zone_id,
+      p_max_age            => c_max_age,
+      p_notes              => c_fcst_notes,
+      p_fcst_info          => null,
+      p_fcst_file          => null,
+      p_fail_if_exists     => 'F' ,
+      p_ignore_nulls       => 'T' ,
+      p_office_id          => c_office_id);
    dbms_lob.createtemporary(l_file_contents, true);
    for rec in (select text from user_source where name = 'CWMS_FCST' and type = 'PACKAGE' order by line) loop
       l_file_contents := l_file_contents || rec.text;
    end loop;
-   l_file_description := "The text of the CWMS_FCST package specification";
+   l_file_description := 'The text of the CWMS_FCST package specification';
    for has_info in 0..1 loop
       ---------------------------
       -- set the forecast info --
@@ -627,7 +659,7 @@ begin
             p_notes              => c_fcst_notes,
             p_fcst_info          => l_fcst_info,
             p_fcst_file          => l_blob_file,
-            p_fail_if_exists     => 'T' ,
+            p_fail_if_exists     => 'F' ,
             p_ignore_nulls       => 'F' ,
             p_office_id          => c_office_id);
          -----------------------------------------------
