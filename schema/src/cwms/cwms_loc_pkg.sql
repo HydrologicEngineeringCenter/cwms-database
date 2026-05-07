@@ -1215,12 +1215,6 @@ AS
 		p_unassign_all 	  IN VARCHAR2 DEFAULT 'F',
 		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
 	);
-   -- not docuemented
-	FUNCTION num_group_assigned_to_shef (
-		p_group_cat_array   IN group_cat_tab_t,
-		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-	)
-		RETURN NUMBER;
    /**
     * Retrieves a location from the database
     *
