@@ -54,14 +54,7 @@ end;
 @@cwms/types/nested_ts_table
 @@cwms/types/source_type
 @@cwms/types/source_array
-@@cwms/types/tr_template_set_type
-@@cwms/types/tr_template_set_array
 @@cwms/types/loc_type_ds
-@@cwms/types/screen_dur_mag_type
-@@cwms/types/screen_dur_mag_array
-@@cwms/types/screen_crit_type
-@@cwms/types/screen_crit_array
-@@cwms/types/screening_control_t
 @@cwms/types/cwms_ts_id_t
 @@cwms/types/cwms_ts_id_array
 @@cwms/types/cat_ts_obj_t
@@ -96,8 +89,6 @@ end;
 @@cwms/types/cat_dss_xchg_set_otab_t
 @@cwms/types/cat_dss_xchg_ts_map_obj_t
 @@cwms/types/cat_dss_xchg_tsmap_otab_t
-@@cwms/types/screen_assign_t
-@@cwms/types/screen_assign_array
 @@cwms/types/loc_alias_type
 @@cwms/types/loc_alias_array
 @@cwms/types/loc_alias_type2

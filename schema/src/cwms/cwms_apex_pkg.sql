@@ -139,13 +139,6 @@ AS
 		p_unique_process_id				IN VARCHAR2
 	);
 
-	PROCEDURE store_parsed_screen_base_file (
-		p_parsed_collection_name		IN VARCHAR2,
-		p_store_err_collection_name	IN VARCHAR2,
-		p_db_office_id 					IN VARCHAR2 DEFAULT NULL,
-		p_unique_process_id				IN VARCHAR2
-	);
-
 	PROCEDURE check_parsed_crit_file (p_collection_name IN VARCHAR2);
 
 	PROCEDURE download_file (p_file_id IN uploaded_xls_files_t.id%TYPE);
