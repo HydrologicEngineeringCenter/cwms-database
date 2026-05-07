@@ -608,6 +608,7 @@ AS
       l_county_code            integer;
       l_nearest_city_tab       str_tab_t;
       l_nearest_city           cwms_cities_sp.city_name%type;
+      l_srid                   mdsys.sdo_coord_ref_sys.srid%type;
    BEGIN
       if l_lat_lon_specified then
          l_county_code := get_county_code(p_latitude, p_longitude);
@@ -794,6 +795,7 @@ AS
                         l_nearest_city
                      );
             if l_lat_lon_specified then
+               l_srid := get_location_srid(p_base_location_code);
                insert into at_location_geometry
                   (
                      location_code,
@@ -802,7 +804,12 @@ AS
                values
                   (
                      p_base_location_code,
-                     sdo_geometry(2001, 4326, sdo_point_type(p_longitude, p_latitude, null), null, null)
+                     case
+                     when l_srid is null then
+                        sdo_geometry(2001, 4326, sdo_point_type(p_longitude, p_latitude, null), null, null)
+                     else
+                        sdo_cs.transform(sdo_geometry(2001, l_srid, sdo_point_type(p_longitude, p_latitude, null), null, null), 4326)
+                     end
                   );
             end if;
 
@@ -863,6 +870,7 @@ AS
             RETURNING   location_code
                   INTO   p_location_code;
             if l_lat_lon_specified then
+               l_srid := get_location_srid(p_location_code);
                insert into at_location_geometry
                   (
                      location_code,
@@ -871,7 +879,12 @@ AS
                values
                   (
                      p_location_code,
-                     sdo_geometry(2001, 4326, sdo_point_type(p_longitude, p_latitude, null), null, null)
+                     case
+                     when l_srid is null then
+                        sdo_geometry(2001, 4326, sdo_point_type(p_longitude, p_latitude, null), null, null)
+                     else
+                        sdo_cs.transform(sdo_geometry(2001, l_srid, sdo_point_type(p_longitude, p_latitude, null), null, null), 4326)
+                     end
                   );
             end if;
             update_local_datum_name(p_location_code, p_vertical_datum);
@@ -1059,6 +1072,7 @@ AS
       l_cwms_office_code       NUMBER (14)
                                   := cwms_util.get_office_code ('CWMS');
       l_old_time_zone_code      number(14);
+      l_srid                   mdsys.sdo_coord_ref_sys.srid%type;
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
@@ -1474,9 +1488,17 @@ AS
       --------------------
       if l_latitude is not null and l_longitude is not null then
          declare
-            geo_rec at_location_geometry%rowtype;
-            l_geometry sdo_geometry := sdo_geometry(2001, 4326, sdo_point_type(l_longitude, l_latitude, null), null, null);
+            geo_rec    at_location_geometry%rowtype;
+            l_srid     mdsys.sdo_coord_ref_sys.srid%type;
+            l_geometry sdo_geometry;
          begin
+            l_srid := get_location_srid(l_location_code);
+            l_geometry := case
+                          when l_srid is null then
+                             sdo_geometry(2001, 4326, sdo_point_type(l_longitude, l_latitude, null), null, null)
+                          else
+                             sdo_cs.transform(sdo_geometry(2001, l_srid, sdo_point_type(l_longitude, l_latitude, null), null, null), 4326)
+                          end;
             select * into geo_rec from at_location_geometry where location_code = l_location_code;
             if geo_rec.geometry_type != 1 then
                cwms_err.raise('ERROR', 'Cannot set lat/lon - location has non-point geometry');
@@ -3636,14 +3658,7 @@ AS
       p_fail_if_exists in varchar2 default 'T')
    is
       l_rec   at_location_geometry%rowtype;
-      l_srid  number;
    begin
-      select srid
-        into l_srid
-        from user_sdo_geom_metadata
-       where table_name = 'AT_LOCATION_GEOMETRY'
-         and column_name = 'GEOMETRY';
-
       begin
          select *
            into l_rec
@@ -3662,14 +3677,14 @@ AS
                   geometry
                  )
           values (p_location_code,
-                  sdo_cs.transform(p_geometry, l_srid)
+                  sdo_cs.transform(p_geometry, 4326)
                  );
       elsif l_rec.geometry is null or not cwms_util.return_true_or_false(p_fail_if_exists) then
          ---------------------
          -- update geometry --
          ---------------------
          update at_location_geometry
-            set geometry = sdo_cs.transform(p_geometry, l_srid)
+            set geometry = sdo_cs.transform(p_geometry, 4326)
           where location_code = p_location_code;
       else
          -----------
@@ -3749,6 +3764,53 @@ AS
       delete_geometry(
          get_location_code(p_db_office_id, p_location_id));
    end delete_geometry;
+
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_location_srid
+   --------------------------------------------------------------------------------
+   function get_location_srid(
+      p_location_code in number)
+      return varchar2
+   is
+      type srids_by_name_t is table of mdsys.sdo_coord_ref_sys.srid%type index by mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
+      l_srids_by_name srids_by_name_t;
+      l_name1 mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
+      l_name2 mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
+      l_srid mdsys.sdo_coord_ref_sys.srid%type;
+   begin
+      select trim(horizontal_datum)
+        into l_name1
+        from at_physical_location
+       where location_code = p_location_code;
+      if l_name1 is null then
+         cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'location '||p_location_code||' has NULL horizontal datum');
+         return null;
+      end if;
+      l_name2 := l_name1;
+      for i in 1..2 loop   
+         begin 
+            select srid
+              into l_srid
+              from (select srid
+                      from mdsys.sdo_coord_ref_sys
+                     where coord_ref_sys_name = l_name1
+                     order by srid
+                   )
+             where rownum = 1;
+         exception
+            when no_data_found then
+               if length(l_name1) > 3 and substr(l_name1, 1, 3) in ('WGS', 'NAD') and substr(l_name1, 4, 1) != ' ' then
+                  l_name1 := substr(l_name1, 1, 3)||' '||substr(l_name1, 4);
+               else
+                  exit;
+               end if;
+         end;
+      end loop;   
+      if l_srid is null then
+         cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'location '||p_location_code||' has unknown horizontal datum: '||l_name2);
+      end if;
+      return l_srid;
+   end get_location_srid;
 
    --------------------------------------------------------------------------------
    -- PRODEDURE get_location_lat_lon

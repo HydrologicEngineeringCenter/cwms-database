@@ -80,6 +80,16 @@ end;
 /
 
 PROMPT ################################################################################
+PROMPT MOVE EXISTING LAT/LONGS TO GEOMETRY
+select systimestamp from dual;
+
+@@./latlon_to_geometry/move_lat_longs_to_geometry
+
+PROMPT ################################################################################
+PROMPT ALTERING TABLES
+select systimestamp from dual;
+
+PROMPT ################################################################################
 PROMPT ALTERING TABLES
 select systimestamp from dual;
 
@@ -187,6 +197,7 @@ end;
 /
 PROMPT ################################################################################
 PROMPT RESTORING PRE-UPDATE PRIVILEGES
+select systimestamp from dual;
 @@./util/restore_privs
 
 PROMPT ################################################################################
@@ -214,6 +225,29 @@ select owner||'.'||substr(name, 1, 30) as name,
 /
 
 whenever sqlerror exit;
+
+PROMPT ################################################################################
+PROMPT OUTPUT LATLON CONVERSION RESULTS
+select systimestamp from dual;
+
+declare
+   l_notes  str_tab_t;
+   l_counts number_tab_t;
+begin
+   dbms_output.put_line('Latitude/Longitude to Geometry Conversion Results');
+   dbms_output.put_line('================================================================================');
+   select conversion_note, count(location_code)
+     bulk collect
+     into l_notes, l_counts
+     from at_latlon_conversion
+    group by conversion_note
+    order by 2 desc;
+   for i in 1..l_notes.count loop
+      dbms_output.put_line(to_char(l_counts(i), 99999)||' locations'||chr(9)||l_notes(i));
+   end loop;
+   dbms_output.put_line(chr(10)||'See table AT_LATLON_CONVERSION for details');
+end;
+/
 
 PROMPT ################################################################################
 PROMPT UPDATE COMPLETE

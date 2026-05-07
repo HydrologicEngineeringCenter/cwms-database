@@ -1272,6 +1272,15 @@ AS
       p_location_id  in varchar2,
       p_db_office_id in varchar2);
    /**
+    * Returns the SRID for a location based on it's horizontal datum
+    *
+    * @param p_location_code The unique database numeric code for the location
+    * @return The SRID, or NULL if the horizontal datum is NULL or not recognized
+    */
+   function get_location_srid(
+      p_location_code in number)
+      return varchar2;
+   /**
     * Retrieves the lat/lon for a location or its base location. If the location's lat/lon is NULL, the
     * base location's lat/lon (which may also be null) is retrieved
     *

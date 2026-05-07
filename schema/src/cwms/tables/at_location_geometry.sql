@@ -24,6 +24,8 @@ create or replace trigger at_location_geometry_t01
    for each row
 declare
    l_geometry_type at_location_geometry.geometry_type%type;
+   l_srid mdsys.sdo_coord_ref_sys.srid%type;
+   l_geometry sdo_geometry;
 begin
    if :new.geometry is null then
       -------------------
@@ -39,8 +41,15 @@ begin
       --------------------
       -- point geometry --
       --------------------
-         :new.latitude  := :new.geometry.sdo_point.y;
-         :new.longitude := :new.geometry.sdo_point.x;
+         l_srid := cwms_loc.get_location_srid(:new.location_code);
+         if l_srid is null then
+            :new.latitude  := :new.geometry.sdo_point.y;
+            :new.longitude := :new.geometry.sdo_point.x;
+         else
+            l_geometry := sdo_cs.transform(:new.geometry, l_srid);
+            :new.latitude  := l_geometry.sdo_point.y;
+            :new.longitude := l_geometry.sdo_point.x;
+         end if;
       else
          ------------------------
          -- non-point geometry --
