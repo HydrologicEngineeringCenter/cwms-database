@@ -91,6 +91,9 @@ PROMPT #########################################################################
 PROMPT CREATING AND ALTERING TYPE BODIES
 select systimestamp from dual;
 
+drop type wat_usr_contract_acct_obj_t FORCE;
+
+@@../cwms/types/wat_usr_contract_acct_obj_t
 @@../cwms/types/rating_ind_parameter_t-body
 @@../cwms/types/rating_t-body
 
