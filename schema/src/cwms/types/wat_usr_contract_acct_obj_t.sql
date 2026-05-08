@@ -1,4 +1,4 @@
-CREATE type wat_usr_contract_acct_obj_t
+CREATE or replace type wat_usr_contract_acct_obj_t
 /**
  * Holds a water user contract accounting record
  *
@@ -19,9 +19,9 @@ AS
     pump_location_ref location_ref_t, --the contract pump that was used for this accounting.
     physical_transfer_type lookup_type_obj_t,         --The type of transfer for this water movement.  See AT_PHYSICAL_TRANSFER_TYPE_CODE.
     pump_flow binary_double,                  --Param: Flow. The flow associated with the water accounting record
-    pump_flow_unit varchar2(16),             -- The units used for pump_flow
     transfer_start_datetime date,                     --The date this water movement began, DATE includes the time zone.
-    accounting_remarks varchar2(255 byte)             --Any comments regarding this water accounting movement
+    accounting_remarks varchar2(255 byte),          --Any comments regarding this water accounting movement
+    pump_flow_unit VARCHAR2(16)           -- The units used for pump_flow
   );
 /
 
