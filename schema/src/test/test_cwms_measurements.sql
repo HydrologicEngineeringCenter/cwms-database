@@ -239,21 +239,21 @@ CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_measurements AS
         -- Test exact match for legacy number '101'
         l_meas_tab := cwms_stream.retrieve_streamflow_meas_by_id(
             p_location_id_mask => l_location_id,
-            p_meas_number      => '101');
+            p_meas_id          => '101');
         ut.expect(l_meas_tab.count).to_equal(1);
         ut.expect(l_meas_tab(1).meas_number).to_equal('101');
 
         -- Test exact match for UUID '550e8400-e29b-41d4-a716-446655440000'
         l_meas2_tab := cwms_stream.retrieve_meas_by_id(
             p_location_id_mask => l_location_id,
-            p_meas_number      => '550e8400-e29b-41d4-a716-446655440000');
+            p_meas_id          => '550e8400-e29b-41d4-a716-446655440000');
         ut.expect(l_meas2_tab.count).to_equal(1);
         ut.expect(l_meas2_tab(1).meas_number).to_equal('550e8400-e29b-41d4-a716-446655440000');
 
-        -- Test retrieval with null meas_number (should return both '101' and '550e8400-e29b-41d4-a716-446655440000')
+        -- Test retrieval with null meas_id (should return both '101' and '550e8400-e29b-41d4-a716-446655440000')
         l_meas2_tab := cwms_stream.retrieve_meas_by_id(
             p_location_id_mask => l_location_id,
-            p_meas_number      => null,
+            p_meas_id          => null,
             p_min_date         => to_date('2023-05-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
             p_max_date         => to_date('2023-05-03 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
             p_time_zone        => 'UTC');
@@ -268,21 +268,21 @@ CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_measurements AS
         -- Test exact match XML for '101'
         l_xml := cwms_stream.retrieve_meas_xml_by_id(
             p_location_id_mask => l_location_id,
-            p_meas_number      => '101');
+            p_meas_id          => '101');
         ut.expect(l_xml).to_be_not_null();
         ut.expect(l_xml).to_be_like('%<number>101</number>%');
 
         -- Test exact match XML for UUID
         l_xml := cwms_stream.retrieve_meas_xml_by_id(
             p_location_id_mask => l_location_id,
-            p_meas_number      => '550e8400-e29b-41d4-a716-446655440000');
+            p_meas_id          => '550e8400-e29b-41d4-a716-446655440000');
         ut.expect(l_xml).to_be_not_null();
         ut.expect(l_xml).to_be_like('%<number>550e8400-e29b-41d4-a716-446655440000</number>%');
 
-        -- Test null meas_number XML
+        -- Test null meas_id XML
         l_xml := cwms_stream.retrieve_meas_xml_by_id(
             p_location_id_mask => l_location_id,
-            p_meas_number      => null,
+            p_meas_id          => null,
             p_min_date         => to_date('2023-05-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
             p_max_date         => to_date('2023-05-03 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
             p_time_zone        => 'UTC');

@@ -2111,7 +2111,7 @@ function retrieve_meas_objs(
 -- New UUID-capable retrieval helpers. Prefer these when working with UUID meas_number values.
 function retrieve_streamflow_meas_by_id(
    p_location_id_mask in varchar2,
-   p_meas_number      in varchar2 default null,
+   p_meas_id          in varchar2 default null,
    p_unit_system      in varchar2 default 'EN',
    p_min_date         in date     default null,
    p_max_date         in date     default null,
@@ -2127,7 +2127,7 @@ function retrieve_streamflow_meas_by_id(
 
 function retrieve_meas_by_id(
    p_location_id_mask in varchar2,
-   p_meas_number      in varchar2 default null,
+   p_meas_id          in varchar2 default null,
    p_unit_system      in varchar2 default 'EN',
    p_min_date         in date     default null,
    p_max_date         in date     default null,
@@ -2143,7 +2143,7 @@ function retrieve_meas_by_id(
 
 function retrieve_streamflow_meas_xml_by_id(
    p_location_id_mask in varchar2,
-   p_meas_number      in varchar2 default null,
+   p_meas_id          in varchar2 default null,
    p_unit_system      in varchar2 default 'EN',
    p_min_date         in date     default null,
    p_max_date         in date     default null,
@@ -2159,7 +2159,7 @@ function retrieve_streamflow_meas_xml_by_id(
 
 function retrieve_meas_xml_by_id(
    p_location_id_mask in varchar2,
-   p_meas_number      in varchar2 default null,
+   p_meas_id          in varchar2 default null,
    p_unit_system      in varchar2 default 'EN',
    p_min_date         in date     default null,
    p_max_date         in date     default null,

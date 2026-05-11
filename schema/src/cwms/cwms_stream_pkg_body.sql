@@ -2809,13 +2809,13 @@ as
 
 --------------------------------------------------------------------------------
 -- function retrieve_streamflow_meas_by_id (UUID/ID exact match)
--- New UUID-capable API: retrieves measurements by exact meas_number string.
+-- New UUID-capable API: retrieves measurements by exact meas_id string.
 -- Backward compatible: does not change existing signatures; callers can use
 -- this when working with UUID measurement identifiers.
 --------------------------------------------------------------------------------
    function retrieve_streamflow_meas_by_id(
          p_location_id_mask in varchar2,
-         p_meas_number      in varchar2 default null,
+         p_meas_id          in varchar2 default null,
          p_unit_system      in varchar2 default 'EN',
          p_min_date         in date     default null,
          p_max_date         in date     default null,
@@ -2832,7 +2832,7 @@ as
       l_location_id_mask varchar2(256) := cwms_util.normalize_wildcards(p_location_id_mask) ;
       l_office_id_mask   varchar2(64)  := cwms_util.normalize_wildcards(p_office_id_mask) ;
       l_loc_tab          number_tab_t;
-      l_meas_num_tab     str_tab_t;
+      l_meas_id_tab      str_tab_t;
       l_meas_tab         streamflow_meas_tab_t;
       l_height_unit      varchar2(16) ;
       l_flow_unit        varchar2(16) ;
@@ -2860,13 +2860,13 @@ as
              sm.location_code,
              sm.meas_number bulk collect
         into l_loc_tab,
-             l_meas_num_tab
+             l_meas_id_tab
         from at_streamflow_meas sm,
              av_loc2 v2
        where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
          and v2.location_id like l_location_id_mask escape '\'
          and sm.location_code = v2.location_code
-         and (p_meas_number is null or sm.meas_number = p_meas_number)
+         and (p_meas_id is null or sm.meas_number = p_meas_id)
          and sm.date_time between
              case
              when p_min_date is null
@@ -2934,7 +2934,7 @@ as
          l_meas_tab := streamflow_meas_tab_t();
          l_meas_tab.extend(l_loc_tab.count);
          for i in 1..l_loc_tab.count loop
-            l_meas_tab(i) := streamflow_meas_t(location_ref_t(l_loc_tab(i)), l_meas_num_tab(i), p_unit_system);
+            l_meas_tab(i) := streamflow_meas_t(location_ref_t(l_loc_tab(i)), l_meas_id_tab(i), p_unit_system);
          end loop;
       end if;
       return l_meas_tab;
@@ -2946,7 +2946,7 @@ as
 --------------------------------------------------------------------------------
    function retrieve_meas_by_id(
          p_location_id_mask in varchar2,
-         p_meas_number      in varchar2 default null,
+         p_meas_id          in varchar2 default null,
          p_unit_system      in varchar2 default 'EN',
          p_min_date         in date     default null,
          p_max_date         in date     default null,
@@ -2963,7 +2963,7 @@ as
       l_location_id_mask varchar2(256) := cwms_util.normalize_wildcards(p_location_id_mask) ;
       l_office_id_mask   varchar2(64)  := cwms_util.normalize_wildcards(p_office_id_mask) ;
       l_loc_tab          number_tab_t;
-      l_meas_num_tab     str_tab_t;
+      l_meas_id_tab      str_tab_t;
       l_meas_tab         streamflow_meas2_tab_t;
       l_height_unit      varchar2(16) ;
       l_flow_unit        varchar2(16) ;
@@ -2991,13 +2991,13 @@ as
              sm.location_code,
              sm.meas_number bulk collect
         into l_loc_tab,
-             l_meas_num_tab
+             l_meas_id_tab
         from at_streamflow_meas sm,
              av_loc2 v2
        where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
          and v2.location_id like l_location_id_mask escape '\'
          and sm.location_code = v2.location_code
-         and (p_meas_number is null or sm.meas_number = p_meas_number)
+         and (p_meas_id is null or sm.meas_number = p_meas_id)
          and sm.date_time between
              case
              when p_min_date is null
@@ -3065,7 +3065,7 @@ as
          l_meas_tab := streamflow_meas2_tab_t();
          l_meas_tab.extend(l_loc_tab.count);
          for i in 1..l_loc_tab.count loop
-            l_meas_tab(i) := streamflow_meas2_t(location_ref_t(l_loc_tab(i)), l_meas_num_tab(i), p_unit_system);
+            l_meas_tab(i) := streamflow_meas2_t(location_ref_t(l_loc_tab(i)), l_meas_id_tab(i), p_unit_system);
          end loop;
       end if;
       return l_meas_tab;
@@ -3076,7 +3076,7 @@ as
 --------------------------------------------------------------------------------
    function retrieve_streamflow_meas_xml_by_id(
          p_location_id_mask in varchar2,
-         p_meas_number      in varchar2 default null,
+         p_meas_id          in varchar2 default null,
          p_unit_system      in varchar2 default 'EN',
          p_min_date         in date     default null,
          p_max_date         in date     default null,
@@ -3095,7 +3095,7 @@ as
    begin
       l_meas_tab := retrieve_streamflow_meas_by_id(
          p_location_id_mask => p_location_id_mask,
-         p_meas_number      => p_meas_number,
+         p_meas_id          => p_meas_id,
          p_unit_system      => p_unit_system,
          p_min_date         => p_min_date,
          p_max_date         => p_max_date,
@@ -3126,7 +3126,7 @@ as
 --------------------------------------------------------------------------------
    function retrieve_meas_xml_by_id(
          p_location_id_mask in varchar2,
-         p_meas_number      in varchar2 default null,
+         p_meas_id          in varchar2 default null,
          p_unit_system      in varchar2 default 'EN',
          p_min_date         in date     default null,
          p_max_date         in date     default null,
@@ -3145,7 +3145,7 @@ as
    begin
       l_meas_tab := retrieve_meas_by_id(
          p_location_id_mask => p_location_id_mask,
-         p_meas_number      => p_meas_number,
+         p_meas_id          => p_meas_id,
          p_unit_system      => p_unit_system,
          p_min_date         => p_min_date,
          p_max_date         => p_max_date,
