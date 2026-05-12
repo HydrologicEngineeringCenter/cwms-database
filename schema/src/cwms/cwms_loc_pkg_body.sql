@@ -6,61 +6,6 @@ AS
       cwms_cache.clear(g_location_code_cache);
       cwms_cache.clear(g_location_id_cache);
    end;
-   --
-   -- num_group_assigned_to_shef return the number of groups -
-   -- currently assigned in the at_shef_decode table.
-   FUNCTION znum_group_assigned_to_shef (
-      p_group_cat_array   IN group_cat_tab_t,
-      p_db_office_code     IN NUMBER
-   )
-      RETURN NUMBER
-   IS
-      l_tmp   NUMBER;
-   BEGIN
-      SELECT   COUNT (*)
-        INTO   l_tmp
-        FROM   at_shef_decode
-       WHERE   loc_group_code IN
-                  (SELECT    loc_group_code
-                     FROM    (SELECT   a.loc_category_code,
-                                      b.loc_group_id
-                               FROM   at_loc_category a,
-                                      TABLE (
-                                         CAST (
-                                            p_group_cat_array AS group_cat_tab_t
-                                         )
-                                      ) b
-                              WHERE   UPPER (a.loc_category_id) =
-                                         UPPER (TRIM (b.loc_category_id))
-                                      AND a.db_office_code IN
-                                             (p_db_office_code,
-                                              cwms_util.db_office_code_all)) c,
-                            at_loc_group d
-                    WHERE    UPPER (d.loc_group_id) =
-                               UPPER (TRIM (c.loc_group_id))
-                            AND d.loc_category_code = c.loc_category_code
-                            AND d.db_office_code IN
-                                   (p_db_office_code,
-                                    cwms_util.db_office_code_all));
-
-      RETURN l_tmp;
-   END znum_group_assigned_to_shef;
-
-   FUNCTION num_group_assigned_to_shef (
-      p_group_cat_array   IN group_cat_tab_t,
-      p_db_office_id      IN VARCHAR2 DEFAULT NULL
-   )
-      RETURN NUMBER
-   IS
-      l_db_office_code    NUMBER
-                            := cwms_util.get_db_office_code (p_db_office_id);
-   BEGIN
-      RETURN znum_group_assigned_to_shef (p_group_cat_array,
-                                          l_db_office_code
-                                         );
-   END num_group_assigned_to_shef;
-
-   --loc_cat_grp_rec_tab_t IS TABLE OF loc_cat_grp_rec_t
 
    FUNCTION get_location_id (p_location_code IN NUMBER)
       RETURN VARCHAR2

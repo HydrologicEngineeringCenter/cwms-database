@@ -6,18 +6,6 @@ create or replace package cwms_alarm
  */
 AS
 /**
- * Value for p_alarm_state parameter of notify_datastream_alarm_state procedure that indicates that data is being recieved and validated by the data stream
- */
-data_stream_ok constant integer := 0;
-/**
- * Value for p_alarm_state parameter of notify_datastream_alarm_state procedure that indicates that data is being received but not validated by the data stream
- */
-data_stream_valid_data_missing  constant integer := 1;
-/**
- * Value for p_alarm_state parameter of notify_datastream_alarm_state procedure that indicates that data is not being received or validated by the data stream
- */
-data_stream_raw_data_missing  constant integer := 2;
-/**
  * Value for p_state parameter of notify_loc_lvl_ind_state procedure that indicates no indicator conditions cannot be computed because the time series data fails the minimum duration or maximum age test
  */
 state_condition_error    constant integer := -1;
@@ -50,42 +38,6 @@ operation_median constant integer := 5;
  */
 operation_mode constant integer := 6;
 
-/**
- * Enqueues a message about the alarm state of a data stream
- *
- * @param p_data_stream_name The name of the data stream whose alarm_state is being reported
- * @param p_host             The name or network address of the computer processing the data stream 
- * @param p_alarm_state      The reported alarm state value. Must be one of the following:
- * <p>
- * <table class="descr" border="1">
- *   <tr><th class="descr">Value</th><th class="descr">Description</th></tr>
- *   <tr><td class="descr"><a href=#data_stream_ok>0 = cwms_alarm.data_stream_ok</a></td><td class="descr">Data is being recieved and validated by the data stream</td></tr>
- *   <tr><td class="descr"><a href=#data_stream_valid_data_missing>1 = cwms_alarm.data_stream_valid_data_missing</a></td><td class="descr">Data is being recieved but not validated by the data stream</td></tr>
- *   <tr><td class="descr"><a href=#data_stream_raw_data_missing>2 = cwms_alarm.data_stream_raw_data_missing</a></td><td class="descr">Data is not being recieved or validated by the data stream</td></tr>
- * </table>
- * @param p_raw_time_utc     The date of the most recent raw data in the data stream, in UTC
- * @param p_valid_time_utc   The date of the most recent validated data in the data stream, in UTC
- * @param p_raw_age          The age of the latest raw data in the data stream
- * @param p_raw_age_max      The maximum age of the most recent raw data for the data stream raw data to be considered current 
- * @param p_valid_age        The age of the latest validated data in the data stream
- * @param p_valid_age_max    The maximum age of the most recent validated data for the data stream validated data to be considered current
- * @param p_office_id        The office that owns the data stream
- *
- * @see constant data_stream_ok
- * @see constant data_stream_raw_data_missing
- * @see constant data_stream_valid_data_missing
- */
-procedure notify_datastream_alarm_state(
-   p_data_stream_name in varchar2, 
-   p_host             in varchar2,
-   p_alarm_state      in integer,
-   p_raw_time_utc     in date,
-   p_valid_time_utc   in date,
-   p_raw_age          in interval day to second default null,
-   p_raw_age_max      in interval day to second default null,
-   p_valid_age        in interval day to second default null,
-   p_valid_age_max    in interval day to second default null,
-   p_office_id        in varchar2 default null);
 /**
  * Enqueues a message about the state of a location level indicator.  The state is defined as maximum condition that is set for the location level indicator.
  *

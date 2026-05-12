@@ -44,6 +44,7 @@ AS
         begin test_timeseries_snapping.teardown; exception when others then null; end;
         begin test_cwms_cat.teardown; exception when others then null; end;
         begin test_cwms_stream.teardown; exception when others then null; end;
+        begin test_cwms_measurements.teardown; exception when others then null; end;
         begin test_cwms_lock.teardown; exception when others then null; end;
         begin test_cwms_data_dissem.teardown; exception when others then null; end;
         begin test_cwms_fcst.teardown; exception when others then null; end;

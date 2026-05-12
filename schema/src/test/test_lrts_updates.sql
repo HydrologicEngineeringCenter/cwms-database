@@ -4029,7 +4029,6 @@ is
    l_version_date      date;
    l_min_date          date;
    l_max_date          date;
-   l_shef_decode_specs cwms_shef.cat_shef_decode_spec_tab_t;
    l_location_id_out   cwms_v_loc.location_id%type;
    l_key_parameter_id  cwms_v_ts_profile.key_parameter_id%type;
    l_description       cwms_v_ts_profile.description%type;
@@ -4364,37 +4363,6 @@ begin
                                   cwms_t_screen_assign(l_prts_ts_id, 'T', replace(l_prts_ts_id, '.Test', '.Rev'))),
       p_db_office_id        => c_office_id);
    commit;
-   ----------------------------------
-   -- create some data stream info --
-   ----------------------------------
-   cwms_shef.store_data_stream (
-      p_data_stream_id  => 'Test_Data_Stream',
-      p_db_office_id    => c_office_id);
-   cwms_shef.store_shef_spec (
-      p_cwms_ts_id          => l_lrts_ts_id_old,
-      p_data_stream_id      => 'Test_Data_Stream',
-      p_shef_loc_id         => 'SHEFO2',
-      p_shef_pe_code        => 'HP',
-      p_shef_tse_code       => 'RGZ',
-      p_shef_duration_code  => 'I',
-      p_shef_unit_id        => 'ft',
-      p_time_zone_id        => 'UTC',
-      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
-                                  cwms_util.change_timezone(l_ts_data_utc(1).date_time, 'UTC', c_timezone_ids(1)),
-                                  1440),
-      p_db_office_id        => c_office_id);
-   cwms_shef.store_shef_spec (
-      p_cwms_ts_id          => l_prts_ts_id,
-      p_data_stream_id      => 'Test_Data_Stream',
-      p_shef_loc_id         => 'SHEFO2',
-      p_shef_pe_code        => 'HH',
-      p_shef_tse_code       => 'RGZ',
-      p_shef_duration_code  => 'I',
-      p_shef_unit_id        => 'ft',
-      p_time_zone_id        => 'UTC',
-      p_interval_utc_offset => cwms_util.utc_offset_irregular,
-      p_db_office_id        => c_office_id);
-   commit;
    ------------------
    -- create a URL --
    ------------------
@@ -4448,18 +4416,6 @@ begin
             ut.expect(rec.ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
          elsif rec.ts_id like '%.Elev-Prts.%.Test' then
             ut.expect(rec.ts_id).to_equal(l_prts_ts_id);
-         end if;
-      end loop;
-      ut.expect(l_rec_count).to_be_greater_than(0);
-
---      dbms_output.put_line('==> Testing CWMS_V_ACTIVE_FLAG');
-      l_rec_count := 0;
-      for rec in (select * from cwms_v_active_flag where cwms_ts_id like l_location_id||'.%') loop
-         l_rec_count := l_rec_count + 1;
-         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
-            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
-         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
-            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
          end if;
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
@@ -4683,18 +4639,6 @@ begin
 --      dbms_output.put_line('==> Testing CWMS_V_SCREENING_ASSIGNMENTS');
       l_rec_count := 0;
       for rec in (select * from cwms_v_screening_assignments where screening_id = 'Elev Range 1') loop
-         l_rec_count := l_rec_count + 1;
-         if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
-            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
-         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
-            ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
-         end if;
-      end loop;
-      ut.expect(l_rec_count).to_be_greater_than(0);
-
---      dbms_output.put_line('==> Testing CWMS_V_SHEF_DECODE_SPEC');
-      l_rec_count := 0;
-      for rec in (select * from cwms_v_shef_decode_spec where data_stream_id = 'Test_Data_Stream') loop
          l_rec_count := l_rec_count + 1;
          if rec.cwms_ts_id like '%.Elev-Lrts.%.Test' then
             ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
@@ -5128,28 +5072,6 @@ begin
       end loop;
       close l_crsr;
 
---      dbms_output.put_line('==> Testing CWMS_SHEF.CAT_SHEF_DECODE_SPEC_TAB');
-      cwms_shef.cat_shef_decode_spec (
-         p_shef_decode_spec_rc => l_crsr,
-         p_data_stream_id      => 'Test_Data_Stream',
-         p_db_office_id        => c_office_id);
-      fetch l_crsr bulk collect into l_shef_decode_specs;
-      close l_crsr;
-      for j in 1..l_shef_decode_specs.count loop
-         if l_shef_decode_specs(j).cwms_ts_id like '%.Elev-Lrts.%' then
-            if i = 1 then
-               ut.expect(l_shef_decode_specs(j).cwms_ts_id).to_equal(l_lrts_ts_id_old);
-               ut.expect(cwms_util.split_text(cwms_util.split_text(l_shef_decode_specs(j).shef_crit_line, 1, ';'), 2, '=')).to_equal(l_lrts_ts_id_old);
-            else
-               ut.expect(l_shef_decode_specs(j).cwms_ts_id).to_equal(l_lrts_ts_id_new);
-               ut.expect(cwms_util.split_text(cwms_util.split_text(l_shef_decode_specs(j).shef_crit_line, 1, ';'), 2, '=')).to_equal(l_lrts_ts_id_new);
-            end if;
-         else
-            ut.expect(l_shef_decode_specs(j).cwms_ts_id).to_equal(l_prts_ts_id);
-            ut.expect(cwms_util.split_text(cwms_util.split_text(l_shef_decode_specs(j).shef_crit_line, 1, ';'), 2, '=')).to_equal(l_prts_ts_id);
-         end if;
-      end loop;
-
 --      dbms_output.put_line('==> Testing CWMS_DATA_DISSEM.CAT_TS_TRANSFER');
       cwms_data_dissem.cat_ts_transfer(l_crsr, c_office_id);
       fetch l_crsr bulk collect into l_data_dissem_recs;
@@ -5177,10 +5099,6 @@ begin
    exception
       when others then null;
    end;
-   cwms_shef.delete_data_stream (
-      p_data_stream_id  => 'Test_Data_Stream',
-      p_cascade_all     => 'T',
-      p_db_office_id    => c_office_id);
    cwms_level.delete_specified_level('Lrts', 'F', c_office_id);
    cwms_loc.delete_location(l_location_id, cwms_util.delete_all, c_office_id);
    cwms_ts.delete_ts_category('TestCategory1', 'T', c_office_id);
@@ -5229,10 +5147,6 @@ is
    l_blob                blob;
    l_media_type          varchar2(84);
    l_file_extension      varchar2(16);
-   l_shef_id             varchar2(8);
-   l_shef_pe_code        varchar2(2);
-   l_shef_tse_code       varchar2(3);
-   l_shef_duration_code  varchar2(4);
    l_units               varchar2(32);
    l_unit_sys            varchar2(32);
    l_tz                  varchar2(32);
@@ -5390,12 +5304,6 @@ begin
             raise;
          end if;
    end;
-   ----------------------------------
-   -- create some data stream info --
-   ----------------------------------
-   cwms_shef.store_data_stream (
-      p_data_stream_id  => 'Test_Data_Stream',
-      p_db_office_id    => c_office_id);
    -------------------------------------------------
    -- create a rating, location levels and a pool --
    -------------------------------------------------
@@ -5539,38 +5447,6 @@ begin
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
-   cwms_shef.parse_criteria_record (
-      p_shef_id            => l_shef_id,
-      p_shef_pe_code       => l_shef_pe_code,
-      p_shef_tse_code      => l_shef_tse_code,
-      p_shef_duration_code => l_shef_duration_code,
-      p_units              => l_units,
-      p_unit_sys           => l_unit_sys,
-      p_tz                 => l_tz,
-      p_dltime             => l_dltime,
-      p_int_offset         => l_int_offset,
-      p_int_backward       => l_int_backward,
-      p_int_forward        => l_int_forward,
-      p_cwms_ts_id         => l_cwms_ts_id,
-      p_comment            => l_text,
-      p_criteria_record    => 'VIOK1.HP.RGZ.1440='||l_lrts_ts_id_old||';Units=ft;TZ=UTC;DLTime=false');
-   ut.expect(l_cwms_ts_id).to_equal(l_lrts_ts_id_old);
-   cwms_shef.parse_criteria_record (
-      p_shef_id            => l_shef_id,
-      p_shef_pe_code       => l_shef_pe_code,
-      p_shef_tse_code      => l_shef_tse_code,
-      p_shef_duration_code => l_shef_duration_code,
-      p_units              => l_units,
-      p_unit_sys           => l_unit_sys,
-      p_tz                 => l_tz,
-      p_dltime             => l_dltime,
-      p_int_offset         => l_int_offset,
-      p_int_backward       => l_int_backward,
-      p_int_forward        => l_int_forward,
-      p_cwms_ts_id         => l_cwms_ts_id,
-      p_comment            => l_text,
-      p_criteria_record    => 'VIOK1.HP.RGZ.1440='||l_lrts_ts_id_new||';Units=ft;TZ=UTC;DLTime=false');
-   ut.expect(l_cwms_ts_id).to_equal(l_lrts_ts_id_new);
    -- should succeed
    --.... create, update, store ts
    cwms_ts.create_ts(
@@ -6373,23 +6249,6 @@ begin
       p_screening_id        => 'Elev Range 1',
       p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_old)),
       p_db_office_id        => c_office_id);
-   cwms_shef.store_shef_spec (
-      p_cwms_ts_id          => l_lrts_ts_id_old,
-      p_data_stream_id      => 'Test_Data_Stream',
-      p_shef_loc_id         => 'SHEFO2',
-      p_shef_pe_code        => 'HP',
-      p_shef_tse_code       => 'RGZ',
-      p_shef_duration_code  => 'I',
-      p_shef_unit_id        => 'ft',
-      p_time_zone_id        => 'UTC',
-      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
-                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
-                                  1440),
-      p_db_office_id        => c_office_id);
-   cwms_shef.delete_shef_spec (
-      p_cwms_ts_id     => l_lrts_ts_id_old,
-      p_data_stream_id => 'Test_Data_Stream',
-      p_db_office_id   => c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_key, c_office_id);
    cwms_ts.set_use_new_lrts_format_on_output('T');
@@ -6813,35 +6672,6 @@ begin
       cwms_err.raise('ERROR', 'Expected exception not raised');
    exception
       when no_data_found then null;
-   end;
-   begin
-      cwms_shef.store_shef_spec (
-         p_cwms_ts_id          => l_lrts_ts_id_new,
-         p_data_stream_id      => 'Test_Data_Stream',
-         p_shef_loc_id         => 'SHEFO2',
-         p_shef_pe_code        => 'HP',
-         p_shef_tse_code       => 'RGZ',
-         p_shef_duration_code  => 'I',
-         p_shef_unit_id        => 'ft',
-         p_time_zone_id        => 'UTC',
-         p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
-                                     cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
-                                     1440),
-         p_db_office_id        => c_office_id);
-      cwms_err.raise('ERROR', 'Expected exception not raised');
-   exception
-      when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
-   end;
-   begin
-      cwms_shef.delete_shef_spec (
-         p_cwms_ts_id     => l_lrts_ts_id_new,
-         p_data_stream_id => 'Test_Data_Stream',
-         p_db_office_id   => c_office_id);
-      cwms_err.raise('ERROR', 'Expected exception not raised');
-   exception
-      when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
    --.... delete, undelete
    begin
@@ -7721,23 +7551,6 @@ begin
       p_screening_id        => 'Elev Range 1',
       p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_old)),
       p_db_office_id        => c_office_id);
-   cwms_shef.store_shef_spec (
-      p_cwms_ts_id          => l_lrts_ts_id_old,
-      p_data_stream_id      => 'Test_Data_Stream',
-      p_shef_loc_id         => 'SHEFO2',
-      p_shef_pe_code        => 'HP',
-      p_shef_tse_code       => 'RGZ',
-      p_shef_duration_code  => 'I',
-      p_shef_unit_id        => 'ft',
-      p_time_zone_id        => 'UTC',
-      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
-                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
-                                  1440),
-      p_db_office_id        => c_office_id);
-   cwms_shef.delete_shef_spec (
-      p_cwms_ts_id     => l_lrts_ts_id_old,
-      p_data_stream_id => 'Test_Data_Stream',
-      p_db_office_id   => c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_old, cwms_util.delete_key, c_office_id);
    cwms_ts.set_use_new_lrts_format_on_output('T');
@@ -8525,23 +8338,6 @@ begin
       p_screening_id        => 'Elev Range 1',
       p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_new)),
       p_db_office_id        => c_office_id);
-   cwms_shef.store_shef_spec (
-      p_cwms_ts_id          => l_lrts_ts_id_new,
-      p_data_stream_id      => 'Test_Data_Stream',
-      p_shef_loc_id         => 'SHEFO2',
-      p_shef_pe_code        => 'HP',
-      p_shef_tse_code       => 'RGZ',
-      p_shef_duration_code  => 'I',
-      p_shef_unit_id        => 'ft',
-      p_time_zone_id        => 'UTC',
-      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
-                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
-                                  1440),
-      p_db_office_id        => c_office_id);
-   cwms_shef.delete_shef_spec (
-      p_cwms_ts_id     => l_lrts_ts_id_new,
-      p_data_stream_id => 'Test_Data_Stream',
-      p_db_office_id   => c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_key, c_office_id);
    cwms_ts.set_use_new_lrts_format_on_output('T');
@@ -8955,25 +8751,6 @@ begin
          p_db_office_id        => c_office_id);
    exception
       when no_data_found then null;
-   end;
-   begin
-      cwms_shef.store_shef_spec (
-         p_cwms_ts_id          => l_lrts_ts_id_old, -- doesn't fail; created as PRTS
-         p_data_stream_id      => 'Test_Data_Stream',
-         p_shef_loc_id         => 'SHEFO2',
-         p_shef_pe_code        => 'HP',
-         p_shef_tse_code       => 'RGZ',
-         p_shef_duration_code  => 'I',
-         p_shef_unit_id        => 'ft',
-         p_time_zone_id        => 'UTC',
-         p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
-                                    cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
-                                    1440),
-         p_db_office_id        => c_office_id);
-      cwms_err.raise('ERROR', 'Expected exception not raised');
-   exception
-      when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
    --.... delete, undelete
    begin
@@ -9782,23 +9559,6 @@ begin
       p_screening_id        => 'Elev Range 1',
       p_cwms_ts_id_array    => cwms_t_ts_id_array(cwms_t_ts_id(l_lrts_ts_id_new)),
       p_db_office_id        => c_office_id);
-   cwms_shef.store_shef_spec (
-      p_cwms_ts_id          => l_lrts_ts_id_new,
-      p_data_stream_id      => 'Test_Data_Stream',
-      p_shef_loc_id         => 'SHEFO2',
-      p_shef_pe_code        => 'HP',
-      p_shef_tse_code       => 'RGZ',
-      p_shef_duration_code  => 'I',
-      p_shef_unit_id        => 'ft',
-      p_time_zone_id        => 'UTC',
-      p_interval_utc_offset => cwms_ts.get_utc_interval_offset(
-                                  cwms_util.change_timezone(l_ts_data(1).date_time, 'UTC', c_timezone_ids(1)),
-                                  1440),
-      p_db_office_id        => c_office_id);
-   cwms_shef.delete_shef_spec (
-      p_cwms_ts_id     => l_lrts_ts_id_new,
-      p_data_stream_id => 'Test_Data_Stream',
-      p_db_office_id   => c_office_id);
    --.... delete, undelete
    cwms_ts.delete_ts(l_lrts_ts_id_new, cwms_util.delete_key, c_office_id);
    cwms_ts.set_use_new_lrts_format_on_output('T');
