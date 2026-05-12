@@ -44,7 +44,7 @@ begin
          l_srid := l_srids_by_name(l_name);
          l_geometry := sdo_geometry(2001, l_srid, sdo_point_type(rec.longitude, rec.latitude, null), null, null);
          if l_srid = 4326 then
-            insert into at_latlon_conversion values (rec.location_code, '[okay   ] Already in WGS 84 (4326) - no conversion necessry');
+            insert into at_latlon_conversion values (rec.location_code, '[okay   ] Already in WGS 84 (4326) - no conversion necessary');
          else
             l_geometry := sdo_cs.transform(l_geometry, 4326);
             insert into at_latlon_conversion values (rec.location_code, '[okay   ] Converted from '||l_name||' ('||l_srid||') to WGS 84 (4326)');
