@@ -1279,7 +1279,7 @@ AS
     */
    function get_location_srid(
       p_location_code in number)
-      return varchar2;
+      return number;
    /**
     * Retrieves the lat/lon for a location or its base location. If the location's lat/lon is NULL, the
     * base location's lat/lon (which may also be null) is retrieved

@@ -3715,7 +3715,7 @@ AS
    --------------------------------------------------------------------------------
    function get_location_srid(
       p_location_code in number)
-      return varchar2
+      return number
    is
       type srids_by_name_t is table of mdsys.sdo_coord_ref_sys.srid%type index by mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
       l_srids_by_name srids_by_name_t;
