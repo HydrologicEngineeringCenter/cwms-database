@@ -21,7 +21,12 @@ AS
 
     PROCEDURE test_dummy
     IS
+        l_version varchar2(32676);
     BEGIN
+      select banner_full into l_version from v$version;
+      dbms_output.enable(20000);
+      dbms_output.put_line('==> '||l_version);
+      cwms_err.raise('ERROR', 'Abort after getting version');
       ut.expect (0).to_equal(0);
     END;
 
