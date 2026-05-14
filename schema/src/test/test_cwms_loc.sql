@@ -57,6 +57,8 @@ procedure test_query_vertical_datum_offset;
 procedure test_av_loc_text_search;
 --%test(Search location using Oracle Text via AV_LOC2)
 procedure test_av_loc2_text_search;
+--%test(Test retrieval of vertical datum XML for location with null vertical datum)
+procedure test_null_vertical_datum;
 
 procedure setup;
 procedure teardown;
@@ -2817,6 +2819,36 @@ AS
        ut.expect(l_count).to_equal(1);
 
     end test_av_loc2_text_search;
+
+    --------------------------------------------------------------------------------
+    -- procedure test_null_vertical_datum
+    --------------------------------------------------------------------------------
+    procedure test_null_vertical_datum
+       is
+       l_vert_datum_info varchar2(120);
+       l_loc_id varchar2(64) := 'VANK';
+    begin
+       teardown;
+
+       cwms_loc.store_location(
+          p_location_id  => l_loc_id,
+          p_db_office_id => '&&office_id',
+          p_county_name => 'Crawford',
+          p_longitude => -94.3565139,
+          p_latitude => 35.43085,
+          p_horizontal_datum => 'NAD83',
+          p_time_zone_id => 'US/Central',
+          p_state_initial => 'AR',
+          p_public_name => 'VANK'
+       );
+
+       cwms_loc.get_vertical_datum_info(
+          p_vert_datum_info => l_vert_datum_info,
+          p_location_code   => cwms_loc.get_location_code('&&office_id', l_loc_id),
+          p_unit            => 'ft');
+       ut.expect(l_vert_datum_info).to_be_null();
+
+    end test_null_vertical_datum;
 END test_cwms_loc;
 /
 

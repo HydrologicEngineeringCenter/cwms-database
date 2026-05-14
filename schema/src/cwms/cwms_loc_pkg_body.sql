@@ -7831,6 +7831,11 @@ end unassign_loc_groups;
        where pl.location_code = p_location_code
          and bl.base_location_code = pl.base_location_code
          and o.office_code = bl.db_office_code;
+      l_native_datum := normalize_vertical_datum_in(l_native_datum);
+      if l_native_datum is null then
+         p_vert_datum_info := null;
+         return;
+      end if;
       l_vert_datum_info := '<vertical-datum-info office="'
          ||l_office_id
          ||'" unit="'
@@ -7842,7 +7847,6 @@ end unassign_loc_groups;
          ||dbms_xmlgen.convert(l_location_id)
          ||'</location>'
          ||chr(10);
-      l_native_datum := normalize_vertical_datum_in(l_native_datum);
       if l_native_datum not in ('NGVD29', 'NAVD88', 'LOCAL') then
          l_local_datum_name := l_native_datum;
          l_native_datum := 'LOCAL';
