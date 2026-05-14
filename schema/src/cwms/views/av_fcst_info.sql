@@ -20,7 +20,7 @@ as
           inst.fcst_date_time as fcst_date_time_utc,
           inst.issue_date_time as issue_date_time_utc,
           case when max_age is null then null when (sysdate - inst.issue_date_time) * 24 <= max_age then 'T' else 'F' end as valid,
-          info.key,
+          upper(info.key) as key,
           info.value
      from at_fcst_info info,
           at_fcst_inst inst,

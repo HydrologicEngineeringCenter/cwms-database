@@ -575,15 +575,15 @@ begin
          using
             (select
                 l_fcst_inst_rec.fcst_inst_code as fcst_inst_code,
-                l_keys(i) as key
+                upper(l_keys(i)) as key
              from dual
             ) b
          on
-            (a.fcst_inst_code = b.fcst_inst_code and a.key = b.key)
+            (a.fcst_inst_code = b.fcst_inst_code and upper(a.key) = b.key)
          when matched then
             update set value = l_value
          when not matched then
-            insert values (l_fcst_inst_rec.fcst_inst_code, l_keys(i), l_value);
+            insert values (l_fcst_inst_rec.fcst_inst_code, upper(l_keys(i)), l_value);
       end loop;
    end if;
 end store_fcst;
@@ -748,7 +748,7 @@ begin
                         value
                    from at_fcst_info info
                   where info.fcst_inst_code = fi.fcst_inst_code
-                    and key like cwms_util.normalize_wildcards(p_key_mask) escape '\'
+                    and upper(key) like upper(cwms_util.normalize_wildcards(p_key_mask)) escape '\'
                     and value like cwms_util.normalize_wildcards(p_value_mask) escape '\'
                 ) as key_value_pairs
       from
@@ -888,14 +888,14 @@ begin
    ---------------------------
    -- get the forecast info --
    ---------------------------
-   for rec in (select key, value from at_fcst_info where fcst_inst_code = l_fcst_inst_code order by key) loop
-      if rec.key = 'startTime' then
+   for rec in (select key, value from at_fcst_info where fcst_inst_code = l_fcst_inst_code order by upper(key)) loop
+      if upper(rec.key) = 'STARTTIME' then
          begin
             l_start_time := cwms_util.to_timestamp(rec.value);
          exception
             when others then null;
          end;
-      elsif rec.key = 'endTime' then
+      elsif upper(rec.key) = 'ENDTIME' then
          begin
             l_end_time := cwms_util.to_timestamp(rec.value);
          exception
