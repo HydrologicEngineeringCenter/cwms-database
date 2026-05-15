@@ -17,8 +17,6 @@
 @@cwms_upass_pkg
 @@cwms_upass_pkg_body
 
-@@cwms/views/av_shef_decode_spec.sql
-
 @@cwms_prop_pkg
 @@cwms_prop_pkg_body
 
@@ -60,9 +58,6 @@
 
 @@cwms_xchg_pkg
 @@cwms_xchg_pkg_body
-
-@@cwms_shef_pkg
-@@cwms_shef_pkg_body
 
 @@cwms_sec_pkg
 @@cwms_sec_pkg_body
@@ -128,9 +123,6 @@
 
 @@cwms_turbine_pkg
 @@cwms_turbine_pkg_body
-
-@@cwms_alarm_pkg
-@@cwms_alarm_pkg_body
 
 @@cwms_doc_pkg
 @@cwms_doc_pkg_body

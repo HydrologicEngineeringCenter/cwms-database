@@ -27,8 +27,6 @@ begin
 end;
 /
 @@cwms/types/anydata_tab_t
-@@cwms/types/shef_spec_type
-@@cwms/types/shef_spec_array
 @@cwms/types/tsv_type
 @@cwms/types/tsv_array
 @@cwms/types/tsv_array_tab

@@ -72,19 +72,6 @@ insert
   into CWMS_auth_sched_entries
 values ('CWMS',
         'CWMS_20',
-        'UPDATE_SHEF_SPEC_MAPPING',
-        'CWMS_20',
-        'REGULAR',
-        'STORED_PROCEDURE',                                             
-        3,
-        'CALENDAR',
-        'freq=minutely; interval=1',
-        'Updates Shef Crit File Mappings when needed.',
-        'cwms_shef.update_shef_spec_mapping');
-insert
-  into CWMS_auth_sched_entries
-values ('CWMS',
-        'CWMS_20',
         'TRIM_TS_DELETED_TIMES_JOB',
         'CWMS_20',
         'REGULAR',

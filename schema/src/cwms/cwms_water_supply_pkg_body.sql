@@ -1255,13 +1255,13 @@ BEGIN
           rec.phys_trans_type_tooltip,
           rec.phys_trans_type_active),
         rec.pump_flow * rec.factor + rec.offset,
-        nvl(p_units, 'cms'),
         -- rec.units_id,
         cwms_util.change_timezone(
            rec.transfer_start_datetime,
            'UTC',
            l_time_zone),
-        rec.accounting_remarks);
+        rec.accounting_remarks,
+        nvl(p_units, 'cms'));
    END loop;
 END retrieve_pump_accounting;
 

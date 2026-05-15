@@ -23,6 +23,7 @@ GRANT EXECUTE ON &cwms_schema..test_cwms_level to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_water_supply to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_display to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_stream to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_measurements to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_lock to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_data_dissem to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_forecast to &1;
