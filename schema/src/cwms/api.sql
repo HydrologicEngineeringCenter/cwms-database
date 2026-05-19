@@ -80,9 +80,6 @@
 @@cwms_fcst_pkg
 @@cwms_fcst_pkg_body
 
-@@cwms_forecast_pkg
-@@cwms_forecast_pkg_body
-
 @@cwms_gage_pkg
 @@cwms_gage_pkg_body
 

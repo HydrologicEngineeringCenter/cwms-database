@@ -32,9 +32,6 @@ create unique index at_fcst_spec_idx2 on at_fcst_spec (
 @@cwms/views/av_embank_structure_type.sql
 @@cwms/views/av_water_user_contract.sql
 @@cwms/views/av_water_user_contract2.sql
-@@cwms/views/av_forecast
-@@cwms/views/av_forecast_ex
-@@cwms/views/av_forecast_spec
 @@cwms/views/av_application_login
 @@cwms/views/av_application_session
 @@cwms/views/av_loc_vert_datum
