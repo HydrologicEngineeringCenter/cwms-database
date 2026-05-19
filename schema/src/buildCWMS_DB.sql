@@ -75,7 +75,6 @@ exec dbms_output.put_line('Creating tables.');
 @@cwms/at_schema_tr
 @@cwms/at_schema_sec_2
 @@cwms/at_schema_sec
-@@cwms/at_schema_cma
 @@cwms/tables/at_api_keys
 
 --

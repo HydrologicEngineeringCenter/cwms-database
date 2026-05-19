@@ -6334,3 +6334,17 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_fcst_inst
 @@./cwms/tables/at_fcst_info
 @@./cwms/tables/run_stats
+@@./cwms/tables/at_data_dissem
+@@./cwms/tables/at_a2w_ts_codes_by_loc
+@@./cwms/tables/cwms_state_sp
+@@./cwms/tables/cwms_county_sp
+@@./cwms/tables/cwms_cities_sp
+@@./cwms/tables/cwms_nid
+@@./cwms/tables/cwms_agg_district
+@@./cwms/tables/cwms_offices_geoloc
+@@./cwms/tables/cwms_station_nws
+@@./cwms/tables/cwms_station_usgs
+@@./cwms/tables/cwms_time_zone_sp
+@@./cwms/tables/cwms_usace_dam
+@@./cwms/tables/cwms_usace_dam_county
+@@./cwms/tables/cwms_usace_dam_state

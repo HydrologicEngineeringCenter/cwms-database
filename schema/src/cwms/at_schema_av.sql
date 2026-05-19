@@ -14,6 +14,7 @@ DECLARE
 	   'av_application_login',      -- created in at_schema_2
 	   'av_application_session',    -- created in at_schema_2
       'av_auth_sched_entries',
+      'av_base_parm_display_units',
       'av_db_change_log',
       'av_basin',                  -- created in at_schema_2
       'av_clob',
@@ -146,6 +147,7 @@ END;
 
 ---------------------------------------------------------
 @@cwms/views/av_auth_sched_entries
+@@cwms/views/av_base_parm_display_units.sql
 @@cwms/views/av_clob
 @@cwms/views/av_compound_outlet
 @@cwms/views/av_configuration
