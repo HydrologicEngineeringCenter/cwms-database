@@ -130,9 +130,6 @@
 @@cwms_data_dissem_pkg
 @@cwms_data_dissem_pkg_body
 
-@@cwms_mail_pkg
-@@cwms_mail_pkg_body
-
 @@cwms_scheduler_auth_pkg
 @@cwms_scheduler_auth_pkg_body
 
