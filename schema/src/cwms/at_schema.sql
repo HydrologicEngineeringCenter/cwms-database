@@ -5797,6 +5797,8 @@ comment on column at_specified_level_order.specified_level_code is 'The specifie
 comment on column at_specified_level_order.sort_order is           'The sort order of this specified level relative to others for this office';
 commit;
 
+@@./cwms/tables/at_specified_level_order_INSERT.sql
+
 create table at_store_rule_order (
    office_code   integer,
    store_rule_id varchar2(32),
@@ -6334,3 +6336,17 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_fcst_inst
 @@./cwms/tables/at_fcst_info
 @@./cwms/tables/run_stats
+@@./cwms/tables/at_data_dissem
+@@./cwms/tables/at_a2w_ts_codes_by_loc
+@@./cwms/tables/cwms_state_sp
+@@./cwms/tables/cwms_county_sp
+@@./cwms/tables/cwms_cities_sp
+@@./cwms/tables/cwms_nid
+@@./cwms/tables/cwms_agg_district
+@@./cwms/tables/cwms_offices_geoloc
+@@./cwms/tables/cwms_station_nws
+@@./cwms/tables/cwms_station_usgs
+@@./cwms/tables/cwms_time_zone_sp
+@@./cwms/tables/cwms_usace_dam
+@@./cwms/tables/cwms_usace_dam_county
+@@./cwms/tables/cwms_usace_dam_state

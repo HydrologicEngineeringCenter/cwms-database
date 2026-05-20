@@ -14,6 +14,7 @@ DECLARE
 	   'av_application_login',      -- created in at_schema_2
 	   'av_application_session',    -- created in at_schema_2
       'av_auth_sched_entries',
+      'av_base_parm_display_units',
       'av_db_change_log',
       'av_basin',                  -- created in at_schema_2
       'av_clob',
@@ -146,6 +147,7 @@ END;
 
 ---------------------------------------------------------
 @@cwms/views/av_auth_sched_entries
+@@cwms/views/av_base_parm_display_units.sql
 @@cwms/views/av_clob
 @@cwms/views/av_compound_outlet
 @@cwms/views/av_configuration
@@ -256,6 +258,24 @@ END;
 @@cwms/views/av_virtual_rating
 @@cwms/views/zav_cwms_ts_id
 @@cwms/views/stats
+@@cwms/views/av_a2w_ts_codes_by_loc
+@@cwms/views/av_a2w_ts_codes_by_loc2
+@@cwms/views/av_base_parameter_units
+@@cwms/views/av_cities_sp
+@@cwms/views/av_county_sp
+@@cwms/views/av_lock
+@@cwms/views/av_nation_sp
+@@cwms/views/av_nid
+@@cwms/views/av_office_sp
+@@cwms/views/av_specified_level_order
+@@cwms/views/av_state_sp
+@@cwms/views/av_station_nws
+@@cwms/views/av_station_usgs
+@@cwms/views/av_time_zone_sp
+@@cwms/views/av_usace_dam
+@@cwms/views/av_usace_dam_county
+@@cwms/views/av_usace_dam_state
+
 
 --------------------------------------------------------------------------------
 SHOW ERRORS;
