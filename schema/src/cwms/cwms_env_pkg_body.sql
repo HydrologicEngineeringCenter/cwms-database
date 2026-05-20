@@ -40,7 +40,6 @@ AS
    */
    procedure log(p_procedure in varchar2, p_msg_level in integer, p_message   in varchar2)
    is
-      l_priv varchar2(255) := SYS_CONTEXT('CWMS_ENV','CWMS_PRIVILEGE');
       l_cur_office varchar2(5) := SYS_CONTEXT('CWMS_ENV','SESSION_OFFICE_ID');
       l_cur_office_code cwms_office.office_code%type := NULL;
    begin
@@ -49,7 +48,6 @@ AS
          l_cur_office_code := CWMS_UTIL.GET_DB_OFFICE_CODE(l_cur_office);
       end if;
       -- set environment so logging works
-      set_cwms_env ('CWMS_PRIVILEGE', 'CAN_WRITE');
       set_cwms_env ('SESSION_OFFICE_ID', 'CWMS');
       set_cwms_env ('SESSION_OFFICE_CODE', CWMS_UTIL.GET_DB_OFFICE_CODE('CWMS'));
 
@@ -57,7 +55,6 @@ AS
       cwms_msg.log_db_message(p_procedure,p_msg_level,p_message);
 
       -- reset environment back so security works
-      set_cwms_env ('CWMS_PRIVILEGE', l_priv);
       set_cwms_env ('SESSION_OFFICE_ID', l_cur_office);
       set_cwms_env ('SESSION_OFFICE_CODE', l_cur_office_code);
       resume_office_caching;
@@ -121,7 +118,7 @@ AS
    PROCEDURE clear_session_privileges
    IS
    BEGIN
-    set_cwms_env ('CWMS_PRIVILEGE', 'READ_ONLY');
+    null;
    END;
 
    PROCEDURE set_session_user(p_session_key VARCHAR2)
@@ -178,19 +175,14 @@ AS
    IS
       l_office_id   VARCHAR2 (16);
       l_username    at_sec_cwms_users.userid%type;
-      l_canwrite    BOOLEAN;
-      l_canlogin    BOOLEAN;
       l_cnt         NUMBER;
       l_rdl_privilege VARCHAR2(16);
       l_ccp_privilege INTEGER;
    BEGIN
-      l_canwrite := FALSE;
-      l_canlogin := FALSE;
       l_cnt := 0;
       l_rdl_privilege := 'NONE';
       l_ccp_privilege := 4;
       l_username := CWMS_UTIL.GET_USER_ID;
-      set_cwms_env ('CWMS_PRIVILEGE', 'READ_ONLY');
 
 
       SELECT SYS_CONTEXT ('CWMS_ENV', 'SESSION_OFFICE_ID')
@@ -214,19 +206,6 @@ AS
 
      FOR C IN (SELECT user_group_id FROM TABLE (cwms_sec.get_assigned_priv_groups_tab) WHERE db_office_id = l_office_id)
       LOOP
-        l_canlogin := TRUE;
-        IF((C.user_group_id='CCP Mgr') OR
-            (C.user_group_id='CCP Proc') OR
-            (C.user_group_id='CWMS DBA Users') OR
-            (C.user_group_id='CWMS PD Users') OR
-            (C.user_group_id='CWMS User Admins') OR
-            (C.user_group_id='Data Acquisition Mgr') OR
-            (C.user_group_id='Data Exchange Mgr') OR
-            (C.user_group_id='TS ID Creator') OR
-            (C.user_group_id='VT Mgr'))
-        THEN
-            l_canwrite := TRUE;
-        END IF;
         IF(c.user_group_id='RDL Mgr')
         THEN
             l_rdl_privilege := 'RDLCRUD';
@@ -259,14 +238,6 @@ AS
 
       END LOOP;
 
-
-      IF (l_canwrite)
-      THEN
-         set_cwms_env ('CWMS_PRIVILEGE', 'CAN_WRITE');
-      ELSIF (l_canlogin)
-      THEN
-         set_cwms_env ('CWMS_PRIVILEGE', 'CAN_LOGIN');
-      END IF;
 
       set_cwms_env('RDL_PRIVILEGE',l_rdl_privilege);
       set_cwms_env('CCP_PRIV_LEVEL',l_ccp_privilege);

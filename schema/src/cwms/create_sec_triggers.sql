@@ -24,12 +24,8 @@ BEGIN
          || c.table_name
          || ' REFERENCING NEW AS NEW OLD AS OLD
 
-             DECLARE
-    
-             l_priv   VARCHAR2 (16);
              BEGIN
-             l_priv := NVL(SYS_CONTEXT (''CWMS_ENV'', ''CWMS_PRIVILEGE''),''''); 
-             IF (l_priv <> ''CAN_WRITE'' AND user NOT IN (''SYS'', ''&cwms_schema'', upper(''&builduser''))'
+             IF (user NOT IN (''SYS'', ''&cwms_schema'', upper(''&builduser''))'
           || l_upass 
           || ')
              THEN
@@ -55,12 +51,8 @@ BEGIN
          || c.table_name
          || ' REFERENCING NEW AS NEW OLD AS OLD
 
-             DECLARE
-    
-             l_priv   VARCHAR2 (16);
              BEGIN
-             l_priv := NVL(SYS_CONTEXT (''CWMS_ENV'', ''CWMS_PRIVILEGE''),''''); 
-             IF ((l_priv <> ''CAN_WRITE'') AND (l_priv <> ''CAN_LOGIN'') AND user NOT IN (''SYS'', ''&cwms_schema'', upper(''&builduser'')))
+             IF (user NOT IN (''SYS'', ''&cwms_schema'', upper(''&builduser'')))
              THEN
      
                CWMS_20.CWMS_ERR.RAISE(''NO_WRITE_PRIVILEGE'');
@@ -76,14 +68,8 @@ END;
 CREATE OR REPLACE TRIGGER CWMS_20.ST_PROPERTIES
     BEFORE DELETE OR INSERT OR UPDATE
     ON CWMS_20.AT_PROPERTIES FOR EACH ROW
-DECLARE
-    l_priv   VARCHAR2 (16);
 BEGIN
-    l_priv := NVL (SYS_CONTEXT ('CWMS_ENV', 'CWMS_PRIVILEGE'), '');
-
-    IF (    (l_priv <> 'CAN_WRITE')
-        AND (l_priv <> 'CAN_LOGIN')
-        AND USER NOT IN ('SYS', 'CWMS_20', upper('&builduser')))
+    IF (USER NOT IN ('SYS', 'CWMS_20', upper('&builduser')))
     THEN
         CWMS_20.CWMS_ERR.RAISE ('NO_WRITE_PRIVILEGE');
     END IF;
