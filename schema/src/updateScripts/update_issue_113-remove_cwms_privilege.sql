@@ -69,6 +69,7 @@ begin
       execute immediate 'drop trigger rec.trigger_name';
    end loop;
 end;
+/
 @@../cwms/cwms_env_pkg_body
 @@../cwms/tables/at_ts_extents
 
