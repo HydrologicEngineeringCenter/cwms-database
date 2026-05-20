@@ -61,6 +61,8 @@ whenever sqlerror continue;
 
 drop package at_schema_cma;
 
+drop table at_cma_error_log;
+
 
 delete
   from at_clob
