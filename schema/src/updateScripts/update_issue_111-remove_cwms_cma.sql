@@ -59,16 +59,11 @@ select systimestamp from dual;
 
 whenever sqlerror continue;
 
-drop package at_schema_cma;
-
 drop table at_cma_error_log;
 
+drop materialized view mv_ts_code_filter;
+@@../cwms/mv_ts_code_filter
 
-delete
-  from at_clob
- where id in ('xxx',
-              'yyy'
-             );
 
 whenever sqlerror exit;
 
