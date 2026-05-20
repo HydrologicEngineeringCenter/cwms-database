@@ -63,7 +63,6 @@ begin
    for rec in (select trigger_name
                  from user_triggers
                 where trigger_name like 'ST_%' escape '\'
-                  and table_name = replace(trigger_name, 'ST_', 'AT_')
               )
    loop
       execute immediate 'drop trigger '||rec.trigger_name;
