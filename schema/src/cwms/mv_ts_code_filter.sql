@@ -30,9 +30,7 @@ SELECT DISTINCT ts_code, 2 as DEST
                    ON     locGrp.GROUP_ID = tsGrp.CATEGORY_ID
                       AND locGrp.location_id = tsGrp.GROUP_ID
                       AND locGrp.category_id =
-                          'CWMS Mobile Location Listings'
-        UNION
-        SELECT ts_code FROM CWMS_20.AV_A2W_TS_CODES_BY_LOC2);
+                          'CWMS Mobile Location Listings');
 
 
 CREATE UNIQUE INDEX &CWMS_SCHEMA..MV_TS_CODE_IDX ON &CWMS_SCHEMA..MV_TS_CODE_FILTER

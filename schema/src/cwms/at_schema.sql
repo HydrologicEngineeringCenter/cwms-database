@@ -5797,6 +5797,8 @@ comment on column at_specified_level_order.specified_level_code is 'The specifie
 comment on column at_specified_level_order.sort_order is           'The sort order of this specified level relative to others for this office';
 commit;
 
+@@./cwms/tables/at_specified_level_order_INSERT.sql
+
 create table at_store_rule_order (
    office_code   integer,
    store_rule_id varchar2(32),
