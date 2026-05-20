@@ -8,6 +8,7 @@ create or replace package test_ro as
     
     -- %test (store a location: throws an exception)
     --%throws(-20048)
+    --%idsabled
     procedure test_store_location;
 
     -- %test (store a property: is allowed for read-only user) 
@@ -18,6 +19,7 @@ create or replace package test_ro as
 
     -- %test (store sec.upass.id property: throws an exception)
     --%throws(-20998)
+    --%idsabled
     procedure test_store_upass_id_property;
  
     -- %test(create cwms user)
