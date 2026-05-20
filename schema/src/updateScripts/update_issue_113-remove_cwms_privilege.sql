@@ -59,7 +59,9 @@ select systimestamp from dual;
 
 whenever sqlerror continue;
 
+def builduser = 'BUILDUSER'
 @@../cwms/create_sec_triggers
+undef builduser
 @@../cwms/cwms_env_pkg_body
 @@../cwms/tables/at_ts_extents
 
