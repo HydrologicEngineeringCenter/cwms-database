@@ -59,9 +59,16 @@ select systimestamp from dual;
 
 whenever sqlerror continue;
 
-def builduser = 'BUILDUSER'
-@@../cwms/create_sec_triggers
-undef builduser
+begin
+   for rec in (select trigger_name
+                 from user_triggers
+                where trigger_name like 'ST_%' escape '\'
+                  and table_name = replace(trigger_name, 'ST_', 'AT_')
+              )
+   loop
+      drop trigger rec.trigger_name
+   end loop;
+end;
 @@../cwms/cwms_env_pkg_body
 @@../cwms/tables/at_ts_extents
 
