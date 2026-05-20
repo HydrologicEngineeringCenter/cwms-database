@@ -66,7 +66,7 @@ begin
                   and table_name = replace(trigger_name, 'ST_', 'AT_')
               )
    loop
-      execute immediate 'drop trigger rec.trigger_name';
+      execute immediate 'drop trigger '||rec.trigger_name;
    end loop;
 end;
 /
