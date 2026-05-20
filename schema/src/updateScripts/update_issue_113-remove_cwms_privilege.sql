@@ -63,6 +63,7 @@ begin
    for rec in (select trigger_name
                  from user_triggers
                 where trigger_name like 'ST_%' escape '\'
+                  and trigger_name != 'ST_API_KEY_READONLY'
               )
    loop
       execute immediate 'drop trigger '||rec.trigger_name;
