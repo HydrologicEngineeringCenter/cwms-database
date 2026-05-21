@@ -195,7 +195,7 @@ if not os.path.exists(output_dir) or not os.path.isdir(output_dir) :
 db_url     = 'jdbc:oracle:thin:@%s' % (conn_str)
 stmt   = None
 rs     = None
-print("connecting to " + db_url + " as " + username+ " with pw " + password)
+print("connecting to " + db_url + " as " + username)
 
 info = Properties()
 info.put("user",username)
@@ -203,7 +203,7 @@ info.put("password",password)
 info.put("oracle.net.disableOob","true")
 conn = None
 try :
-   conn=DriverManager.getConnection(db_url,info);
+   conn=DriverManager.getConnection(db_url,info)
    conn.setAutoCommit(False)
    #---------------------#
    # create the function #
@@ -213,7 +213,7 @@ try :
    #--------------#
    # get the file #
    #--------------#
-   stmt = conn.prepareStatement('select %s from dual' % plsql_function_name);
+   stmt = conn.prepareStatement('select %s from dual' % plsql_function_name)
    rs = stmt.executeQuery()
    rs.next()
    clob = rs.getClob(1)
@@ -230,7 +230,7 @@ try :
    # search for invalid regex patterns that eclipse first turned up #
    #----------------------------------------------------------------#
    if re.search("(^|[(|])[+*]", data) is not None :
-   	   raise Exception("hec-datatypes.xsd contains invalid regex patterns")
+      raise Exception("hec-datatypes.xsd contains invalid regex patterns")
    outfile = os.path.join(output_dir, "hec-datatypes.xsd")
    with open(outfile, 'w') as f :
       f.write(data)
