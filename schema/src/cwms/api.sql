@@ -133,9 +133,6 @@
 @@cwms_mail_pkg
 @@cwms_mail_pkg_body
 
-@@cwms_scheduler_auth_pkg
-@@cwms_scheduler_auth_pkg_body
-
 @@cwms_pool_pkg
 @@cwms_pool_pkg_body
 
