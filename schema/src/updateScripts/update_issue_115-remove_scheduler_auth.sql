@@ -60,6 +60,8 @@ whenever sqlerror continue;
 
 @@../cwms_cwms_schema_pkg
 
+drop package cwms_scheduler_auth;
+
 drop view av_auth_sched_entries;
 drop view av_unauth_sched_entries;
 
