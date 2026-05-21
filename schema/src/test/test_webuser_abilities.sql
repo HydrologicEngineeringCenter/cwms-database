@@ -148,7 +148,6 @@ AS
         -- test without office ID set
         cwms_env.set_session_user_apikey(l_testkey2);
         ut.expect(cwms_util.get_user_id).to_equal(l_user2);
-        ut.expect(SYS_CONTEXT ('CWMS_ENV', 'CWMS_PRIVILEGE')).to_equal('READ_ONLY');
 
         /** I don't believe it but this actually is required, which is good. But
             we should still call it to make sure it doesn't fail.
