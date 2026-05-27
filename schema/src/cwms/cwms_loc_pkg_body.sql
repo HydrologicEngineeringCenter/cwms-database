@@ -1464,6 +1464,10 @@ AS
                        l_geometry
                       );
          end;
+      elsif not l_ignorenulls then
+         delete
+           from at_location_geometry
+          where location_code = l_location_code;
       end if;
    EXCEPTION
       WHEN NO_DATA_FOUND
