@@ -5,6 +5,8 @@ AS
    begin
       cwms_cache.clear(g_location_code_cache);
       cwms_cache.clear(g_location_id_cache);
+         cwms_cache.clear(g_horiz_datum_cache);
+         cwms_cache.clear(g_geometry_srid_cache);
    end;
 
    FUNCTION get_location_id (p_location_code IN NUMBER)
@@ -3711,48 +3713,88 @@ AS
    end delete_geometry;
 
    --------------------------------------------------------------------------------
+   -- FUNCTION get_horizontal_datum
+   --------------------------------------------------------------------------------
+   function get_horizontal_datum(
+      p_location_code in number)
+      return varchar2
+   is
+      c_nullstr varchar2(6) := '<NULL>';
+      l_datum mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
+   begin
+      l_datum := cwms_cache.get(g_horiz_datum_cache, p_location_code);
+      if l_datum is null then
+         -- horizontal datum for location not in cache
+         select upper(trim(horizontal_datum))
+         into l_datum
+         from at_physical_location
+         where location_code = p_location_code;
+         l_datum := nvl(l_datum, c_nullstr);
+         cwms_cache.put(g_horiz_datum_cache, p_location_code, l_datum);
+      end if;
+      return replace(l_datum, c_nullstr, null);
+   end get_horizontal_datum;
+
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_srid
+   --------------------------------------------------------------------------------
+   function get_srid(
+      p_datum in varchar2)
+      return number
+   is
+      type srids_by_name_t is table of mdsys.sdo_coord_ref_sys.srid%type index by mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
+      c_nullint mdsys.sdo_coord_ref_sys.srid%type := -9999999999;
+      l_datum mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
+      l_srids_by_name srids_by_name_t;
+      l_srid mdsys.sdo_coord_ref_sys.srid%type;
+   begin
+      l_srid := cwms_cache.get(g_geometry_srid_cache, p_datum);
+      if l_srid is null then
+         -- SRID for horizontal datum not in cache
+         l_datum := p_datum;
+         for i in 1..2 loop   
+            begin 
+               select srid
+               into l_srid
+               from (select srid
+                        from mdsys.sdo_coord_ref_sys
+                        where coord_ref_sys_name = l_datum
+                        order by srid
+                     )
+               where rownum = 1;
+            exception
+               when no_data_found then
+                  if length(l_datum) > 3 and substr(l_datum, 1, 3) in ('WGS', 'NAD') and substr(l_datum, 4, 1) != ' ' then
+                     l_datum := substr(l_datum, 1, 3)||' '||substr(l_datum, 4);
+                  else
+                     exit;
+                  end if;
+            end;
+         end loop;
+         l_srid := nvl(l_srid, c_nullint);
+         cwms_cache.put(g_geometry_srid_cache, l_datum, l_srid);
+      end if;
+      return case l_srid when c_nullint then null else l_srid end;
+end get_srid;
+
+   --------------------------------------------------------------------------------
    -- FUNCTION get_location_srid
    --------------------------------------------------------------------------------
    function get_location_srid(
       p_location_code in number)
       return number
    is
-      type srids_by_name_t is table of mdsys.sdo_coord_ref_sys.srid%type index by mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
-      l_srids_by_name srids_by_name_t;
-      l_name1 mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
-      l_name2 mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
+      l_datum mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
       l_srid mdsys.sdo_coord_ref_sys.srid%type;
    begin
-      select trim(horizontal_datum)
-        into l_name1
-        from at_physical_location
-       where location_code = p_location_code;
-      if l_name1 is null then
+      l_datum := get_horizontal_datum(p_location_code);
+      if l_datum is null then
          cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'location '||p_location_code||' has NULL horizontal datum');
          return null;
       end if;
-      l_name2 := l_name1;
-      for i in 1..2 loop   
-         begin 
-            select srid
-              into l_srid
-              from (select srid
-                      from mdsys.sdo_coord_ref_sys
-                     where coord_ref_sys_name = l_name1
-                     order by srid
-                   )
-             where rownum = 1;
-         exception
-            when no_data_found then
-               if length(l_name1) > 3 and substr(l_name1, 1, 3) in ('WGS', 'NAD') and substr(l_name1, 4, 1) != ' ' then
-                  l_name1 := substr(l_name1, 1, 3)||' '||substr(l_name1, 4);
-               else
-                  exit;
-               end if;
-         end;
-      end loop;   
+      l_srid := get_srid(l_datum);
       if l_srid is null then
-         cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'location '||p_location_code||' has unknown horizontal datum: '||l_name2);
+         cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'location '||p_location_code||' has unknown horizontal datum: '||l_datum);
       end if;
       return l_srid;
    end get_location_srid;
@@ -11258,6 +11300,8 @@ end unassign_loc_groups;
 begin
    g_location_code_cache.name := 'cwms_loc.g_location_code_cache';
    g_location_id_cache.name   := 'cwms_loc.g_location_id_cache';
+   g_horiz_datum_cache.name   := 'cwms_loc.g_horiz_datum_cache';
+   g_geometry_srid_cache.name := 'cwms_loc.g_geometry_srid_cache';
 END cwms_loc;
 /
 show errors;
