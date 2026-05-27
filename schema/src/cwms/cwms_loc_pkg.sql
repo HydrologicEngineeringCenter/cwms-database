@@ -325,6 +325,11 @@ AS
 		p_active_flag			  IN		VARCHAR2 DEFAULT 'T'
 	);
    -- not documented
+   function to_srid(
+      p_geometry in sdo_geometry,
+      p_target_srid in number)
+      return sdo_geometry deterministic;
+   -- not documented
 	PROCEDURE create_location_raw2 (
 		p_base_location_code 		OUT NUMBER,
 		p_location_code				OUT NUMBER,

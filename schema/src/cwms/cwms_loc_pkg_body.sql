@@ -509,6 +509,18 @@ AS
       RETURN TRUE;
    END is_cwms_id_valid;
 
+   function to_srid(
+      p_geometry in sdo_geometry,
+      p_target_srid in number)
+      return sdo_geometry deterministic
+   is
+   begin
+      return case p_geometry.sdo_srid = p_target_srid
+             when true then p_geometry
+             else sdo_cs.transform(p_geometry, p_target_srid)
+             end;
+   end to_srid;
+
    --********************************************************************** -
    --.
    --  CREATE_LOCATION_RAW2 -
@@ -755,7 +767,7 @@ AS
                      when l_srid is null then
                         sdo_geometry(2001, 4326, sdo_point_type(p_longitude, p_latitude, null), null, null)
                      else
-                        sdo_cs.transform(sdo_geometry(2001, l_srid, sdo_point_type(p_longitude, p_latitude, null), null, null), 4326)
+                        to_srid(sdo_geometry(2001, l_srid, sdo_point_type(p_longitude, p_latitude, null), null, null), 4326)
                      end
                   );
             end if;
@@ -830,7 +842,7 @@ AS
                      when l_srid is null then
                         sdo_geometry(2001, 4326, sdo_point_type(p_longitude, p_latitude, null), null, null)
                      else
-                        sdo_cs.transform(sdo_geometry(2001, l_srid, sdo_point_type(p_longitude, p_latitude, null), null, null), 4326)
+                        to_srid(sdo_geometry(2001, l_srid, sdo_point_type(p_longitude, p_latitude, null), null, null), 4326)
                      end
                   );
             end if;
@@ -1440,12 +1452,13 @@ AS
             l_geometry sdo_geometry;
          begin
             l_srid := get_location_srid(l_location_code);
-            l_geometry := case
-                          when l_srid is null then
-                             sdo_geometry(2001, 4326, sdo_point_type(l_longitude, l_latitude, null), null, null)
-                          else
-                             sdo_cs.transform(sdo_geometry(2001, l_srid, sdo_point_type(l_longitude, l_latitude, null), null, null), 4326)
-                          end;
+            case l_srid is null
+            when true then
+               l_geometry := sdo_geometry(2001, 4326, sdo_point_type(l_longitude, l_latitude, null), null, null);
+            else
+               l_geometry := sdo_geometry(2001, l_srid, sdo_point_type(l_longitude, l_latitude, null), null, null);
+               l_geometry := to_srid(l_geometry, 4326);
+            end case;
             select * into geo_rec from at_location_geometry where location_code = l_location_code;
             if geo_rec.geometry_type != 1 then
                cwms_err.raise('ERROR', 'Cannot set lat/lon - location has non-point geometry');
@@ -3649,14 +3662,14 @@ AS
                   geometry
                  )
           values (p_location_code,
-                  sdo_cs.transform(p_geometry, 4326)
+                  to_srid(p_geometry, 4326)
                  );
       elsif l_rec.geometry is null or not cwms_util.return_true_or_false(p_fail_if_exists) then
          ---------------------
          -- update geometry --
          ---------------------
          update at_location_geometry
-            set geometry = sdo_cs.transform(p_geometry, 4326)
+            set geometry = to_srid(p_geometry, 4326)
           where location_code = p_location_code;
       else
          -----------
