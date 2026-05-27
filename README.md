@@ -217,6 +217,7 @@ ask questions on the discussion if you have them. We will use such questions to 
 2. Verify that schema/src/updateScripts ends with a folder name the same as the target version and the contents are correct.
 3. Create appropriate update scripts - if will looking at https://github.com/usace/cwms-data-api and it's .github folder for update scripts for 
 cwbi-dev environment and create or modify for use there.
+4. Remove the [./schema/src/updateScripts/99_99_99](./schema/src/updateScripts/99_99_99) directory in order for the correct schema version to be applied to `CWMS_DB_CHANGE_LOG`. 
 
 ## On github
 

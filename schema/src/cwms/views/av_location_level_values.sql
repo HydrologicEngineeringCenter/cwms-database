@@ -58,11 +58,10 @@ create or replace force view av_location_level_values
        source
          )
 as
-with
 /* ============================================================
    Parameter + unit resolution (ROW-SCOPED)
    ============================================================ */
-   param_units as (select /*+ INLINE */
+with param_units as (select /*+ INLINE */
                       ll.location_level_code,
                       ll.parameter_code,
                       ll.attribute_parameter_code,
@@ -225,18 +224,11 @@ with
                    s.time_offset
                 from at_seasonal_location_level s
                         join conversion_ctx cx
-                             on cx.location_level_code = s.location_level_code),
+                             on cx.location_level_code = s.location_level_code)
 /* ============================================================
-   Virtual levels
+   Constant+Seasonal projection
    ============================================================ */
-   virt as (select location_level_code,
-                   constituent_connections as connections,
-                   expiration_date
-            from at_virtual_location_level)
-/* ============================================================
-   Final projection
-   ============================================================ */
-select coalesce(p.location_level_code, v.location_level_code) as location_level_code,
+select p.location_level_code,
        p.constant_level_en,
        p.constant_level_si,
        s.seasonal_value_en,
@@ -254,20 +246,50 @@ select coalesce(p.location_level_code, v.location_level_code) as location_level_
        p.level_unit_si,
        p.attribute_unit_en,
        p.attribute_unit_si,
-       v.connections,
-       coalesce(v.expiration_date, p.expiration_date) as expiration_date,
+       CAST(null as VARCHAR2(4000))                 as connections,
+       p.expiration_date,
        lbl.label                                      as default_label,
        cwms_entity.get_entity_id(src.source_entity)   as source
 from phys p
         left join seasonal s
                   on s.location_level_code = p.location_level_code
-        full join virt v
-                  on v.location_level_code = p.location_level_code
         left join at_loc_lvl_label lbl
                   on lbl.loc_lvl_label_code = p.location_level_code
                      and lbl.configuration_code = 1
         left join at_loc_lvl_source src
-                  on src.loc_lvl_source_code = p.location_level_code;
+                  on src.loc_lvl_source_code = p.location_level_code
+union all
+/* ============================================================
+   Virtual levels
+   ============================================================ */
+select v.location_level_code,
+       null                                         as constant_level_en,
+       null                                         as constant_level_si,
+       null                                         as seasonal_value_en,
+       null                                         as seasonal_value_si,
+       null                                         as interpolate,
+       null                                         as interval_origin,
+       null                                         as calendar_interval,
+       null                                         as time_interval,
+       null                                         as calendar_offset,
+       null                                         as time_offset,
+       null                                         as tsid,
+       null                                         as attribute_value_en,
+       null                                         as attribute_value_si,
+       null                                         as level_unit_en,
+       null                                         as level_unit_si,
+       null                                         as attribute_unit_en,
+       null                                         as attribute_unit_si,
+       v.constituent_connections                    as connections,
+       v.expiration_date,
+       lbl.label                                    as default_label,
+       cwms_entity.get_entity_id(src.source_entity) as source
+from at_virtual_location_level v
+        left join at_loc_lvl_label lbl
+                  on lbl.loc_lvl_label_code = v.location_level_code
+                     and lbl.configuration_code = 1
+        left join at_loc_lvl_source src
+                  on src.loc_lvl_source_code = v.location_level_code;
 /
 begin
    execute immediate 'grant select on av_location_level_values to cwms_user';

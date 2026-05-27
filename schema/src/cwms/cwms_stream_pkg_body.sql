@@ -2419,7 +2419,17 @@ as
                 then sm.flow
                 else cwms_util.convert_units(p_max_flow, l_flow_unit, 'cms')
                 end
-         and sm.meas_number between nvl(p_min_num, sm.meas_number) and nvl(p_max_num, sm.meas_number)
+         -- Legacy meas_number range filter (pre-UUID). Applies ONLY to legacy ids.
+         -- If p_min_num/p_max_num are provided, UUID rows will be excluded by this predicate.
+         and (
+               (p_min_num is null and p_max_num is null)
+            or (
+                 regexp_like(sm.meas_number, '^[0-9A-Fa-f]{1,8}$')
+             and (p_min_num is null or regexp_like(p_min_num, '^[0-9A-Fa-f]{1,8}$'))
+             and (p_max_num is null or regexp_like(p_max_num, '^[0-9A-Fa-f]{1,8}$'))
+             and sm.meas_number between nvl(p_min_num, sm.meas_number) and nvl(p_max_num, sm.meas_number)
+               )
+             )
          and nvl(sm.agency_code, 1) in
              (select entity_code
                 from at_entity
@@ -2626,9 +2636,17 @@ as
                         then sm.flow
                     else cwms_util.convert_units(p_max_flow, l_flow_unit, 'cms')
                 end
-            and sm.meas_number between
-                nvl(p_min_num, sm.meas_number)
-                and nvl(p_max_num, sm.meas_number)
+            -- Legacy meas_number range filter (pre-UUID). Applies ONLY to legacy ids.
+            -- If p_min_num/p_max_num are provided, UUID rows will be excluded by this predicate.
+            and (
+                  (p_min_num is null and p_max_num is null)
+               or (
+                    regexp_like(sm.meas_number, '^[0-9A-Fa-f]{1,8}$')
+                and (p_min_num is null or regexp_like(p_min_num, '^[0-9A-Fa-f]{1,8}$'))
+                and (p_max_num is null or regexp_like(p_max_num, '^[0-9A-Fa-f]{1,8}$'))
+                and sm.meas_number between nvl(p_min_num, sm.meas_number) and nvl(p_max_num, sm.meas_number)
+                  )
+                )
                 and nvl(sm.agency_code, 1) in
                     (select entity_code
                         from at_entity
@@ -2773,11 +2791,386 @@ as
             and sm.date_time between nvl(l_min_date, sm.date_time) and nvl(l_max_date, sm.date_time)
             and sm.gage_height between nvl(l_min_height, sm.gage_height) and nvl(l_max_height, sm.gage_height)
             and sm.flow between nvl(l_min_flow, sm.flow) and nvl(l_max_flow, sm.flow)
-            and sm.meas_number between nvl(p_min_num, sm.meas_number) and nvl(p_max_num, sm.meas_number)
+            -- Legacy meas_number range filter (pre-UUID). Applies ONLY to legacy ids.
+            -- If p_min_num/p_max_num are provided, UUID rows will be excluded by this predicate.
+            and (
+                  (p_min_num is null and p_max_num is null)
+               or (
+                    regexp_like(sm.meas_number, '^[0-9A-Fa-f]{1,8}$')
+                and (p_min_num is null or regexp_like(p_min_num, '^[0-9A-Fa-f]{1,8}$'))
+                and (p_max_num is null or regexp_like(p_max_num, '^[0-9A-Fa-f]{1,8}$'))
+                and sm.meas_number between nvl(p_min_num, sm.meas_number) and nvl(p_max_num, sm.meas_number)
+                  )
+                )
             and nvl(sm.agency_code, 1) in (select entity_code from at_entity where entity_id in (select * from table(l_agencies)))
             and nvl(sm.quality, '@') in (select * from table(l_qualities))
          ) ;
    end delete_streamflow_meas;
+
+--------------------------------------------------------------------------------
+-- function retrieve_streamflow_meas_by_id (UUID/ID exact match)
+-- New UUID-capable API: retrieves measurements by exact meas_id string.
+-- Backward compatible: does not change existing signatures; callers can use
+-- this when working with UUID measurement identifiers.
+--------------------------------------------------------------------------------
+   function retrieve_streamflow_meas_by_id(
+         p_location_id_mask in varchar2,
+         p_meas_id          in varchar2 default null,
+         p_unit_system      in varchar2 default 'EN',
+         p_min_date         in date     default null,
+         p_max_date         in date     default null,
+         p_min_height       in number   default null,
+         p_max_height       in number   default null,
+         p_min_flow         in number   default null,
+         p_max_flow         in number   default null,
+         p_agencies         in varchar2 default null,
+         p_qualities        in varchar2 default null,
+         p_time_zone        in varchar2 default null,
+         p_office_id_mask   in varchar2 default null)
+      return streamflow_meas_tab_t
+   is
+      l_location_id_mask varchar2(256) := cwms_util.normalize_wildcards(p_location_id_mask) ;
+      l_office_id_mask   varchar2(64)  := cwms_util.normalize_wildcards(p_office_id_mask) ;
+      l_loc_tab          number_tab_t;
+      l_meas_id_tab      str_tab_t;
+      l_meas_tab         streamflow_meas_tab_t;
+      l_height_unit      varchar2(16) ;
+      l_flow_unit        varchar2(16) ;
+      l_agencies         str_tab_t;
+      l_qualities        str_tab_t;
+   begin
+      l_height_unit := cwms_util.get_default_units('Stage', upper(trim(p_unit_system))) ;
+      l_flow_unit   := cwms_util.get_default_units('Flow', upper(trim(p_unit_system))) ;
+      if p_agencies is not null then
+         l_agencies := str_tab_t();
+         for r in (select column_value from table(cwms_util.split_text(p_agencies, ','))) loop
+            l_agencies.extend;
+            l_agencies(l_agencies.count) := upper(trim(r.column_value));
+         end loop;
+      end if;
+      if p_qualities is not null then
+         l_qualities := str_tab_t();
+         for r in (select column_value from table(cwms_util.split_text(p_qualities, ','))) loop
+            l_qualities.extend;
+            l_qualities(l_qualities.count) := substr(upper(trim(r.column_value)), 1, 1);
+         end loop;
+      end if;
+
+      select distinct
+             sm.location_code,
+             sm.meas_number bulk collect
+        into l_loc_tab,
+             l_meas_id_tab
+        from at_streamflow_meas sm,
+             av_loc2 v2
+       where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
+         and v2.location_id like l_location_id_mask escape '\'
+         and sm.location_code = v2.location_code
+         and (p_meas_id is null or sm.meas_number = p_meas_id)
+         and sm.date_time between
+             case
+             when p_min_date is null
+             then date '1000-01-01'
+             when p_time_zone is null
+             then cwms_util.change_timezone(p_min_date, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
+             else cwms_util.change_timezone(p_min_date, p_time_zone)
+             end
+             and
+             case
+             when p_max_date is null
+             then date '3000-01-01'
+             when p_time_zone is null
+             then cwms_util.change_timezone(p_max_date, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
+             else cwms_util.change_timezone(p_max_date, p_time_zone)
+             end
+         and sm.gage_height between
+             case
+             when p_min_height is null
+             then sm.gage_height
+             else cwms_util.convert_units(p_min_height, l_height_unit, 'm')
+             end
+             and
+             case
+             when p_max_height is null
+             then sm.gage_height
+             else cwms_util.convert_units(p_max_height, l_height_unit, 'm')
+             end
+         and sm.flow between
+             case
+             when p_min_flow is null
+             then sm.flow
+             else cwms_util.convert_units(p_min_flow, l_flow_unit, 'cms')
+             end
+             and
+             case
+             when p_max_flow is null
+             then sm.flow
+             else cwms_util.convert_units(p_max_flow, l_flow_unit, 'cms')
+             end
+         and nvl(sm.agency_code, 1) in
+             (select entity_code
+                from at_entity
+               where entity_id in
+                     (select *
+                        from table(case
+                                   when l_agencies is null then str_tab_t(entity_id)
+                                   else l_agencies
+                                   end
+                                  )
+                     )
+             )
+         and nvl(sm.quality, '@') in
+             (select *
+                from table(case
+                           when l_qualities is not null
+                           then l_qualities
+                           else str_tab_t(nvl(sm.quality, '@'))
+                           end
+                          )
+             )
+       order by 1, 2;
+
+      if l_loc_tab is not null then
+         l_meas_tab := streamflow_meas_tab_t();
+         l_meas_tab.extend(l_loc_tab.count);
+         for i in 1..l_loc_tab.count loop
+            l_meas_tab(i) := streamflow_meas_t(location_ref_t(l_loc_tab(i)), l_meas_id_tab(i), p_unit_system);
+         end loop;
+      end if;
+      return l_meas_tab;
+   end retrieve_streamflow_meas_by_id;
+
+--------------------------------------------------------------------------------
+-- function retrieve_meas_by_id (UUID/ID exact match)
+-- New UUID-capable API for streamflow_meas2_t
+--------------------------------------------------------------------------------
+   function retrieve_meas_by_id(
+         p_location_id_mask in varchar2,
+         p_meas_id          in varchar2 default null,
+         p_unit_system      in varchar2 default 'EN',
+         p_min_date         in date     default null,
+         p_max_date         in date     default null,
+         p_min_height       in number   default null,
+         p_max_height       in number   default null,
+         p_min_flow         in number   default null,
+         p_max_flow         in number   default null,
+         p_agencies         in varchar2 default null,
+         p_qualities        in varchar2 default null,
+         p_time_zone        in varchar2 default null,
+         p_office_id_mask   in varchar2 default null)
+      return streamflow_meas2_tab_t
+   is
+      l_location_id_mask varchar2(256) := cwms_util.normalize_wildcards(p_location_id_mask) ;
+      l_office_id_mask   varchar2(64)  := cwms_util.normalize_wildcards(p_office_id_mask) ;
+      l_loc_tab          number_tab_t;
+      l_meas_id_tab      str_tab_t;
+      l_meas_tab         streamflow_meas2_tab_t;
+      l_height_unit      varchar2(16) ;
+      l_flow_unit        varchar2(16) ;
+      l_agencies         str_tab_t;
+      l_qualities        str_tab_t;
+   begin
+      l_height_unit := cwms_util.get_default_units('Stage', upper(trim(p_unit_system))) ;
+      l_flow_unit   := cwms_util.get_default_units('Flow', upper(trim(p_unit_system))) ;
+      if p_agencies is not null then
+         l_agencies := str_tab_t();
+         for r in (select column_value from table(cwms_util.split_text(p_agencies, ','))) loop
+            l_agencies.extend;
+            l_agencies(l_agencies.count) := upper(trim(r.column_value));
+         end loop;
+      end if;
+      if p_qualities is not null then
+         l_qualities := str_tab_t();
+         for r in (select column_value from table(cwms_util.split_text(p_qualities, ','))) loop
+            l_qualities.extend;
+            l_qualities(l_qualities.count) := substr(upper(trim(r.column_value)), 1, 1);
+         end loop;
+      end if;
+
+      select distinct
+             sm.location_code,
+             sm.meas_number bulk collect
+        into l_loc_tab,
+             l_meas_id_tab
+        from at_streamflow_meas sm,
+             av_loc2 v2
+       where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
+         and v2.location_id like l_location_id_mask escape '\'
+         and sm.location_code = v2.location_code
+         and (p_meas_id is null or sm.meas_number = p_meas_id)
+         and sm.date_time between
+             case
+             when p_min_date is null
+             then date '1000-01-01'
+             when p_time_zone is null
+             then cwms_util.change_timezone(p_min_date, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
+             else cwms_util.change_timezone(p_min_date, p_time_zone)
+             end
+             and
+             case
+             when p_max_date is null
+             then date '3000-01-01'
+             when p_time_zone is null
+             then cwms_util.change_timezone(p_max_date, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
+             else cwms_util.change_timezone(p_max_date, p_time_zone)
+             end
+         and sm.gage_height between
+             case
+             when p_min_height is null
+             then sm.gage_height
+             else cwms_util.convert_units(p_min_height, l_height_unit, 'm')
+             end
+             and
+             case
+             when p_max_height is null
+             then sm.gage_height
+             else cwms_util.convert_units(p_max_height, l_height_unit, 'm')
+             end
+         and sm.flow between
+             case
+             when p_min_flow is null
+             then sm.flow
+             else cwms_util.convert_units(p_min_flow, l_flow_unit, 'cms')
+             end
+             and
+             case
+             when p_max_flow is null
+             then sm.flow
+             else cwms_util.convert_units(p_max_flow, l_flow_unit, 'cms')
+             end
+         and nvl(sm.agency_code, 1) in
+             (select entity_code
+                from at_entity
+               where entity_id in
+                     (select *
+                        from table(case
+                                   when l_agencies is null then str_tab_t(entity_id)
+                                   else l_agencies
+                                   end
+                                  )
+                     )
+             )
+         and nvl(sm.quality, '@') in
+             (select *
+                from table(case
+                           when l_qualities is not null
+                           then l_qualities
+                           else str_tab_t(nvl(sm.quality, '@'))
+                           end
+                          )
+             )
+       order by 1, 2;
+
+      if l_loc_tab is not null then
+         l_meas_tab := streamflow_meas2_tab_t();
+         l_meas_tab.extend(l_loc_tab.count);
+         for i in 1..l_loc_tab.count loop
+            l_meas_tab(i) := streamflow_meas2_t(location_ref_t(l_loc_tab(i)), l_meas_id_tab(i), p_unit_system);
+         end loop;
+      end if;
+      return l_meas_tab;
+   end retrieve_meas_by_id;
+
+--------------------------------------------------------------------------------
+-- function retrieve_streamflow_meas_xml_by_id
+--------------------------------------------------------------------------------
+   function retrieve_streamflow_meas_xml_by_id(
+         p_location_id_mask in varchar2,
+         p_meas_id          in varchar2 default null,
+         p_unit_system      in varchar2 default 'EN',
+         p_min_date         in date     default null,
+         p_max_date         in date     default null,
+         p_min_height       in number   default null,
+         p_max_height       in number   default null,
+         p_min_flow         in number   default null,
+         p_max_flow         in number   default null,
+         p_agencies         in varchar2 default null,
+         p_qualities        in varchar2 default null,
+         p_time_zone        in varchar2 default null,
+         p_office_id_mask   in varchar2 default null)
+      return clob
+   is
+      l_clob clob;
+      l_meas_tab streamflow_meas_tab_t;
+   begin
+      l_meas_tab := retrieve_streamflow_meas_by_id(
+         p_location_id_mask => p_location_id_mask,
+         p_meas_id          => p_meas_id,
+         p_unit_system      => p_unit_system,
+         p_min_date         => p_min_date,
+         p_max_date         => p_max_date,
+         p_min_height       => p_min_height,
+         p_max_height       => p_max_height,
+         p_min_flow         => p_min_flow,
+         p_max_flow         => p_max_flow,
+         p_agencies         => p_agencies,
+         p_qualities        => p_qualities,
+         p_time_zone        => p_time_zone,
+         p_office_id_mask   => p_office_id_mask);
+
+      dbms_lob.createtemporary(l_clob, true);
+      if l_meas_tab is null or l_meas_tab.count = 0 then
+         cwms_util.append(l_clob, '<stream-flow-measurements/>'||chr(10));
+      else
+         cwms_util.append(l_clob, '<stream-flow-measurements>'||chr(10));
+         for i in 1..l_meas_tab.count loop
+            cwms_util.append(l_clob, l_meas_tab(i).to_string1||chr(10));
+         end loop;
+         cwms_util.append(l_clob, '</stream-flow-measurements>'||chr(10));
+      end if;
+      return l_clob;
+   end retrieve_streamflow_meas_xml_by_id;
+
+--------------------------------------------------------------------------------
+-- function retrieve_meas_xml_by_id
+--------------------------------------------------------------------------------
+   function retrieve_meas_xml_by_id(
+         p_location_id_mask in varchar2,
+         p_meas_id          in varchar2 default null,
+         p_unit_system      in varchar2 default 'EN',
+         p_min_date         in date     default null,
+         p_max_date         in date     default null,
+         p_min_height       in number   default null,
+         p_max_height       in number   default null,
+         p_min_flow         in number   default null,
+         p_max_flow         in number   default null,
+         p_agencies         in varchar2 default null,
+         p_qualities        in varchar2 default null,
+         p_time_zone        in varchar2 default null,
+         p_office_id_mask   in varchar2 default null)
+      return clob
+   is
+      l_clob clob;
+      l_meas_tab streamflow_meas2_tab_t;
+   begin
+      l_meas_tab := retrieve_meas_by_id(
+         p_location_id_mask => p_location_id_mask,
+         p_meas_id          => p_meas_id,
+         p_unit_system      => p_unit_system,
+         p_min_date         => p_min_date,
+         p_max_date         => p_max_date,
+         p_min_height       => p_min_height,
+         p_max_height       => p_max_height,
+         p_min_flow         => p_min_flow,
+         p_max_flow         => p_max_flow,
+         p_agencies         => p_agencies,
+         p_qualities        => p_qualities,
+         p_time_zone        => p_time_zone,
+         p_office_id_mask   => p_office_id_mask);
+
+      dbms_lob.createtemporary(l_clob, true);
+      if l_meas_tab is null or l_meas_tab.count = 0 then
+         cwms_util.append(l_clob, '<measurements/>'||chr(10));
+      else
+         cwms_util.append(l_clob, '<measurements>'||chr(10));
+         for i in 1..l_meas_tab.count loop
+            cwms_util.append(l_clob, l_meas_tab(i).to_string1||chr(10));
+         end loop;
+         cwms_util.append(l_clob, '</measurements>'||chr(10));
+      end if;
+      return l_clob;
+   end retrieve_meas_xml_by_id;
+
 end cwms_stream;
 /
 show errors;

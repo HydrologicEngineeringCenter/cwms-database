@@ -28,7 +28,7 @@ DECLARE
         TS_CODE          NUMBER(14)                   NOT NULL,
         DATE_TIME        DATE                         NOT NULL,
         VERSION_DATE     DATE                         NOT NULL,
-        DATA_ENTRY_DATE  TIMESTAMP(6)                 NOT NULL,
+        DATA_ENTRY_DATE  TIMESTAMP(3)                 NOT NULL, -- all usages downstream expect only millisecond precision. *Some* path is allowing microsecond data in.
         VALUE            BINARY_DOUBLE,
         QUALITY_CODE     NUMBER(14), 
         DEST_FLAG          NUMBER(1),
