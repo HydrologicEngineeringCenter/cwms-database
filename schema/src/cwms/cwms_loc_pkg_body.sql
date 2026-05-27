@@ -3222,11 +3222,15 @@ AS
          p_ignorenulls           => p_ignorenulls,
          p_db_office_id          => p_db_office_id);
 
-      if not cwms_util.return_true_or_false(p_ignorenulls) or p_geometry is not null then
+      if p_geometry is not null then
          store_geometry(
             p_location_id    => p_location_id,
             p_geometry       => p_geometry,
             p_fail_if_exists => 'F',
+            p_db_office_id   => p_db_office_id);
+      elsif not cwms_util.return_true_or_false(p_ignorenulls) then
+         delete_geometry(
+            p_location_id    => p_location_id,
             p_db_office_id   => p_db_office_id);
       end if;
    end store_location3;

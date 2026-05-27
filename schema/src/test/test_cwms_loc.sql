@@ -3582,6 +3582,40 @@ AS
 
          ut.expect(equivalent_geometries(l_geom, l_geom2)).to_be_true;
 
+         -- store location w/ null geometry and verify
+         cwms_loc.store_location3(
+            p_location_id  => l_location_id,
+            p_geometry     => null,
+            p_ignorenulls  => 'F',
+            p_db_office_id => l_office_id);
+
+         cwms_loc.retrieve_location3(
+            p_location_id        => l_location_id,
+            p_elev_unit_id       => l_loc.elev_unit_id,
+            p_location_type      => l_loc.location_type,
+            p_elevation          => l_loc.elevation,
+            p_vertical_datum     => l_loc.vertical_datum,
+            p_geometry           => l_geom2,
+            p_horizontal_datum   => l_loc.horizontal_datum,
+            p_public_name        => l_loc.public_name,
+            p_long_name          => l_loc.long_name,
+            p_description        => l_loc.description,
+            p_time_zone_id       => l_loc.time_zone_name,
+            p_county_name        => l_loc.county_name,
+            p_state_initial      => l_loc.state_initial,
+            p_active             => l_loc.active_flag,
+            p_location_kind_id   => l_loc.location_kind_id,
+            p_map_label          => l_loc.map_label,
+            p_published_latitude => l_loc.published_latitude,
+            p_published_longitude=> l_loc.published_longitude,
+            p_bounding_office_id => l_loc.bounding_office_id,
+            p_nation_id          => l_loc.nation_id,
+            p_nearest_city       => l_loc.nearest_city,
+            p_alias_cursor       => l_crsr,
+            p_db_office_id       => l_office_id);
+
+         ut.expect(l_geom2 is null).to_be_true;
+
          cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
       end;
 
