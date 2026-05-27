@@ -3609,7 +3609,24 @@ AS
       p_fail_if_exists in varchar2 default 'T')
    is
       l_rec   at_location_geometry%rowtype;
+      l_valid varchar2(4000);
    begin
+      if p_geometry is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_Geometry');
+      end if;
+      l_valid := sdo_geom.validate_geometry_with_context(p_geometry, 0.005);
+      if l_valid != 'TRUE' then
+         if l_valid = 'FALSE' then
+            cwms_err.raise('ERROR', 'Invalid geometry: Error = '||l_valid);
+         else
+            begin
+               l_valid := 'ORA-'||to_number(l_valid, '00000');
+            exception
+               when others then null;
+            end;
+            cwms_err.raise('ERROR', 'Invalid geometry: Error = '||l_valid);
+         end if;
+      end if;
       begin
          select *
            into l_rec

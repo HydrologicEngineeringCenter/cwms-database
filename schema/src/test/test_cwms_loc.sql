@@ -3447,6 +3447,37 @@ AS
             ut.expect(l_geometry.sdo_ordinates(2)).to_equal(l_latitude);
             ut.expect(l_geometry.sdo_ordinates(3)).to_equal(l_longitude-.005);
             ut.expect(l_geometry.sdo_ordinates(4)).to_equal(l_latitude+.005);
+            -- verify can't store null geometry
+            begin
+               cwms_loc.store_geometry(
+                  p_location_id    => l_location_id,
+                  p_geometry       => null,
+                  p_fail_if_exists => 'F',
+                  p_db_office_id   => l_office_id);
+               cwms_err.raise('Expected exception not raised');      
+            exception
+               when others then
+                  ut.expect(regexp_like(dbms_utility.format_error_stack, '.+P_Geometry is not allowed to be null.+', 'mn')).to_be_true;
+            end;
+            -- verify can't store invalid geometry
+            begin
+               cwms_loc.store_geometry(
+                  p_location_id    => l_location_id,
+                  p_geometry       => sdo_geometry(
+                                         2001,
+                                         4326,
+                                         null,
+                                         sdo_elem_info_array(1, 2, 1),
+                                         sdo_ordinate_array(
+                                            l_longitude,      l_latitude,
+                                            l_longitude-.005, l_latitude+.005)),
+                  p_fail_if_exists => 'F',
+                  p_db_office_id   => l_office_id);
+               cwms_err.raise('Expected exception not raised');      
+            exception
+               when others then
+                  ut.expect(regexp_like(dbms_utility.format_error_stack, '.+Invalid geometry: Error = ORA-13028.+', 'mn')).to_be_true;
+            end;
          else
             ------------------------------------------
             -- location was stored before this test --
