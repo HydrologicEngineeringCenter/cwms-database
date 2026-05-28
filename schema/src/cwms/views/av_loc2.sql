@@ -151,8 +151,8 @@ as
           q1.db_office_code,
           pl.search_doc,
           nvl(q4.geometry, q5.geometry) as geometry,
-          nvl (decode(q4.geometry_type, 1,'POINT', 2,'LINE', 3,'POLYGON', 4,'COLLECTION', 5,'MULTIPOINT', 6,'MULTILINE', 7,'MULTIPOLYGON'),
-               decode(q5.geometry_type, 1,'POINT', 2,'LINE', 3,'POLYGON', 4,'COLLECTION', 5,'MULTIPOINT', 6,'MULTILINE', 7,'MULTIPOLYGON')) as geometry_type
+          nvl (decode(q4.geometry_type_code, 1,'POINT', 2,'LINE', 3,'POLYGON', 4,'COLLECTION', 5,'MULTIPOINT', 6,'MULTILINE', 7,'MULTIPOLYGON'),
+               decode(q5.geometry_type_code, 1,'POINT', 2,'LINE', 3,'POLYGON', 4,'COLLECTION', 5,'MULTIPOINT', 6,'MULTILINE', 7,'MULTIPOLYGON')) as geometry_type
      from (------------------------------------
            -- location and alias ids, office --
            ------------------------------------
@@ -291,7 +291,7 @@ as
                   bounding_office_id,
                   nation_id,
                   geometry,
-                  geometry_type
+                  geometry_type_code
              from (-----------------------------
                    -- info on location record --
                    -----------------------------
@@ -312,7 +312,7 @@ as
                   left outer join
                   (select location_code,
                           geometry,
-                          geometry_type,
+                          geometry_type_code,
                           latitude,
                           longitude
                      from at_location_geometry
@@ -381,7 +381,7 @@ as
                   bounding_office_id,
                   nation_id,
                   geometry,
-                  geometry_type
+                  geometry_type_code
              from (-----------------------------
                    -- info on location record --
                    -----------------------------
@@ -402,7 +402,7 @@ as
                   left outer join
                   (select location_code,
                           geometry,
-                          geometry_type,
+                          geometry_type_code,
                           latitude,
                           longitude
                      from at_location_geometry

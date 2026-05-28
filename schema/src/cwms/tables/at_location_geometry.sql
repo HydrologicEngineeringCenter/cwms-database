@@ -2,28 +2,28 @@
 -- AT_LOCATION_GEOMETRY --
 --------------------------
 create table at_location_geometry (
-   location_code number(14) not null,
-   geometry      sdo_geometry not null,
-   geometry_type number(2),
-   latitude      number,
-   longitude     number,
+   location_code      number(14) not null,
+   geometry           sdo_geometry not null,
+   geometry_type_code number(2),
+   latitude           number,
+   longitude          number,
    constraint at_location_geometry_pk  primary key (location_code),
    constraint at_location_geometry_fk1 foreign key (location_code) references at_physical_location (location_code)
 );
 
-comment on table  at_location_geometry               is 'Holds geometry (point, polygon, etc...) for locations that have geometry';
-comment on column at_location_geometry.location_code is 'References location in AT_PHYSICAL_LOCATION table';
-comment on column at_location_geometry.geometry      is 'Geometry of location';
-comment on column at_location_geometry.geometry_type is 'Type of geometry (1..7 = point,line,polygon,collection,multipoint,multiline,multipolygon) - populated by trigger';
-comment on column at_location_geometry.latitude      is 'Latitude if geometry type is 1, otherwise NULL - populated by trigger';
-comment on column at_location_geometry.longitude     is 'Longitude if geometry type is 1, otherwise NULL - populated by trigger';
+comment on table  at_location_geometry                    is 'Holds geometry (point, polygon, etc...) for locations that have geometry';
+comment on column at_location_geometry.location_code      is 'References location in AT_PHYSICAL_LOCATION table';
+comment on column at_location_geometry.geometry           is 'Geometry of location';
+comment on column at_location_geometry.geometry_type_code is 'Type of geometry (1..7 = point,line,polygon,collection,multipoint,multiline,multipolygon) - populated by trigger';
+comment on column at_location_geometry.latitude           is 'Latitude if geometry type is 1, otherwise NULL - populated by trigger';
+comment on column at_location_geometry.longitude          is 'Longitude if geometry type is 1, otherwise NULL - populated by trigger';
 
 create or replace trigger at_location_geometry_t01
    before insert or update of geometry
    on at_location_geometry referencing new as new old as old
    for each row
 declare
-   l_geometry_type at_location_geometry.geometry_type%type;
+   l_geometry_type_code at_location_geometry.geometry_type_code%type;
    l_srid mdsys.sdo_coord_ref_sys.srid%type;
    l_geometry sdo_geometry;
 begin
@@ -31,13 +31,13 @@ begin
       -------------------
       -- null geometry --
       -------------------
-      :new.geometry_type := null;
-      :new.latitude      := null;
-      :new.longitude     := null;
+      :new.geometry_type_code := null;
+      :new.latitude           := null;
+      :new.longitude          := null;
    else
-      l_geometry_type := :new.geometry.get_gtype;
-      :new.geometry_type := l_geometry_type;
-      if l_geometry_type = 1 then
+      l_geometry_type_code := :new.geometry.get_gtype;
+      :new.geometry_type_code := l_geometry_type_code;
+      if l_geometry_type_code = 1 then
       --------------------
       -- point geometry --
       --------------------

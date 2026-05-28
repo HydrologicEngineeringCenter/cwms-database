@@ -228,7 +228,7 @@ begin
       null, -- time_zone_name
       l_lock_loc_rec.location_type,
       l_lock_loc_geom_rec.geometry,
-      l_lock_loc_geom_rec.geometry_type,
+      l_lock_loc_geom_rec.geometry_type_code,
       l_lock_loc_geom_rec.latitude,
       l_lock_loc_geom_rec.longitude,
       l_lock_loc_rec.horizontal_datum,

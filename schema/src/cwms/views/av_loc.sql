@@ -129,8 +129,8 @@ from
            loc.active_flag                            as active_flag,
            loc.search_doc,
            nvl (ll.geometry,         bll.geometry)      as geometry,
-           nvl (decode(ll.geometry_type,  1,'POINT', 2,'LINE', 3,'POLYGON', 4,'COLLECTION', 5,'MULTIPOINT', 6,'MULTILINE', 7,'MULTIPOLYGON'),
-                decode(bll.geometry_type, 1,'POINT', 2,'LINE', 3,'POLYGON', 4,'COLLECTION', 5,'MULTIPOINT', 6,'MULTILINE', 7,'MULTIPOLYGON')) as geometry_type
+           nvl (decode(ll.geometry_type_code,  1,'POINT', 2,'LINE', 3,'POLYGON', 4,'COLLECTION', 5,'MULTIPOINT', 6,'MULTILINE', 7,'MULTIPOLYGON'),
+                decode(bll.geometry_type_code, 1,'POINT', 2,'LINE', 3,'POLYGON', 4,'COLLECTION', 5,'MULTIPOINT', 6,'MULTILINE', 7,'MULTIPOLYGON')) as geometry_type
     from cwms_20.at_physical_location loc
     -- join the base location metadata (bas) with the location (loc)
     left join cwms_20.at_physical_location bas on (bas.location_code = loc.base_location_code)

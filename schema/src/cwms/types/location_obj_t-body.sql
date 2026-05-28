@@ -39,7 +39,7 @@ as
                    tz.time_zone_name,
                    l.location_type,
                    g.geometry,
-                   g.geometry_type,
+                   g.geometry_type_code,
                    g.latitude,
                    g.longitude,
                    l.horizontal_datum,
@@ -85,7 +85,7 @@ as
                    left outer join
                    ( select location_code,
                             geometry,
-                            geometry_type,
+                            geometry_type_code,
                             latitude,
                             longitude
                        from at_location_geometry

@@ -1460,7 +1460,7 @@ AS
                l_geometry := to_srid(l_geometry, 4326);
             end case;
             select * into geo_rec from at_location_geometry where location_code = l_location_code;
-            if geo_rec.geometry_type != 1 then
+            if geo_rec.geometry_type_code != 1 then
                cwms_err.raise('ERROR', 'Cannot set lat/lon - location has non-point geometry');
             end if;
             update at_location_geometry
@@ -5695,7 +5695,7 @@ end unassign_loc_groups;
                            c.county_name county_name,
                            tz.time_zone_name time_zone_name,
                            pl.location_type location_type,
-                           lg.geometry geometry, lg.geometry_type geometry_type,
+                           lg.geometry geometry, lg.geometry_type_code geometry_type_code,
                            lg.latitude latitude, lg.longitude longitude,
                            pl.horizontal_datum horizontal_datum,
                            pl.elevation elevation,
@@ -5745,7 +5745,7 @@ end unassign_loc_groups;
                                 rec.time_zone_name,
                                 rec.location_type,
                                 rec.geometry,
-                                rec.geometry_type,
+                                rec.geometry_type_code,
                                 rec.latitude,
                                 rec.longitude,
                                 rec.horizontal_datum,

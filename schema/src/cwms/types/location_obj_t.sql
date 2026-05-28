@@ -10,7 +10,7 @@ create type location_obj_t
  * @member time_zone_name       Location's local time zone
  * @member location_type        User-defined type for location
  * @member geometry             Geometry of location (POINT, POLYGON, etc..)
- * @member geometry_type        The type of "geometry" member. May be one of
+ * @member geometry_type_code   The type of "geometry" member. May be one of
  * <p>
  * <table class="desc">
  *   <tr>
@@ -46,8 +46,8 @@ create type location_obj_t
  *     <td>Multiple disjoint polygons</td>
  *   </tr>
  * </table>
- * @member latitude             Actual latitude of location if geometry_type = 1
- * @member longitude            Actual longitude of location if geometry_type = 1
+ * @member latitude             Actual latitude of location if geometry_type_code = 1
+ * @member longitude            Actual longitude of location if geometry_type_code = 1
  * @member horizontal_datum     Datum used for actual latitude and longitude
  * @member elevation            Elevation of location
  * @member elev_unit_id         Unit of elevation
@@ -72,7 +72,7 @@ as object
    time_zone_name       VARCHAR2 (28),
    location_type        VARCHAR2 (32),
    geometry             SDO_GEOMETRY,
-   geometry_type        NUMBER,
+   geometry_type_code   NUMBER,
    latitude             NUMBER,
    longitude            NUMBER,
    horizontal_datum     VARCHAR2 (16),
