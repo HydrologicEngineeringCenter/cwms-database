@@ -46,7 +46,7 @@ begin
             :new.latitude  := :new.geometry.sdo_point.y;
             :new.longitude := :new.geometry.sdo_point.x;
          else
-            l_geometry := sdo_cs.transform(:new.geometry, l_srid);
+            l_geometry := cwms_loc.to_srid(:new.geometry, l_srid);
             :new.latitude  := l_geometry.sdo_point.y;
             :new.longitude := l_geometry.sdo_point.x;
          end if;
