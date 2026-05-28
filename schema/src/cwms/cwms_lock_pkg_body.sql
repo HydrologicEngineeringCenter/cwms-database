@@ -86,7 +86,8 @@ is
 begin
    open p_lock_cat for
       select project_office_id,   -- varchar2(57)   the parent project's location id
-             project_location_id, -- varchar2(16)   owning office of location
+             project_location_id, -- varchar2(16)   owning office of project
+             db_office_id,        -- varchar2(16)   owning office of lock
              base_location_id,    -- varchar2(24)   base location id
              sub_location_id,     -- varchar2(32)   sub-location id, if any
              time_zone_name,      -- varchar2(28)   local time zone name for location
