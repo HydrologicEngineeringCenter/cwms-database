@@ -58,13 +58,10 @@ procedure test_query_vertical_datum_offset;
 procedure test_av_loc_text_search;
 --%test(Search location using Oracle Text via AV_LOC2)
 procedure test_av_loc2_text_search;
-<<<<<<< HEAD
---%test(CWMS-2430 [DB #54] Change lat/lon to generic geometry)
-procedure test_mods_for_generic_geometry;
-=======
 --%test(Test retrieval of vertical datum XML for location with null vertical datum)
 procedure test_null_vertical_datum;
->>>>>>> main
+--%test(CWMS-2430 [DB #54] Change lat/lon to generic geometry)
+procedure test_mods_for_generic_geometry;
 
 procedure setup;
 procedure teardown;
