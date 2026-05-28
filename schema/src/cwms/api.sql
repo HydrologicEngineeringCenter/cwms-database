@@ -86,9 +86,6 @@
 @@cwms_gage_pkg
 @@cwms_gage_pkg_body
 
-@@cwms_usgs_pkg
-@@cwms_usgs_pkg_body
-
 @@cwms_entity_pkg
 @@cwms_entity_pkg_body
 
@@ -123,9 +120,6 @@
 
 @@cwms_turbine_pkg
 @@cwms_turbine_pkg_body
-
-@@cwms_alarm_pkg
-@@cwms_alarm_pkg_body
 
 @@cwms_doc_pkg
 @@cwms_doc_pkg_body

@@ -6306,7 +6306,43 @@ comment on column at_queue_subscriber_name.os_process_id     is 'The process ide
 
 create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_name, nvl(update_time, create_time));
 
-@@rowcps_schema.sql
+@@./cwms/tables/at_gate_ch_computation_code
+@@./cwms/tables/at_gate_release_reason_code
+@@./cwms/tables/at_project_purposes
+@@./cwms/tables/at_document_type
+@@./cwms/tables/at_lock_gate_type
+@@./cwms/tables/at_embank_structure_type
+@@./cwms/tables/at_embank_protection_type
+@@./cwms/tables/at_turbine_setting_reason
+@@./cwms/tables/at_turbine_computation_code
+@@./cwms/tables/at_physical_transfer_type
+@@./cwms/tables/at_operational_status_code
+@@./cwms/tables/at_ws_contract_type
+@@./cwms/tables/at_project
+@@./cwms/tables/at_embankment
+@@./cwms/tables/at_lock
+@@./cwms/tables/at_lockage
+@@./cwms/tables/at_turbine_characteristic
+@@./cwms/tables/at_turbine
+@@./cwms/tables/at_turbine_change
+@@./cwms/tables/at_turbine_setting
+@@./cwms/tables/at_project_congress_district
+@@./cwms/tables/at_gate_change
+@@./cwms/tables/at_outlet_characteristic
+@@./cwms/tables/at_outlet
+@@./cwms/tables/at_comp_outlet
+@@./cwms/tables/at_comp_outlet_conn
+@@./cwms/tables/at_gate_setting
+@@./cwms/tables/at_document
+@@./cwms/tables/at_water_user
+@@./cwms/tables/at_water_user_contract
+@@./cwms/tables/at_wat_usr_contract_accounting
+@@./cwms/tables/at_xref_wat_usr_contract_docs
+@@./cwms/tables/at_project_purpose
+@@./cwms/tables/at_project_agreement
+@@./cwms/tables/at_construction_history
+@@./cwms/tables/at_project_lock
+@@./cwms/tables/at_prj_lck_revoker_rights
 ---
 @@./cwms/tables/at_location_geometry
 @@./cwms/tables/at_pool_name
@@ -6331,3 +6367,4 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_fcst_inst
 @@./cwms/tables/at_fcst_info
 @@./cwms/tables/run_stats
+

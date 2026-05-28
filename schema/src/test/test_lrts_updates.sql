@@ -6222,14 +6222,6 @@ begin
    -- for i in 1..l_ts_data_out.count loop
    --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||round(to_number(l_ts_data_out(i).value), 4));
    -- end loop;
-   --.... cwms_alarm package
-   cwms_alarm.notify_loc_lvl_ind_state (
-      p_ts_id              => l_lrts_ts_id_old,
-      p_specified_level_id => 'Test',
-      p_level_indicator_id => 'VALUE',
-      p_min_state_notify   => 0,
-      p_max_state_notify   => 5,
-      p_office_id          => c_office_id);
    --.... other packages
    l_number := cwms_util.create_parameter_code('Depth-Lrts', 'F', c_office_id);
    cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_old, 'F', 'T', c_office_id);
@@ -7531,14 +7523,6 @@ begin
    -- for i in 1..l_ts_data_out.count loop
    --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||round(to_number(l_ts_data_out(i).value), 4));
    -- end loop;
-   --.... cwms_alarm package
-   cwms_alarm.notify_loc_lvl_ind_state (
-      p_ts_id              => l_lrts_ts_id_old,
-      p_specified_level_id => 'Test',
-      p_level_indicator_id => 'VALUE',
-      p_min_state_notify   => 0,
-      p_max_state_notify   => 5,
-      p_office_id          => c_office_id);
    --.... other packages
    cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_old, 'F', 'T', c_office_id);
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_old_copy, 'F', 'F', c_office_id);
@@ -8318,14 +8302,6 @@ begin
    -- for i in 1..l_ts_data_out.count loop
    --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||round(to_number(l_ts_data_out(i).value), 4));
    -- end loop;
-   --.... cwms_alarm package
-   cwms_alarm.notify_loc_lvl_ind_state (
-      p_ts_id              => l_lrts_ts_id_new,
-      p_specified_level_id => 'Test',
-      p_level_indicator_id => 'VALUE',
-      p_min_state_notify   => 0,
-      p_max_state_notify   => 5,
-      p_office_id          => c_office_id);
    --.... other packages
    cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_new, 'F', 'T', c_office_id);
    cwms_ts_profile.copy_ts_profile(l_location_id, 'Depth-Lrts', l_location_id_copy, l_lrts_ts_id_old_copy, 'F', 'F', c_office_id);
@@ -9533,14 +9509,6 @@ begin
    -- for i in 1..l_ts_data_out.count loop
    --    dbms_output.put_line(i||chr(9)||l_ts_data_out(i).date_time||chr(9)||round(to_number(l_ts_data_out(i).value), 4));
    -- end loop;
-   --.... cwms_alarm package
-   cwms_alarm.notify_loc_lvl_ind_state (
-      p_ts_id              => l_lrts_ts_id_new,
-      p_specified_level_id => 'Test',
-      p_level_indicator_id => 'VALUE',
-      p_min_state_notify   => 0,
-      p_max_state_notify   => 5,
-      p_office_id          => c_office_id);
    --.... other packages
    cwms_ts_profile.store_ts_profile(l_location_id, 'Depth-Lrts', 'Depth-Lrts,Temp-Lrts',null, l_lrts_ts_id_new, 'F', 'T', c_office_id);
    begin
