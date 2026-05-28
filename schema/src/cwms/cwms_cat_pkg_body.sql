@@ -1627,6 +1627,10 @@ IS
       THEN
          IF l_base_loc_only
          THEN
+            --------------------------------
+            -- group specified:     true  --
+            -- only base locations: true  --
+            --------------------------------
             OPEN p_cwms_cat FOR
                  SELECT   v.db_office_id,
                           v.location_id,
@@ -1662,6 +1666,10 @@ IS
                     AND   v.sub_location_id is null
                ORDER BY  UPPER(location_id) ASC;
          ELSE
+            --------------------------------
+            -- group specified:     true  --
+            -- only base locations: false --
+            --------------------------------
             OPEN p_cwms_cat FOR
                  SELECT   v.db_office_id,
                           v.location_id,
@@ -1694,12 +1702,15 @@ IS
                     AND   v.db_office_id = l_db_office_id
                     AND   v.location_code = g.location_code
                     AND   v.unit_system = 'SI' 
-                    AND   v.sub_location_id is null
                  ORDER BY   UPPER(location_id) ASC;
          END IF;
       ELSE
          IF l_base_loc_only
          THEN
+            --------------------------------
+            -- group specified:     false --
+            -- only base locations: true  --
+            --------------------------------
             OPEN p_cwms_cat FOR
                  SELECT   v.db_office_id,
                           v.location_id,
@@ -1729,8 +1740,13 @@ IS
                    FROM   av_loc v
                   WHERE   v.db_office_id = l_db_office_id
                     AND   v.unit_system = 'SI' 
+                    AND   v.sub_location_id is null
                ORDER BY   UPPER(v.location_id) ASC;
          ELSE
+            --------------------------------
+            -- group specified:     false --
+            -- only base locations: false --
+            --------------------------------
             OPEN p_cwms_cat FOR
                  SELECT   v.db_office_id,
                           v.location_id,
