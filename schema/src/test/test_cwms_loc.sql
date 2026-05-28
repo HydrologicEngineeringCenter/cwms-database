@@ -3519,6 +3519,7 @@ AS
           bulk collect
           into l_db_office_ids,
                l_location_ids,
+               l_db_office_ids2,
                l_base_location_ids,
                l_sub_location_ids,
                l_time_zone_names,
