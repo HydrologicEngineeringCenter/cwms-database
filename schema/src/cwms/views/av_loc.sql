@@ -133,15 +133,10 @@ from
                 decode(bll.geometry_type, 1,'POINT', 2,'LINE', 3,'POLYGON', 4,'COLLECTION', 5,'MULTIPOINT', 6,'MULTILINE', 7,'MULTIPOLYGON')) as geometry_type
     from cwms_20.at_physical_location loc
     -- join the base location metadata (bas) with the location (loc)
-    left join cwms_20.at_physical_location bas on ( bas.location_code = loc.base_location_code ) 
-    left join cwms_20.at_base_location blo on ( blo.base_location_code = loc.base_location_code )
-    left outer join cwms_20.at_location_geometry ll  on ( ll.location_code = loc.location_code ) 
-    left outer join cwms_20.at_location_geometry bll on ( bll.location_code = loc.base_location_code)
-          cwms_20.at_physical_location loc left join
-          cwms_20.at_physical_location bas on ( bas.location_code = loc.base_location_code ) left join
-          cwms_20.at_base_location     blo on ( blo.base_location_code = loc.base_location_code ) left outer join
-          cwms_20.at_location_geometry ll  on ( ll.location_code = loc.location_code ) left outer join
-          cwms_20.at_location_geometry bll on ( bll.location_code = loc.base_location_code)
+    left join cwms_20.at_physical_location bas on (bas.location_code = loc.base_location_code)
+    left join cwms_20.at_base_location blo on (blo.base_location_code = loc.base_location_code)
+    left outer join cwms_20.at_location_geometry ll on (ll.location_code = loc.location_code)
+    left outer join cwms_20.at_location_geometry bll on (bll.location_code = loc.base_location_code)
   ), 
   unit_system as
   ( select u.*, factor, offset from 
