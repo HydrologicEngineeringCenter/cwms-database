@@ -664,6 +664,17 @@ INSERT INTO cwms_sec_user_groups (
 												 user_group_id,
 												 user_group_desc
 			  )
+  VALUES   (
+					6,
+					'SHOW STACK TRACE',
+					'Users allowed to receive server stack traces in explicitly enabled debug responses.'
+			  );
+
+INSERT INTO cwms_sec_user_groups (
+												 user_group_code,
+												 user_group_id,
+												 user_group_desc
+			  )
   VALUES   (7, 'CWMS User Admins', 'User who administrates CWMS Users.'
 			  );
 
