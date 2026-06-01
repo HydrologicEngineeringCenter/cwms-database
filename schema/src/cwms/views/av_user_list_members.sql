@@ -53,9 +53,4 @@ select o.office_id,
   join av_cwms_user u
     on u.user_id = m.userid;
 
-begin
-   execute immediate 'grant select on av_user_list_members to cwms_user';
-exception
-   when others then null;
-end;
-/
+grant select on av_user_list_members to cwms_user;
