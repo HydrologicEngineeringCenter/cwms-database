@@ -48,8 +48,7 @@ select o.office_id,
   join cwms_office o
     on o.office_code = l.db_office_code
   join at_user_list_members m
-    on m.db_office_code = l.db_office_code
-   and m.user_list_id = l.user_list_id
+    on m.user_list_id = l.user_list_id
   join av_cwms_user u
     on u.user_id = m.userid;
 
