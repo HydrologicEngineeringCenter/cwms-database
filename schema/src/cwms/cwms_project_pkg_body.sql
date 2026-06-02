@@ -253,8 +253,6 @@ begin
             rec.county_name,
             rec.time_zone_name,
             rec.location_type,
-            rec.geometry,
-            rec.geometry_type_code,
             rec.latitude,
             rec.longitude,
             rec.horizontal_datum,
@@ -272,7 +270,9 @@ begin
             rec.bounding_office_id,
             rec.bounding_office_name,
             rec.nation_id,
-            rec.nearest_city);
+            rec.nearest_city,
+            rec.geometry,
+            rec.geometry_type_code);
       if rec.location_code = l_project_loc_code then
          l_project_location := l_temp_location_obj;
       elsif rec.location_code = l_project.pump_back_location_code then

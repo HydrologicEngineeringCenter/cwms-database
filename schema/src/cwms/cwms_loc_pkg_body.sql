@@ -5744,8 +5744,6 @@ end unassign_loc_groups;
                                 rec.county_name,
                                 rec.time_zone_name,
                                 rec.location_type,
-                                rec.geometry,
-                                rec.geometry_type_code,
                                 rec.latitude,
                                 rec.longitude,
                                 rec.horizontal_datum,
@@ -5763,7 +5761,9 @@ end unassign_loc_groups;
                                 rec.bounding_office_id,
                                 rec.bounding_office_name,
                                 rec.nation_id,
-                                rec.nearest_city
+                                rec.nearest_city,
+                                rec.geometry,
+                                rec.geometry_type_code
                                );
       END LOOP;
 

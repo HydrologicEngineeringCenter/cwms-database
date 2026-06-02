@@ -227,8 +227,6 @@ begin
       null, -- county_name
       null, -- time_zone_name
       l_lock_loc_rec.location_type,
-      l_lock_loc_geom_rec.geometry,
-      l_lock_loc_geom_rec.geometry_type_code,
       l_lock_loc_geom_rec.latitude,
       l_lock_loc_geom_rec.longitude,
       l_lock_loc_rec.horizontal_datum,
@@ -246,7 +244,9 @@ begin
       null, -- l_bounding_office_id
       null, -- l_bounding_office_name
       null, -- l_nation_id
-      l_lock_loc_rec.nearest_city);
+      l_lock_loc_rec.nearest_city,
+      l_lock_loc_geom_rec.geometry,
+      l_lock_loc_geom_rec.geometry_type_code);
    ------------------------------------------------------------------------------------    
    -- complete the lock location object from codes in the at_physical location table --
    ------------------------------------------------------------------------------------
