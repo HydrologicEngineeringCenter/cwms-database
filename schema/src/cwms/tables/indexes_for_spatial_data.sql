@@ -3,6 +3,7 @@
   user_sdo_geom_metadata which uses the logged-on schema as the "owner" of
   the stored data.
 */
+@@at_location_geometry_sidx.sql
 @@cwms_agg_district_sidx.sql
 @@cwms_cities_sp_sidx.sql
 @@cwms_county_sp_sidx.sql

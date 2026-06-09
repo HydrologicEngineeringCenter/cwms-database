@@ -85,55 +85,77 @@ is
    l_office_id_mask varchar2(16) := cwms_util.normalize_wildcards(nvl(upper(p_db_office_id), cwms_util.user_office_id), true);
 begin
    open p_lock_cat for
-      select po.office_id as project_office_id,
-             cwms_util.concat_base_sub_id(
-               pbl.base_location_id, 
-               ppl.sub_location_id) as project_location_id,  --    project_location_id      varchar2(57)   the parent project's location id
-             o.office_id as db_office_id,                    --    db_office_id             varchar2(16)   owning office of location         
-             bl.base_location_id,                           --    base_location_id         varchar2(24)   base location id
-             pl.sub_location_id,                            --    sub_location_id          varchar2(32)   sub-location id, if any           
-             tz.time_zone_name,                              --    time_zone_name           varchar2(28)   local time zone name for location 
-             pl.latitude,                                   --    latitude                 number         location latitude                 
-             pl.longitude,                                  --    longitude                number         location longitude                
-             pl.horizontal_datum,                           --    horizontal_datum         varchar2(16)   horizontal datrum of lat/lon      
-             pl.elevation,                                  --    elevation                number         location elevation                
-             u.unit_id as elevation_unit_id,                 --    elev_unit_id             varchar2(16)   location elevation units          
-             pl.vertical_datum,                             --    vertical_datum           varchar2(16)   veritcal datum of elevation       
-             pl.public_name,                                --    public_name              varchar2(57)   location public name              
-             pl.long_name,                                  --    long_name                varchar2(80)   location long name                
-             pl.description,                                --    description              varchar2(512)  location description              
-             pl.active_flag                                 --    active_flag              varchar2(1)    'T' if active, else 'F'           
-        from cwms_office o,
-             cwms_office po,
-             at_project p,
-             at_lock l,
-             at_physical_location ppl, -- project location
-             at_base_location pbl,     -- project location
-             at_physical_location pl, -- lock location
-             at_base_location bl,     -- lock location
-             cwms_time_zone tz,
-             cwms_base_parameter bp,
-             cwms_unit u
-       where o.office_id like l_office_id_mask
-         and po.office_code = pbl.db_office_code
-         and o.office_code = bl.db_office_code
-         and ppl.base_location_code = pbl.base_location_code
-         and cwms_util.concat_base_sub_id(pbl.base_location_id, ppl.sub_location_id) 
-             = nvl(p_project_id, cwms_util.concat_base_sub_id(pbl.base_location_id, ppl.sub_location_id))
-         and p.project_location_code = ppl.location_code
-         and l.project_location_code = p.project_location_code
-         and pl.location_code = l.lock_location_code
-         and bl.base_location_code = pl.base_location_code
-         --and tz.time_zone_code = pl.time_zone_code
-         and tz.time_zone_code = nvl(
-                  pl.time_zone_code, 
-                  (  select time_zone_code 
-                       from cwms_time_zone 
-                      where time_zone_name = 'UTC'
-                  ))
-         and bp.base_parameter_id = 'Elev'
-         and u.unit_code = bp.unit_code;
-
+      select project_office_id,   -- varchar2(57)   the parent project's location id
+             project_location_id, -- varchar2(16)   owning office of project
+             db_office_id,        -- varchar2(16)   owning office of lock
+             base_location_id,    -- varchar2(24)   base location id
+             sub_location_id,     -- varchar2(32)   sub-location id, if any
+             time_zone_name,      -- varchar2(28)   local time zone name for location
+             latitude,            -- number         location latitude
+             longitude,           -- number         location longitude
+             horizontal_datum,    -- varchar2(16)   horizontal datrum of lat/lon
+             elevation,           -- number         location elevation
+             elevation_unit_id,   -- varchar2(16)   location elevation units
+             vertical_datum,      -- varchar2(16)   veritcal datum of elevation
+             public_name,         -- varchar2(57)   location public name
+             long_name,           -- varchar2(80)   location long name
+             description,         -- varchar2(512)  location description
+             active_flag          -- varchar2(1)    'T' if active, else 'F'
+        from (select pl.location_code,
+                     po.office_id as project_office_id,
+                     cwms_util.concat_base_sub_id(
+                       pbl.base_location_id,
+                       ppl.sub_location_id) as project_location_id,
+                     o.office_id as db_office_id,
+                     bl.base_location_id,
+                     pl.sub_location_id,
+                     tz.time_zone_name,
+                     pl.horizontal_datum,
+                     pl.elevation,
+                     u.unit_id as elevation_unit_id,
+                     pl.vertical_datum,
+                     pl.public_name,
+                     pl.long_name,
+                     pl.description,
+                     pl.active_flag
+                from cwms_office o,
+                     cwms_office po,
+                     at_project p,
+                     at_lock l,
+                     at_physical_location ppl, -- project location
+                     at_base_location pbl,     -- project location
+                     at_physical_location pl,  -- lock location
+                     at_base_location bl,      -- lock location
+                     cwms_time_zone tz,
+                     cwms_base_parameter bp,
+                     cwms_unit u
+               where o.office_id like l_office_id_mask
+                 and po.office_code = pbl.db_office_code
+                 and o.office_code = bl.db_office_code
+                 and ppl.base_location_code = pbl.base_location_code
+                 and cwms_util.concat_base_sub_id(pbl.base_location_id, ppl.sub_location_id)
+                     = nvl(p_project_id, cwms_util.concat_base_sub_id(pbl.base_location_id, ppl.sub_location_id))
+                 and p.project_location_code = ppl.location_code
+                 and l.project_location_code = p.project_location_code
+                 and pl.location_code = l.lock_location_code
+                 and bl.base_location_code = pl.base_location_code
+                 and tz.time_zone_code = nvl(
+                          pl.time_zone_code,
+                          nvl(ppl.time_zone_code,
+                          (  select time_zone_code
+                               from cwms_time_zone
+                              where time_zone_name = 'UTC'
+                          )))
+                 and bp.base_parameter_id = 'Elev'
+                 and u.unit_code = bp.unit_code
+             ) q1
+             left outer join
+             (
+               select location_code,
+                      latitude,
+                      longitude
+                 from at_location_geometry
+             ) q2 on q2.location_code = q1.location_code;
 end cat_lock;
 
 
@@ -143,11 +165,12 @@ PROCEDURE retrieve_lock_old(
                                            -- includes the lock's location id (base location + '-' + sublocation)
                                            -- the office id if null will default to the connected user's office
 is
-   l_lock_rec      at_lock%rowtype;
-   l_lock_loc      location_obj_t;
-   l_lock_loc_rec  at_physical_location%rowtype;
+   l_lock_rec          at_lock%rowtype;
+   l_lock_loc          location_obj_t;
+   l_lock_loc_rec      at_physical_location%rowtype;
+   l_lock_loc_geom_rec at_location_geometry%rowtype;
    l_lock_location_ref location_ref_t;
-   l_cwms_office_code number;
+   l_cwms_office_code  number;
 begin
   -- get the cwms office code.
   l_cwms_office_code := cwms_util.get_office_code('CWMS');
@@ -187,7 +210,15 @@ begin
             'Lock location',
             l_lock_location_ref.office_id||'/'||l_lock_location_ref.get_location_id);
    end;
-   -------------------------------------        
+   begin
+      select *
+        into l_lock_loc_geom_rec
+        from at_location_geometry
+       where location_code = l_lock_location_ref.get_location_code;
+   exception
+      when no_data_found then null;
+   end;
+   -------------------------------------
    -- create the lock location object --
    -------------------------------------        
    l_lock_loc := location_obj_t(
@@ -196,8 +227,8 @@ begin
       null, -- county_name
       null, -- time_zone_name
       l_lock_loc_rec.location_type,
-      l_lock_loc_rec.latitude,
-      l_lock_loc_rec.longitude,
+      l_lock_loc_geom_rec.latitude,
+      l_lock_loc_geom_rec.longitude,
       l_lock_loc_rec.horizontal_datum,
       l_lock_loc_rec.elevation,
       null, -- elev_unit_id
@@ -213,7 +244,9 @@ begin
       null, -- l_bounding_office_id
       null, -- l_bounding_office_name
       null, -- l_nation_id
-      l_lock_loc_rec.nearest_city);
+      l_lock_loc_rec.nearest_city,
+      l_lock_loc_geom_rec.geometry,
+      l_lock_loc_geom_rec.geometry_type_code);
    ------------------------------------------------------------------------------------    
    -- complete the lock location object from codes in the at_physical location table --
    ------------------------------------------------------------------------------------

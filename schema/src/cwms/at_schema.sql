@@ -224,8 +224,6 @@ CREATE TABLE AT_PHYSICAL_LOCATION
   LOCATION_TYPE       VARCHAR2(32),
   ELEVATION           NUMBER,
   VERTICAL_DATUM      VARCHAR2(16),
-  LONGITUDE           NUMBER,
-  LATITUDE            NUMBER,
   HORIZONTAL_DATUM    VARCHAR2(16),
   PUBLIC_NAME         VARCHAR2(57),
   LONG_NAME           VARCHAR2(80),
@@ -268,8 +266,6 @@ COMMENT ON COLUMN AT_PHYSICAL_LOCATION.COUNTY_CODE         IS 'References the co
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LOCATION_TYPE       IS 'User-defined type (e.g. "Stream Gage", "Reservoir", etc...), up to 16 characters.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.ELEVATION           IS 'Elevation of location.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.VERTICAL_DATUM      IS 'Datum of elevation.';
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LONGITUDE           IS 'Longitude of location.';
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LATITUDE            IS 'Latitude of location.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.HORIZONTAL_DATUM    IS 'Datum of longitude and latitude.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.PUBLIC_NAME         IS 'User-defined public name, up to 32 characters.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LONG_NAME           IS 'User-defined long name, up to 80 characters.';
@@ -6346,6 +6342,7 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_project_lock
 @@./cwms/tables/at_prj_lck_revoker_rights
 ---
+@@./cwms/tables/at_location_geometry
 @@./cwms/tables/at_pool_name
 @@./cwms/tables/at_pool
 @@./cwms/tables/at_ts_extents

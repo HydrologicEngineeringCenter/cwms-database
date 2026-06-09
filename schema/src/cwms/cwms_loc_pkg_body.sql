@@ -5,6 +5,8 @@ AS
    begin
       cwms_cache.clear(g_location_code_cache);
       cwms_cache.clear(g_location_id_cache);
+         cwms_cache.clear(g_horiz_datum_cache);
+         cwms_cache.clear(g_geometry_srid_cache);
    end;
 
    FUNCTION get_location_id (p_location_code IN NUMBER)
@@ -507,6 +509,18 @@ AS
       RETURN TRUE;
    END is_cwms_id_valid;
 
+   function to_srid(
+      p_geometry in sdo_geometry,
+      p_target_srid in number)
+      return sdo_geometry deterministic
+   is
+   begin
+      return case p_geometry.sdo_srid = p_target_srid
+             when true then p_geometry
+             else sdo_cs.transform(p_geometry, p_target_srid)
+             end;
+   end to_srid;
+
    --********************************************************************** -
    --.
    --  CREATE_LOCATION_RAW2 -
@@ -551,7 +565,9 @@ AS
       l_cwms_office_code       NUMBER (14) := cwms_util.get_office_code ('CWMS');
       l_lat_lon_specified      boolean := p_latitude is not null and p_longitude is not null;
       l_county_code            integer;
+      l_nearest_city_tab       str_tab_t;
       l_nearest_city           cwms_cities_sp.city_name%type;
+      l_srid                   mdsys.sdo_coord_ref_sys.srid%type;
    BEGIN
       if l_lat_lon_specified then
          l_county_code := get_county_code(p_latitude, p_longitude);
@@ -590,7 +606,12 @@ AS
          else
             l_bounding_office_code := get_bounding_ofc_code(p_latitude, p_longitude);
          end if;
-         l_nearest_city := nvl(get_nearest_city(p_latitude, p_longitude)(1), p_nearest_city);
+         l_nearest_city_tab := get_nearest_city(p_latitude, p_longitude);
+         l_nearest_city := case
+                           when l_nearest_city_tab(1) is null then p_nearest_city
+                           when l_nearest_city_tab(2) is null then l_nearest_city_tab(1)
+                           else l_nearest_city_tab(1)||', '||l_nearest_city_tab(2)
+                           end;
       else
          l_county_code := nvl(p_county_code, 0); -- 0 = unknown county, unknown state
          ------------------------------------------------
@@ -698,8 +719,6 @@ AS
                                              location_type,
                                              elevation,
                                              vertical_datum,
-                                             longitude,
-                                             latitude,
                                              horizontal_datum,
                                              public_name,
                                              long_name,
@@ -721,8 +740,6 @@ AS
                         p_location_type,
                         p_elevation,
                         p_vertical_datum,
-                        p_longitude,
-                        p_latitude,
                         p_horizontal_datum,
                         p_public_name,
                         p_long_name,
@@ -736,6 +753,24 @@ AS
                         l_nation_code,
                         l_nearest_city
                      );
+            if l_lat_lon_specified then
+               l_srid := get_location_srid(p_base_location_code);
+               insert into at_location_geometry
+                  (
+                     location_code,
+                     geometry
+                  )
+               values
+                  (
+                     p_base_location_code,
+                     case
+                     when l_srid is null then
+                        sdo_geometry(2001, 4326, sdo_point_type(p_longitude, p_latitude, null), null, null)
+                     else
+                        to_srid(sdo_geometry(2001, l_srid, sdo_point_type(p_longitude, p_latitude, null), null, null), 4326)
+                     end
+                  );
+            end if;
 
             update_local_datum_name(p_base_location_code, p_vertical_datum);
             p_location_code := p_base_location_code;
@@ -756,8 +791,6 @@ AS
                                                 location_type,
                                                 elevation,
                                                 vertical_datum,
-                                                longitude,
-                                                latitude,
                                                 horizontal_datum,
                                                 public_name,
                                                 long_name,
@@ -780,8 +813,6 @@ AS
                            p_location_type,
                            p_elevation,
                            p_vertical_datum,
-                           p_longitude,
-                           p_latitude,
                            p_horizontal_datum,
                            p_public_name,
                            p_long_name,
@@ -797,6 +828,24 @@ AS
                         )
             RETURNING   location_code
                   INTO   p_location_code;
+            if l_lat_lon_specified then
+               l_srid := get_location_srid(p_location_code);
+               insert into at_location_geometry
+                  (
+                     location_code,
+                     geometry
+                  )
+               values
+                  (
+                     p_location_code,
+                     case
+                     when l_srid is null then
+                        sdo_geometry(2001, 4326, sdo_point_type(p_longitude, p_latitude, null), null, null)
+                     else
+                        to_srid(sdo_geometry(2001, l_srid, sdo_point_type(p_longitude, p_latitude, null), null, null), 4326)
+                     end
+                  );
+            end if;
             update_local_datum_name(p_location_code, p_vertical_datum);
          END IF;
 
@@ -958,8 +1007,8 @@ AS
       l_location_type          at_physical_location.location_type%TYPE;
       l_elevation              at_physical_location.elevation%TYPE;
       l_vertical_datum         at_physical_location.vertical_datum%TYPE;
-      l_longitude              at_physical_location.longitude%TYPE;
-      l_latitude               at_physical_location.latitude%TYPE;
+      l_longitude              at_location_geometry.longitude%TYPE;
+      l_latitude               at_location_geometry.latitude%TYPE;
       l_horizontal_datum       at_physical_location.horizontal_datum%TYPE;
       l_state_code             cwms_state.state_code%TYPE;
       l_public_name            at_physical_location.public_name%TYPE;
@@ -982,6 +1031,7 @@ AS
       l_cwms_office_code       NUMBER (14)
                                   := cwms_util.get_office_code ('CWMS');
       l_old_time_zone_code      number(14);
+      l_srid                   mdsys.sdo_coord_ref_sys.srid%type;
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
@@ -1007,8 +1057,20 @@ AS
                l_location_kind_code, l_map_label, l_published_latitude,
                l_published_longitude, l_bounding_office_code, l_nation_code,
                l_nearest_city
-        FROM   at_physical_location
-       WHERE   location_code = l_location_code;
+        FROM   (SELECT   location_code, base_location_code, location_type, elevation, vertical_datum,
+                         horizontal_datum, public_name, long_name, description,
+                         time_zone_code, county_code, active_flag, location_kind,
+                         map_label, published_latitude, published_longitude,
+                         office_code, nation_code, nearest_city
+                  FROM   at_physical_location
+                 WHERE   location_code = l_location_code
+               ) q1
+               LEFT OUTER JOIN
+               (SELECT   location_code,
+                         latitude,
+                         longitude
+                 FROM    at_location_geometry
+               ) q2 on q2.location_code = q1.location_code;
 
       -- DBMS_OUTPUT.put_line ('l_elevation: ' || l_elevation);
 
@@ -1355,8 +1417,6 @@ AS
          SET location_type = l_location_type,
              elevation = l_elevation,
              vertical_datum = store_local_datum_name(l_location_code, l_vertical_datum),
-             latitude = l_latitude,
-             longitude = l_longitude,
              horizontal_datum = l_horizontal_datum,
              public_name = l_public_name,
              long_name = l_long_name,
@@ -1372,7 +1432,7 @@ AS
              nation_code = l_nation_code,
              nearest_city = l_nearest_city
        WHERE location_code = l_location_code;
-
+      
        if l_base_location_code = l_location_code and p_active is not null then
           -----------------------------------
           -- update at_base_location table --
@@ -1381,6 +1441,47 @@ AS
              set active_flag = l_active_flag
            where base_location_code = l_base_location_code;
        end if;
+
+      --------------------
+      -- update lat/lon --
+      --------------------
+      if l_latitude is not null and l_longitude is not null then
+         declare
+            geo_rec    at_location_geometry%rowtype;
+            l_srid     mdsys.sdo_coord_ref_sys.srid%type;
+            l_geometry sdo_geometry;
+         begin
+            l_srid := get_location_srid(l_location_code);
+            case l_srid is null
+            when true then
+               l_geometry := sdo_geometry(2001, 4326, sdo_point_type(l_longitude, l_latitude, null), null, null);
+            else
+               l_geometry := sdo_geometry(2001, l_srid, sdo_point_type(l_longitude, l_latitude, null), null, null);
+               l_geometry := to_srid(l_geometry, 4326);
+            end case;
+            select * into geo_rec from at_location_geometry where location_code = l_location_code;
+            if geo_rec.geometry_type_code != 1 then
+               cwms_err.raise('ERROR', 'Cannot set lat/lon - location has non-point geometry');
+            end if;
+            update at_location_geometry
+               set geometry = l_geometry
+             where location_code = l_location_code;
+         exception
+            when no_data_found then
+               insert
+                 into at_location_geometry
+                      (location_code,
+                       geometry
+                      )
+               values (l_location_code,
+                       l_geometry
+                      );
+         end;
+      elsif not l_ignorenulls then
+         delete
+           from at_location_geometry
+          where location_code = l_location_code;
+      end if;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
@@ -1421,304 +1522,25 @@ AS
                               p_db_office_id       IN VARCHAR2 DEFAULT NULL
                              )
    IS
-      l_location_code      at_physical_location.location_code%TYPE;
-      l_time_zone_code      at_physical_location.time_zone_code%TYPE;
-      l_county_code         cwms_county.county_code%TYPE;
-      l_location_type      at_physical_location.location_type%TYPE;
-      l_elevation          at_physical_location.elevation%TYPE;
-      l_vertical_datum      at_physical_location.vertical_datum%TYPE;
-      l_longitude          at_physical_location.longitude%TYPE;
-      l_latitude            at_physical_location.latitude%TYPE;
-      l_horizontal_datum   at_physical_location.horizontal_datum%TYPE;
-      l_state_code         cwms_state.state_code%TYPE;
-      l_public_name         at_physical_location.public_name%TYPE;
-      l_long_name          at_physical_location.long_name%TYPE;
-      l_description         at_physical_location.description%TYPE;
-      l_active_flag         at_physical_location.active_flag%TYPE;
-      --
-      l_state_initial      cwms_state.state_initial%TYPE;
-      l_county_name         cwms_county.county_name%TYPE;
-      l_ignorenulls         BOOLEAN := cwms_util.is_true (p_ignorenulls);
-      l_old_time_zone_code      number(14);
    BEGIN
-      --.
-      -- dbms_output.put_line('Bienvenue a update_loc');
-
-      -- Retrieve the location's Location Code.
-      --
-      l_location_code := get_location_code (p_db_office_id, p_location_id);
-      -- DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
-
-      --
-      --  If get_location_code did not throw an exception, then a valid base_location_id and.
-      --  office_id pair was passed in, therefore continue to update the.
-      --  at_physical_location table by first retrieving data for the existing location...
-      --
-      SELECT   location_type, elevation, vertical_datum, latitude, longitude,
-               horizontal_datum, public_name, long_name, description,
-               time_zone_code, county_code, active_flag
-        INTO   l_location_type, l_elevation, l_vertical_datum, l_latitude,
-               l_longitude, l_horizontal_datum, l_public_name, l_long_name,
-               l_description, l_time_zone_code, l_county_code, l_active_flag
-        FROM   at_physical_location
-       WHERE   location_code = l_location_code;
-
-      -- DBMS_OUTPUT.put_line ('l_elevation: ' || l_elevation);
-
-      ----------------------------------------------------------
-      ----------------------------------------------------------
-      -- Perform validation checks on newly passed parameters...
-
-      ---------.
-      ---------.
-      -- Update location_type...
-      --.
-      IF p_location_type IS NOT NULL
-      THEN
-         l_location_type := p_location_type;
-      ELSIF NOT l_ignorenulls
-      THEN
-         l_location_type := NULL;
-      END IF;
-
-      ---------.
-      ---------.
-      -- Update any new elvation to the correct DB units...
-      --.
-      IF p_elevation IS NOT NULL
-      THEN
-         l_elevation :=
-            convert_from_to (p_elevation,
-                             p_elev_unit_id,
-                             l_elev_db_unit,
-                             l_abstract_elev_param
-                            );
-      ELSIF NOT l_ignorenulls
-      THEN
-         l_elevation := NULL;
-      END IF;
-
-      ---------.
-      ---------.
-      -- Update vertical datum...
-      --
-      IF p_vertical_datum IS NOT NULL
-      THEN
-         l_vertical_datum := p_vertical_datum;
-      ELSIF NOT l_ignorenulls
-      THEN
-         l_vertical_datum := NULL;
-      END IF;
-
-      ---------.
-      ---------.
-      -- Update latitude...
-      --
-      IF p_latitude IS NOT NULL
-      THEN
-         IF ABS (p_latitude) > 90
-         THEN
-            raise_application_error (
-               -20219,
-                  'INVALID Latitude value: '
-               || p_latitude
-               || ' - must be between -90 and +90',
-               TRUE
-            );
-         END IF;
-
-         l_latitude := p_latitude;
-      ELSIF NOT l_ignorenulls
-      THEN
-         l_latitude := NULL;
-      END IF;
-
-      ---------.
-      ---------.
-      -- Update longitude...
-      --
-      IF p_longitude IS NOT NULL
-      THEN
-         IF ABS (p_longitude) > 180
-         THEN
-            raise_application_error (
-               -20218,
-                  'INVALID Longitude value: '
-               || p_longitude
-               || ' - must be between -180 and +180',
-               TRUE
-            );
-         END IF;
-
-         l_longitude := p_longitude;
-      ELSIF NOT l_ignorenulls
-      THEN
-         l_longitude := NULL;
-      END IF;
-
-      ---------.
-      ---------.
-      -- Update horizontal datum...
-      --
-      IF p_horizontal_datum IS NOT NULL
-      THEN
-         l_horizontal_datum := p_horizontal_datum;
-      ELSIF NOT l_ignorenulls
-      THEN
-         l_horizontal_datum := NULL;
-      END IF;
-
-      ---------.
-      ---------.
-      -- Update public_name...
-      --
-      IF p_public_name IS NOT NULL
-      THEN
-         l_public_name := p_public_name;
-      ELSIF NOT l_ignorenulls
-      THEN
-         l_public_name := NULL;
-      END IF;
-
-      ---------.
-      ---------.
-      -- Update long_name...
-      --
-      IF p_long_name IS NOT NULL
-      THEN
-         l_long_name := p_long_name;
-      ELSIF NOT l_ignorenulls
-      THEN
-         l_long_name := NULL;
-      END IF;
-
-      ---------.
-      ---------.
-      -- Update description...
-      --
-      IF p_description IS NOT NULL
-      THEN
-         l_description := p_description;
-      ELSIF NOT l_ignorenulls
-      THEN
-         l_description := NULL;
-      END IF;
-
-      ---------.
-      ---------.
-      -- Update time_zone...
-      --
-      IF p_time_zone_id IS NOT NULL
-      THEN
-         l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
-         select time_zone_code
-           into l_old_time_zone_code
-           from at_physical_location
-          where location_code = l_location_code;
-         if l_time_zone_code = l_old_time_zone_code then
-            null;
-         else
-            declare
-               l_tmp          integer;
-            begin
-               for rec in (select tss.ts_code,
-                                  -tss.interval_utc_offset as interval_utc_offset,
-                                  ci.interval,
-                                  tsi.cwms_ts_id
-                             from at_cwms_ts_spec tss,
-                                  at_cwms_ts_id   tsi,
-                                  cwms_interval   ci
-                            where tss.location_code = l_location_code
-                              and tsi.ts_code = tss.ts_code
-                              and tss.interval_utc_offset < 0
-                              and tss.interval_utc_offset != cwms_util.utc_offset_irregular
-                              and ci.interval_id = substr(tsi.interval_id, 2)
-                          )
-               loop
-                  select count(*)
-                    into l_tmp
-                    from (select local_time,
-                                 cwms_ts.top_of_interval_plus_offset_utc(
-                                    p_date_time       => local_time,
-                                    p_interval        => rec.interval,
-                                    p_interval_offset => rec.interval_utc_offset,
-                                    p_next            => 'F') as interval_time
-                            from (select cwms_util.change_timezone(date_time, 'UTC', p_time_zone_id) as local_time
-                                    from av_tsv where ts_code = rec.ts_code
-                                 )
-                         )
-                   where local_time != interval_time;
-                  if l_tmp > 0 then
-                     cwms_err.raise(
-                        'ERROR',
-                        'Cannot change time zone.  Time series is incompatible with new time zone: '||rec.cwms_ts_id);
-                  end if;
-               end loop;
-            end;
-         end if;
-      ELSIF NOT l_ignorenulls
-      THEN
-         l_time_zone_code := NULL;
-      END IF;
-
-      ---------.
-      ---------.
-      -- Check and Update he State/County pair...
-      --
-      IF p_state_initial IS NULL AND p_county_name IS NOT NULL
-      THEN         -- Throw exception - if a county name is passed in one must.
-         -- also pass-in the county's state initials.
-         cwms_err.raise ('STATE_CANNOT_BE_NULL', 'CWMS_LOC');
-      ELSIF p_state_initial IS NOT NULL
-      THEN                               -- Find the corresponding county_code.
-         l_county_code := get_county_code (p_county_name, p_state_initial);
-      ELSIF NOT l_ignorenulls
-      THEN
-         l_county_code := 0;
-      END IF;
-
-      ---------.
-      ---------.
-      -- Update active_flag.
-      --.
-      IF p_active IS NOT NULL
-      THEN
-         IF cwms_util.is_true (p_active)
-         THEN
-            l_active_flag := 'T';
-         ELSIF cwms_util.is_false (p_active)
-         THEN
-            l_active_flag := 'F';
-         ELSE
-            cwms_err.raise ('INVALID_T_F_FLAG', 'cwms_loc', 'p_active');
-         END IF;
-      END IF;
-
-      --.
-      --*************************************.
-      -- Update at_physical_location table...
-      --.
-      UPDATE   at_physical_location
-         SET   location_type = l_location_type,
-               elevation = l_elevation,
-               vertical_datum = store_local_datum_name(l_location_code, l_vertical_datum),
-               latitude = l_latitude,
-               longitude = l_longitude,
-               horizontal_datum = l_horizontal_datum,
-               public_name = l_public_name,
-               long_name = l_long_name,
-               description = l_description,
-               time_zone_code = l_time_zone_code,
-               county_code = l_county_code,
-               active_flag = l_active_flag
-       WHERE   location_code = l_location_code;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         NULL;
-      WHEN OTHERS
-      THEN
-         RAISE;
+      update_location2(
+         p_location_id      => p_location_id,
+         p_location_type    => p_location_type,
+         p_elevation        => p_elevation,
+         p_elev_unit_id     => p_elev_unit_id,
+         p_vertical_datum   => p_vertical_datum,
+         p_latitude         => p_latitude,
+         p_longitude        => p_longitude,
+         p_horizontal_datum => p_horizontal_datum,
+         p_public_name      => p_public_name,
+         p_long_name        => p_long_name,
+         p_description      => p_description,
+         p_time_zone_id     => p_time_zone_id,
+         p_county_name      => p_county_name,
+         p_state_initial    => p_state_initial,
+         p_active           => p_active,
+         p_ignorenulls      => p_ignorenulls,
+         p_db_office_id     => p_db_office_id);
    END update_location;
 
    --********************************************************************** -
@@ -1826,8 +1648,8 @@ AS
       l_location_type        at_physical_location.location_type%TYPE;
       l_elevation            at_physical_location.elevation%TYPE := NULL;
       l_vertical_datum        at_physical_location.vertical_datum%TYPE;
-      l_latitude              at_physical_location.latitude%TYPE := NULL;
-      l_longitude            at_physical_location.longitude%TYPE := NULL;
+      l_latitude              at_location_geometry.latitude%TYPE := NULL;
+      l_longitude            at_location_geometry.longitude%TYPE := NULL;
       l_horizontal_datum     at_physical_location.horizontal_datum%TYPE;
       l_public_name           at_physical_location.public_name%TYPE;
       l_long_name            at_physical_location.long_name%TYPE;
@@ -2227,8 +2049,8 @@ AS
       l_location_type            at_physical_location.location_type%TYPE;
       l_elevation                at_physical_location.elevation%TYPE := NULL;
       l_vertical_datum            at_physical_location.vertical_datum%TYPE;
-      l_latitude                  at_physical_location.latitude%TYPE := NULL;
-      l_longitude                at_physical_location.longitude%TYPE := NULL;
+      l_latitude                  at_location_geometry.latitude%TYPE := NULL;
+      l_longitude                at_location_geometry.longitude%TYPE := NULL;
       l_horizontal_datum         at_physical_location.horizontal_datum%TYPE;
       l_public_name               at_physical_location.public_name%TYPE;
       l_long_name                at_physical_location.long_name%TYPE;
@@ -2308,7 +2130,7 @@ AS
       --.
       IF l_sub_location_id_old IS NULL  -- A BASE Location is being renamed --
       THEN
-         SELECT   location_code, time_zone_code, county_code, location_type,
+         SELECT   q1.location_code, time_zone_code, county_code, location_type,
                   elevation, vertical_datum, longitude, latitude,
                   horizontal_datum, public_name, long_name, description,
                   active_flag, location_kind, map_label, published_latitude,
@@ -2319,15 +2141,27 @@ AS
                   l_description, l_active_flag, l_location_kind, l_map_label,
                   l_published_latitude, l_published_longitude, l_office_code,
                   l_nation_code, l_nearest_city
-           FROM   at_physical_location apl
-          WHERE   apl.base_location_code = l_base_location_code_old
-                  AND apl.sub_location_id IS NULL;
+           FROM   (SELECT   location_code, time_zone_code, county_code, location_type,
+                            elevation, vertical_datum,
+                            horizontal_datum, public_name, long_name, description,
+                            active_flag, location_kind, map_label, published_latitude,
+                            published_longitude, office_code, nation_code, nearest_city
+                     FROM   at_physical_location apl
+                    WHERE   apl.base_location_code = l_base_location_code_old
+                            AND apl.sub_location_id IS NULL
+                  ) q1
+                  LEFT OUTER JOIN
+                  (SELECT   location_code,
+                            latitude,
+                            longitude
+                     FROM   at_location_geometry
+                  ) q2 on q2.location_code = q1.location_code;
 
          --
          l_old_loc_is_base_loc := TRUE;
       ELSE                                          -- For BASE-SUB Locations -
          BEGIN
-            SELECT   location_code, sub_location_id, time_zone_code,
+            SELECT   q1.location_code, sub_location_id, time_zone_code,
                      county_code, location_type, elevation, vertical_datum,
                      longitude, latitude, horizontal_datum, public_name,
                      long_name, description, active_flag, location_kind,
@@ -2340,10 +2174,23 @@ AS
                      l_description, l_active_flag, l_location_kind,
                      l_map_label, l_published_latitude, l_published_longitude,
                      l_office_code, l_nation_code, l_nearest_city
-              FROM   at_physical_location apl
-             WHERE   apl.base_location_code = l_base_location_code_old
-                     AND UPPER (apl.sub_location_id) =
-                            UPPER (l_sub_location_id_old);
+              FROM   (SELECT   location_code, sub_location_id, time_zone_code,
+                               county_code, location_type, elevation, vertical_datum,
+                               horizontal_datum, public_name,
+                               long_name, description, active_flag, location_kind,
+                               map_label, published_latitude, published_longitude,
+                               office_code, nation_code, nearest_city
+                        FROM   at_physical_location apl
+                       WHERE   apl.base_location_code = l_base_location_code_old
+                               AND UPPER (apl.sub_location_id) =
+                                      UPPER (l_sub_location_id_old)
+                     ) q1
+                     LEFT OUTER JOIN
+                     (SELECT   location_code,
+                               latitude,
+                               longitude
+                        FROM   at_location_geometry
+                     ) q2 on q2.location_code = q1.location_code;
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
@@ -3148,16 +2995,15 @@ AS
                   loop
                      cwms_cache.remove_by_value(g_location_id_cache, get_location_id(rec.location_code));
                      cwms_cache.remove_by_value(g_location_code_cache, rec.location_code);
+                     delete from at_location_geometry where location_code = rec.location_code;
                      delete from at_physical_location where location_code = rec.location_code;
                   end loop;
 
                   delete
-                    from at_base_location abl
-                   where abl.base_location_code = l_base_location_code;
+                    from at_base_location where base_location_code = l_base_location_code;
                else -- Deleting a single Sub Location --------------------------------
-                  delete
-                    from at_physical_location apl
-                   where apl.location_code = l_location_code;
+                  delete at_location_geometry where location_code = l_location_code;
+                  delete at_physical_location where location_code = l_location_code;
                   cwms_cache.remove_by_value(g_location_code_cache, l_location_code);
                end if;
                exit;
@@ -3341,6 +3187,72 @@ AS
          RAISE;
    END store_location2;
 
+   procedure store_location3 (
+      p_location_id           in varchar2,
+      p_location_type         in varchar2 default null,
+      p_elevation             in number default null,
+      p_elev_unit_id          in varchar2 default null,
+      p_vertical_datum        in varchar2 default null,
+      p_geometry              in sdo_geometry,
+      p_horizontal_datum      in varchar2 default null,
+      p_public_name           in varchar2 default null,
+      p_long_name             in varchar2 default null,
+      p_description           in varchar2 default null,
+      p_time_zone_id          in varchar2 default null,
+      p_county_name           in varchar2 default null,
+      p_state_initial         in varchar2 default null,
+      p_active                in varchar2 default null,
+      p_location_kind_id      in varchar2 default null,
+      p_map_label             in varchar2 default null,
+      p_published_latitude    in number default null,
+      p_published_longitude   in number default null,
+      p_bounding_office_id    in varchar2 default null,
+      p_nation_id             in varchar2 default null,
+      p_nearest_city          in varchar2 default null,
+      p_ignorenulls           in varchar2 default 'T',
+      p_db_office_id          in varchar2 default null)
+   is
+   begin
+      store_location2 (
+         p_location_id           => p_location_id,
+         p_location_type         => p_location_type,
+         p_elevation             => p_elevation,
+         p_elev_unit_id          => p_elev_unit_id,
+         p_vertical_datum        => p_vertical_datum,
+         p_latitude              => null,
+         p_longitude             => null,
+         p_horizontal_datum      => p_horizontal_datum,
+         p_public_name           => p_public_name,
+         p_long_name             => p_long_name,
+         p_description           => p_description,
+         p_time_zone_id          => p_time_zone_id,
+         p_county_name           => p_county_name,
+         p_state_initial         => p_state_initial,
+         p_active                => p_active,
+         p_location_kind_id      => p_location_kind_id,
+         p_map_label             => p_map_label,
+         p_published_latitude    => p_published_latitude,
+         p_published_longitude   => p_published_longitude,
+         p_bounding_office_id    => p_bounding_office_id,
+         p_nation_id             => p_nation_id,
+         p_nearest_city          => p_nearest_city,
+         p_ignorenulls           => p_ignorenulls,
+         p_db_office_id          => p_db_office_id);
+
+      if p_geometry is not null then
+         store_geometry(
+            p_location_id    => p_location_id,
+            p_geometry       => p_geometry,
+            p_fail_if_exists => 'F',
+            p_db_office_id   => p_db_office_id);
+      elsif not cwms_util.return_true_or_false(p_ignorenulls) then
+         delete_geometry(
+            p_location_id    => p_location_id,
+            p_db_office_id   => p_db_office_id);
+      end if;
+   end store_location3;
+
+
    --********************************************************************** -
    --
    -- STORE_LOC provides backward compatiblity for the dbi.  It will update a
@@ -3456,13 +3368,13 @@ AS
          SELECT   apl.location_type,
                   convert_from_to (apl.elevation, 'm', p_elev_unit_id, 'Length') elev,
                   apl.vertical_datum,
-                  apl.latitude, apl.longitude, apl.horizontal_datum,
+                  apl.horizontal_datum,
                   apl.public_name, apl.long_name, apl.description,
                   ctz.time_zone_name, cc.county_name, cs.state_initial,
                   apl.active_flag, clk.location_kind_id, apl.map_label,
                   apl.published_latitude, apl.published_longitude,
                   apl.office_code, apl.nation_code, apl.nearest_city
-           INTO   p_location_type, p_elevation, p_vertical_datum, p_latitude, p_longitude,
+           INTO   p_location_type, p_elevation, p_vertical_datum,
                   p_horizontal_datum, p_public_name, p_long_name,
                   p_description, p_time_zone_id, p_county_name,
                   p_state_initial, p_active, p_location_kind_id, p_map_label,
@@ -3478,6 +3390,16 @@ AS
                   AND NVL (apl.time_zone_code, 0) = ctz.time_zone_code
                   AND clk.location_kind_code = apl.location_kind
                   AND apl.location_code = l_location_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
+      BEGIN
+         SELECT   latitude, longitude
+           INTO   p_latitude, p_longitude
+           FROM   at_location_geometry
+          WHERE   location_code = l_location_code;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -3523,6 +3445,66 @@ AS
    --
    --
    END retrieve_location2;
+
+   procedure retrieve_location3 (
+      p_location_id            in out varchar2,
+      p_elev_unit_id           in     varchar2 default 'm',
+      p_location_type             out varchar2,
+      p_elevation                 out number,
+      p_vertical_datum            out varchar2,
+      p_geometry                  out sdo_geometry,
+      p_horizontal_datum          out varchar2,
+      p_public_name               out varchar2,
+      p_long_name                 out varchar2,
+      p_description               out varchar2,
+      p_time_zone_id              out varchar2,
+      p_county_name               out varchar2,
+      p_state_initial             out varchar2,
+      p_active                    out varchar2,
+      p_location_kind_id          out varchar2,
+      p_map_label                 out varchar2,
+      p_published_latitude        out number,
+      p_published_longitude       out number,
+      p_bounding_office_id        out varchar2,
+      p_nation_id                 out varchar2,
+      p_nearest_city              out varchar2,
+      p_alias_cursor              out sys_refcursor,
+      p_db_office_id           in     varchar2 default null)
+   is
+      l_latitude  number;
+      l_longitude number;
+   begin
+      retrieve_location2 (
+         p_location_id            => p_location_id,
+         p_elev_unit_id           => p_elev_unit_id,
+         p_location_type          => p_location_type,
+         p_elevation              => p_elevation,
+         p_vertical_datum         => p_vertical_datum,
+         p_latitude               => l_latitude,
+         p_longitude              => l_longitude,
+         p_horizontal_datum       => p_horizontal_datum,
+         p_public_name            => p_public_name,
+         p_long_name              => p_long_name,
+         p_description            => p_description,
+         p_time_zone_id           => p_time_zone_id,
+         p_county_name            => p_county_name,
+         p_state_initial          => p_state_initial,
+         p_active                 => p_active,
+         p_location_kind_id       => p_location_kind_id,
+         p_map_label              => p_map_label,
+         p_published_latitude     => p_published_latitude,
+         p_published_longitude    => p_published_longitude,
+         p_bounding_office_id     => p_bounding_office_id,
+         p_nation_id              => p_nation_id,
+         p_nearest_city           => p_nearest_city,
+         p_alias_cursor           => p_alias_cursor,
+         p_db_office_id           => p_db_office_id);
+
+      p_geometry := retrieve_geometry(
+         p_location_id  => p_location_id,
+         p_db_office_id => p_db_office_id);
+   end retrieve_location3;
+
 
    function adjust_location_elevation(
       p_location      in out nocopy location_obj_t,
@@ -3636,6 +3618,306 @@ AS
    END retrieve_location;
 
    --------------------------------------------------------------------------------
+   -- PROCEDURE store_geometry
+   --------------------------------------------------------------------------------
+   procedure store_geometry(
+      p_location_code in number,
+      p_geometry      in sdo_geometry,
+      p_fail_if_exists in varchar2 default 'T')
+   is
+      l_rec   at_location_geometry%rowtype;
+      l_valid varchar2(4000);
+   begin
+      if p_geometry is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_Geometry');
+      end if;
+      l_valid := sdo_geom.validate_geometry_with_context(p_geometry, 0.005);
+      if l_valid != 'TRUE' then
+         if l_valid = 'FALSE' then
+            cwms_err.raise('ERROR', 'Invalid geometry: Error = '||l_valid);
+         else
+            begin
+               l_valid := 'ORA-'||to_number(l_valid, '00000');
+            exception
+               when others then null;
+            end;
+            cwms_err.raise('ERROR', 'Invalid geometry: Error = '||l_valid);
+         end if;
+      end if;
+      begin
+         select *
+           into l_rec
+           from at_location_geometry
+          where location_code = p_location_code;
+      exception
+         when no_data_found then null;
+      end;
+      if l_rec.location_code is null then
+         ---------------------
+         -- insert geometry --
+         ---------------------
+         insert
+            into at_location_geometry
+                 (location_code,
+                  geometry
+                 )
+          values (p_location_code,
+                  to_srid(p_geometry, 4326)
+                 );
+      elsif l_rec.geometry is null or not cwms_util.return_true_or_false(p_fail_if_exists) then
+         ---------------------
+         -- update geometry --
+         ---------------------
+         update at_location_geometry
+            set geometry = to_srid(p_geometry, 4326)
+          where location_code = p_location_code;
+      else
+         -----------
+         -- error --
+         -----------
+         cwms_err.raise('ERROR', 'Geometry already exists for location '||p_location_code);
+      end if;
+   end store_geometry;
+
+   --------------------------------------------------------------------------------
+   -- PROCEDURE store_geometry
+   --------------------------------------------------------------------------------
+   procedure store_geometry(
+      p_location_id    in varchar2,
+      p_geometry       in sdo_geometry,
+      p_fail_if_exists in varchar2 default 'T',
+      p_db_office_id   in varchar2)
+   is
+   begin
+      store_geometry(
+         get_location_code(p_db_office_id, p_location_id),
+         p_geometry,
+         p_fail_if_exists);
+   end store_geometry;
+
+   --------------------------------------------------------------------------------
+   -- FUNCTION retrieve_geometry
+   --------------------------------------------------------------------------------
+   function retrieve_geometry(
+      p_location_code in number)
+      return sdo_geometry
+   is
+      l_geometry sdo_geometry;
+   begin
+      begin
+         select geometry
+           into l_geometry
+           from at_location_geometry
+          where location_code = p_location_code;
+      exception
+         when no_data_found then null;
+      end;
+
+      return l_geometry;
+   end retrieve_geometry;
+
+   --------------------------------------------------------------------------------
+   -- FUNCTION retrieve_geometry
+   --------------------------------------------------------------------------------
+   function retrieve_geometry(
+      p_location_id  in varchar2,
+      p_db_office_id in varchar2)
+      return sdo_geometry
+   is
+   begin
+      return retrieve_geometry(get_location_code(p_db_office_id, p_location_id));
+   end retrieve_geometry;
+
+   --------------------------------------------------------------------------------
+   -- PROCEDURE delete_geometry
+   --------------------------------------------------------------------------------
+   procedure delete_geometry(
+      p_location_code in number)
+   is
+   begin
+      delete from at_location_geometry where location_code = p_location_code;
+   end delete_geometry;
+
+   --------------------------------------------------------------------------------
+   -- PROCEDURE delete_geometry
+   --------------------------------------------------------------------------------
+   procedure delete_geometry(
+      p_location_id  in varchar2,
+      p_db_office_id in varchar2)
+   is
+   begin
+      delete_geometry(
+         get_location_code(p_db_office_id, p_location_id));
+   end delete_geometry;
+
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_horizontal_datum
+   --------------------------------------------------------------------------------
+   function get_horizontal_datum(
+      p_location_code in number)
+      return varchar2
+   is
+      c_nullstr varchar2(6) := '<NULL>';
+      l_datum mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
+   begin
+      l_datum := cwms_cache.get(g_horiz_datum_cache, p_location_code);
+      if l_datum is null then
+         -- horizontal datum for location not in cache
+         select upper(trim(horizontal_datum))
+         into l_datum
+         from at_physical_location
+         where location_code = p_location_code;
+         l_datum := nvl(l_datum, c_nullstr);
+         cwms_cache.put(g_horiz_datum_cache, p_location_code, l_datum);
+      end if;
+      return replace(l_datum, c_nullstr, null);
+   end get_horizontal_datum;
+
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_srid
+   --------------------------------------------------------------------------------
+   function get_srid(
+      p_datum in varchar2)
+      return number
+   is
+      type srids_by_name_t is table of mdsys.sdo_coord_ref_sys.srid%type index by mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
+      c_nullint mdsys.sdo_coord_ref_sys.srid%type := -9999999999;
+      l_datum mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
+      l_srids_by_name srids_by_name_t;
+      l_srid mdsys.sdo_coord_ref_sys.srid%type;
+   begin
+      l_srid := cwms_cache.get(g_geometry_srid_cache, p_datum);
+      if l_srid is null then
+         -- SRID for horizontal datum not in cache
+         l_datum := p_datum;
+         for i in 1..2 loop   
+            begin 
+               select srid
+               into l_srid
+               from (select srid
+                        from mdsys.sdo_coord_ref_sys
+                        where coord_ref_sys_name = l_datum
+                        order by srid
+                     )
+               where rownum = 1;
+            exception
+               when no_data_found then
+                  if length(l_datum) > 3 and substr(l_datum, 1, 3) in ('WGS', 'NAD') and substr(l_datum, 4, 1) != ' ' then
+                     l_datum := substr(l_datum, 1, 3)||' '||substr(l_datum, 4);
+                  else
+                     exit;
+                  end if;
+            end;
+         end loop;
+         l_srid := nvl(l_srid, c_nullint);
+         cwms_cache.put(g_geometry_srid_cache, l_datum, l_srid);
+      end if;
+      return case l_srid when c_nullint then null else l_srid end;
+end get_srid;
+
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_location_srid
+   --------------------------------------------------------------------------------
+   function get_location_srid(
+      p_location_code in number)
+      return number
+   is
+      l_datum mdsys.sdo_coord_ref_sys.coord_ref_sys_name%type;
+      l_srid mdsys.sdo_coord_ref_sys.srid%type;
+   begin
+      l_datum := get_horizontal_datum(p_location_code);
+      if l_datum is null then
+         cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'location '||p_location_code||' has NULL horizontal datum');
+         return null;
+      end if;
+      l_srid := get_srid(l_datum);
+      if l_srid is null then
+         cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'location '||p_location_code||' has unknown horizontal datum: '||l_datum);
+      end if;
+      return l_srid;
+   end get_location_srid;
+
+   --------------------------------------------------------------------------------
+   -- PRODEDURE get_location_lat_lon
+   --------------------------------------------------------------------------------
+   procedure get_location_lat_lon(
+      p_lat in out nocopy at_location_geometry.latitude%type,
+      p_lon in out nocopy at_location_geometry.latitude%type,
+      p_location_code in number)
+   is
+      l_loc at_physical_location%rowtype;
+      l_lat at_location_geometry.latitude%type;
+      l_lon at_location_geometry.latitude%type;
+      l_geo at_location_geometry.geometry%type;
+   begin
+      -------------------------------
+      -- get lat/lon from location --
+      -------------------------------
+      begin
+         select geometry,
+                latitude,
+                longitude
+           into l_geo,
+                l_lat,
+                l_lon
+           from at_location_geometry
+          where location_code = p_location_code;
+      exception
+         when no_data_found then null;
+      end;
+      if l_geo is null then
+         ------------------------------------
+         -- get lat/lon from base location --
+         ------------------------------------
+         begin
+            select latitude,
+                   longitude
+              into l_lat,
+                   l_lon
+              from at_location_geometry
+             where location_code = (select base_location_code from at_physical_location where location_code = p_location_code);
+         exception
+            when no_data_found then null;
+         end;
+      end if;
+      if l_lat is null or l_lon is null then
+         p_lat := null;
+         p_lon := null;
+      else
+         p_lat := l_lat;
+         p_lon := l_lon;
+      end if;
+   end;
+
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_location_lat
+   --------------------------------------------------------------------------------
+   function get_location_lat(
+      p_location_code in at_physical_location.location_code%type)
+      return at_location_geometry.latitude%type deterministic
+   is
+      l_lat at_location_geometry.latitude%type;
+      l_lon at_location_geometry.latitude%type;
+   begin
+      get_location_lat_lon(l_lat, l_lon, p_location_code);
+      return l_lat;
+   end get_location_lat;
+
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_location_lon
+   --------------------------------------------------------------------------------
+   function get_location_lon(
+      p_location_code in at_physical_location.location_code%type)
+      return at_location_geometry.latitude%type deterministic
+   is
+      l_lat at_location_geometry.latitude%type;
+      l_lon at_location_geometry.latitude%type;
+   begin
+      get_location_lat_lon(l_lat, l_lon, p_location_code);
+      return l_lon;
+   end get_location_lon;
+
+   --------------------------------------------------------------------------------
    -- FUNCTION get_local_timezone_code
    --------------------------------------------------------------------------------
 	function get_local_timezone_code (p_location_code in number)
@@ -3653,6 +3935,7 @@ AS
       end if;
       return l_rec.time_zone_code;
    end get_local_timezone_code;
+
    --------------------------------------------------------------------------------
    -- FUNCTION get_local_timezone
    --------------------------------------------------------------------------------
@@ -5412,7 +5695,8 @@ end unassign_loc_groups;
                            c.county_name county_name,
                            tz.time_zone_name time_zone_name,
                            pl.location_type location_type,
-                           pl.latitude latitude, pl.longitude longitude,
+                           lg.geometry geometry, lg.geometry_type_code geometry_type_code,
+                           lg.latitude latitude, lg.longitude longitude,
                            pl.horizontal_datum horizontal_datum,
                            pl.elevation elevation,
                            pl.vertical_datum vertical_datum,
@@ -5428,6 +5712,8 @@ end unassign_loc_groups;
                            n.long_name nation_id,
                            pl.nearest_city nearest_city
                     FROM   at_physical_location pl
+                           LEFT OUTER JOIN at_location_geometry lg
+                              ON (pl.location_code = lg.location_code)
                            LEFT OUTER JOIN at_base_location bl
                               ON (pl.base_location_code =
                                      bl.base_location_code)
@@ -5475,7 +5761,9 @@ end unassign_loc_groups;
                                 rec.bounding_office_id,
                                 rec.bounding_office_name,
                                 rec.nation_id,
-                                rec.nearest_city
+                                rec.nearest_city,
+                                rec.geometry,
+                                rec.geometry_type_code
                                );
       END LOOP;
 
@@ -7243,24 +7531,32 @@ end unassign_loc_groups;
                l_lat binary_double;
                l_lon binary_double;
             begin
-               select latitude,
-                      longitude
-                 into l_lat,
-                      l_lon
-                 from at_physical_location
-                where location_code = p_location_code;
+               begin
+                  select latitude,
+                         longitude
+                    into l_lat,
+                         l_lon
+                    from at_location_geometry
+                   where location_code = p_location_code;
+               exception
+                  when no_data_found then null;
+               end;
                if l_lat is null and l_lon is null then
                   --------------------------------------------
                   -- inherit lat/lon from the base location --
                   --------------------------------------------
-                  select pl2.latitude,
-                         pl2.longitude
-                    into l_lat,
-                         l_lon
-                    from at_physical_location pl1,
-                         at_physical_location pl2
-                  where  pl1.location_code = p_location_code
-                     and pl2.location_code = pl1.base_location_code;
+                  begin
+                     select lg.latitude,
+                            lg.longitude
+                       into l_lat,
+                            l_lon
+                       from at_location_geometry lg,
+                            at_physical_location pl
+                      where pl.location_code = p_location_code
+                        and lg.location_code = pl.base_location_code;
+                  exception
+                     when no_data_found then null;
+                  end;
                end if;
                if l_lat is not null and l_lon is not null then
                   begin
@@ -7720,10 +8016,10 @@ end unassign_loc_groups;
       l_base_location_code at_physical_location.base_location_code%type;
       l_sub_location_id    at_physical_location.sub_location_id%type;
       l_vertical_datum     at_physical_location.vertical_datum%type;
-      l_latitude           at_physical_location.latitude%type;
-      l_longitude          at_physical_location.longitude%type;
-      l_base_latitude      at_physical_location.latitude%type;
-      l_base_longitude     at_physical_location.longitude%type;
+      l_latitude           at_location_geometry.latitude%type;
+      l_longitude          at_location_geometry.longitude%type;
+      l_base_latitude      at_location_geometry.latitude%type;
+      l_base_longitude     at_location_geometry.longitude%type;
       l_count              pls_integer;
       l_location_id      varchar2(57);
       l_office_id        varchar2(16);
@@ -7750,29 +8046,45 @@ end unassign_loc_groups;
       ------------------------------------------------------
       -- see if we need to inherit from the base location --
       ------------------------------------------------------
-      select bl.base_location_id,
-             bl.base_location_code,
-             pl.sub_location_id,
-             pl.vertical_datum,
-             pl.latitude,
-             pl.longitude
+      select base_location_id,
+             base_location_code,
+             sub_location_id,
+             vertical_datum,
+             latitude,
+             longitude
         into l_base_location_id,
              l_base_location_code,
              l_sub_location_id,
              l_vertical_datum,
              l_latitude,
              l_longitude
-        from at_physical_location pl,
-             at_base_location bl
-       where location_code = p_location_code
-         and bl.base_location_code = pl.base_location_code;
+        from (select pl.location_code,
+                     bl.base_location_id,
+                     bl.base_location_code,
+                     pl.sub_location_id,
+                     pl.vertical_datum
+                from at_physical_location pl,
+                     at_base_location bl
+               where location_code = p_location_code
+                 and bl.base_location_code = pl.base_location_code
+             ) q1
+             left outer join
+             (select location_code,
+                     latitude,
+                     longitude
+                from at_location_geometry
+             ) q2 on q2.location_code = q1.location_code;
       if l_sub_location_id is not null and l_vertical_datum is null then
-         select latitude,
-                longitude
-           into l_base_latitude,
-                l_base_longitude
-           from at_physical_location
-          where location_code = l_base_location_code;
+         begin
+            select latitude,
+                   longitude
+              into l_base_latitude,
+                   l_base_longitude
+              from at_location_geometry
+             where location_code = l_base_location_code;
+         exception
+            when no_data_found then null;
+         end;
          if equal(nvl(l_latitude,  l_base_latitude),  l_base_latitude) and
             equal(nvl(l_longitude, l_base_longitude), l_base_longitude)
          then
@@ -9676,14 +9988,11 @@ end unassign_loc_groups;
       p_location_code in integer)
       return varchar2
    is
-      l_sub_rec  at_physical_location%rowtype;
-      l_base_rec at_physical_location%rowtype;
+      l_lat at_location_geometry.latitude%type;
+      l_lon at_location_geometry.longitude%type;
    begin
-      select * into l_sub_rec  from at_physical_location where location_code = p_location_code;
-      select * into l_base_rec from at_physical_location where location_code = l_sub_rec.base_location_code;
-      return get_nation_id(
-                coalesce(l_sub_rec.latitude,  l_base_rec.latitude),
-                coalesce(l_sub_rec.longitude, l_base_rec.longitude));
+      get_location_lat_lon(l_lat, l_lon, p_location_code);
+      return get_nation_id(l_lat, l_lon);
    end get_nation_id_for_loc;
 
    function get_bounding_ofc_code(
@@ -9784,14 +10093,11 @@ end unassign_loc_groups;
       p_location_code in integer)
       return integer
    is
-      l_sub_rec  at_physical_location%rowtype;
-      l_base_rec at_physical_location%rowtype;
+      l_lat at_location_geometry.latitude%type;
+      l_lon at_location_geometry.longitude%type;
    begin
-      select * into l_sub_rec  from at_physical_location where location_code = p_location_code;
-      select * into l_base_rec from at_physical_location where location_code = l_sub_rec.base_location_code;
-      return get_bounding_ofc_code(
-                coalesce(l_sub_rec.latitude,  l_base_rec.latitude),
-                coalesce(l_sub_rec.longitude, l_base_rec.longitude));
+      get_location_lat_lon(l_lat, l_lon, p_location_code);
+      return get_bounding_ofc_code(l_lat, l_lon);
    end get_bounding_ofc_code_for_loc;
 
    function get_bounding_ofc_code_for_loc(
@@ -10016,14 +10322,11 @@ end unassign_loc_groups;
       p_location_code in integer)
       return integer
    is
-      l_sub_rec  at_physical_location%rowtype;
-      l_base_rec at_physical_location%rowtype;
+      l_lat at_location_geometry.latitude%type;
+      l_lon at_location_geometry.longitude%type;
    begin
-      select * into l_sub_rec  from at_physical_location where location_code = p_location_code;
-      select * into l_base_rec from at_physical_location where location_code = l_sub_rec.base_location_code;
-      return get_county_code(
-                coalesce(l_sub_rec.latitude,  l_base_rec.latitude),
-                coalesce(l_sub_rec.longitude, l_base_rec.longitude));
+      get_location_lat_lon(l_lat, l_lon, p_location_code);
+      return get_county_code(l_lat, l_lon);
    end get_county_code_for_loc;
 
    function get_county_code_for_loc(
@@ -10091,14 +10394,11 @@ end unassign_loc_groups;
       p_location_code in integer)
       return str_tab_t
    is
-      l_sub_rec  at_physical_location%rowtype;
-      l_base_rec at_physical_location%rowtype;
+      l_lat at_location_geometry.latitude%type;
+      l_lon at_location_geometry.longitude%type;
    begin
-      select * into l_sub_rec  from at_physical_location where location_code = p_location_code;
-      select * into l_base_rec from at_physical_location where location_code = l_sub_rec.base_location_code;
-      return get_nearest_city(
-                coalesce(l_sub_rec.latitude,  l_base_rec.latitude),
-                coalesce(l_sub_rec.longitude, l_base_rec.longitude));
+      get_location_lat_lon(l_lat, l_lon, p_location_code);
+      return get_nearest_city(l_lat, l_lon);
    end get_nearest_city_for_loc;
 
    function get_nearest_city_for_loc(
@@ -10129,8 +10429,8 @@ end unassign_loc_groups;
          long_name           at_physical_location.long_name%type,
          public_name         at_physical_location.public_name%type,
          description         at_physical_location.description%type,
-         latitude            at_physical_location.latitude%type,
-         longitude           at_physical_location.longitude%type,
+         latitude            at_location_geometry.latitude%type,
+         longitude           at_location_geometry.longitude%type,
          horizontal_datum    at_physical_location.horizontal_datum%type,
          elevation           at_physical_location.elevation%type,
          elevation_unit      cwms_unit.unit_id%type,
@@ -10325,8 +10625,8 @@ end unassign_loc_groups;
              pl1.long_name,
              pl1.public_name,
              pl1.description,
-             coalesce(pl1.latitude, pl2.latitude),
-             coalesce(pl1.longitude, pl2.longitude),
+             get_location_lat(v2.location_code),
+             get_location_lon(v2.location_code),
              coalesce(pl1.horizontal_datum, pl2.horizontal_datum),
              -- elevation
              case
@@ -11042,6 +11342,8 @@ end unassign_loc_groups;
 begin
    g_location_code_cache.name := 'cwms_loc.g_location_code_cache';
    g_location_id_cache.name   := 'cwms_loc.g_location_id_cache';
+   g_horiz_datum_cache.name   := 'cwms_loc.g_horiz_datum_cache';
+   g_geometry_srid_cache.name := 'cwms_loc.g_geometry_srid_cache';
 END cwms_loc;
 /
 show errors;
