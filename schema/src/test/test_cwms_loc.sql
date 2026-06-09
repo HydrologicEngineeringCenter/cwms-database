@@ -2948,7 +2948,7 @@ AS
       select value
         into l_data
         from at_clob
-       where id = '/TEST/CWMS-2430';
+       where id = '/TEST/CWMS-2430_locations_for_test_mods_for_generic_geometry';
       l_data_tab := cwms_util.parse_delimited_text (
          p_text 	         => l_data,
          p_field_delimiter => chr(9),

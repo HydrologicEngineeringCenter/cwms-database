@@ -14,4 +14,4 @@ FIELDS TERMINATED BY "," OPTIONALLY ENCLOSED BY '"'
   VALUE LOBFILE (temp_filename) TERMINATED BY EOF
 )
 BEGINDATA
-0,53,"/TEST/CWMS-2430","","CWMS-2430.txt"
+0,53,"/TEST/CWMS-2430_locations_for_test_mods_for_generic_geometry","","CWMS-2430_locations_for_test_mods_for_generic_geometry.txt"
