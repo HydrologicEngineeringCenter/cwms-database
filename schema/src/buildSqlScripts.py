@@ -4702,7 +4702,10 @@ parameters = [
     [46,    "Electric Charge Rate",             "Current",     "Current",            "ampere",  "ampere",  "ampere",      "Electric current flowing past a point in a circuit"                          ],
     [47,    "Frequency",                        "Freq",        "Frequency",          "Hz",      "Hz",      "Hz",          "The number of cycles or occurrences per time unit"                           ],
     [48,    "None",                             "Probability", "Probability",        "n/a",     "n/a",     "n/a",         "Expected fraction of all events for a specific event"                        ],
-    [49,    "Depth Velocity",                   "DepthVelocity",          "Depth Velocity",  "m2/s",    "m2/s",   "ft2/s",          "Depth Velocity"                        ],
+    [49,    "Depth Velocity",                   "DepthVelocity", "Depth Velocity",   "m2/s",    "m2/s",   "ft2/s",        "Depth Velocity"                                                              ],
+	[50,    "Volume Rate",                      "NBS",         "Net Basin Supply",   "cms",     "cms",     "cfs",         "Volume rate of Net Basin Supply to body of water"                            ],
+    [51,    "Volume Rate",                      "NTS",         "Net Total Supply",   "cms",     "cms",     "cfs",         "Volume rate of Net Total Supply to body of water"                            ],
+    [52,    "None",                             "ProbExceed",  "Probability of Exceedance", "%",  "%",     "%",           "Ratio expressed as hundredths for Probability of Exceedance"                 ],
 #   Negative base parameter codes for non-value parmameters (i.e., no entries in AT_TSV... tables)
     [-1,    "None",                             "Text",     "Text Data",          "n/a",     "n/a",     "n/a",         "Text data only, no numeric values"                                           ],
     [-2,    "None",                             "Binary",   "Binary Data",        "n/a",     "n/a",     "n/a",         "Binary data such as images, documents, etc..."                               ],
