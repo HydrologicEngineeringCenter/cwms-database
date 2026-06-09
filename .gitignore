@@ -58,5 +58,3 @@ schema/src/xml/hec-datatypes.xsd
 **/*.versionsBackup
 **/.vscode
 gradle.properties
-schema/rockylinux.xml
-schema/mikper5090.xml
