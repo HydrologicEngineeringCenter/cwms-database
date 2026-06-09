@@ -92,7 +92,6 @@ CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
 --%test (CWDB-134 STORE_TS_MULTI doen't hide individual error messages)
  procedure cwdb_134_test_store_multi_does_not_hide_error_messages;
 
---%disabled on 2026-04-07 by Mike Perryman because of flaky results on GitHub and difficulty assesing why
 --%test (CWDB-211 Update TSV DML counters to include streamed DML)
  procedure cwdb_211_update_tsv_dml_counters_to_include_streamed_dml;
 
@@ -2220,7 +2219,7 @@ AS
       -----------------------------------
       -- wait until top of next minute --
       -----------------------------------
-      dbms_session.sleep(60 - extract(second from systimestamp));
+      dbms_session.sleep(60 - extract(second from systimestamp) + 1);
       l_time := trunc(systimestamp, 'MI') + interval '000 00:01:00' day to second;
       for test_streaming in 0..1 loop
          cwms_tsv.is_stream_session := test_streaming = 1; -- normally set from username at init of cwms_tsv package

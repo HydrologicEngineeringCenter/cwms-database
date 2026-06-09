@@ -13,7 +13,6 @@ DECLARE
 	view_names id_array_t := id_array_t (
 	   'av_application_login',      -- created in at_schema_2
 	   'av_application_session',    -- created in at_schema_2
-      'av_auth_sched_entries',
       'av_db_change_log',
       'av_basin',                  -- created in at_schema_2
       'av_clob',
@@ -115,7 +114,6 @@ DECLARE
       'av_turbine',
       'av_turbine_change',
       'av_turbine_setting',
-      'av_unauth_sched_entries',
       'av_unit',
       'av_usgs_parameter',
       'av_usgs_parameter_all',
@@ -145,7 +143,6 @@ END;
 /
 
 ---------------------------------------------------------
-@@cwms/views/av_auth_sched_entries
 @@cwms/views/av_clob
 @@cwms/views/av_compound_outlet
 @@cwms/views/av_configuration
@@ -247,7 +244,6 @@ END;
 @@cwms/views/av_turbine
 @@cwms/views/av_turbine_change
 @@cwms/views/av_turbine_setting
-@@cwms/views/av_unauth_sched_entries
 @@cwms/views/av_unit
 @@cwms/views/av_usgs_parameter
 @@cwms/views/av_usgs_parameter_all
