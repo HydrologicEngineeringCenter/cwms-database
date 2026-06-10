@@ -5205,7 +5205,7 @@ AS
          ( select ts_code, version_date, data_entry_date, date_time, value, quality_code
            from   :table_name
            where  ts_code = :ts_code and
-                  version_date = nvl(:version_date, version_date)
+                  version_date = :version_date
          )
          select q0.ts_code,
                 q0.version_date as version_time,
