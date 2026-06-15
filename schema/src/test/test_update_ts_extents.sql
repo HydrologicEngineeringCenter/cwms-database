@@ -1064,7 +1064,7 @@ procedure cwms_2478_ts_extents_ts_code
       select duration_code
          into l_dur_code
          from cwms_duration
-         where duration = 0;
+         where duration_id = '0';
       select time_zone_code
          into l_tz_code
          from cwms_time_zone
