@@ -28,6 +28,7 @@ procedure test_cwdb_313_314_ts_extents_with_ts_with_no_values;
 --%test (TS extents not updating for new versioned time series)
 procedure test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts;
 --%test(TS extents using integer instead of number for TS_CODE)
+--%throws(-06502)
 procedure cwms_2478_ts_extents_ts_code;
 
 procedure setup;
