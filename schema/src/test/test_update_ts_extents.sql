@@ -1073,11 +1073,11 @@ procedure cwms_2478_ts_extents_ts_code
       insert into at_cwms_ts_spec values (l_long_ts_code, l_loc_code,
                                           l_param_code, l_param_type_code,
                                           l_interval_code, l_dur_code,
-                                          '', '', 0,
+                                          'RAW', 'N/A', 0,
                                           0, 0,
-                                          '', l_tz_code, 'F',
+                                          null, l_tz_code, 'F',
                                           'F', 'T', null,
-                                          '', 'F', null);
+                                          null, 'F', null);
 
       insert into at_ts_extents values (l_long_ts_code, l_version_time,
                                         l_version_time, l_earliest_time,
