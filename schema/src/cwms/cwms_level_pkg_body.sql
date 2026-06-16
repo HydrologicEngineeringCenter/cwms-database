@@ -6471,7 +6471,7 @@ begin
       p_level_precedence        => p_level_precedence,
       p_office_id               => p_office_id);
    return l_level_values;
-end retrieve_loc_lvl_values4l
+end retrieve_loc_lvl_values4;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
 --
