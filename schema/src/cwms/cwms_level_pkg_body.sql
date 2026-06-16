@@ -6395,6 +6395,84 @@ begin
    return l_level_values;
 end retrieve_loc_lvl_values3;
 --------------------------------------------------------------------------------
+-- FUNCTION retrieve_loc_lvl_values4
+--------------------------------------------------------------------------------
+function retrieve_loc_lvl_values4(
+   p_location_level_id       in  varchar2,
+   p_specified_times         in  ztsv_array default null,
+   p_start_time              in  date default null,
+   p_end_time                in  date default null,
+   p_level_units             in  varchar2,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
+   return double_tab_t;
+is
+   l_level_values ztsv_array;
+   l_utc_dates    date_table_type;
+   l_min_date_utc date;
+   l_max_date_utc date;
+   l_level_id_parts str_tab_t;
+   l_attr_id_parts  str_tab_t;
+   l_level_values ztsv_array;
+   l_date_offset  number;
+   l_date_offsets number_tab_t;
+   l_values       double_tab_t;
+   l_quality      number_tab_t;
+   l_seq_props    cwms_lookup.sequence_properties_t;
+   l_hi_idx       pls_integer;
+   l_lo_idx       pls_integer;
+   l_log_used     boolean;
+   l_ratio        number;
+begin
+   if p_specified_times is not null then
+      retrieve_loc_lvl_values3(
+             p_level_values => l_level_values,
+             p_specified_times => p_specified_times,
+             p_location_level_id => p_location_level_id,
+             p_level_units => p_level_units,
+             p_attribute_id => p_attribute_id,
+             p_attribute_value => p_attribute_value,
+             p_attribute_units => p_attribute_units,
+             p_timezone_id => p_timezone_id,
+             p_office_id => p_office_id,
+             p_level_precedence => p_level_precedence
+      );
+      return l_level_values;
+   end if;
+   -- do retrieval for irregular level as ts
+   ---------------------------------------------------------
+   -- get the location level values the level breakpoints --
+   ---------------------------------------------------------
+   l_level_id_parts := cwms_util.split_text(p_location_level_id, '.');
+   if p_attribute_id is null then
+      l_attr_id_parts := str_tab_t(null, null, null);
+   else
+      l_attr_id_parts :=  cwms_util.split_text(p_attribute_id, '.');
+   end if;
+   retrieve_loc_lvl_values_utc(
+      p_level_values            => l_level_values,
+      p_location_id             => l_level_id_parts(1),
+      p_parameter_id            => l_level_id_parts(2),
+      p_parameter_type_id       => l_level_id_parts(3),
+      p_duration_id             => l_level_id_parts(4),
+      p_spec_level_id           => l_level_id_parts(5),
+      p_level_units             => p_level_units,
+      p_start_time_utc          => l_min_date_utc,
+      p_end_time_utc            => l_max_date_utc,
+      p_attribute_value         => p_attribute_value,
+      p_attribute_units         => p_attribute_units,
+      p_attribute_parameter_id  => l_attr_id_parts(1),
+      p_attribute_param_type_id => l_attr_id_parts(2),
+      p_attribute_duration_id   => l_attr_id_parts(3),
+      p_level_precedence        => p_level_precedence,
+      p_office_id               => p_office_id);
+   return l_level_values;
+end retrieve_loc_lvl_values4l
+--------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
 --
 -- Retreives a time series of Location Level values for a specified time window
