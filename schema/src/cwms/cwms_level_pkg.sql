@@ -1485,7 +1485,7 @@ function retrieve_loc_lvl_values4(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null,
    p_level_precedence        in  varchar2 default 'VN')
-   return double_tab_t;
+   return ztsv_array;
 /**
  * Retrieves a time series of location level values for a specified location level
  * time series, specified level, and time window.  The location level identifier

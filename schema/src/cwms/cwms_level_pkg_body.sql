@@ -6409,7 +6409,7 @@ function retrieve_loc_lvl_values4(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null,
    p_level_precedence        in  varchar2 default 'VN')
-   return double_tab_t
+   return ztsv_array
 is
    l_level_values ztsv_array;
    l_min_date_utc date;
@@ -6451,12 +6451,8 @@ begin
    else
       l_attr_id_parts :=  cwms_util.split_text(p_attribute_id, '.');
    end if;
-   select cwms_util.change_timezone(p_start_time, p_timezone_id, 'UTC')
-      into l_min_date_utc
-         from p_start_time;
-   select cwms_util.CHANGE_TIMEZONE(p_end_time, p_timezone_id, 'UTC')
-      into l_max_date_utc
-         from p_end_time;
+   l_min_date_utc := cwms_util.change_timezone(p_start_time, p_timezone_id, 'UTC');
+   l_max_date_utc := cwms_util.CHANGE_TIMEZONE(p_end_time, p_timezone_id, 'UTC');
    retrieve_loc_lvl_values_utc(
       p_level_values            => l_level_values,
       p_location_id             => l_level_id_parts(1),
