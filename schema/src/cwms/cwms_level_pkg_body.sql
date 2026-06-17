@@ -6416,7 +6416,6 @@ is
    l_max_date_utc date;
    l_level_id_parts str_tab_t;
    l_attr_id_parts  str_tab_t;
-   l_level_values ztsv_array;
    l_values       double_tab_t;
    l_quality      number_tab_t;
    l_seq_props    cwms_lookup.sequence_properties_t;
