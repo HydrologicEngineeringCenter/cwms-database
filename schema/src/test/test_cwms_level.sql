@@ -35,6 +35,8 @@ procedure test_cwdb_304_null_values_in_av_location_level_curval;
 procedure test_issue_61_monthly_seasonal_values_with_origin_day_gt_28;
 --%test(Issue 83: level-as-timeseries retrieval bug for seasonal data)
 procedure test_issue_83_retrieve_seasonal_as_timeseries;
+--%test(CDA-116: irregular level-as-timeseries retrieval)
+procedure test_cda_116_irregular_level_as_timeseries;
 
 c_office_id             varchar2(16)  := '&&office_id';
 c_location_id           varchar2(57)  := 'LocLevelTestLoc';
@@ -2511,6 +2513,65 @@ begin
    end loop;
 
 end test_issue_83_retrieve_seasonal_as_timeseries;
+
+--------------------------------------------------------------------------------
+-- procedure test_cda_116_irregular_level_as_timeseries
+--------------------------------------------------------------------------------
+procedure test_cda_116_irregular_level_as_timeseries
+is
+   l_seasonal_data seasonal_value_tab_t := seasonal_value_tab_t (
+         seasonal_value_t (0, 0, 100.0),  -- Jan 01
+         seasonal_value_t (0, 30, 110.0),  -- Feb 01
+         seasonal_value_t (0, 45, 120.0),  -- Mar 01
+         seasonal_value_t (0, 90, 130.0),  -- Apr 01
+         seasonal_value_t (0, 120, 140.0),  -- May 01
+         seasonal_value_t (0, 180, 150.0),  -- Jun 01
+         seasonal_value_t (0, 300, 160.0),  -- Jul 01
+         seasonal_value_t (0, 420, 150.0),  -- Aug 01
+         seasonal_value_t (0, 435, 140.0),  -- Sep 01
+         seasonal_value_t (0, 450, 130.0),  -- Oct 01
+         seasonal_value_t (0, 510, 120.0),  -- Nov 01
+         seasonal_value_t (0, 525, 110.0)); -- Dec 01
+   l_result_values ztsv_array := ztsv_array();
+   l_interval_origin date := date '2025-01-01';
+   l_start_ts timestamp := timestamp '2025-01-01 12:00';
+   l_end_ts timestamp := timestamp '2025-01-03 14:45';
+   l_interval_months number_tab_t := number_tab_t(1, 12);
+   l_interpolate str_tab_t := str_tab_t('F', 'T');
+   l_values ztsv_array;
+   l_prev binary_integer;
+   l_next binary_integer;
+   l_prev_val number;
+   l_next_val number;
+   l_interp_flag varchar2(1);
+begin
+   for i in 1..l_interpolate.count loop
+      for j in 1..l_seasonal_data.count loop
+         cwms_level.store_location_level3 (
+            p_location_level_id => c_top_of_normal_elev_id,
+            p_level_value       => null,
+            p_level_units       => 'm',
+            p_effective_date    => l_interval_origin,
+            p_timezone_id       => 'UTC',
+            p_interval_origin   => l_interval_origin,
+            p_interval_minutes   => l_seasonal_data(j).offset_minutes,
+            p_interpolate       => l_interpolate(i),
+            p_seasonal_values   => l_seasonal_data,
+            p_fail_if_exists    => 'T' ,
+            p_office_id         => c_office_id);
+      end loop;
+   end loop;
+
+   l_results_values := cwms_level.retrieve_loc_lvl_values4(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_start_time => l_start_ts,
+      p_end_time => l_end_ts,
+      p_level_units => 'm',
+      p_timezone_id => 'UTC',
+      p_office_id => c_office_id
+   );
+
+end test_cda_116_irregular_level_as_timeseries;
 
 end test_cwms_level;
 /

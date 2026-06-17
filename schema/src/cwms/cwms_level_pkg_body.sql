@@ -6412,20 +6412,14 @@ function retrieve_loc_lvl_values4(
    return double_tab_t
 is
    l_level_values ztsv_array;
-   l_utc_dates    date_table_type;
    l_min_date_utc date;
    l_max_date_utc date;
    l_level_id_parts str_tab_t;
    l_attr_id_parts  str_tab_t;
    l_level_values ztsv_array;
-   l_date_offset  number;
-   l_date_offsets number_tab_t;
    l_values       double_tab_t;
    l_quality      number_tab_t;
    l_seq_props    cwms_lookup.sequence_properties_t;
-   l_hi_idx       pls_integer;
-   l_lo_idx       pls_integer;
-   l_log_used     boolean;
    l_ratio        number;
 begin
    if p_specified_times is not null then
@@ -6444,6 +6438,11 @@ begin
       return l_level_values;
    end if;
    -- do retrieval for irregular level as ts
+   if p_start_time is null or p_end_time is null then
+      cwms_err.raise(
+         'ERROR',
+         'Location Level start and end timestamps must not be null.');
+   end if;
    ---------------------------------------------------------
    -- get the location level values the level breakpoints --
    ---------------------------------------------------------
@@ -6453,6 +6452,12 @@ begin
    else
       l_attr_id_parts :=  cwms_util.split_text(p_attribute_id, '.');
    end if;
+   select cwms_util.change_timezone(p_start_time, p_timezone_id, 'UTC')
+      into l_min_date_utc
+         from p_start_time;
+   select cwms_util.CHANGE_TIMEZONE(p_end_time, p_timezone_id, 'UTC')
+      into l_max_date_utc
+         from p_end_time;
    retrieve_loc_lvl_values_utc(
       p_level_values            => l_level_values,
       p_location_id             => l_level_id_parts(1),
