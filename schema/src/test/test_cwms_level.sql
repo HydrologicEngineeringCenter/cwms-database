@@ -2534,8 +2534,8 @@ is
          seasonal_value_t (0, 525, 110.0)); -- Dec 01
    l_result_values ztsv_array := ztsv_array();
    l_interval_origin date := date '2025-01-01';
-   l_start_ts timestamp := timestamp '2025-01-01 12:00';
-   l_end_ts timestamp := timestamp '2025-01-03 14:45';
+   l_start_ts timestamp := to_timestamp('2025-01-01 12:00', 'YYYY-MM-DD HH24:MI');
+   l_end_ts timestamp := to_timestamp('2025-01-03 14:45', 'YYYY-MM-DD HH24:MI');
    l_interval_months number_tab_t := number_tab_t(1, 12);
    l_interpolate str_tab_t := str_tab_t('F', 'T');
    l_values ztsv_array;
@@ -2562,7 +2562,7 @@ begin
       end loop;
    end loop;
 
-   l_results_values := cwms_level.retrieve_loc_lvl_values4(
+   l_result_values := cwms_level.retrieve_loc_lvl_values4(
       p_location_level_id => c_top_of_normal_elev_id,
       p_start_time => l_start_ts,
       p_end_time => l_end_ts,
