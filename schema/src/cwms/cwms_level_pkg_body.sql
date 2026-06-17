@@ -6409,7 +6409,7 @@ function retrieve_loc_lvl_values4(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null,
    p_level_precedence        in  varchar2 default 'VN')
-   return double_tab_t;
+   return double_tab_t
 is
    l_level_values ztsv_array;
    l_utc_dates    date_table_type;
