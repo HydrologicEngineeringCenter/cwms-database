@@ -2520,7 +2520,7 @@ end test_issue_83_retrieve_seasonal_as_timeseries;
 procedure test_cda_116_irregular_level_as_timeseries
 is
    l_seasonal_data seasonal_value_tab_t := seasonal_value_tab_t (
-         seasonal_value_t (0, 0, 100.0),  -- Jan 01
+         seasonal_value_t (0, 15, 100.0),  -- Jan 01
          seasonal_value_t (0, 30, 110.0),  -- Feb 01
          seasonal_value_t (0, 45, 120.0),  -- Mar 01
          seasonal_value_t (0, 90, 130.0),  -- Apr 01
