@@ -12,6 +12,12 @@ procedure test_fcst_spec_ops;
 procedure test_fcst_inst_ops;
 --%test(Test forecast info uppercase keys and uniqueness)
 procedure test_fcst_info_uniqueness;
+--%test(Test forecast location ordering and primary location concepts)
+procedure test_fcst_loc_ordering;
+--%test(Test timeseries validation for forecast specification)
+procedure test_fcst_ts_validation;
+--%test(Test updating primary location without deleting others (reordering))
+procedure test_fcst_loc_reordering;
 
 procedure setup;
 procedure teardown;
@@ -90,7 +96,7 @@ is
    l_result clob;
 begin
    if p_input is null then return null; end if;
-   for c in (select column_value as rec from (cwms_util.split_text(p_input, chr(10))) order by 1) loop
+   for c in (select column_value as rec from table(cwms_util.split_text(p_input, chr(10))) order by 1) loop
       l_result := l_result||chr(10)||c.rec;
    end loop;
    return substr(l_result, 1);
@@ -164,7 +170,8 @@ is
    l_description        at_fcst_spec.description%type;
    l_description_out    at_fcst_spec.description%type;
    l_location_id        at_cwms_ts_id.location_id%type;
-   l_location_id_out    at_cwms_ts_id.location_id%type;
+   l_location_id_out    clob;
+   l_sort_order_out     clob;
    l_timeseries_ids     clob;
    l_timeseries_ids_out clob;
    l_timeseries_id      at_cwms_ts_id.cwms_ts_id%type;
@@ -422,6 +429,7 @@ begin
                p_entity_id       => l_entity_id_out,
                p_description     => l_description_out,
                p_location_id     => l_location_id_out,
+               p_sort_order      => l_sort_order_out,
                p_timeseries_ids  => l_timeseries_ids_out,
                p_fcst_spec_id    => c_fcst_spec_id,
                p_fcst_designator => l_fcst_designator,
@@ -1080,6 +1088,257 @@ begin
       p_office_id       => c_office_id);
 
 end test_fcst_info_uniqueness;
+---------------------------------------------------------------------------------
+-- procedure test_fcst_loc_ordering
+---------------------------------------------------------------------------------
+procedure test_fcst_loc_ordering
+is
+   l_loc1 constant varchar2(32) := c_location_id || '1';
+   l_loc2 constant varchar2(32) := c_location_id || '2';
+   l_loc3 constant varchar2(32) := c_location_id || '3';
+   l_loc_ids clob;
+   l_sort_orders clob;
+   l_loc_ids_out clob;
+   l_sort_orders_out clob;
+   l_crsr sys_refcursor;
+   l_office_id cwms_office.office_id%type;
+   l_fcst_spec_id at_fcst_spec.fcst_spec_id%type;
+   l_fcst_designator at_fcst_spec.fcst_designator%type;
+   l_entity_id at_entity.entity_id%type;
+   l_entity_name at_entity.entity_name%type;
+   l_description at_fcst_spec.description%type;
+   l_location_id_out at_cwms_ts_id.location_id%type;
+   l_tsid_crsr sys_refcursor;
+   l_timeseries_ids clob;
+begin
+   -- 1. Setup extra locations
+   cwms_loc.store_location(l_loc1, null, 'T', c_office_id);
+   cwms_loc.store_location(l_loc2, null, 'T', c_office_id);
+   cwms_loc.store_location(l_loc3, null, 'T', c_office_id);
+
+   -- 2. Test primary location uniqueness constraint (-1)
+   cwms_fcst.store_fcst_spec(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => 'CE'||c_office_id,
+      p_location_id     => l_loc1, -- sets sort_order = -1
+      p_office_id       => c_office_id);
+
+   begin
+      -- Attempting to add another primary should fail via at_fcst_location_idx2
+      -- We defer validation to avoid hitting the TS validation trigger since we aren't setting up TS here
+      cwms_fcst.set_defer_validation('T');
+      insert into at_fcst_location (fcst_spec_code, location_code, sort_order)
+      values (
+         cwms_fcst.get_fcst_spec_code(cwms_util.get_office_code(c_office_id), c_fcst_spec_id, c_fcst_designator, 'T'),
+         cwms_loc.get_location_code(c_office_id, l_loc2),
+         -1
+      );
+      cwms_fcst.set_defer_validation('F');
+      cwms_err.raise('ERROR', 'Should not be able to have two primary locations');
+   exception
+      when others then
+         cwms_fcst.set_defer_validation('F');
+         ut.expect(sqlcode).to_equal(-1); -- Unique constraint violation
+   end;
+
+   -- 3. Test storing various sort orders (including 0 as a valid non-primary order)
+   l_loc_ids := l_loc1 || chr(10) || l_loc2 || chr(10) || l_loc3;
+   l_sort_orders := '-1' || chr(10) || '0' || chr(10) || '1';
+
+   cwms_fcst.store_fcst_spec(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => 'CE'||c_office_id,
+      p_location_ids    => l_loc_ids,
+      p_sort_orders     => l_sort_orders,
+      p_fail_if_exists  => 'F',
+      p_office_id       => c_office_id);
+
+   -- 4. Test retrieval
+   cwms_fcst.retrieve_fcst_spec(
+      p_location_id     => l_loc_ids_out,
+      p_sort_order      => l_sort_orders_out,
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_office_id       => c_office_id,
+      p_entity_id       => l_entity_id,    -- adding these to match signature
+      p_description     => l_description, -- although they are OUT parameters
+      p_timeseries_ids  => l_timeseries_ids); -- need to make sure variables match types
+
+   ut.expect(l_loc_ids_out).to_be_like('%'||l_loc1||'%'||l_loc2||'%'||l_loc3||'%');
+   ut.expect(l_sort_orders_out).to_be_like('%-1%0%1%');
+
+   -- 5. Test catalog reflects primary location correctly
+   cwms_fcst.cat_fcst_spec(
+      p_cursor            => l_crsr,
+      p_fcst_spec_id_mask => c_fcst_spec_id,
+      p_office_id_mask    => c_office_id);
+
+   fetch l_crsr into l_office_id, l_fcst_spec_id, l_fcst_designator, l_entity_id, l_entity_name, l_description, l_location_id_out, l_tsid_crsr;
+   close l_crsr;
+   ut.expect(l_location_id_out).to_equal(l_loc1); -- The one with -1
+
+   -- 6. Cleanup
+   cwms_fcst.delete_fcst_spec(c_fcst_spec_id, c_fcst_designator, cwms_util.delete_all, c_office_id);
+   cwms_loc.delete_location(l_loc1, cwms_util.delete_all, c_office_id);
+   cwms_loc.delete_location(l_loc2, cwms_util.delete_all, c_office_id);
+   cwms_loc.delete_location(l_loc3, cwms_util.delete_all, c_office_id);
+
+end test_fcst_loc_ordering;
+---------------------------------------------------------------------------------
+-- procedure test_fcst_loc_reordering
+---------------------------------------------------------------------------------
+procedure test_fcst_loc_reordering
+is
+   l_loc1 constant varchar2(32) := c_location_id || 'R1';
+   l_loc2 constant varchar2(32) := c_location_id || 'R2';
+   l_loc3 constant varchar2(32) := c_location_id || 'R3';
+   l_loc_ids clob;
+   l_sort_orders clob;
+   l_loc_ids_out clob;
+   l_sort_orders_out clob;
+   l_crsr sys_refcursor;
+   l_office_id cwms_office.office_id%type;
+   l_fcst_spec_id at_fcst_spec.fcst_spec_id%type;
+   l_fcst_designator at_fcst_spec.fcst_designator%type;
+   l_entity_id at_entity.entity_id%type;
+   l_entity_name at_entity.entity_name%type;
+   l_description at_fcst_spec.description%type;
+   l_location_id_out at_cwms_ts_id.location_id%type;
+   l_tsid_crsr sys_refcursor;
+   l_timeseries_ids clob;
+begin
+   -- 1. Setup locations
+   cwms_loc.store_location(l_loc1, null, 'T', c_office_id);
+   cwms_loc.store_location(l_loc2, null, 'T', c_office_id);
+   cwms_loc.store_location(l_loc3, null, 'T', c_office_id);
+
+   -- 2. Initial store: Loc1 primary, Loc2 and Loc3 secondary
+   l_loc_ids := l_loc1 || chr(10) || l_loc2 || chr(10) || l_loc3;
+   l_sort_orders := '-1' || chr(10) || '0' || chr(10) || '1';
+
+   cwms_fcst.store_fcst_spec(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => 'CE'||c_office_id,
+      p_location_ids    => l_loc_ids,
+      p_sort_orders     => l_sort_orders,
+      p_office_id       => c_office_id);
+
+   -- Verify initial primary
+   cwms_fcst.cat_fcst_spec(
+      p_cursor            => l_crsr,
+      p_fcst_spec_id_mask => c_fcst_spec_id,
+      p_office_id_mask    => c_office_id);
+   fetch l_crsr into l_office_id, l_fcst_spec_id, l_fcst_designator, l_entity_id, l_entity_name, l_description, l_location_id_out, l_tsid_crsr;
+   close l_crsr;
+   ut.expect(l_location_id_out).to_equal(l_loc1);
+
+   -- 3. Reorder: Promote Loc2 to Primary (-1), demote Loc1 to 0, Loc3 stays 1
+   -- We use p_ignore_nulls => 'F' to replace the existing mapping
+   l_loc_ids := l_loc1 || chr(10) || l_loc2 || chr(10) || l_loc3;
+   l_sort_orders := '0' || chr(10) || '-1' || chr(10) || '1';
+
+   cwms_fcst.store_fcst_spec(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => 'CE'||c_office_id,
+      p_location_ids    => l_loc_ids,
+      p_sort_orders     => l_sort_orders,
+      p_ignore_nulls    => 'F',
+      p_fail_if_exists  => 'F',
+      p_office_id       => c_office_id);
+
+   -- 4. Verify new primary
+   cwms_fcst.retrieve_fcst_spec(
+      p_location_id     => l_loc_ids_out,
+      p_sort_order      => l_sort_orders_out,
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_office_id       => c_office_id,
+      p_entity_id       => l_entity_id,
+      p_description     => l_description,
+      p_timeseries_ids  => l_timeseries_ids);
+
+   -- Note: ordering in output might vary, but we expect Loc2 to have -1
+   -- The retrieve_fcst_spec implementation returns them in order of at_fcst_location table
+   -- which depends on how it was inserted/indexed.
+   ut.expect(l_loc_ids_out).to_be_like('%'||l_loc1||'%'||l_loc2||'%'||l_loc3||'%');
+   ut.expect(l_sort_orders_out).to_be_like('%0%-1%1%');
+
+   cwms_fcst.cat_fcst_spec(
+      p_cursor            => l_crsr,
+      p_fcst_spec_id_mask => c_fcst_spec_id,
+      p_office_id_mask    => c_office_id);
+   fetch l_crsr into l_office_id, l_fcst_spec_id, l_fcst_designator, l_entity_id, l_entity_name, l_description, l_location_id_out, l_tsid_crsr;
+   close l_crsr;
+   ut.expect(l_location_id_out).to_equal(l_loc2); -- New primary
+
+   -- 5. Cleanup
+   cwms_fcst.delete_fcst_spec(c_fcst_spec_id, c_fcst_designator, cwms_util.delete_all, c_office_id);
+   cwms_loc.delete_location(l_loc1, cwms_util.delete_all, c_office_id);
+   cwms_loc.delete_location(l_loc2, cwms_util.delete_all, c_office_id);
+   cwms_loc.delete_location(l_loc3, cwms_util.delete_all, c_office_id);
+
+end test_fcst_loc_reordering;
+---------------------------------------------------------------------------------
+-- procedure test_fcst_ts_validation
+---------------------------------------------------------------------------------
+procedure test_fcst_ts_validation
+is
+   l_loc1 constant varchar2(32) := c_location_id || 'A';
+   l_loc2 constant varchar2(32) := c_location_id || 'B';
+   l_tsid1 constant varchar2(256) := l_loc1 || '.Stage.Inst.1Hour.0.Fcst';
+   l_tsid2 constant varchar2(256) := l_loc2 || '.Stage.Inst.1Hour.0.Fcst';
+begin
+   -- Setup
+   cwms_loc.store_location(l_loc1, null, 'T', c_office_id);
+   cwms_loc.store_location(l_loc2, null, 'T', c_office_id);
+   cwms_ts.zstore_ts(l_tsid1, 'ft', cwms_t_ztsv_array(), cwms_util.replace_all, cwms_util.non_versioned, c_office_id);
+   cwms_ts.zstore_ts(l_tsid2, 'ft', cwms_t_ztsv_array(), cwms_util.replace_all, cwms_util.non_versioned, c_office_id);
+
+   -- 1. Success case: tsid location is in fcst locations
+   cwms_fcst.store_fcst_spec(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => 'CE'||c_office_id,
+      p_location_id     => l_loc1,
+      p_timeseries_ids  => l_tsid1,
+      p_office_id       => c_office_id);
+
+   -- 2. Failure case: tsid location (l_loc2) is NOT in fcst locations (only l_loc1 is)
+   begin
+      cwms_fcst.store_fcst_spec(
+         p_fcst_spec_id    => c_fcst_spec_id,
+         p_fcst_designator => c_fcst_designator,
+         p_entity_id       => 'CE'||c_office_id,
+         p_location_id     => l_loc1,
+         p_timeseries_ids  => l_tsid2,
+         p_fail_if_exists  => 'F',
+         p_office_id       => c_office_id);
+      cwms_err.raise('ERROR', 'Should have failed because l_loc2 is not a forecast location');
+   exception
+      when others then
+         ut.expect(dbms_utility.format_error_stack).to_be_like('%Time series '||l_tsid2||' does not belong to any%');
+   end;
+
+   -- 3. Success case: Adding both locations
+   cwms_fcst.store_fcst_spec(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => 'CE'||c_office_id,
+      p_location_ids    => l_loc1 || chr(10) || l_loc2,
+      p_sort_orders     => '-1' || chr(10) || '1',
+      p_timeseries_ids  => l_tsid2,
+      p_fail_if_exists  => 'F',
+      p_office_id       => c_office_id);
+
+   -- 4. Cleanup
+   cwms_fcst.delete_fcst_spec(c_fcst_spec_id, c_fcst_designator, cwms_util.delete_all, c_office_id);
+   cwms_loc.delete_location(l_loc1, cwms_util.delete_all, c_office_id);
+   cwms_loc.delete_location(l_loc2, cwms_util.delete_all, c_office_id);
+end test_fcst_ts_validation;
 
 end test_cwms_fcst;
 /

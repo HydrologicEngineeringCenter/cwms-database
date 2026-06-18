@@ -436,3 +436,6 @@ ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE" ADD (
  FOREIGN KEY (ts_code_indep_1)
  REFERENCES "&cwms_schema"."AT_CWMS_TS_SPEC" (ts_code))
 /
+
+@@./triggers/at_fcst_location_trig.sql
+@@./triggers/at_fcst_time_series_trig.sql

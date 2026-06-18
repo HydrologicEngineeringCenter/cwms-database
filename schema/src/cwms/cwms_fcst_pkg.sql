@@ -4,6 +4,22 @@ create or replace package cwms_fcst
  */
 as
 /**
+ * Global flag to defer validation in triggers.
+ */
+g_defer_validation boolean := false;
+/**
+ * Sets the global flag to defer validation in triggers.
+ *
+ * @param p_defer A flag ('T'/'F') specifying whether to defer validation.
+ */
+procedure set_defer_validation(p_defer in varchar2);
+/**
+ * Performs validation of forecast specification time series against forecast locations.
+ *
+ * @param p_fcst_spec_code The UUID of the forecast specification to validate.
+ */
+procedure validate_fcst_spec(p_fcst_spec_code in varchar2);
+/**
  * Stores (inserts or updates) a forecast specification
  *
  * @param p_fcst_spec_id    The "main name" of the forecast. Must be non-null
@@ -13,6 +29,11 @@ as
  * @param p_description     A description of the forecast specification. If unspecified or NULL no description is used.
  * @param p_location_id     The primary location associated with forecast specification (e.g., project, basin, control point).
  *                          If unspecified or NULL no location will be associated.
+ * @param p_location_ids    A list of location IDs that are stored for this forecast specification separated by newline
+ *                          characters ("\n"). These locations are in addition to p_location_id (if specified).
+ * @param p_sort_orders     A list of sort orders associated with the location IDs in p_location_ids. If specified, must
+ *                          have the same number of elements as p_location_ids. If unspecified or NULL, the locations in
+ *                          p_location_ids will be assigned sort order of 1.
  * @param p_timeseries_ids  A list of time series IDs that are stored for this forecast specification separated by newline
  *                          characters ("\n")
  *                          If unspecified or NULL no time series will be associated with the forecast specification until
@@ -32,6 +53,8 @@ procedure store_fcst_spec(
    p_entity_id       in varchar2,
    p_description     in varchar2 default null,
    p_location_id     in varchar2 default null,
+   p_location_ids    in clob     default null,
+   p_sort_orders     in clob     default null,
    p_timeseries_ids  in clob     default null,
    p_fail_if_exists  in varchar2 default 'T',
    p_ignore_nulls    in varchar2 default 'T',
@@ -215,7 +238,10 @@ function cat_fcst_spec_f(
  *
  * @param p_entity_id       The agency/office that generates forecasts for this specification
  * @param p_desccription    The description of the forecast specification
- * @param p_location_id     The primary location associated with the forecast specification
+ * @param p_location_id     The location ID(s) associated with the forecast specification. If multiple locations exist,
+ *                          they are returned as a newline-separated list.
+ * @param p_sort_order      The sort order(s) associated with the location ID(s). If multiple locations exist,
+ *                          they are returned as a newline-separated list.
  * @param p_timeseries_ids  The time series stored for this forecast specification, sorted lexically and separated by newline
  *                          characters ("\n")
  * @param p_fcst_spec_id    The "main name" of the forecast. Must be non-null
@@ -226,7 +252,8 @@ function cat_fcst_spec_f(
 procedure retrieve_fcst_spec(
    p_entity_id       out varchar2,
    p_description     out varchar2,
-   p_location_id     out varchar2,
+   p_location_id     out nocopy clob,
+   p_sort_order      out nocopy clob,
    p_timeseries_ids  out nocopy clob,
    p_fcst_spec_id    in varchar2,
    p_fcst_designator in varchar2 default null,
@@ -722,6 +749,22 @@ procedure delete_fcst(
    p_issue_date_time    in date,
    p_time_zone          in varchar2 default 'UTC',
    p_office_id          in varchar2 default null);
+/**
+ * Returns the UUID (surrogate key) of a forecast specification.
+ *
+ * @param p_office_code     The office that owns the forecast specification
+ * @param p_fcst_spec_id    The forecast specification identifier
+ * @param p_fcst_designator The forecast designator
+ * @param p_error_if_null   A flag ('T'/'F') specifying whether to raise an exception if the specification is not found
+ *
+ * @return The UUID (surrogate key) of the forecast specification
+ */
+function get_fcst_spec_code(
+   p_office_code     in cwms_office.office_code%type,
+   p_fcst_spec_id    in varchar2,
+   p_fcst_designator in varchar2,
+   p_error_if_null   in varchar2)
+   return at_fcst_spec.fcst_spec_code%type;
 
 end;
 /
