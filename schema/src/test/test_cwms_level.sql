@@ -2519,47 +2519,47 @@ end test_issue_83_retrieve_seasonal_as_timeseries;
 --------------------------------------------------------------------------------
 procedure test_cda_116_irregular_level_as_timeseries
 is
-   l_seasonal_data seasonal_value_tab_t := seasonal_value_tab_t (
-         seasonal_value_t (0, 15, 100.0),  -- Jan 01
-         seasonal_value_t (0, 30, 110.0),  -- Feb 01
-         seasonal_value_t (0, 45, 120.0),  -- Mar 01
-         seasonal_value_t (0, 90, 130.0),  -- Apr 01
-         seasonal_value_t (0, 120, 140.0),  -- May 01
-         seasonal_value_t (0, 180, 150.0),  -- Jun 01
-         seasonal_value_t (0, 300, 160.0),  -- Jul 01
-         seasonal_value_t (0, 420, 150.0),  -- Aug 01
-         seasonal_value_t (0, 435, 140.0),  -- Sep 01
-         seasonal_value_t (0, 450, 130.0),  -- Oct 01
-         seasonal_value_t (0, 510, 120.0),  -- Nov 01
-         seasonal_value_t (0, 525, 110.0)); -- Dec 01
    l_result_values ztsv_array := ztsv_array();
-   l_interval_origin date := date '2025-01-01';
+   l_effective_date date := date '2025-01-01';
    l_start_ts timestamp := to_timestamp('2025-01-01 12:00', 'YYYY-MM-DD HH24:MI');
    l_end_ts timestamp := to_timestamp('2025-01-03 14:45', 'YYYY-MM-DD HH24:MI');
-   l_interval_months number_tab_t := number_tab_t(1, 12);
    l_interpolate str_tab_t := str_tab_t('F', 'T');
    l_values ztsv_array;
+   l_elev_tsid varchar2(191) := c_location_id||'.Elev.Inst.1Hour.0.Test';
+   l_elev_ts_data cwms_t_tsv_array := cwms_t_tsv_array (
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 1/24 as timestamp), 'UTC'), 1000, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 3/24 as timestamp), 'UTC'), 1010, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 4/24 as timestamp), 'UTC'), 1020, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 7/24 as timestamp), 'UTC'), 1050, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 11/24 as timestamp), 'UTC'), 1100, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 12/24 as timestamp), 'UTC'), 1110, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 16/24 as timestamp), 'UTC'), 1150, 0)
+   );
    l_prev binary_integer;
    l_next binary_integer;
    l_prev_val number;
    l_next_val number;
    l_interp_flag varchar2(1);
 begin
+   cwms_ts.store_ts(
+      l_elev_tsid,
+      c_elev_unit,
+      l_elev_ts_data,
+      cwms_util.replace_all,
+      'F',
+      cwms_util.non_versioned,
+      c_office_id,
+      'T');
    for i in 1..l_interpolate.count loop
-      for j in 1..l_seasonal_data.count loop
-         cwms_level.store_location_level3 (
-            p_location_level_id => c_top_of_normal_elev_id,
-            p_level_value       => null,
-            p_level_units       => 'm',
-            p_effective_date    => l_interval_origin,
-            p_timezone_id       => 'UTC',
-            p_interval_origin   => l_interval_origin,
-            p_interval_minutes   => l_seasonal_data(j).offset_minutes,
-            p_interpolate       => l_interpolate(i),
-            p_seasonal_values   => l_seasonal_data,
-            p_fail_if_exists    => 'T' ,
-            p_office_id         => c_office_id);
-      end loop;
+      cwms_level.store_location_level4(
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_level_value       => null,
+         p_level_units       => c_elev_unit,
+         p_effective_date    => l_effective_date,
+         p_timezone_id       => c_timezone_id,
+         p_tsid               => l_elev_tsid,
+         p_interpolate       => l_interpolate(i),
+         p_office_id         => c_office_id);
    end loop;
 
    l_result_values := cwms_level.retrieve_loc_lvl_values4(
