@@ -2804,39 +2804,6 @@ AS
             delete
               from at_fcst_location
              where primary_location_code in (select * from table (l_location_codes));
-         -- AT_FORECAST_xxx
-         select clob_code
-           bulk collect
-           into l_clob_codes
-           from at_clob
-          where clob_code in
-               (select clob_code
-                 from at_forecast_text
-                where forecast_spec_code in
-                (select forecast_spec_code
-                   from at_forecast_spec
-                  where target_location_code in (select * from table (l_location_codes))
-                     or source_location_code in (select * from table (l_location_codes)))
-               );
-         delete
-           from at_forecast_ts
-          where ts_code in (select ts_code
-                              from at_cwms_ts_spec
-                             where location_code in (select * from table (l_location_codes))
-                           );
-         delete
-           from at_forecast_text
-          where forecast_spec_code in
-                (select forecast_spec_code
-                   from at_forecast_spec
-                  where target_location_code in (select * from table (l_location_codes))
-                     or source_location_code in (select * from table (l_location_codes))
-                );
-         delete from at_clob where clob_code in (select * from table (l_clob_codes));
-         delete
-           from at_forecast_spec
-          where target_location_code in (select * from table (l_location_codes))
-             or source_location_code in (select * from table (l_location_codes));
          -------------
          -- ratings --
          -------------

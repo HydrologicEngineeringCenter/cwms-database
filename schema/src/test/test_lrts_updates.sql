@@ -4251,37 +4251,6 @@ begin
       p_parameter_type    => 'INST-VAL',
       p_units             => 'n/a',
       p_fail_if_exists    => 'F');
-   -----------------------
-   -- create a forecast --
-   -----------------------
-   cwms_forecast.store_spec(
-      p_location_id    => l_location_id,
-      p_forecast_id    => 'TEST',
-      p_fail_if_exists => 'F',
-      p_ignore_nulls   => 'F',
-      p_source_agency  => 'USACE',
-      p_source_office  => c_office_id,
-      p_valid_lifetime => 24,
-      p_office_id      => c_office_id);
-   cwms_ts.create_ts(
-      p_cwms_ts_id  => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
-      p_utc_offset  => cwms_ts.get_utc_interval_offset(l_ts_data_tz(1).date_time, 1440),
-      p_active_flag => 'T',
-      p_office_id   => c_office_id);
-   cwms_forecast.store_forecast(
-      p_location_id     => l_location_id,
-      p_forecast_id     => 'TEST',
-      p_forecast_time   => sysdate-1/2,
-      p_issue_time      => sysdate-1/2,
-      p_time_zone       => null,
-      p_fail_if_exists  => 'F',
-      p_text            => 'This is a test',
-      p_time_series     => cwms_t_ztimeseries_array(
-                              cwms_t_ztimeseries(replace(l_lrts_ts_id_old, '.Test', '.Forecast'), 'ft', l_ts_data_tz),
-                              cwms_t_ztimeseries(replace(l_prts_ts_id, '.Test', '.Forecast'), 'ft', l_ts_data_tz)),
-      p_store_rule      => cwms_util.replace_all,
-      p_office_id       => c_office_id);
-   commit;
    ------------------------
    -- create ts profiles --
    ------------------------
@@ -4596,18 +4565,6 @@ begin
             ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(l_lrts_ts_id_old, c_office_id));
          elsif rec.cwms_ts_id like '%.Elev-Prts.%.Test' then
             ut.expect(rec.cwms_ts_id).to_equal(l_prts_ts_id);
-         end if;
-      end loop;
-      ut.expect(l_rec_count).to_be_greater_than(0);
-
---      dbms_output.put_line('==> Testing CWMS_V_FORECAST_EX');
-      l_rec_count := 0;
-      for rec in (select * from cwms_v_forecast_ex where location_id = l_location_id) loop
-         l_rec_count := l_rec_count + 1;
-         if rec.cwms_ts_id like '%.Elev-Lrts.%.Forecast' then
-            ut.expect(rec.cwms_ts_id).to_equal(cwms_ts.format_lrts_output(replace(l_lrts_ts_id_old, '.Test', '.Forecast'), c_office_id));
-         elsif rec.cwms_ts_id like '%.Elev-Prts.%.Forecast' then
-            ut.expect(rec.cwms_ts_id).to_equal(replace(l_prts_ts_id, '.Test', '.Forecast'));
          end if;
       end loop;
       ut.expect(l_rec_count).to_be_greater_than(0);
@@ -5020,34 +4977,6 @@ begin
       end loop;
       close l_crsr;
 
---      dbms_output.put_line('==> Testing CWMS_FORECAST.CAT_TS');
-      l_crsr := cwms_forecast.cat_ts_f(
-         p_location_id => l_location_id,
-         p_forecast_id => 'TEST',
-         p_office_id   => c_office_id);
-      loop
-         fetch l_crsr
-          into l_office_id_out,
-               l_forecast_date,
-               l_issue_date,
-               l_ts_id_out,
-               l_version_date,
-               l_min_date,
-               l_max_date,
-               l_time_zone_out;
-         exit when l_crsr%notfound;
-         if l_ts_id_out like '%.Elev-Lrts.%' then
-            if i = 1 then
-               ut.expect(l_ts_id_out).to_equal(replace(l_lrts_ts_id_old, '.Test', '.Forecast'));
-            else
-               ut.expect(l_ts_id_out).to_equal(replace(l_lrts_ts_id_new, '.Test', '.Forecast'));
-            end if;
-         else
-            ut.expect(l_ts_id_out).to_equal(replace(l_prts_ts_id, '.Test', '.Forecast'));
-         end if;
-      end loop;
-      close l_crsr;
-
 --      dbms_output.put_line('==> Testing CWMS_TS_PROFILE.CAT_TS_PROFILE');
       l_crsr := cwms_ts_profile.cat_ts_profile_f('*', '*', c_office_id);
       loop
@@ -5258,35 +5187,6 @@ begin
    cwms_ts.store_ts_category(
       p_ts_category_id => 'TestCategory',
       p_db_office_id   => c_office_id);
-   -----------------------
-   -- create a forecast --
-   -----------------------
-   cwms_forecast.store_spec(
-      p_location_id    => l_location_id,
-      p_forecast_id    => 'TEST',
-      p_fail_if_exists => 'F',
-      p_ignore_nulls   => 'F',
-      p_source_agency  => 'USACE',
-      p_source_office  => c_office_id,
-      p_valid_lifetime => 24,
-      p_office_id      => c_office_id);
-   cwms_ts.create_ts(
-      p_cwms_ts_id  => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
-      p_utc_offset  => cwms_ts.get_utc_interval_offset(l_ts_data(1).date_time, 1440),
-      p_active_flag => 'T',
-      p_office_id   => c_office_id);
-   cwms_forecast.store_forecast(
-      p_location_id     => l_location_id,
-      p_forecast_id     => 'TEST',
-      p_forecast_time   => l_end_time,
-      p_issue_time      => l_start_time,
-      p_time_zone       => null,
-      p_fail_if_exists  => 'F',
-      p_text            => 'This is a test',
-      p_time_series     => cwms_t_ztimeseries_array(
-                              cwms_t_ztimeseries(replace(l_lrts_ts_id_old, '.Test', '.Forecast'), 'ft', l_ts_data)),
-      p_store_rule      => cwms_util.replace_all,
-      p_office_id       => c_office_id);
    ---------------------------
    -- create a screening id --
    ---------------------------
@@ -5633,55 +5533,6 @@ begin
       p_indicator_id       => 'VALUE',
       p_condition_number   => 3,
       p_office_id          => c_office_id);
-   --.... cwms_forecast package
-   l_crsr := cwms_forecast.cat_ts_f(
-      p_location_id     => l_location_id,
-      p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
-      p_office_id       => c_office_id);
-   declare
-      ll_office_id      varchar2(16);
-      ll_forecast_date  date;
-      ll_issue_date     date;
-      ll_cwms_ts_id     varchar2(191);
-      ll_version_date   date;
-      ll_min_date       date;
-      ll_max_date       date;
-      ll_time_zone_name varchar2(28);
-      ll_count          pls_integer := 0;
-   begin
-      loop
-         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
-         exit when l_crsr%notfound;
-         ll_count := ll_count + 1;
-      end loop;
-      ut.expect(ll_count).to_equal(1);
-   end;
-   close l_crsr;
-   cwms_forecast.retrieve_ts(
-      p_ts_cursor      => l_crsr,
-      p_version_date   => l_version_date,
-      p_location_id    => l_location_id,
-      p_forecast_id    => 'TEST',
-      p_cwms_ts_id     => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
-      p_units          => 'ft',
-      p_forecast_time  => l_end_time,
-      p_issue_time     => l_start_time,
-      p_start_time     => l_start_time,
-      p_end_time       => l_end_time,
-      p_time_zone      => c_timezone_ids(1),
-      p_office_id      => c_office_id);
-   fetch l_crsr
-    bulk collect
-    into l_date_times,
-         l_values,
-         l_quality_codes;
-   close l_crsr;
-   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
-   for i in 1..l_date_times.count loop
-      ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
-      ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
-   end loop;
    --.... cwms_text package
    select date_time bulk collect into l_date_times from table(l_ts_data);
    cwms_text.store_ts_std_text(
@@ -6534,50 +6385,6 @@ begin
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
    end;
-   --.... cwms_forecast package
-   l_crsr := cwms_forecast.cat_ts_f(
-      p_location_id     => l_location_id,
-      p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => replace(l_lrts_ts_id_new, '.Test', '.Forecast'),
-      p_office_id       => c_office_id);
-   declare
-      ll_office_id      varchar2(16);
-      ll_forecast_date  date;
-      ll_issue_date     date;
-      ll_cwms_ts_id     varchar2(191);
-      ll_version_date   date;
-      ll_min_date       date;
-      ll_max_date       date;
-      ll_time_zone_name varchar2(28);
-      ll_count          pls_integer := 0;
-   begin
-      loop
-         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
-         exit when l_crsr%notfound;
-         ll_count := ll_count + 1;
-      end loop;
-      ut.expect(ll_count).to_equal(0);
-   end;
-   close l_crsr;
-   begin
-      cwms_forecast.retrieve_ts(
-         p_ts_cursor      => l_crsr,
-         p_version_date   => l_version_date,
-         p_location_id    => l_location_id,
-         p_forecast_id    => 'TEST',
-         p_cwms_ts_id     => replace(l_lrts_ts_id_new, '.Test', '.Forecast'),
-         p_units          => 'ft',
-         p_forecast_time  => l_end_time,
-         p_issue_time     => l_start_time,
-         p_start_time     => l_start_time,
-         p_end_time       => l_end_time,
-         p_time_zone      => c_timezone_ids(1),
-         p_office_id      => c_office_id);
-      cwms_err.raise('ERROR', 'Expected exception not raised');
-   exception
-      when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, 'INVALID Time Series Identifier ".+": No such interval', 'mn')).to_be_true;
-   end;
    --.... cwms_pool package
    begin
       cwms_pool.get_elev_offsets(
@@ -6866,56 +6673,6 @@ begin
       p_indicator_id       => 'VALUE',
       p_condition_number   => 3,
       p_office_id          => c_office_id);
-   --.... cwms_forecast package
-   l_crsr := cwms_forecast.cat_ts_f(
-      p_location_id     => l_location_id,
-      p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
-      p_office_id       => c_office_id);
-   declare
-      ll_office_id      varchar2(16);
-      ll_forecast_date  date;
-      ll_issue_date     date;
-      ll_cwms_ts_id     varchar2(191);
-      ll_version_date   date;
-      ll_min_date       date;
-      ll_max_date       date;
-      ll_time_zone_name varchar2(28);
-      ll_count          pls_integer := 0;
-   begin
-      loop
-         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
-         exit when l_crsr%notfound;
-         ll_count := ll_count + 1;
-      end loop;
-      ut.expect(ll_count).to_equal(1);
-   end;
-   close l_crsr;
-   cwms_forecast.retrieve_ts(
-      p_ts_cursor      => l_crsr,
-      p_version_date   => l_version_date,
-      p_location_id    => l_location_id,
-      p_forecast_id    => 'TEST',
-      p_cwms_ts_id     => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
-      p_units          => 'ft',
-      p_forecast_time  => l_end_time,
-      p_issue_time     => l_start_time,
-      p_start_time     => l_start_time,
-      p_end_time       => l_end_time,
-      p_time_zone      => c_timezone_ids(1),
-      p_office_id      => c_office_id);
-   fetch l_crsr
-    bulk collect
-    into l_date_times,
-         l_values,
-         l_quality_codes;
-   close l_crsr;
-   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
-   for i in 1..l_date_times.count loop
-      ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
-      ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
-      ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
-   end loop;
    --.... cwms_text package
    select date_time bulk collect into l_date_times from table(l_ts_data);
    cwms_text.store_ts_std_text(
@@ -7734,56 +7491,6 @@ begin
       p_indicator_id       => 'VALUE',
       p_condition_number   => 3,
       p_office_id          => c_office_id);
-   --.... cwms_forecast package
-   l_crsr := cwms_forecast.cat_ts_f(
-      p_location_id     => l_location_id,
-      p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => cwms_ts.format_lrts_output(replace(l_lrts_ts_id_new, '.Test', '.Forecast'), c_office_id),
-      p_office_id       => c_office_id);
-   declare
-      ll_office_id      varchar2(16);
-      ll_forecast_date  date;
-      ll_issue_date     date;
-      ll_cwms_ts_id     varchar2(191);
-      ll_version_date   date;
-      ll_min_date       date;
-      ll_max_date       date;
-      ll_time_zone_name varchar2(28);
-      ll_count          pls_integer := 0;
-   begin
-      loop
-         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
-         exit when l_crsr%notfound;
-         ll_count := ll_count + 1;
-      end loop;
-      ut.expect(ll_count).to_equal(1);
-   end;
-   close l_crsr;
-   cwms_forecast.retrieve_ts(
-      p_ts_cursor      => l_crsr,
-      p_version_date   => l_version_date,
-      p_location_id    => l_location_id,
-      p_forecast_id    => 'TEST',
-      p_cwms_ts_id     => replace(l_lrts_ts_id_new, '.Test', '.Forecast'),
-      p_units          => 'ft',
-      p_forecast_time  => l_end_time,
-      p_issue_time     => l_start_time,
-      p_start_time     => l_start_time,
-      p_end_time       => l_end_time,
-      p_time_zone      => c_timezone_ids(1),
-      p_office_id      => c_office_id);
-   fetch l_crsr
-    bulk collect
-    into l_date_times,
-         l_values,
-         l_quality_codes;
-   close l_crsr;
-   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
-   for i in 1..l_date_times.count loop
-      ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
-      ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
-      ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
-   end loop;
    --.... cwms_text package
    select date_time bulk collect into l_date_times from table(l_ts_data);
    cwms_text.store_ts_std_text(
@@ -8599,49 +8306,6 @@ begin
       when others then
          ut.expect(regexp_like(dbms_utility.format_error_stack, '.+TS_ID_NOT_FOUND: .+', 'mn')).to_be_true;
    end;
-   --.... cwms_forecast package
-   l_crsr := cwms_forecast.cat_ts_f(
-      p_location_id     => l_location_id,
-      p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
-      p_office_id       => c_office_id);
-   declare
-      ll_office_id      varchar2(16);
-      ll_forecast_date  date;
-      ll_issue_date     date;
-      ll_cwms_ts_id     varchar2(191);
-      ll_version_date   date;
-      ll_min_date       date;
-      ll_max_date       date;
-      ll_time_zone_name varchar2(28);
-      ll_count          pls_integer := 0;
-   begin
-      loop
-         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
-         exit when l_crsr%notfound;
-         ll_count := ll_count + 1;
-      end loop;
-      ut.expect(ll_count).to_equal(1);
-   end;
-   close l_crsr;
-   begin
-      cwms_forecast.retrieve_ts(
-         p_ts_cursor      => l_crsr,
-         p_version_date   => l_version_date,
-         p_location_id    => l_location_id,
-         p_forecast_id    => 'TEST',
-         p_cwms_ts_id     => replace(l_lrts_ts_id_old, '.Test', '.Forecast'),
-         p_units          => 'ft',
-         p_forecast_time  => l_end_time,
-         p_issue_time     => l_start_time,
-         p_start_time     => l_start_time,
-         p_end_time       => l_end_time,
-         p_time_zone      => c_timezone_ids(1),
-         p_office_id      => c_office_id);
-   exception
-      when others then
-         ut.expect(regexp_like(dbms_utility.format_error_stack, 'Session requires new LRTS ID format', 'mn')).to_be_true;
-   end;
    --.... cwms_pool package
    begin
       cwms_pool.get_elev_offsets(
@@ -8912,56 +8576,6 @@ begin
       p_indicator_id       => 'VALUE',
       p_condition_number   => 3,
       p_office_id          => c_office_id);
-   --.... cwms_forecast package
-   l_crsr := cwms_forecast.cat_ts_f(
-      p_location_id     => l_location_id,
-      p_forecast_id     => 'TEST',
-      p_cwms_ts_id_mask => cwms_ts.format_lrts_output(replace(l_lrts_ts_id_new, '.Test', '.Forecast'), c_office_id),
-      p_office_id       => c_office_id);
-   declare
-      ll_office_id      varchar2(16);
-      ll_forecast_date  date;
-      ll_issue_date     date;
-      ll_cwms_ts_id     varchar2(191);
-      ll_version_date   date;
-      ll_min_date       date;
-      ll_max_date       date;
-      ll_time_zone_name varchar2(28);
-      ll_count          pls_integer := 0;
-   begin
-      loop
-         fetch l_crsr into ll_office_id, ll_forecast_date, ll_issue_date, ll_cwms_ts_id, ll_version_date, ll_min_date, ll_max_date, ll_time_zone_name;
-         exit when l_crsr%notfound;
-         ll_count := ll_count + 1;
-      end loop;
-      ut.expect(ll_count).to_equal(1);
-   end;
-   close l_crsr;
-   cwms_forecast.retrieve_ts(
-      p_ts_cursor      => l_crsr,
-      p_version_date   => l_version_date,
-      p_location_id    => l_location_id,
-      p_forecast_id    => 'TEST',
-      p_cwms_ts_id     => replace(l_lrts_ts_id_new, '.Test', '.Forecast'),
-      p_units          => 'ft',
-      p_forecast_time  => l_end_time,
-      p_issue_time     => l_start_time,
-      p_start_time     => l_start_time,
-      p_end_time       => l_end_time,
-      p_time_zone      => c_timezone_ids(1),
-      p_office_id      => c_office_id);
-   fetch l_crsr
-    bulk collect
-    into l_date_times,
-         l_values,
-         l_quality_codes;
-   close l_crsr;
-   ut.expect(l_date_times.count).to_equal(l_ts_data.count);
-   for i in 1..l_date_times.count loop
-      ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
-      ut.expect(round(l_values(i), 9)).to_equal(l_ts_data(i).value);
-      ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
-   end loop;
    --.... cwms_text package
    select date_time bulk collect into l_date_times from table(l_ts_data);
    cwms_text.store_ts_std_text(
