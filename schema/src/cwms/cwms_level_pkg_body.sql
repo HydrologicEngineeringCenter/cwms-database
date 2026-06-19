@@ -6519,6 +6519,11 @@ begin
       end if;
    end loop;
    l_level_values := l_level_values_interp;
+   if p_timezone_id != 'UTC' then
+      for i in 1..l_level_values.count loop
+         l_level_values(i).date_time := cwms_util.CHANGE_TIMEZONE(l_level_values(i).date_time, 'UTC', p_timezone_id);
+      end loop;
+   end if;
    return l_level_values;
 end retrieve_loc_lvl_values4;
 --------------------------------------------------------------------------------
