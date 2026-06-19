@@ -6416,11 +6416,18 @@ is
    l_max_date_utc date;
    l_level_id_parts str_tab_t;
    l_attr_id_parts  str_tab_t;
-   l_values       double_tab_t;
-   l_quality      number_tab_t;
-   l_seq_props    cwms_lookup.sequence_properties_t;
-   l_ratio        number;
 begin
+   -- sanity checks
+   if p_location_level_id is null then
+      cwms_err.raise(
+         'ERROR',
+         'Location Level ID must not be null.');
+   end if;
+   if p_level_units is null then
+      cwms_err.raise(
+         'ERROR',
+         'Location Level units must not be null.');
+   end if;
    if p_specified_times is not null then
       retrieve_loc_lvl_values3(
              p_level_values => l_level_values,

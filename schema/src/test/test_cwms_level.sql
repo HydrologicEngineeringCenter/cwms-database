@@ -2550,11 +2550,6 @@ begin
       c_office_id,
       'T');
    for i in 1..l_interpolate.count loop
-      cwms_level.delete_location_level(
-         p_location_level_id => c_top_of_normal_elev_id,
-         p_office_id => c_office_id
-      );
-
       cwms_level.store_location_level4(
          p_location_level_id => c_top_of_normal_elev_id,
          p_level_value       => null,
@@ -2598,6 +2593,11 @@ begin
             end if;
             ut.expect(l_result_values(i).quality_code).to_equal(case l_interpolate(i) when 'T' then 1 else 0 end);
          end loop;
+
+      cwms_level.delete_location_level(
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_office_id => c_office_id
+      );
    end loop;
 end test_cda_116_irregular_level_as_timeseries;
 
