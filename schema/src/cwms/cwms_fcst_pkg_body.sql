@@ -153,9 +153,7 @@ begin
    -----------------------------
    if l_rec.fcst_spec_code is null then
       l_rec.fcst_spec_code := random_uuid;
-      insert
-        into at_fcst_spec
-      values l_rec;
+      insert into at_fcst_spec values l_rec;
    else
       update at_fcst_spec
          set row = l_rec
@@ -166,21 +164,42 @@ begin
    -------------------------
    if p_location_id is null then
       if not l_ignore_nulls then
-         delete from at_fcst_location where fcst_spec_code = l_rec.fcst_spec_code;
+         delete from at_fcst_location
+          where fcst_spec_code = l_rec.fcst_spec_code
+            and sort_order = -1;
       end if;
    else
       l_location_code := cwms_loc.get_location_code(l_rec.office_code, p_location_id);
-      merge into
-         at_fcst_location a
-      using
-         (select l_rec.fcst_spec_code as fcst_spec_code,
-                 l_location_code as location_code
-            from dual
-         ) b
-      on
-         (a.fcst_spec_code = b.fcst_spec_code and a.primary_location_code = b.location_code)
+
+      delete from at_fcst_location
+       where fcst_spec_code = l_rec.fcst_spec_code
+         and sort_order = -1
+         and location_code <> l_location_code;
+
+      merge into at_fcst_location a
+      using (
+         select l_rec.fcst_spec_code as fcst_spec_code,
+                l_location_code      as location_code,
+                -1                   as sort_order
+           from dual
+      ) b
+      on (
+         a.fcst_spec_code = b.fcst_spec_code
+         and a.location_code = b.location_code
+      )
+      when matched then
+         update set a.sort_order = b.sort_order
       when not matched then
-         insert values (l_rec.fcst_spec_code, l_location_code);
+         insert (
+            fcst_spec_code,
+            location_code,
+            sort_order
+         )
+         values (
+            b.fcst_spec_code,
+            b.location_code,
+            b.sort_order
+         );
    end if;
    ----------------------------
    -- handle the time series --
@@ -202,7 +221,8 @@ begin
       on
          (a.fcst_spec_code = b.fcst_spec_code and a.ts_code = b.ts_code)
       when not matched then
-         insert values (l_rec.fcst_spec_code, l_ts_code);
+         insert (fcst_spec_code, ts_code)
+         values (l_rec.fcst_spec_code, l_ts_code);
       end loop;
    end if;
 end store_fcst_spec;
@@ -337,14 +357,15 @@ begin
      ) q1
      left outer join
      (select
-         fl.fcst_spec_code,
-         bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_Id as location_id
-      from
+        fl.fcst_spec_code,
+        bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id as location_id
+     from
          at_fcst_location fl,
          at_base_location bl,
          at_physical_location pl
       where
-         pl.location_code = fl.primary_location_code
+         pl.location_code = fl.location_code
+         and fl.sort_order = -1
          and bl.base_location_code = pl.base_location_code
      ) q2 on q2.fcst_spec_code = q1.fcst_spec_code;
    -------------------------
@@ -1081,6 +1102,418 @@ begin
    delete from at_fcst_info where fcst_inst_code = l_fcst_inst_code;
    delete from at_fcst_inst where fcst_inst_code = l_fcst_inst_code;
 end delete_fcst;
+
+--------------------------------------------------------------------------------
+-- private procedure validate_fcst_spec_ts_locations
+--------------------------------------------------------------------------------
+procedure validate_fcst_spec_ts_locations(
+   p_fcst_spec_code   in at_fcst_spec.fcst_spec_code%type,
+   p_office_code      in cwms_office.office_code%type,
+   p_fcst_spec_id     in varchar2,
+   p_fcst_designator  in varchar2,
+   p_location_ids     in fcst_location_tab_t,
+   p_timeseries_ids   in clob,
+   p_ignore_nulls     in boolean)
+is
+   l_count             pls_integer;
+   l_ts_code           at_cwms_ts_spec.ts_code%type;
+   l_ts_location_code  at_physical_location.location_code%type;
+
+   ----------------------------------------------------------------
+   -- fast lookup set (PL/SQL only)
+   ----------------------------------------------------------------
+   type t_loc_set is table of boolean index by pls_integer;
+   l_final_locs t_loc_set;
+begin
+
+   ----------------------------------------------------------------
+   -- BUILD FINAL LOCATION SET (ONCE)
+   ----------------------------------------------------------------
+
+   -- incoming locations
+   if p_location_ids is not null then
+      for i in 1..p_location_ids.count loop
+         l_final_locs(
+            cwms_loc.get_location_code(
+               p_office_code,
+               p_location_ids(i).location_id
+            )
+         ) := true;
+      end loop;
+   end if;
+
+   -- existing locations if merge mode
+   if p_ignore_nulls then
+      for r in (
+         select location_code
+           from at_fcst_location
+          where fcst_spec_code = p_fcst_spec_code
+            and sort_order <> -1
+      ) loop
+         l_final_locs(r.location_code) := true;
+      end loop;
+   end if;
+
+   ----------------------------------------------------------------
+   -- ORPHAN CHECK (PL/SQL SAFE)
+   ----------------------------------------------------------------
+   for r in (
+      select ts.location_code
+        from at_fcst_time_series fts
+        join at_cwms_ts_spec ts
+          on ts.ts_code = fts.ts_code
+       where fts.fcst_spec_code = p_fcst_spec_code
+   ) loop
+
+      if not l_final_locs.exists(r.location_code) then
+         cwms_err.raise(
+            'ERROR',
+            'Location update would orphan existing time series for forecast specification '
+            || cwms_util.get_db_office_id_from_code(p_office_code)
+            || '/' || p_fcst_spec_id
+            || '/' || p_fcst_designator
+         );
+      end if;
+
+   end loop;
+
+   ----------------------------------------------------------------
+   -- TIME SERIES VALIDATION
+   ----------------------------------------------------------------
+   if p_timeseries_ids is not null then
+
+      for rec in (
+         select trim(column_value) as tsid
+           from table(cwms_util.split_text(p_timeseries_ids, chr(10)))
+      ) loop
+
+         l_ts_code := cwms_ts.get_ts_code(rec.tsid, p_office_code);
+
+         begin
+            select ts.location_code
+              into l_ts_location_code
+              from at_cwms_ts_spec ts
+             where ts.ts_code = l_ts_code;
+         exception
+            when no_data_found then
+               cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Time series', rec.tsid);
+         end;
+
+         if not l_final_locs.exists(l_ts_location_code) then
+            cwms_err.raise(
+               'ERROR',
+               'Time series "' || rec.tsid ||
+               '" is not constrained to any location in final at_fcst_location result set for forecast specification '
+               || cwms_util.get_db_office_id_from_code(p_office_code)
+               || '/' || p_fcst_spec_id
+               || '/' || p_fcst_designator
+            );
+         end if;
+
+      end loop;
+   end if;
+
+end validate_fcst_spec_ts_locations;
+
+procedure store_fcst_spec_with_locations(
+   p_fcst_spec_id    in varchar2,
+   p_fcst_designator in varchar2,
+   p_entity_id       in varchar2,
+   p_description     in varchar2 default null,
+   p_location_ids    in fcst_location_tab_t default null,
+   p_timeseries_ids  in clob     default null,
+   p_fail_if_exists  in varchar2 default 'T',
+   p_ignore_nulls    in varchar2 default 'T',
+   p_office_id       in varchar2 default null)
+is
+   l_rec             at_fcst_spec%rowtype;
+   l_location_code   at_physical_location.location_code%type;
+   l_ts_code         at_cwms_ts_spec.ts_code%type;
+   l_fail_if_exists  boolean;
+   l_ignore_nulls    boolean;
+   l_primary_loc_idx pls_integer;
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   if p_fcst_spec_id is null then cwms_err.raise('NULL_ARGUMENT', 'p_fcst_spec_id'); end if;
+   if p_entity_id    is null then cwms_err.raise('NULL_ARGUMENT', 'p_entity_id'   ); end if;
+   l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
+   l_ignore_nulls   := cwms_util.return_true_or_false(p_ignore_nulls);
+   --------------------------------------
+   -- retrieve the record if it exists --
+   --------------------------------------
+   l_rec.office_code := cwms_util.get_office_code(p_office_id);
+   l_rec.fcst_spec_code := get_fcst_spec_code(l_rec.office_code, p_fcst_spec_id, p_fcst_designator, 'F');
+   if l_rec.fcst_spec_code is null then
+      l_rec.fcst_spec_id    := p_fcst_spec_id;
+      l_rec.fcst_designator := p_fcst_designator;
+      l_ignore_nulls        := false;
+   else
+      if l_fail_if_exists then
+         cwms_err.raise(
+            'ITEM_ALREADY_EXISTS',
+            'Forecast specification',
+            cwms_util.get_db_office_id_from_code(l_rec.office_code)
+            ||'/'||l_rec.fcst_spec_id
+            ||'/'||p_fcst_designator);
+      end if;
+      select *
+        into l_rec
+        from at_fcst_spec
+       where fcst_spec_code = l_rec.fcst_spec_code;
+   end if;
+   -----------------------------------------
+   -- populate the record from parameters --
+   -----------------------------------------
+   begin
+      select entity_code
+        into l_rec.source_entity
+        from at_entity
+       where office_code in (cwms_util.db_office_code_all, l_rec.office_code)
+         and entity_id = upper(p_entity_id);
+   exception
+      when no_data_found then
+         cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Entity', upper(p_entity_id));
+   end;
+   if p_description is not null or not l_ignore_nulls then
+      l_rec.description := p_description;
+   end if;
+
+   if l_rec.fcst_spec_code is not null then
+       -- Validate timeseries ids are constrained to locations, and location removal does not result in orphaned ts ids.
+       validate_fcst_spec_ts_locations(
+          p_fcst_spec_code  => l_rec.fcst_spec_code,
+          p_office_code     => l_rec.office_code,
+          p_fcst_spec_id    => p_fcst_spec_id,
+          p_fcst_designator => p_fcst_designator,
+          p_location_ids    => p_location_ids,
+          p_timeseries_ids  => p_timeseries_ids,
+          p_ignore_nulls    => l_ignore_nulls
+       );
+   end if;
+
+   -----------------------------
+   -- insert or update record --
+   -----------------------------
+   if l_rec.fcst_spec_code is null then
+      l_rec.fcst_spec_code := random_uuid;
+      insert into at_fcst_spec values l_rec;
+   else
+      update at_fcst_spec
+         set row = l_rec
+       where fcst_spec_code = l_rec.fcst_spec_code;
+   end if;
+
+   --------------------------
+   -- handle the locations --
+   --------------------------
+   if p_location_ids is null then
+      if not l_ignore_nulls then
+         delete from at_fcst_location where fcst_spec_code = l_rec.fcst_spec_code;
+      end if;
+   else
+      l_primary_loc_idx := null;
+      if p_location_ids is not null then
+         for i in 1..p_location_ids.count loop
+            if p_location_ids(i).sort_order = -1 then
+               if l_primary_loc_idx is not null then
+                  cwms_err.raise('INVALID_ITEM', 'Only one primary location (-1) allowed in p_location_ids', 'p_location_ids');
+               end if;
+               l_primary_loc_idx := i;
+            end if;
+         end loop;
+      end if;
+
+      if not l_ignore_nulls then
+         delete from at_fcst_location where fcst_spec_code = l_rec.fcst_spec_code;
+      end if;
+
+      if l_primary_loc_idx is not null then
+         l_location_code :=
+            cwms_loc.get_location_code(
+                l_rec.office_code,
+                p_location_ids(l_primary_loc_idx).location_id);
+
+         if l_ignore_nulls then
+            -- remove ANY existing row for this location (primary or non-primary)
+            delete from at_fcst_location
+            where fcst_spec_code = l_rec.fcst_spec_code
+                and location_code = l_location_code;
+
+            -- also remove old primary if different location
+            delete from at_fcst_location
+            where fcst_spec_code = l_rec.fcst_spec_code
+                and sort_order = -1;
+         end if;
+
+         insert into at_fcst_location (
+            fcst_spec_code,
+            location_code,
+            sort_order
+         )
+         values (
+            l_rec.fcst_spec_code,
+            l_location_code,
+            -1
+           );
+        end if;
+
+      if p_location_ids is not null then
+         for i in 1..p_location_ids.count loop
+            if p_location_ids(i).sort_order != -1 then
+               l_location_code := cwms_loc.get_location_code(l_rec.office_code, p_location_ids(i).location_id);
+               merge into at_fcst_location a
+               using (
+                  select l_rec.fcst_spec_code          as fcst_spec_code,
+                         l_location_code               as location_code,
+                         p_location_ids(i).sort_order as sort_order
+                    from dual
+               ) b
+               on (
+                  a.fcst_spec_code = b.fcst_spec_code
+                  and a.location_code = b.location_code
+               )
+               when matched then
+                  update set a.sort_order = b.sort_order
+               when not matched then
+                  insert (
+                     fcst_spec_code,
+                     location_code,
+                     sort_order
+                  )
+                  values (
+                     b.fcst_spec_code,
+                     b.location_code,
+                     b.sort_order
+                  );
+            end if;
+         end loop;
+      end if;
+   end if;
+   ----------------------------
+   -- handle the time series --
+   ----------------------------
+   if p_timeseries_ids is null then
+      if not l_ignore_nulls then
+         delete from at_fcst_time_series where fcst_spec_code = l_rec.fcst_spec_code;
+      end if;
+   else
+      -- Validation is centralized in validate_fcst_spec_ts_locations.
+      for rec in (select trim(column_value) as tsid from table(cwms_util.split_text(p_timeseries_ids, chr(10)))) loop
+         l_ts_code := cwms_ts.get_ts_code(rec.tsid, l_rec.office_code);
+
+         merge into
+            at_fcst_time_series a
+         using
+         (select l_rec.fcst_spec_code as fcst_spec_code,
+                 l_ts_code as ts_code
+            from dual
+         ) b
+      on
+         (a.fcst_spec_code = b.fcst_spec_code and a.ts_code = b.ts_code)
+      when not matched then
+         insert (fcst_spec_code, ts_code)
+         values (l_rec.fcst_spec_code, l_ts_code);
+      end loop;
+   end if;
+end store_fcst_spec_with_locations;
+
+procedure retrieve_fcst_spec_with_locations(
+   p_entity_id       out varchar2,
+   p_description     out varchar2,
+   p_location_ids    out fcst_location_tab_t,
+   p_timeseries_ids  out nocopy clob,
+   p_fcst_spec_id    in varchar2,
+   p_fcst_designator in varchar2 default null,
+   p_office_id       in varchar2 default null)
+is
+   l_office_code    cwms_office.office_code%type;
+   l_fcst_spec_code at_fcst_spec.fcst_spec_code%type;
+   l_ts_ids         str_tab_t;
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   if p_fcst_spec_id  is null then cwms_err.raise('NULL_ARGUMENT', 'p_fcst_spec_id' ); end if;
+   -----------------
+   -- do the work --
+   -----------------
+   l_office_code    := cwms_util.get_office_code(p_office_id);
+   l_fcst_spec_code := get_fcst_spec_code(l_office_code, p_fcst_spec_id, p_fcst_designator, 'T');
+   -----------------------------------------
+   -- get the entity and description      --
+   -----------------------------------------
+   select
+      e.entity_id,
+      fs.description
+   into
+      p_entity_id,
+      p_description
+   from
+      at_fcst_spec fs,
+      at_entity e
+   where
+      fs.fcst_spec_code = l_fcst_spec_code
+      and e.entity_code = fs.source_entity;
+
+   --------------------------
+   -- get the locations    --
+   --------------------------
+   select
+      fcst_location_t(
+         bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id,
+         fl.sort_order
+      )
+   bulk collect into
+      p_location_ids
+   from
+      at_fcst_location fl,
+      at_base_location bl,
+      at_physical_location pl
+   where
+      fl.fcst_spec_code = l_fcst_spec_code
+      and pl.location_code = fl.location_code
+      and bl.base_location_code = pl.base_location_code
+   order by
+      fl.sort_order;
+
+   -------------------------
+   -- get the time series --
+   -------------------------
+   select
+      tsid.cwms_ts_id
+   bulk collect into
+      l_ts_ids
+   from
+      at_fcst_time_series fts,
+      at_cwms_ts_id tsid
+   where
+      fts.fcst_spec_code = l_fcst_spec_code
+      and tsid.ts_code = fts.ts_code
+   order by
+      tsid.cwms_ts_id;
+
+   if l_ts_ids.count > 0 then
+      if cwms_ts.use_new_lrts_format_on_output = 'T' then
+          for j in 1..l_ts_ids.count loop
+              if cwms_ts.is_lrts(l_ts_ids(j), p_office_id) = 'T' then
+                  if cwms_ts.is_new_lrts_format(l_ts_ids(j)) = 'F' then
+                      l_ts_ids(j) := cwms_ts.format_lrts_output(l_ts_ids(j), true);
+                  end if;
+              end if;
+          end loop;
+      end if;
+
+      dbms_lob.createtemporary(p_timeseries_ids, true);
+      dbms_lob.open(p_timeseries_ids, dbms_lob.lob_readwrite);
+      cwms_util.append(p_timeseries_ids, l_ts_ids(1));
+      for i in 2..l_ts_ids.count loop
+         cwms_util.append(p_timeseries_ids, chr(10)||l_ts_ids(i));
+      end loop;
+      dbms_lob.close(p_timeseries_ids);
+   end if;
+end retrieve_fcst_spec_with_locations;
 
 end;
 /
