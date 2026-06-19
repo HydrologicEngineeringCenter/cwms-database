@@ -2539,7 +2539,6 @@ is
    l_next binary_integer;
    l_prev_val number;
    l_next_val number;
-   l_interp_flag varchar2(1);
 begin
    cwms_ts.store_ts(
       l_elev_tsid,
@@ -2551,6 +2550,11 @@ begin
       c_office_id,
       'T');
    for i in 1..l_interpolate.count loop
+      cwms_level.delete_location_level(
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_office_id => c_office_id
+      );
+
       cwms_level.store_location_level4(
          p_location_level_id => c_top_of_normal_elev_id,
          p_level_value       => null,
@@ -2560,23 +2564,41 @@ begin
          p_tsid               => l_elev_tsid,
          p_interpolate       => l_interpolate(i),
          p_office_id         => c_office_id);
+
+      l_result_values := cwms_level.retrieve_loc_lvl_values4(
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_start_time => l_start_ts,
+         p_end_time => l_end_ts,
+         p_level_units => 'm',
+         p_timezone_id => 'UTC',
+         p_office_id => c_office_id
+      );
+
+      for j in 1..l_result_values.count loop
+            if mod(j, 2) = 0 then
+               ------------------------------------------
+               -- even indices are between value times --
+               ------------------------------------------
+               l_prev := j/2;
+               l_next := mod(j/2, l_elev_ts_data.count)+1;
+               l_prev_val := round(l_elev_ts_data(l_prev).value, 5);
+               l_next_val := round(l_elev_ts_data(l_next).value, 5);
+               if l_interpolate(i) = 'T' then
+                  ut.expect(round(l_result_values(j).value, 5)).to_equal((l_prev_val + l_next_val) / 2);
+               else
+                  ut.expect(round(l_result_values(j).value, 5)).to_equal(l_elev_ts_data(j/2).value);
+               end if;
+            else
+               ------------------------------------
+               -- odd indices are at value times --
+               ------------------------------------
+               l_prev := mod((j-1)/2, l_elev_ts_data.count)+1;
+               l_prev_val := round(l_elev_ts_data(l_prev).value, 5);
+               ut.expect(round(l_result_values(j).value, 5)).to_equal(l_prev_val);
+            end if;
+            ut.expect(l_result_values(i).quality_code).to_equal(case l_interpolate(i) when 'T' then 1 else 0 end);
+         end loop;
    end loop;
-
-   l_result_values := cwms_level.retrieve_loc_lvl_values4(
-      p_location_level_id => c_top_of_normal_elev_id,
-      p_start_time => l_start_ts,
-      p_end_time => l_end_ts,
-      p_level_units => 'm',
-      p_timezone_id => 'UTC',
-      p_office_id => c_office_id
-   );
-
-   for i in 1..l_result_values.count loop
-      ut.expect(l_result_values(i).date_time).to_equal(l_elev_ts_data(i).date_time);
-      ut.expect(l_result_values(i).value).to_equal(l_elev_ts_data(i).value);
-      ut.expect(l_result_values(i).quality_code).to_equal(l_elev_ts_data(i).quality_code);
-   end loop;
-
 end test_cda_116_irregular_level_as_timeseries;
 
 end test_cwms_level;
