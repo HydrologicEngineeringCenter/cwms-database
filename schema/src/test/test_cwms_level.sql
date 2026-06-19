@@ -2525,7 +2525,7 @@ is
    l_end_ts timestamp := to_timestamp('2025-01-03 14:45', 'YYYY-MM-DD HH24:MI');
    l_interpolate str_tab_t := str_tab_t('F', 'T');
    l_values ztsv_array;
-   l_elev_tsid varchar2(191) := c_location_id||'.Elev.Inst.1Hour.0.Test';
+   l_elev_tsid varchar2(191) := c_location_id||'.Elev.Inst.1Hour.0.IRRTest';
    l_elev_ts_data cwms_t_tsv_array := cwms_t_tsv_array (
       cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 1/24 as timestamp), 'UTC'), 1000, 0),
       cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 3/24 as timestamp), 'UTC'), 1010, 0),
@@ -2570,6 +2570,12 @@ begin
       p_timezone_id => 'UTC',
       p_office_id => c_office_id
    );
+
+   for i in 1..l_result_values.count loop
+      ut.expect(l_result_values(i).date_time).to_equal(l_elev_ts_data(i).date_time);
+      ut.expect(l_result_values(i).value).to_equal(l_elev_ts_data(i).value);
+      ut.expect(l_result_values(i).quality_code).to_equal(l_elev_ts_data(i).quality_code);
+   end loop;
 
 end test_cda_116_irregular_level_as_timeseries;
 
