@@ -6412,10 +6412,20 @@ function retrieve_loc_lvl_values4(
    return ztsv_array
 is
    l_level_values ztsv_array;
+   l_level_values_interp ztsv_array := ztsv_array();
    l_min_date_utc date;
    l_max_date_utc date;
    l_level_id_parts str_tab_t;
    l_attr_id_parts  str_tab_t;
+   l_hi_idx       pls_integer;
+   l_lo_idx       pls_integer;
+   l_log_used     boolean;
+   l_ratio        number;
+   l_date_offset  number;
+   l_date_offsets number_tab_t;
+   l_values       double_tab_t;
+   l_quality      number_tab_t;
+   l_seq_props    cwms_lookup.sequence_properties_t;
 begin
    -- sanity checks
    if p_location_level_id is null then
@@ -6458,7 +6468,7 @@ begin
    else
       l_attr_id_parts :=  cwms_util.split_text(p_attribute_id, '.');
    end if;
-   l_min_date_utc := cwms_util.change_timezone(p_start_time, p_timezone_id, 'UTC');
+   l_min_date_utc := cwms_util.CHANGE_TIMEZONE(p_start_time, p_timezone_id, 'UTC');
    l_max_date_utc := cwms_util.CHANGE_TIMEZONE(p_end_time, p_timezone_id, 'UTC');
    retrieve_loc_lvl_values_utc(
       p_level_values            => l_level_values,
@@ -6477,6 +6487,38 @@ begin
       p_attribute_duration_id   => l_attr_id_parts(3),
       p_level_precedence        => p_level_precedence,
       p_office_id               => p_office_id);
+
+   l_level_values_interp.extend(l_level_values.count);
+   for i in 1..l_level_values.count loop
+      l_level_values_interp(i) := ztsv_type(l_level_values(i).date_time, null, 0);
+      l_date_offset := l_level_values(i).date_time - l_min_date_utc;
+      l_hi_idx := cwms_lookup.find_high_index(l_date_offset, l_date_offsets, l_seq_props);
+      l_lo_idx := l_hi_idx -1 ;
+      l_ratio  := cwms_lookup.find_ratio(
+         p_log_used                => l_log_used,
+         p_value                   => l_date_offset,
+         p_sequence                => l_date_offsets,
+         p_high_index              => l_hi_idx,
+         p_increasing              => l_seq_props.increasing_range,
+         p_in_range_behavior       => cwms_lookup.method_linear,
+         p_out_range_low_behavior  => cwms_lookup.method_null,   -- set values to null before earliest effective date
+         p_out_range_high_behavior => cwms_lookup.method_linear);
+      if l_ratio is not null then
+         if l_level_values(l_lo_idx).quality_code = 0 then
+            ----------------------
+            -- no interpolation --
+            ----------------------
+            l_level_values_interp(i).value := l_level_values(l_lo_idx).value;
+         else
+            -------------------
+            -- interpolation --
+            -------------------
+            l_level_values_interp(i).value := l_level_values(l_lo_idx).value + l_ratio * (l_level_values(l_hi_idx).value - l_level_values(l_lo_idx).value);
+            l_level_values_interp(i).quality_code := 1;
+         end if;
+      end if;
+   end loop;
+   l_level_values := l_level_values_interp;
    return l_level_values;
 end retrieve_loc_lvl_values4;
 --------------------------------------------------------------------------------
