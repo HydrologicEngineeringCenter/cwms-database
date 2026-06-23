@@ -6498,6 +6498,7 @@ begin
       l_values,
       l_quality
    from table(l_level_values);
+   l_seq_props := cwms_lookup.analyze_sequence(l_date_offsets);
    l_level_values_interp.extend(l_level_values.count);
    for i in 1..l_level_values.count loop
       l_level_values_interp(i) := ztsv_type(l_level_values(i).date_time, null, 0);
