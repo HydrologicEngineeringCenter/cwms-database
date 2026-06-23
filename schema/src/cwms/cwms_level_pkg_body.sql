@@ -6424,6 +6424,8 @@ is
    l_date_offset  number;
    l_date_offsets number_tab_t;
    l_seq_props    cwms_lookup.sequence_properties_t;
+   l_values       double_tab_t;
+   l_quality      number_tab_t;
 begin
    -- sanity checks
    if p_location_level_id is null then
@@ -6485,7 +6487,17 @@ begin
       p_attribute_duration_id   => l_attr_id_parts(3),
       p_level_precedence        => p_level_precedence,
       p_office_id               => p_office_id);
-
+   -----------------------------------------
+   -- set up variables to do lookups with --
+   -----------------------------------------
+   select date_time - l_min_date_utc,
+          value,
+          quality_code
+      bulk collect
+   into l_date_offsets,
+      l_values,
+      l_quality
+   from table(l_level_values);
    l_level_values_interp.extend(l_level_values.count);
    for i in 1..l_level_values.count loop
       l_level_values_interp(i) := ztsv_type(l_level_values(i).date_time, null, 0);
