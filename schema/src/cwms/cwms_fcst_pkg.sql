@@ -28,12 +28,12 @@ procedure validate_fcst_spec(p_fcst_spec_code in varchar2);
  *                          AT_ENTITY table.
  * @param p_description     A description of the forecast specification. If unspecified or NULL no description is used.
  * @param p_location_id     The primary location associated with forecast specification (e.g., project, basin, control point).
- *                          If unspecified or NULL no location will be associated.
+ *                          If unspecified or NULL no location will be associated. This location is assigned a sort order of -1.
  * @param p_location_ids    A list of location IDs that are stored for this forecast specification separated by newline
  *                          characters ("\n"). These locations are in addition to p_location_id (if specified).
  * @param p_sort_orders     A list of sort orders associated with the location IDs in p_location_ids. If specified, must
  *                          have the same number of elements as p_location_ids. If unspecified or NULL, the locations in
- *                          p_location_ids will be assigned sort order of 1.
+ *                          p_location_ids will be assigned sort order of 1. Sort order -1 indicates a primary location.
  * @param p_timeseries_ids  A list of time series IDs that are stored for this forecast specification separated by newline
  *                          characters ("\n")
  *                          If unspecified or NULL no time series will be associated with the forecast specification until

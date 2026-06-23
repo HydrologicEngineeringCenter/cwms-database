@@ -298,13 +298,17 @@ begin
                   and fcst_designator = c_fcst_designator;
                if has_location = 1 then
                   ut.expect(l_count).to_equal(1);
-                  select location_id
-                  into l_location_id_out
-                  from cwms_v_fcst_location
-                  where office_id = c_office_id
-                     and fcst_spec_id = c_fcst_spec_id
-                     and fcst_designator = c_fcst_designator;
-                  ut.expect(l_location_id_out).to_equal(c_location_id);
+                  for rec in (select *
+                                from cwms_v_fcst_location
+                               where office_id = c_office_id
+                                 and fcst_spec_id = c_fcst_spec_id
+                                 and fcst_designator = c_fcst_designator
+                             )
+                  loop
+                     ut.expect(rec.location_id).to_equal(c_location_id);
+                     ut.expect(rec.sort_order).to_equal(-1);
+                     ut.expect(rec.is_primary).to_equal('T');
+                  end loop;
                else
                   ut.expect(l_count).to_equal(0);
                end if;
@@ -317,13 +321,17 @@ begin
                   and fcst_designator is null;
                if has_location = 1 then
                   ut.expect(l_count).to_equal(1);
-                  select location_id
-                  into l_location_id_out
-                  from cwms_v_fcst_location
-                  where office_id = c_office_id
-                     and fcst_spec_id = c_fcst_spec_id
-                     and fcst_designator is null;
-                  ut.expect(l_location_id_out).to_equal(c_location_id);
+                  for rec in (select *
+                                from cwms_v_fcst_location
+                               where office_id = c_office_id
+                                 and fcst_spec_id = c_fcst_spec_id
+                                 and fcst_designator is null
+                             )
+                  loop
+                     ut.expect(rec.location_id).to_equal(c_location_id);
+                     ut.expect(rec.sort_order).to_equal(-1);
+                     ut.expect(rec.is_primary).to_equal('T');
+                  end loop;
                else
                   ut.expect(l_count).to_equal(0);
                end if;

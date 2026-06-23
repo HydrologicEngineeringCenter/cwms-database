@@ -1094,10 +1094,11 @@ begin
 
         delete from at_fcst_spec where fcst_spec_code = l_fcst_spec_code;
 
-        insert into at_fcst_spec values (l_fcst_spec_code, l_cwms_office_code,
-                                        'TEST_SPEC876', 'designator', 1, 'description');
+        insert into at_fcst_spec (fcst_spec_code, office_code, fcst_spec_id, fcst_designator, source_entity, description)
+        values (l_fcst_spec_code, l_cwms_office_code, 'TEST_SPEC876', 'designator', 1, 'description');
 
-        insert into at_fcst_time_series values (l_fcst_spec_code, l_cwms_ts_code);
+        insert into at_fcst_time_series (fcst_spec_code, ts_code)
+        values (l_fcst_spec_code, l_cwms_ts_code);
 
         select cwms_ts_id
             into l_fcst_spec_tsid
@@ -1152,12 +1153,13 @@ begin
 
         delete from at_fcst_spec where fcst_spec_code = l_fcst_spec_code;
 
-        insert into at_fcst_spec values (l_fcst_spec_code, l_cwms_office_code,
-                                         l_fcst_spec_id, 'designator', 1, 'description');
+        insert into at_fcst_spec (fcst_spec_code, office_code, fcst_spec_id, fcst_designator, source_entity, description)
+        values (l_fcst_spec_code, l_cwms_office_code, l_fcst_spec_id, 'designator', 1, 'description');
 
-        insert into at_fcst_location values (l_fcst_spec_code, l_location_code);
+        insert into at_fcst_location values (l_fcst_spec_code, l_location_code, -1);
 
-        insert into at_fcst_time_series values (l_fcst_spec_code, l_cwms_ts_code);
+        insert into at_fcst_time_series (fcst_spec_code, ts_code)
+        values (l_fcst_spec_code, l_cwms_ts_code);
 
         cwms_fcst.retrieve_fcst_spec(
                 p_entity_id => l_entity_id,
