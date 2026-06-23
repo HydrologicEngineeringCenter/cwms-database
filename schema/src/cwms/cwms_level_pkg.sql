@@ -1449,7 +1449,7 @@ function retrieve_loc_lvl_values3(
    p_level_precedence        in  varchar2 default 'VN')
    return ztsv_array;
 /**
- * Retrieves a time series of location level values for a specified location level
+ * Retrieves a time series of location level values for a specified location level (returns times in UTC)
  *
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_specified_times    The times to retrieve the location level values (regular interval only, null is for irregular)
