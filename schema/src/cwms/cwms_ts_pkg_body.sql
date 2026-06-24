@@ -5424,7 +5424,7 @@ AS
          ----------------------------------------------------
          -- update all version_dates for specified ts_code --
          ----------------------------------------------------
-         for rec in (select distinct,
+         for rec in (select distinct
                             tsx.version_time
                        from at_ts_extents tsx,
                             at_cwms_ts_spec tss,
@@ -5441,7 +5441,7 @@ AS
                                    )
                     )
          loop
-            update_ts_extents(p_ts_code, rec2.version_time);
+            update_ts_extents(p_ts_code, rec.version_time);
          end loop;
          return;
       end if;
