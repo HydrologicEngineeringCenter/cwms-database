@@ -27,6 +27,8 @@ procedure cwdb_200_ts_extents_has_field_for_non_zero_quality;
 procedure test_cwdb_313_314_ts_extents_with_ts_with_no_values;
 --%test (TS extents not updating for new versioned time series)
 procedure test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts;
+--%test (New TS extents routines)
+procedure test_cwms_2446_fix_performance_for_update_ts_extents;
 
 procedure setup;
 procedure teardown;
@@ -1032,6 +1034,86 @@ begin
    ut.expect(l_latest_non_null_time).to_equal(c_base_ts_data(23).date_time);
 end test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts;
 
+--------------------------------------------------------------------------------
+-- procedure test_cwms_2446_fix_performance_for_update_ts_extents
+--------------------------------------------------------------------------------
+procedure test_cwms_2446_fix_performance_for_update_ts_extents
+is
+   l_ts_code      at_cwms_ts_id.ts_code%type;
+   l_version_date date := c_base_start_date + 10;
+   l_log_messages varchar2(4000);
+   l_count        binary_integer;
+   l_timestamp    timestamp := systimestamp;
+begin
+   -----------------------------------------------
+   -- delete data to get a known starting point --
+   -----------------------------------------------
+   setup;
+   for rec in (select table_name from at_ts_table_properties) loop
+      execute immediate 'delete from '||rec.table_name;
+      commit;
+   end loop;
+   delete from at_ts_extents;
+   delete from at_log_message_properties;
+   delete from at_log_message;
+
+   for i in 1..2 loop
+      -----------------------------
+      -- store un-versioned data --
+      -----------------------------
+      cwms_ts.zstore_ts (
+         p_cwms_ts_id      => c_ts_id,
+         p_units           => c_units,
+         p_timeseries_data => c_base_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => c_office_id);
+      l_ts_code := cwms_ts.get_ts_code(c_ts_id, c_office_id);
+      --------------------------
+      -- store versioned data --
+      --------------------------
+      cwms_ts.set_tsid_versioned(
+         p_cwms_ts_id      => c_ts_id,
+         p_versioned       => 'T',
+         p_db_office_id    => c_office_id);
+      cwms_ts.zstore_ts (
+         p_cwms_ts_id      => c_ts_id,
+         p_units           => c_units,
+         p_timeseries_data => c_base_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => l_version_date,
+         p_office_id       => c_office_id);
+      commit;
+      if i = 1 then
+         for rec in (select table_name from at_ts_table_properties) loop
+            execute immediate 'delete from '||rec.table_name;
+            commit;
+         end loop;
+         cwms_ts.purge_invalid_ts_extents;
+      else
+         update at_ts_extents set last_update = l_timestamp where ts_code = l_ts_code;
+         cwms_ts.update_ts_extents_for_office(c_office_id);
+      end if;
+   end loop;
+   begin
+      cwms_ts.start_update_ts_extents_job;
+   exception
+      when others then
+         if user != '&&cwms_schema' then
+            ut.expect(regexp_instr(sqlerrm, 'Must be &&cwms_schema user to start job UPDATE_TS_EXTENTS_JOB', 1, 1, 0, 'i')).to_be_greater_than(0);
+         else
+            raise;
+         end if;
+   end;
+   l_log_messages := cwms_ts.retrieve_update_ts_extents_log_messages(1);
+   ut.expect(cwms_util.split_text(trim(chr(10) from l_log_messages), chr(10)).count).to_equal(case when user = '&&cwms_schema' then 5 else 4 end);
+   ut.expect(instr(l_log_messages, 'Purge of invalid TS extents ended. 2 records deleted')).to_be_greater_than(0);
+   ut.expect(instr(l_log_messages, 'Update TS Extents for Office SWT ended')).to_be_greater_than(0);
+   if user = upper('&&cwms_schema') then
+      ut.expect(instr(l_log_messages, 'Job UPDATE_TS_EXTENTS_JOB_SWT scheduled to start')).to_be_greater_than(0);
+   end if;
+
+end test_cwms_2446_fix_performance_for_update_ts_extents;
 
 end test_update_ts_extents;
 /

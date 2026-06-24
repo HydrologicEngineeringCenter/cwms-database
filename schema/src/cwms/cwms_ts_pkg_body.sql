@@ -5527,8 +5527,9 @@ AS
    -- not documented
    procedure purge_invalid_ts_extents
    is
-      c_key constant varchar2(24) := 'Purge Invalid TS Extents';
-      l_now timestamp := systimestamp;
+      c_key   constant varchar2(24) := 'Purge Invalid TS Extents';
+      l_now   timestamp := systimestamp;
+      l_count binary_integer;
    begin
       cwms_msg.log_db_message(
          c_key,
@@ -5542,10 +5543,11 @@ AS
                           where ts_code = tsx.ts_code
                             and version_date = tsx.version_time
                         );
+      l_count := sql%rowcount;
       commit;
       cwms_msg.log_db_message(
          c_key,
-         'Purge of invalid TS extents ended. '||sql%rowcount||' records deleted',
+         'Purge of invalid TS extents ended. '||l_count||' records deleted',
          cwms_msg.msg_level_normal);
       ----------------------------------------
       -- output log messages to dbms_output --
