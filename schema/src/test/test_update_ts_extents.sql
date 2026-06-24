@@ -955,6 +955,7 @@ is
    l_latest_non_null_time   date;
    l_version_date           date := c_base_start_date + 10;
 begin
+   setup;
    -----------------------------
    -- store un-versioned data --
    -----------------------------
