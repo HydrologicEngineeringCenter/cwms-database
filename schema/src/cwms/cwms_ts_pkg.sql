@@ -2065,6 +2065,13 @@ AS
       p_version_date in date default null);
 
    -- not documented
+   procedure update_ts_extents_for_office(
+      p_office_id varchar2);
+
+   -- not documented
+   procedure purge_invalid_ts_extents;
+
+   -- not documented
    procedure start_update_ts_extents_job;
 
    -- not documented
