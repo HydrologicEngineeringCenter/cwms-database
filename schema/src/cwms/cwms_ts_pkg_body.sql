@@ -5251,10 +5251,10 @@ AS
                      and p.msg_id = m.msg_id
                      and p.prop_name = 'key'
                      and p.prop_text = c_key
-                   order by m.msg_id
+                   order by m.report_timestamp_utc
                  )
       loop
-         dbms_output.put_line(rec.report_timestamp_utc||chr(9)||rec.msg_text);
+         dbms_output.put_line(to_char(rec.report_timestamp_utc, 'yyyy-mm-dd hh24:mi:ss.ff3')||chr(9)||rec.msg_text);
       end loop;
    end update_ts_extents_for_office;
 
@@ -5524,6 +5524,7 @@ AS
 
    end update_ts_extents;
 
+   -- not documented
    procedure purge_invalid_ts_extents
    is
       c_key constant varchar2(24) := 'Purge Invalid TS Extents';
@@ -5557,12 +5558,35 @@ AS
                      and p.msg_id = m.msg_id
                      and p.prop_name = 'key'
                      and p.prop_text = c_key
-                   order by m.msg_id
+                   order by m.report_timestamp_utc
                  )
       loop
-         dbms_output.put_line(rec.report_timestamp_utc||chr(9)||rec.msg_text);
+         dbms_output.put_line(to_char(rec.report_timestamp_utc, 'yyyy-mm-dd hh24:mi:ss.ff3')||chr(9)||rec.msg_text);
       end loop;
    end purge_invalid_ts_extents;
+
+   -- not documented
+   function retrieve_update_ts_extents_log_messages(
+      p_lookback_hours in binary_integer default 24)
+      return varchar2
+   is
+      l_results varchar2(4000);
+   begin
+      for rec in (select m.report_timestamp_utc,
+                         m.msg_text
+                    from at_log_message m,
+                         at_log_message_properties p
+                   where m.report_timestamp_utc >= sysdate - p_lookback_hours / 24
+                     and p.msg_id = m.msg_id
+                     and p.prop_name = 'key'
+                     and upper(p.prop_text) like '%TS_EXTENTS%'
+                   order by m.report_timestamp_utc
+                 )
+      loop
+         l_results := l_results||chr(10)||to_char(rec.report_timestamp_utc, 'yyyy-mm-dd hh24:mi:ss.ff3')||chr(9)||rec.msg_text;
+      end loop;
+      return substr(l_results, 1);
+   end retrieve_update_ts_extents_log_messages;
 
    -- not documented
    procedure start_update_ts_extents_job
@@ -5673,10 +5697,10 @@ AS
                      and p.msg_id = m.msg_id
                      and p.prop_name = 'key'
                      and p.prop_text = c_msg_key
-                   order by m.msg_id
+                   order by m.report_timestamp_utc
                  )
       loop
-         dbms_output.put_line(rec.report_timestamp_utc||chr(9)||rec.msg_text);
+         dbms_output.put_line(to_char(rec.report_timestamp_utc, 'yyyy-mm-dd hh24:mi:ss.ff3')||chr(9)||rec.msg_text);
       end loop;
    end start_update_ts_extents_job;
 
