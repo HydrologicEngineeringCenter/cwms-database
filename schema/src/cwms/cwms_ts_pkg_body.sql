@@ -5193,9 +5193,15 @@ AS
    procedure update_ts_extents_for_office(
       p_office_id varchar2)
    is
-      l_office_code at_cwms_ts_id.db_office_code%type;
+      l_office_id at_cwms_ts_id.db_office_id%type := cwms_util.get_db_office_id(p_office_id);
+      l_count     binary_integer := 0;
+      l_now       timestamp := systimestamp;
+      c_key       constant varchar2(36) := 'Update TS Extents for Office '||l_office_id;
    begin
-      l_office_code := cwms_util.get_db_office_code(p_office_id);
+      cwms_msg.log_db_message(
+         c_key,
+         'Update TS Extents for Office '||l_office_id||' started',
+         cwms_msg.msg_level_normal);
       ----------------------------------------------
       -- select out-of-date ts extents for office --
       ----------------------------------------------
@@ -5210,7 +5216,7 @@ AS
                         and tss.delete_date is null
                         and tsid.ts_code = tsx.ts_code
                         and tsid.net_ts_active_flag = 'T'
-                        and tsid.db_office_code = l_office_code
+                        and tsid.db_office_id = l_office_id
                     )
                  select ts_code,
                         version_time
@@ -5224,7 +5230,31 @@ AS
                                )
                  )
       loop
+         -----------------------
+         -- update the record --
+         -----------------------
          cwms_ts.update_ts_extents(rec.ts_code, rec.version_time);
+         l_count := l_count + 1;
+      end loop;
+      cwms_msg.log_db_message(
+         c_key,
+         'Update TS Extents for Office '||l_office_id||' ended: '||l_count||' records updated',
+         cwms_msg.msg_level_normal);
+      ----------------------------------------
+      -- output log messages to dbms_output --
+      ----------------------------------------
+      for rec in (select m.report_timestamp_utc,
+                         m.msg_text
+                    from at_log_message m,
+                         at_log_message_properties p
+                   where m.report_timestamp_utc >= l_now
+                     and p.msg_id = m.msg_id
+                     and p.prop_name = 'key'
+                     and p.prop_text = c_key
+                   order by m.msg_id
+                 )
+      loop
+         dbms_output.put_line(rec.report_timestamp_utc||chr(9)||rec.msg_text);
       end loop;
    end update_ts_extents_for_office;
 
@@ -5519,18 +5549,18 @@ AS
       ----------------------------------------
       -- output log messages to dbms_output --
       ----------------------------------------
-      for rec in (select m.log_timestamp_utc,
+      for rec in (select m.report_timestamp_utc,
                          m.msg_text
                     from at_log_message m,
                          at_log_message_properties p
-                   where m.log_timestamp_utc > l_now
+                   where m.report_timestamp_utc >= l_now
                      and p.msg_id = m.msg_id
                      and p.prop_name = 'key'
                      and p.prop_text = c_key
                    order by m.msg_id
                  )
       loop
-         dbms_output.put_line(rec.log_timestamp_utc||chr(9)||rec.msg_text);
+         dbms_output.put_line(rec.report_timestamp_utc||chr(9)||rec.msg_text);
       end loop;
    end purge_invalid_ts_extents;
 
@@ -5635,17 +5665,18 @@ AS
       ----------------------------------------
       -- output log messages to dbms_output --
       ----------------------------------------
-      for rec in (select m.msg_text
+      for rec in (select m.report_timestamp_utc,
+                         m.msg_text
                     from at_log_message m,
                          at_log_message_properties p
-                   where m.log_timestamp_utc > cast (l_now as timestamp)
+                   where m.report_timestamp_utc >= cast (l_now as timestamp)
                      and p.msg_id = m.msg_id
                      and p.prop_name = 'key'
                      and p.prop_text = c_msg_key
                    order by m.msg_id
                  )
       loop
-         dbms_output.put_line(rec.msg_text);
+         dbms_output.put_line(rec.report_timestamp_utc||chr(9)||rec.msg_text);
       end loop;
    end start_update_ts_extents_job;
 
