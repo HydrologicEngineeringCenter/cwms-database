@@ -12,10 +12,10 @@ begin
                        object_type,
                        status
                   from dba_objects
-                where owner in ('&cwms_schema', '&cwms_dba_schema')
+                where owner in ('&&cwms_schema', '&&cwms_dba_schema')
                   and object_type in ('PACKAGE', 'TYPE'))
       loop
-         if c.owner = '&cwms_schema' and c.object_type = 'PACKAGE' then
+         if c.owner = '&&cwms_schema' and c.object_type = 'PACKAGE' then
             continue when c.object_name in ('CWMS_SEC_POLICY', 'CWMS_UPASS');
             l_cmd := 'create or replace public synonym '||c.object_name||' for &cwms_schema..'||c.object_name;
             execute immediate l_cmd;
@@ -39,7 +39,7 @@ begin
                        regexp_substr(object_type, '\S+') as object_type,
                        status
                   from dba_objects
-                 where owner in ('&cwms_schema', '&cwms_dba_schema')
+                 where owner in ('&&cwms_schema', '&&cwms_dba_schema')
                    and object_type in ('PACKAGE BODY', 'TYPE BODY')
                    and status <> 'VALID')
       loop
@@ -62,7 +62,7 @@ begin
                        object_type,
                        status
                   from dba_objects
-                 where owner in ('&cwms_schema', '&cwms_dba_schema')
+                 where owner in ('&&cwms_schema', '&&cwms_dba_schema')
                    and object_type in ('VIEW','MATERIALIZED VIEW','TRIGGER','PROCEDURE','FUNCTION')
                    and status <> 'VALID')
       loop
