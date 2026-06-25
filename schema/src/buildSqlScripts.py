@@ -117,6 +117,7 @@ tableInfo = [
     {"ID" : "qReplCause",             "TABLE" : "CWMS_DATA_Q_REPL_CAUSE",         "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "qReplMethod",            "TABLE" : "CWMS_DATA_Q_REPL_METHOD",        "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "qTestFailed",            "TABLE" : "CWMS_DATA_Q_TEST_FAILED",        "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qApproval",              "TABLE" : "CWMS_DATA_Q_APPROVAL",           "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "qProtection",            "TABLE" : "CWMS_DATA_Q_PROTECTION",         "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "quality",                "TABLE" : "CWMS_DATA_QUALITY",              "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "ratingMethod",           "TABLE" : "CWMS_RATING_METHOD",             "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -4514,7 +4515,7 @@ Data Quality Rules :
 
     1. Unless the Screened bit is set, no other bits can be set.
 
-    2. Unused bits (22, 24, 27-31, 32+) must be reset (zero).
+    2. Unused bits (22, 24, 27-30, 32+) must be reset (zero).
 
     3. The Okay, Missing, Questioned and Rejected bits are mutually
        exclusive.
@@ -4531,20 +4532,23 @@ Data Quality Rules :
     7. The Test Failed bits are not mutually exclusive (multiple tests can be
        marked as failed).
 
+    8. The Approved bit may not be set unless the Protected bit is also set
+
 Bit Mappings :
 
          3                   2                   1
      2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1
 
-     P - - - - - T T T T T T T T T T T M M M M C C C D R R V V V V S
-     |           <---------+---------> <--+--> <-+-> | <+> <--+--> |
-     |                     |              |      |   |  |     |    +------Screened T/F
-     |                     |              |      |   |  |     +-----------Validity Flags
-     |                     |              |      |   |  +--------------Value Range Integer
-     |                     |              |      |   +-------------------Different T/F
-     |                     |              |      +---------------Replacement Cause Integer
-     |                     |              +---------------------Replacement Method Integer
-     |                     +-------------------------------------------Test Failed Flags
+     P A - - - - T T T T T T T T T T T M M M M C C C D R R V V V V S
+     | |         <---------+---------> <--+--> <-+-> | <+> <--+--> |
+     | |                   |              |      |   |  |     |    +------Screened T/F
+     | |                   |              |      |   |  |     +-----------Validity Flags
+     | |                   |              |      |   |  +--------------Value Range Integer
+     | |                   |              |      |   +-------------------Different T/F
+     | |                   |              |      +---------------Replacement Cause Integer
+     | |                   |              +---------------------Replacement Method Integer
+     | |                   +-------------------------------------------Test Failed Flags
+     | +------------------------------------------------------------------Approved T/F
      +-------------------------------------------------------------------Protected T/F
 
 '''
@@ -4627,6 +4631,12 @@ for items in testFailedCombinations :
         id    = "+".join(ids)
         desc  = "The value failed %d tests" % len(items)
     q_test_failed["values"].append((value, id, desc))
+
+q_approval = {
+    "shift"  : 30,
+    "values" : [
+        (0,    "NOT_APPROVED",   "The value has not be manually approved"),
+        (1,    "APPROVED",       "The value has been manually approved"  )]}
 
 q_protection = {
     "shift"  : 31,
@@ -8358,6 +8368,53 @@ def main() :
     qTestFailedLoadTemplate += "COMMIT;\n"
 
     sys.stderr.write("Building qProtectionCreationTemplate\n")
+    global qApprovalCreationTemplate
+    qApprovalCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           APPROVAL_ID   VARCHAR2(16)  NOT NULL,
+           DESCRIPTION   VARCHAR2(80),
+           CONSTRAINT @TABLE_PK PRIMARY KEY (APPROVAL_ID)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE
+       (
+              INITIAL 10K
+              NEXT 10K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+
+
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE               IS 'Contains valid values for the approval component of CWMS data quality flags';
+    COMMENT ON COLUMN @TABLE.APPROVAL_ID   IS 'Text identifier of approval component and primary key';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Text description of approval component';
+
+    COMMIT;
+    '''
+    sys.stderr.write("Building qApprovalLoadTemplate\n")
+    global qApprovalLoadTemplate
+    qApprovalLoadTemplate = ''
+    for code, id, description in q_approval["values"] :
+        qApprovalLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
+    qApprovalLoadTemplate += "COMMIT;\n"
+
+    sys.stderr.write("Building qProtectionCreationTemplate\n")
     global qProtectionCreationTemplate
     qProtectionCreationTemplate = \
     '''
@@ -8422,6 +8479,7 @@ def main() :
            REPL_METHOD_ID VARCHAR2(16)  NOT NULL,
            TEST_FAILED_ID VARCHAR2(125) NOT NULL,
            PROTECTION_ID  VARCHAR2(16)  NOT NULL,
+           APPROVAL_ID    VARCHAR2(16)  NOT NULL,
            CONSTRAINT @TABLE_PK   PRIMARY KEY (QUALITY_CODE)
        )
            PCTFREE 10
@@ -8452,6 +8510,7 @@ def main() :
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK6 FOREIGN KEY (REPL_CAUSE_ID ) REFERENCES @qReplCauseTableName  (REPL_CAUSE_ID );
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK7 FOREIGN KEY (REPL_METHOD_ID) REFERENCES @qReplMethodTableName (REPL_METHOD_ID);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK8 FOREIGN KEY (TEST_FAILED_ID) REFERENCES @qTestFailedTableName (TEST_FAILED_ID);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK0 FOREIGN KEY (APPROVAL_ID   ) REFERENCES @qApprovalTableName   (APPROVAL_ID   );
 
     ---------------------------
     -- @TABLE comments --
@@ -8466,6 +8525,7 @@ def main() :
     COMMENT ON COLUMN @TABLE.REPL_METHOD_ID IS 'Foreign key referencing @qReplMethodTableName table by its primary key';
     COMMENT ON COLUMN @TABLE.TEST_FAILED_ID IS 'Foreign key referencing @qTestFailedTableName table by its primary key';
     COMMENT ON COLUMN @TABLE.PROTECTION_ID  IS 'Foreign key referencing @qProtectionTableName table by its primary key';
+    COMMENT ON COLUMN @TABLE.APPROVAL_ID    IS 'Foreign key referencing @qApprovalTableName table by its primary key';
     COMMIT;
     '''
     sys.stderr.write("Building qualityLoadFile\n")
@@ -8475,11 +8535,11 @@ def main() :
       infile *
       into table cwms_data_quality
       fields terminated by ","
-      (QUALITY_CODE,SCREENED_ID,VALIDITY_ID,RANGE_ID,CHANGED_ID,REPL_CAUSE_ID,REPL_METHOD_ID,TEST_FAILED_ID,PROTECTION_ID)
+      (QUALITY_CODE,SCREENED_ID,VALIDITY_ID,RANGE_ID,CHANGED_ID,REPL_CAUSE_ID,REPL_METHOD_ID,TEST_FAILED_ID,PROTECTION_ID,APPROVAL_ID)
     begindata
     ''')
 
-    qualityLoadFile.write("%lu,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
+    qualityLoadFile.write("%lu,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
         0,                                    # unsigned value
         q_screened["values"][0][1],           # screened code
         q_validity["values"][0][1],           # validity code
@@ -8488,7 +8548,8 @@ def main() :
         q_replacement_cause["values"][0][1],  # replacement cause code
         q_replacement_method["values"][0][1], # replacement method code
         q_test_failed["values"][0][1],        # test failed code
-        q_protection["values"][0][1]))        # protection code
+        q_protection["values"][0][1],         # protection code
+        q_approval["values"][0][1]))          # approval code
 
     for v in range(len(q_validity["values"])) :
         for r in range(len(q_value_range["values"])) :
@@ -8499,25 +8560,29 @@ def main() :
                         if (d > 0) != (m > 0) : continue
                         for t in range(len(q_test_failed["values"])) :
                             for p in range(len(q_protection["values"])) :
-                                value = 0 \
-                                    | (q_screened["values"][1][0] << q_screened["shift"]) \
-                                    | (q_validity["values"][v][0] << q_validity["shift"]) \
-                                    | (q_value_range["values"][r][0] << q_value_range["shift"]) \
-                                    | (q_different["values"][d][0] << q_different["shift"]) \
-                                    | (q_replacement_cause["values"][c][0] << q_replacement_cause["shift"]) \
-                                    | (q_replacement_method["values"][m][0] << q_replacement_method["shift"]) \
-                                    | (q_test_failed["values"][t][0] << q_test_failed["shift"]) \
-                                    | (q_protection["values"][p][0] << q_protection["shift"])
-                                qualityLoadFile.write("%lu,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
-                                    value,                                # unsigned value
-                                    q_screened["values"][1][1],           # screened code
-                                    q_validity["values"][v][1],           # validity code
-                                    q_value_range["values"][r][1],        # range code
-                                    q_different["values"][d][1],          # changed code
-                                    q_replacement_cause["values"][c][1],  # replacement cause code
-                                    q_replacement_method["values"][m][1], # replacement method code
-                                    q_test_failed["values"][t][1],        # test failed code
-                                    q_protection["values"][p][1]))        # protection code
+                                for a in range(len(q_approval["values"])) :
+                                    if p == 0 and a == 1 : continue
+                                    value = 0 \
+                                        | (q_screened["values"][1][0] << q_screened["shift"]) \
+                                        | (q_validity["values"][v][0] << q_validity["shift"]) \
+                                        | (q_value_range["values"][r][0] << q_value_range["shift"]) \
+                                        | (q_different["values"][d][0] << q_different["shift"]) \
+                                        | (q_replacement_cause["values"][c][0] << q_replacement_cause["shift"]) \
+                                        | (q_replacement_method["values"][m][0] << q_replacement_method["shift"]) \
+                                        | (q_test_failed["values"][t][0] << q_test_failed["shift"]) \
+                                        | (q_protection["values"][p][0] << q_protection["shift"]) \
+                                        | (q_approval["values"][a][0] << q_approval["shift"])
+                                    qualityLoadFile.write("%lu,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
+                                        value,                                # unsigned value
+                                        q_screened["values"][1][1],           # screened code
+                                        q_validity["values"][v][1],           # validity code
+                                        q_value_range["values"][r][1],        # range code
+                                        q_different["values"][d][1],          # changed code
+                                        q_replacement_cause["values"][c][1],  # replacement cause code
+                                        q_replacement_method["values"][m][1], # replacement method code
+                                        q_test_failed["values"][t][1],        # test failed code
+                                        q_protection["values"][p][1],         # protection code
+                                        q_approval["values"][a][1]))          # approval code
 
     qualityLoadFile.close()
 

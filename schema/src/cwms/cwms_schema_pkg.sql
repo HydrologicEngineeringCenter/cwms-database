@@ -266,6 +266,7 @@ view_names constant object_tab_t := object_tab_t(
    'AV_DATAEXCHANGE_JOB',
    'AV_DATA_QUALITY',
    'AV_DATA_Q_CHANGED',
+   'AV_DATA_Q_APPROVAL',
    'AV_DATA_Q_PROTECTION',
    'AV_DATA_Q_RANGE',
    'AV_DATA_Q_REPL_CAUSE',
