@@ -2219,7 +2219,7 @@ AS
       -----------------------------------
       -- wait until top of next minute --
       -----------------------------------
-      dbms_session.sleep(60 - extract(second from systimestamp));
+      dbms_session.sleep(60 - extract(second from systimestamp) + 1);
       l_time := trunc(systimestamp, 'MI') + interval '000 00:01:00' day to second;
       for test_streaming in 0..1 loop
          cwms_tsv.is_stream_session := test_streaming = 1; -- normally set from username at init of cwms_tsv package
