@@ -5576,6 +5576,7 @@ begin
                l_level_values(l_level_values.count) := l_combined_values_hash(l_date_str);
                l_date_str := l_combined_values_hash.next(l_date_str);
             end loop;
+            l_combined_values_hash.delete;
          end if;
       end if;
       -----------------------------------------------------------------------
@@ -6424,8 +6425,6 @@ is
    l_date_offset  number;
    l_date_offsets number_tab_t;
    l_seq_props    cwms_lookup.sequence_properties_t;
-   l_values       double_tab_t;
-   l_quality      number_tab_t;
 begin
    -- sanity checks
    if p_location_level_id is null then
@@ -6490,13 +6489,9 @@ begin
    -----------------------------------------
    -- set up variables to do lookups with --
    -----------------------------------------
-   select date_time - l_min_date_utc,
-          value,
-          quality_code
+   select date_time - l_min_date_utc
       bulk collect
-   into l_date_offsets,
-      l_values,
-      l_quality
+   into l_date_offsets
    from table(l_level_values);
    l_seq_props := cwms_lookup.analyze_sequence(l_date_offsets);
    l_level_values_interp.extend(l_level_values.count);
@@ -16850,6 +16845,7 @@ begin
          end);
       l_date_str := l_dates.next(l_date_str);
    end loop;
+   l_dates.delete;
    --------------------------------------------------------------
    -- set the quality (interpolation) value of the first value --
    --------------------------------------------------------------
