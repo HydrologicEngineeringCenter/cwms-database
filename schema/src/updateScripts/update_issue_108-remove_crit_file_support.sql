@@ -1,0 +1,209 @@
+-------------------
+-- general setup --
+-------------------
+whenever sqlerror exit;
+set define on
+set verify off
+set pages 100
+set serveroutput on
+define cwms_schema = 'CWMS_20'
+define cwms_dba_schema = 'CWMS_DBA'
+alter session set current_schema = &cwms_schema;
+------------------------------------------------------------
+-- spool to file that identifies the database in the name --
+------------------------------------------------------------
+var db_name varchar2(61)
+begin
+   select nvl(primary_db_unique_name, db_unique_name) into :db_name from v$database;
+end;
+/
+whenever sqlerror continue;
+declare
+   l_count pls_integer;
+   l_name  varchar2(30);
+begin
+   select count(*) into l_count from all_objects where object_name = 'CDB_PDBS';
+   if l_count > 0 then
+      select name
+        into l_name
+        from v$database;
+      :db_name := l_name;
+      begin
+         select pdb_name
+           into l_name
+           from cdb_pdbs;
+      exception
+         when no_data_found then
+            l_name := null;
+      end;
+      if l_name is not null then
+         :db_name := :db_name||'-'||l_name;
+      end if;
+   end if;
+end;
+/
+whenever sqlerror exit;
+column db_name new_value db_name
+select :db_name as db_name from dual;
+define logfile=update_&db_name._issue_108.log
+PROMPT log file = &logfile
+spool &logfile append;
+-------------------
+-- do the update --
+-------------------
+PROMPT ################################################################################
+PROMPT SAVING PRE-UPDATE PRIVILEGES
+select systimestamp from dual;
+@@./util/preupdate_privs.sql;
+
+@@../cwms/cwms_alarm_pkg
+@@../cwms/cwms_alarm_pkg_body
+@@../cwms/cwms_loc_pkg
+@@../cwms/cwms_loc_pkg_body
+@@../cwms/cwms_ts_pkg_body
+@@../cwms/cwms_vt_pkg
+@@../cwms/cwms_vt_pkg_body
+
+whenever sqlerror continue;
+
+drop package cwms_shef;
+
+drop view av_active_flag;
+drop view av_data_streams;
+drop view av_data_streams_current;
+drop view av_shef_decode_spec;
+drop view av_shef_pe_codes;
+drop view zv_current_crit_file_code;
+
+
+drop table at_shef_decode;
+drop table at_shef_ignore;
+drop table at_shef_crit_file_rec;
+drop table at_shef_spec_mapping_update;
+drop table at_shef_decode_spec;
+drop table at_shef_pe_codes;
+drop table at_data_feed_id;
+drop table at_data_stream_id;
+drop table at_data_stream_properties;
+drop table cwms_shef_extremum_codes;
+drop table cwms_shef_pe_codes;
+drop table cwms_shef_time_zone;
+
+drop type shef_spec_type force;
+drop type shef_spec_array force;
+
+drop public synonym cwms_t_shef_spec;
+drop public synonym cwms_t_shef_spec_array;
+drop public synonym cwms_v_shef_decode_spec;
+drop public synonym cwms_v_shef_pe_codes;
+drop public synonym cwms_shef;
+drop public synonym cwms_v_active_flag;
+drop public synonym cwms_v_data_streams;
+drop public synonym cwms_v_data_streams_current;
+
+delete
+  from cwms_auth_sched_entries
+ where job_name = 'UPDATE_SHEF_SPEC_MAPPING';
+
+delete
+  from at_clob
+ where id in ('/VIEWDOCS/AV_ACTIVE_FLAG',
+              '/VIEWDOCS/AV_DATA_STREAMS',
+              '/VIEWDOCS/AV_DATA_STREAMS_CURRENT',
+              '/VIEWDOCS/AV_SHEF_DECODE_SPEC',
+              '/VIEWDOCS/AV_SHEF_PE_CODES',
+              '/VIEWDOCS/ZV_CURRENT_CRIT_FILE_CODE'
+             );
+
+whenever sqlerror exit;
+
+PROMPT ################################################################################
+PROMPT FINAL HOUSEKEEPING
+select systimestamp from dual;
+declare
+   type usernames_t is table of varchar2(30);
+   usernames usernames_t;
+   l_count integer;
+   cmd varchar2(128);
+begin
+   select count(*) into l_count from dba_users where username='CCP';
+   usernames := usernames_t('&cwms_schema', '&cwms_dba_schema');
+   if (l_count > 0) then
+      usernames.extend;
+      usernames(usernames.count) := 'CCP';
+   end if;
+   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'PACKAGE BODY') loop
+      cmd := 'grant execute on &cwms_schema..'||rec.object_name||' to ';
+      dbms_output.put(cmd||'[');
+      for i in 1..usernames.count loop
+         begin
+            execute immediate(cmd||usernames(i));
+            dbms_output.put(' '||usernames(i)||'(SUCCESS)');
+         exception
+            when others then
+               dbms_output.put(' '||usernames(i)||'(FAILED)');
+         end;
+      end loop;
+      dbms_output.put_line(' ]');
+   end loop;
+   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'TYPE') loop
+      cmd := 'grant execute on &cwms_schema..'||rec.object_name||' to ';
+      dbms_output.put(cmd||'[');
+      for i in 1..usernames.count loop
+         begin
+            execute immediate(cmd||usernames(i));
+            dbms_output.put(' '||usernames(i)||'(SUCCESS)');
+         exception
+            when others then
+               dbms_output.put(' '||usernames(i)||'(FAILED)');
+         end;
+      end loop;
+      dbms_output.put_line(' ]');
+   end loop;
+   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'VIEW' and object_name not like '%AQ$%') loop
+      cmd := 'grant select on &cwms_schema..'||rec.object_name||' to ';
+      dbms_output.put(cmd||'[');
+      for i in 1..usernames.count loop
+         begin
+            execute immediate(cmd||usernames(i));
+            dbms_output.put(' '||usernames(i)||'(SUCCESS)');
+         exception
+            when others then
+               dbms_output.put(' '||usernames(i)||'(FAILED)');
+         end;
+      end loop;
+      dbms_output.put_line(' ]');
+   end loop;
+end;
+/
+PROMPT ################################################################################
+PROMPT RESTORING PRE-UPDATE PRIVILEGES
+@@./util/restore_privs
+
+PROMPT ################################################################################
+PROMPT RECOMPILING SCHEMA
+select systimestamp from dual;
+@./util/compile_objects
+
+promp ################################################################################
+PROMPT REMAINING INVALID OBJECTS...
+select systimestamp from dual;
+select owner||'.'||substr(object_name, 1, 30) as invalid_object,
+       object_type
+  from all_objects
+ where status = 'INVALID'
+   and owner in ('&cwms_schema', '&cwms_dba_schema')
+ order by 1, 2;
+select owner||'.'||substr(name, 1, 30) as name,
+       type,
+       substr(line||':'||position, 1, 12) as location,
+       substr(text, 1, 132) as error
+  from all_errors
+ where attribute = 'ERROR'
+   and owner in ('&cwms_schema', '&cwms_dba_schema')
+ order by owner, type, name, sequence;
+/
+PROMPT ################################################################################
+PROMPT UPDATE COMPLETE
+select systimestamp from dual;
+exit

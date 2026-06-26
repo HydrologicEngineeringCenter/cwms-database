@@ -7686,22 +7686,6 @@ AS
 
    --
    --*******************************************************************   --
-   --** PRIVATE **** PRIVATE **** PRIVATE **** PRIVATE **** PRIVATE ****   --
-   --
-   -- DELETE_TS_CLEANUP -
-   --
-
-   PROCEDURE delete_ts_cleanup (p_ts_code_old IN NUMBER)
-   IS
-   BEGIN
-      -- NOTE TO GERHARD Need to think about cleaning up
-      -- all of the dependancies when deleting.
-      DELETE FROM at_shef_decode
-            WHERE ts_code = p_ts_code_old;
-   END delete_ts_cleanup;
-
-   --
-   --*******************************************************************   --
    --*******************************************************************   --
    --
    -- DELETE_TS -
@@ -7791,7 +7775,6 @@ AS
          delete from at_fcst_time_series where ts_code = l_ts_code;
          delete from at_xchg_dss_ts_mappings where cwms_ts_code = l_ts_code;
          delete from at_screening where ts_code = l_ts_code;
-         delete from at_shef_decode where ts_code = l_ts_code;
          delete from at_tr_template where ts_code_indep_1 = l_ts_code;
          delete from at_transform_criteria where l_ts_code in (ts_code, resultant_ts_code);
          delete from at_screening where l_ts_code in (ts_code, resultant_ts_code);

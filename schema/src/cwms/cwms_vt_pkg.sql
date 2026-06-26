@@ -262,24 +262,6 @@ AS
    /* (non-javadoc)
     * [description needed]
     *
-    * @param p_use_db_crit      [description needed]
-    * @param p_crit_file        [description needed]
-    * @param p_use_db_otf       [description needed]
-    * @param p_otf_file         [description needed]
-    * @param p_data_stream_id   [description needed]
-    * @param p_db_office_id     [description needed]
-    */
-   PROCEDURE get_process_shefit_files (
-      p_use_db_crit      OUT      VARCHAR2,
-      p_crit_file        OUT      CLOB,
-      p_use_db_otf       OUT      VARCHAR2,
-      p_otf_file         OUT      CLOB,
-      p_data_stream_id   IN       VARCHAR2,
-      p_db_office_id     IN       VARCHAR2 DEFAULT NULL
-   );
-   /* (non-javadoc)
-    * [description needed]
-    *
     * @param p_screening_id       [description needed]
     * @param p_scr_assign_array   [description needed]
     * @param p_db_office_id       [description needed]

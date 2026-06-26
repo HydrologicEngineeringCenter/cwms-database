@@ -44,6 +44,7 @@ AS
         begin test_timeseries_snapping.teardown; exception when others then null; end;
         begin test_cwms_cat.teardown; exception when others then null; end;
         begin test_cwms_stream.teardown; exception when others then null; end;
+        begin test_cwms_measurements.teardown; exception when others then null; end;
         begin test_cwms_lock.teardown; exception when others then null; end;
         begin test_cwms_data_dissem.teardown; exception when others then null; end;
         begin test_cwms_fcst.teardown; exception when others then null; end;
@@ -57,6 +58,7 @@ AS
     IS
     BEGIN
         delete from at_clob where id='/TEST_CWMS_RATING/TRANSITIONAL_RATING';
+        delete from at_clob where id='/TEST/CWMS-2430';
     END delete_test_clobs;
 
     PROCEDURE cleanup_all

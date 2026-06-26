@@ -32,7 +32,7 @@ create or replace type streamflow_meas2_t
  */
 as object (
    location       location_ref_t,
-   meas_number    varchar2(8),
+   meas_number    varchar2(36),
    date_time      date,
    used           varchar2(1),
    party          varchar2(12),
