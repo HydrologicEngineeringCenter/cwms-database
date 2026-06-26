@@ -1108,9 +1108,9 @@ begin
    l_log_messages := cwms_ts.retrieve_update_ts_extents_log_messages(1);
    ut.expect(cwms_util.split_text(trim(chr(10) from l_log_messages), chr(10)).count).to_equal(case when user = '&&cwms_schema' then 5 else 4 end);
    ut.expect(instr(l_log_messages, 'Purge of invalid TS extents ended. 2 records deleted')).to_be_greater_than(0);
-   ut.expect(instr(l_log_messages, 'Update TS Extents for Office SWT ended')).to_be_greater_than(0);
+   ut.expect(instr(l_log_messages, 'Update TS Extents for Office &&office_id ended')).to_be_greater_than(0);
    if user = upper('&&cwms_schema') then
-      ut.expect(instr(l_log_messages, 'Job UPDATE_TS_EXTENTS_JOB_SWT scheduled to start')).to_be_greater_than(0);
+      ut.expect(instr(l_log_messages, 'Job UPDATE_TS_EXTENTS_JOB_&&office_id scheduled to start')).to_be_greater_than(0);
    end if;
 
 end test_cwms_2446_fix_performance_for_update_ts_extents;
