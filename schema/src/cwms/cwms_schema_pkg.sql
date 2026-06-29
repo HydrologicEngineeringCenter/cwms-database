@@ -85,7 +85,6 @@ table_names constant object_tab_t := object_tab_t(
    'AT_RATING_TEMPLATE',
    'AT_RATING_VALUE',
    'AT_RATING_VALUE_NOTE',
-   'AT_REPORT_TEMPLATES',
    'AT_SCHEMA_OBJECT_DIFF',
    'AT_SCREENING',
    'AT_SCREENING_CONTROL',

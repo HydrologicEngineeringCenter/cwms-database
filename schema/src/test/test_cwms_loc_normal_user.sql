@@ -664,7 +664,7 @@ AS
         ut.expect (l_loc_active).to_equal ('F');
         ut.expect (l_active).to_equal ('F');
         ut.expect (l_bounding_office_id).to_equal ('NWP');
-        ut.expect (l_nearest_city).to_equal ('Springfield');
+        ut.expect (l_nearest_city).to_equal ('Springfield, Oregon');
         ut.expect (l_county).to_equal ('Lane');
         ut.expect (l_country).to_equal ('United States');
         ut.expect (l_location_kind_id).to_equal ('SITE');
@@ -1988,7 +1988,7 @@ AS
       ut.expect(l_rec.state_initial).to_equal('ON');
       ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A for Ontario');
       ut.expect(l_rec.nation_id).to_equal('Canada');
-      ut.expect(l_rec.nearest_city).to_equal('Sault Ste. Marie');
+      ut.expect(l_rec.nearest_city).to_equal('Sault Ste. Marie, Michigan');
    end test_cwdb_159_store_location_in_ontario_canada;
    --------------------------------------------------------------------------------
    -- procedure test_cwdb_239_improve_creation_of_new_locations_with_lat_lon
@@ -2046,7 +2046,7 @@ AS
       ut.expect(l_rec.state_initial).to_equal('AK');
       ut.expect(l_rec.nation_id).to_equal('United States');
       ut.expect(l_rec.bounding_office_id).to_equal('POA');
-      ut.expect(l_rec.nearest_city).to_equal('Juneau');
+      ut.expect(l_rec.nearest_city).to_equal('Juneau, Alaska');
       -- create with null lat/lon with null info
       l_rec := store_location(null, null, null, null, null, null, null);
       ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A for Unknown State or State N/A');
@@ -2083,7 +2083,7 @@ AS
       -- Behavior changed with CWDB-290. P_BOUNDING_OFFICE_ID now overrides P_LATITUDE/P_LONGITUDE (MDP 18Jun2024)
       -- ut.expect(l_rec.bounding_office_id).to_equal('POA');
       ut.expect(l_rec.bounding_office_id).to_equal('NWS');
-      ut.expect(l_rec.nearest_city).to_equal('Juneau');
+      ut.expect(l_rec.nearest_city).to_equal('Juneau, Alaska');
       -- update with valid lat/lon with non-null info (should overwrite existing values)
       l_rec := store_location(59.994444444444, -139.486388888889, 'King', 'WA', 'US', 'NWS', 'Seattle');
       ut.expect(l_rec.county_name).to_equal('King');
@@ -2248,9 +2248,9 @@ AS
          l_location_ids := l_location_ids||chr(30)||'TestLoc1-'||trim(to_char(i, '09'));
       end loop;
       commit;
-      -----------------------------------------------------------
-      -- retrieve the for vertical datum xml for all locations --
-      -----------------------------------------------------------
+      ----------------------------------------------------------------------
+      -- retrieve the for vertical datum xml for all locations via PL/SQL --
+      ----------------------------------------------------------------------
       cwms_loc.get_vertical_datum_info2(
          p_vert_datum_info => l_xml_clob,
          p_location_id     => l_location_ids,
@@ -2258,7 +2258,9 @@ AS
          p_office_id       => '&&office_id');
       ut.expect(length(l_xml_clob)).to_be_greater_than(4000);
       dbms_lob.freetemporary(l_xml_clob);
-
+      -------------------------------------------------------------------
+      -- retrieve the for vertical datum xml for all locations via SQL --
+      -------------------------------------------------------------------
       execute immediate '
          create or replace function test_get_vertical_datum_info(
             p_location_id in varchar2,

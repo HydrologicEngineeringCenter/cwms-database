@@ -497,8 +497,11 @@
 
     <target name="load-test-data" description="Load data needed for running tests">
    <echo message="    Loading test clobs"/>
-   <exec executable="sqlldr" dir="${src}/test/data/ratings" failonerror="true">
+   	<exec executable="sqlldr" dir="${src}/test/data/ratings" failonerror="true">
             <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=xsl_test_clobs.ctl"/>
+        </exec>
+   	<exec executable="sqlldr" dir="${src}/test/data/locs" failonerror="true">
+            <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=CWMS-2430_locations_for_test_mods_for_generic_geometry.ctl"/>
         </exec>
     </target>
 
