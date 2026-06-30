@@ -6491,7 +6491,7 @@ begin
    -----------------------------------------
    select date_time - l_min_date_utc
       bulk collect
-   into l_date_offsets limit 10000
+   into l_date_offsets
    from table(l_level_values);
    l_seq_props := cwms_lookup.analyze_sequence(l_date_offsets);
    l_level_values_interp.extend(l_level_values.count);
