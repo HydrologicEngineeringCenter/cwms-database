@@ -2522,7 +2522,7 @@ is
    l_result_values ztsv_array := ztsv_array();
    l_effective_date date := date '2025-01-01';
    l_start_ts timestamp := to_timestamp('2025-01-01 12:00', 'YYYY-MM-DD HH24:MI');
-   l_end_ts timestamp := to_timestamp('2025-01-03 14:45', 'YYYY-MM-DD HH24:MI');
+   l_end_ts timestamp := to_timestamp('2025-01-02 04:00', 'YYYY-MM-DD HH24:MI');
    l_interpolate str_tab_t := str_tab_t('F', 'T');
    l_elev_tsid varchar2(191) := c_location_id||'.Elev.Inst.1Hour.0.IRRTest';
    l_elev_ts_data cwms_t_tsv_array := cwms_t_tsv_array (
