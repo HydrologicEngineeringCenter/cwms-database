@@ -2524,7 +2524,6 @@ is
    l_start_ts timestamp := to_timestamp('2025-01-01 12:00', 'YYYY-MM-DD HH24:MI');
    l_end_ts timestamp := to_timestamp('2025-01-03 14:45', 'YYYY-MM-DD HH24:MI');
    l_interpolate str_tab_t := str_tab_t('F', 'T');
-   l_values ztsv_array;
    l_elev_tsid varchar2(191) := c_location_id||'.Elev.Inst.1Hour.0.IRRTest';
    l_elev_ts_data cwms_t_tsv_array := cwms_t_tsv_array (
       cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 1/24 as timestamp), 'UTC'), 1000, 0),
@@ -2540,6 +2539,8 @@ is
    l_prev_val number;
    l_next_val number;
 begin
+   cwms_ts.create_ts(c_office_id, l_elev_tsid, null);
+   commit;
    cwms_ts.store_ts(
       l_elev_tsid,
       c_elev_unit,
@@ -2548,7 +2549,7 @@ begin
       'F',
       cwms_util.non_versioned,
       c_office_id,
-      'T');
+      'F');
    for i in 1..l_interpolate.count loop
       cwms_level.store_location_level4(
          p_location_level_id => c_top_of_normal_elev_id,
