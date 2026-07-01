@@ -136,6 +136,7 @@ CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_measurements AS
         ut.expect(l_retrieved_xml_str).to_be_like('%<gage-height>10</gage-height>%');
         ut.expect(l_retrieved_xml_str).to_be_like('%<channel-flow>100</channel-flow>%');
 
+        -- Now store a second measurement with no gage-height or flow in the stream-flow-measurement element
         l_meas_xml_str :=
                 '<measurement height-unit=":elev_unit" flow-unit=":flow_unit" temp-unit=":temp_unit" area-unit=":area_unit" velocity-unit=":velocity_unit" used="true" office-id=":office_id">
                     <agency>USACE</agency>
