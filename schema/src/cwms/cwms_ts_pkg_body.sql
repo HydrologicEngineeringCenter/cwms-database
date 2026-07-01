@@ -103,6 +103,45 @@ AS
       return l_cwms_ts_code;
    end get_ts_code;
 
+   FUNCTION get_ts_code (
+      p_cwms_ts_id      IN VARCHAR2,
+      p_db_office_code  IN NUMBER,
+      p_fail_on_missing IN VARCHAR2)
+      RETURN NUMBER
+   IS
+      l_office_id    VARCHAR2(16) := cwms_util.get_db_office_id_from_code(p_db_office_code);
+      l_cwms_ts_code NUMBER;
+      l_cache_key    VARCHAR2(32767) := p_db_office_code||'/'||upper(p_cwms_ts_id);
+      l_cwms_ts_id   at_cwms_ts_id.cwms_ts_id%type;
+   BEGIN
+      validate_ts_id(p_cwms_ts_id);
+      l_cwms_ts_code := cwms_cache.get(g_ts_code_cache, l_cache_key);
+      IF l_cwms_ts_code IS NULL THEN
+         l_cwms_ts_id := format_lrts_input(
+            get_cwms_ts_id(p_cwms_ts_id, l_office_id),
+            require_new_lrts_format_on_input = 'T' or allow_new_lrts_format_on_input = 'T');
+         BEGIN
+            SELECT ts_code
+            INTO l_cwms_ts_code
+            FROM at_cwms_ts_id
+            WHERE upper(cwms_ts_id) = upper(l_cwms_ts_id)
+              AND db_office_code = p_db_office_code;
+         EXCEPTION
+            WHEN no_data_found THEN
+               IF p_fail_on_missing = 'T' THEN
+                  cwms_err.raise (
+                     'TS_ID_NOT_FOUND',
+                     trim (p_cwms_ts_id),
+                     l_office_id);
+               ELSE
+                  RETURN -1;
+               END IF;
+         END;
+         cwms_cache.put(g_ts_code_cache, l_cache_key, l_cwms_ts_code);
+      END IF;
+      RETURN l_cwms_ts_code;
+   END get_ts_code;
+
    ---------------------------------------------------------------------------
 
    FUNCTION get_ts_id (p_ts_code IN NUMBER)
@@ -10735,6 +10774,112 @@ end retrieve_existing_item_counts;
       end if;
    end assign_ts_group;
 
+   PROCEDURE assign_ts_group (
+      p_ts_category_id   IN VARCHAR2,
+      p_ts_group_id      IN VARCHAR2,
+      p_ts_id            IN VARCHAR2,
+      p_ts_attribute     IN NUMBER DEFAULT NULL,
+      p_ts_alias_id      IN VARCHAR2 DEFAULT NULL,
+      p_ref_ts_id        IN VARCHAR2 DEFAULT NULL,
+      p_db_office_id     IN VARCHAR2 DEFAULT NULL,
+      p_ignore_missing   IN VARCHAR2 DEFAULT 'F',
+      p_assigned         OUT VARCHAR2
+   )
+   IS
+      l_office_code     NUMBER(14);
+      l_ts_group_code   NUMBER(14);
+      l_ts_code         NUMBER(14);
+      l_ts_ref_code     NUMBER(14);
+      l_rec             at_ts_group_assignment%rowtype;
+      l_exists          BOOLEAN;
+      l_fail_on_missing VARCHAR2(1);
+   BEGIN
+      -------------------
+      -- sanity checks --
+      -------------------
+      l_office_code := cwms_util.get_db_office_code(p_db_office_id);
+      validate_ts_id(p_ts_id);
+      IF p_ref_ts_id IS NOT NULL THEN
+         validate_ts_id(p_ref_ts_id);
+      END IF;
+
+      IF p_ignore_missing = 'T' THEN
+         l_fail_on_missing := 'F';
+      ELSE
+         l_fail_on_missing := 'T';
+      END IF;
+
+      ------------------------
+      -- get the group code --
+      ------------------------
+      BEGIN
+         SELECT ts_group_code
+         INTO l_ts_group_code
+         FROM at_ts_category c, at_ts_group g
+         WHERE upper(c.ts_category_id) = upper(p_ts_category_id)
+           AND upper(g.ts_group_id) = upper(p_ts_group_id)
+           AND g.ts_category_code = c.ts_category_code
+           AND g.db_office_code IN (l_office_code, cwms_util.db_office_code_all);
+      EXCEPTION
+         WHEN no_data_found
+            THEN
+               cwms_err.raise(
+                  'ITEM_DOES_NOT_EXIST',
+                  'Time series group',
+                  p_ts_category_id || '/' || p_ts_group_id);
+      END;
+
+      -----------------------------------------------
+      -- determine if an assignment already exists --
+      -----------------------------------------------
+      l_ts_code := get_ts_code(p_ts_id, l_office_code, l_fail_on_missing);
+
+      if p_ref_ts_id IS NOT NULL THEN
+         l_ts_ref_code := get_ts_code(p_ref_ts_id, l_office_code, l_fail_on_missing);
+      END IF;
+
+      IF p_ignore_missing = 'T' AND (l_ts_code = -1 OR l_ts_ref_code = -1) THEN
+         p_assigned := 'F';
+         return;
+      END IF;
+
+      BEGIN
+         SELECT *
+         INTO l_rec
+         FROM at_ts_group_assignment
+         WHERE ts_code = l_ts_code AND ts_group_code = l_ts_group_code;
+
+         l_exists := true;
+      EXCEPTION
+         WHEN no_data_found THEN
+            l_exists := false;
+      END;
+
+      ------------------------
+      -- prepare the record --
+      ------------------------
+      l_rec.ts_attribute := nvl(p_ts_attribute, l_rec.ts_attribute);
+      l_rec.ts_alias_id  := nvl(p_ts_alias_id, l_rec.ts_alias_id);
+      l_rec.ts_ref_code  := nvl(l_ts_ref_code, l_rec.ts_ref_code);
+      l_rec.office_code  := l_office_code;
+
+      ---------------------------------
+      -- insert or update the record --
+      ---------------------------------
+      IF l_exists THEN
+         UPDATE at_ts_group_assignment
+         SET ROW = l_rec
+         WHERE ts_code = l_rec.ts_code
+           AND ts_group_code = l_rec.ts_group_code;
+      ELSE
+         l_rec.ts_code := l_ts_code;
+         l_rec.ts_group_code := l_ts_group_code;
+
+         INSERT INTO at_ts_group_assignment
+         VALUES l_rec;
+      END IF;
+   END assign_ts_group;
+
    PROCEDURE unassign_ts_group (p_ts_category_id   IN VARCHAR2,
                                 p_ts_group_id      IN VARCHAR2,
                                 p_ts_id            IN VARCHAR2,
@@ -10816,6 +10961,7 @@ end retrieve_existing_item_counts;
                                 p_missing_ts       OUT ts_alias_tab_t)
    IS
       l_error_message VARCHAR2(10000);
+      l_assigned VARCHAR2(1);
    BEGIN
       p_missing_ts := ts_alias_tab_t();
       IF p_ts_alias_array IS NOT NULL
@@ -10829,11 +10975,13 @@ end retrieve_existing_item_counts;
                                            p_ts_alias_array (i).ts_attribute,
                                            p_ts_alias_array (i).ts_alias_id,
                                            p_ts_alias_array (i).ts_ref_id,
-                                           p_db_office_id);
-               EXCEPTION
-                  when no_data_found then
+                                           p_db_office_id,
+                                           p_ignore_missing,
+                                           l_assigned);
+                  IF l_assigned = 'F' THEN
                      p_missing_ts.extend;
                      p_missing_ts(p_missing_ts.count) := p_ts_alias_array(i);
+                  END IF;
                END;
             END LOOP;
          IF p_missing_ts.count > 0 AND p_ignore_missing = 'F' THEN

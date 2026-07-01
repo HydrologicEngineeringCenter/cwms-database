@@ -198,6 +198,22 @@ AS
                          p_db_office_id   IN VARCHAR2)
       RETURN NUMBER;
 
+  /**
+   * Retrieves the unique numeric code value for a time series
+   *
+   * @see view av_cwms_ts_id
+   *
+   * @param p_cwms_ts_id   The time series identifier
+   * @param p_db_office_id The office owning the time series
+   * @param p_fail_on_missing A value ('T' or 'F') indicating whether to fail if the time series is not found.
+   *
+   * @return  the unique numeric code value for the specified time series. -1 if the time series is not found and p_fail_on_missing is 'F'.
+   */
+   FUNCTION get_ts_code (p_cwms_ts_id      IN VARCHAR2,
+                         p_db_office_code  IN NUMBER,
+                         p_fail_on_missing IN VARCHAR2)
+      RETURN NUMBER;
+
    /**
     * Retrieves the time series identifier from its unique numeric code
     *
@@ -3151,6 +3167,29 @@ AS
                                p_ts_group_id      IN VARCHAR2,
                                p_ts_alias_array   IN ts_alias_tab_t,
                                p_db_office_id     IN VARCHAR2 DEFAULT NULL);
+
+   /**
+    * Assigns a single time series to a time series group
+    * Can ignore time series assignment that is not in the database when using the ignore_missing parameter
+    *
+    * @param p_ts_category_id The time series category that owns the time series group
+    * @param p_ts_group_id    The time series group identifier
+    * @param p_ts_alias_array The time series identifiers and associated information to assign to the group
+    * @param p_db_office_id   The office that owns the time series category, time series group and time series. If not specified or NULL, the session user's default office is used.
+    * @param p_ignore_missing A flag ('T' or 'F') that specifies whether to ignore time series assignments that are not in the database
+    * @param p_stored_ts      Whether the operation was successful (used for determining whether to mark the passed time series as a missing record)
+    */
+   PROCEDURE assign_ts_group (
+      p_ts_category_id   IN VARCHAR2,
+      p_ts_group_id      IN VARCHAR2,
+      p_ts_id            IN VARCHAR2,
+      p_ts_attribute     IN NUMBER DEFAULT NULL,
+      p_ts_alias_id      IN VARCHAR2 DEFAULT NULL,
+      p_ref_ts_id        IN VARCHAR2 DEFAULT NULL,
+      p_db_office_id     IN VARCHAR2 DEFAULT NULL,
+      p_ignore_missing   IN VARCHAR2 DEFAULT 'F',
+      p_assigned         OUT VARCHAR2
+   );
 
    /**
     * Assigns a collection of time series to a time series group

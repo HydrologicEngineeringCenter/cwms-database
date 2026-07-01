@@ -4615,7 +4615,7 @@ AS
 
       -- Add invalid TS assignment
       l_ts_assign.extend;
-      l_ts_assign(1) := ts_alias_t(ts_id => l_bad_ts_id,
+      l_ts_assign(2) := ts_alias_t(ts_id => l_bad_ts_id,
                                    ts_attribute => null,
                                    ts_alias_id => null,
                                    ts_ref_id => null);
