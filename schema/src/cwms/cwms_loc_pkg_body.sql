@@ -4968,6 +4968,126 @@ end get_srid;
                          l_db_office_code
                       );
    END assign_loc_groups3;
+   PROCEDURE assign_loc_groups4 (p_loc_category_id   IN VARCHAR2,
+                                 p_loc_group_id 	  IN VARCHAR2,
+                                 p_loc_alias_array   IN loc_alias_array3,
+                                 p_db_office_id 	  IN VARCHAR2 DEFAULT NULL,
+                                 p_ignore_missing    IN VARCHAR2 DEFAULT 'F',
+                                 p_missing_locations OUT loc_alias_array3
+                                )
+   IS
+      l_db_office_id         VARCHAR2 (16);
+      l_db_office_code       NUMBER;
+      l_loc_category_code    NUMBER;
+      l_loc_group_code       NUMBER;
+   BEGIN
+      p_missing_locations := loc_alias_array3();
+
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      BEGIN
+         l_loc_category_code :=
+            get_loc_category_code (p_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise (
+                  'GENERIC_ERROR',
+                  'The category id: ' || p_loc_category_id || ' does not exist.'
+               );
+      END;
+
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id,
+                                l_db_office_code
+            );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise (
+                  'GENERIC_ERROR',
+                  'There is no group: '
+                     || p_loc_group_id
+                     || ' in the '
+                     || p_loc_category_id
+                     || ' category.'
+               );
+      END;
+
+      FOR i IN 1 .. p_loc_alias_array.COUNT
+         LOOP
+            BEGIN
+               check_alias_id (p_loc_alias_array (i).loc_alias_id,
+                               p_loc_alias_array (i).location_id,
+                               p_loc_category_id,
+                               p_loc_group_id,
+                               l_db_office_id
+               );
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+                  THEN
+                     p_missing_locations.extend;
+                     p_missing_locations (p_missing_locations.COUNT) :=
+                        p_loc_alias_array (i);
+            END;
+         END LOOP;
+
+      MERGE INTO    at_loc_group_assignment a
+      USING    (SELECT   get_location_code (p_db_office_id => l_db_office_id, p_location_id => plaa.location_id, p_check_aliases => 'F') location_code,
+                         plaa.loc_attribute, plaa.loc_alias_id,
+                         plaa.loc_ref_id
+                FROM   TABLE (p_loc_alias_array) plaa) b
+      ON    (a.loc_group_code = l_loc_group_code
+         AND a.location_code = b.location_code)
+      WHEN MATCHED
+         THEN
+         UPDATE SET
+                   a.loc_attribute = b.loc_attribute,
+                   a.loc_alias_id = b.loc_alias_id,
+                   a.loc_ref_code =
+                      DECODE (
+                         b.loc_ref_id,
+                         NULL, NULL,
+                         get_location_code (p_db_office_code   => l_db_office_code,
+                                            p_location_id      => b.loc_ref_id,
+                                            p_check_aliases    => 'F'
+                         )
+                      )
+      WHEN NOT MATCHED
+         THEN
+         INSERT       (location_code,
+                       loc_group_code,
+                       loc_attribute,
+                       loc_alias_id,
+                       loc_ref_code,
+                       office_code
+         )
+         VALUES    (
+                      b.location_code,
+                      l_loc_group_code,
+                      b.loc_attribute,
+                      b.loc_alias_id,
+                      DECODE (
+                         b.loc_ref_id,
+                         NULL, NULL,
+                         get_location_code (
+                            p_db_office_code   => l_db_office_code,
+                            p_location_id      => b.loc_ref_id,
+                            p_check_aliases    => 'F'
+                         )
+                      ),
+                      l_db_office_code
+                   );
+   END;
 
    -- creates it and will rename the aliases if they already exist.
    PROCEDURE assign_loc_group (p_loc_category_id   IN VARCHAR2,

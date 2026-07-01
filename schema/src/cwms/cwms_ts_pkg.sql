@@ -3153,6 +3153,24 @@ AS
                                p_db_office_id     IN VARCHAR2 DEFAULT NULL);
 
    /**
+    * Assigns a collection of time series to a time series group
+    * Can ignore time series assignments that are not in the database when using the ignore_missing parameter
+    *
+    * @param p_ts_category_id The time series category that owns the time series group
+    * @param p_ts_group_id    The time series group identifier
+    * @param p_ts_alias_array The time series identifiers and associated information to assign to the group
+    * @param p_db_office_id   The office that owns the time series category, time series group and time series. If not specified or NULL, the session user's default office is used.
+    * @param p_ignore_missing A flag ('T' or 'F') that specifies whether to ignore time series assignments that are not in the database
+    * @param p_missing_ts     The time series identifiers for any assignments that are not in the database.
+    */
+   PROCEDURE assign_ts_groups2 (p_ts_category_id   IN VARCHAR2,
+                               p_ts_group_id      IN VARCHAR2,
+                               p_ts_alias_array   IN ts_alias_tab_t,
+                               p_db_office_id     IN VARCHAR2 DEFAULT NULL,
+                               p_ignore_missing   IN VARCHAR2 DEFAULT 'F',
+                               p_missing_ts       OUT ts_alias_tab_t);
+
+   /**
     * Un-assigns a collection of time series from a time series group
     *
     * @param p_ts_category_id The time series category that owns the time series group

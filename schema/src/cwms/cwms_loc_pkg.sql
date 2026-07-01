@@ -1589,6 +1589,24 @@ AS
 											p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
 										  );
    /**
+    * Assigns one more more locations to a location group, optionally assigning aliases, attributes, and referenced locations
+    * Can ignore locations that are not in the database when using the ignore_missing parameter
+    *
+    * @param p_loc_category_id   The location category identifier that contains the location group
+    * @param p_loc_group_id      The location group identifier
+    * @param p_loc_alias_array   The locations to assign to the group
+    * @param p_db_office_id      The office that owns the locaation category, location group, and location. If not specified or NULL, the session user's default office is used
+    * @param p_ignore_missing    Whether to fail on location assignments for locations that are not in the database
+    * @param p_missing_locations A list of locations that are not in the database and were not assigned to the group
+    */
+   PROCEDURE assign_loc_groups4 (p_loc_category_id   IN VARCHAR2,
+                                 p_loc_group_id 	  IN VARCHAR2,
+                                 p_loc_alias_array   IN loc_alias_array3,
+                                 p_db_office_id 	  IN VARCHAR2 DEFAULT NULL,
+                                 p_ignore_missing    IN VARCHAR2 DEFAULT 'F',
+                                 p_missing_locations OUT loc_alias_array3
+   );
+   /**
     * Renames a location category
     *
     * @param p_loc_category_id_old The existing location category identifier

@@ -10808,6 +10808,50 @@ end retrieve_existing_item_counts;
       END IF;
    END assign_ts_groups;
 
+   PROCEDURE assign_ts_groups2 (p_ts_category_id   IN VARCHAR2,
+                                p_ts_group_id      IN VARCHAR2,
+                                p_ts_alias_array   IN ts_alias_tab_t,
+                                p_db_office_id     IN VARCHAR2 DEFAULT NULL,
+                                p_ignore_missing   IN VARCHAR2 DEFAULT 'F',
+                                p_missing_ts       OUT ts_alias_tab_t)
+   IS
+      l_error_message VARCHAR2(10000);
+   BEGIN
+      p_missing_ts := ts_alias_tab_t();
+      IF p_ts_alias_array IS NOT NULL
+      THEN
+         FOR i IN 1 .. p_ts_alias_array.COUNT
+            LOOP
+               BEGIN
+                  cwms_ts.assign_ts_group (p_ts_category_id,
+                                           p_ts_group_id,
+                                           p_ts_alias_array (i).ts_id,
+                                           p_ts_alias_array (i).ts_attribute,
+                                           p_ts_alias_array (i).ts_alias_id,
+                                           p_ts_alias_array (i).ts_ref_id,
+                                           p_db_office_id);
+               EXCEPTION
+                  when no_data_found then
+                     p_missing_ts.extend;
+                     p_missing_ts(p_missing_ts.count) := p_ts_alias_array(i);
+               END;
+            END LOOP;
+         IF p_missing_ts.count > 0 AND p_ignore_missing = 'F' THEN
+            FOR j in 1..p_missing_ts.count
+               LOOP
+                  IF LENGTH(l_error_message) = 0 THEN
+                     l_error_message := p_missing_ts(j).ts_id;
+                  ELSE
+                     l_error_message := l_error_message || ', ' || p_missing_ts(j).ts_id;
+                  END IF;
+               END LOOP;
+            cwms_err.raise ('ITEM_DOES_NOT_EXIST',
+                            'Time series group assignments: ',
+                            l_error_message);
+         END IF;
+      END IF;
+   END assign_ts_groups2;
+
    PROCEDURE unassign_ts_groups (p_ts_category_id   IN VARCHAR2,
                                  p_ts_group_id      IN VARCHAR2,
                                  p_ts_array         IN str_tab_t,
