@@ -46,6 +46,10 @@ CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_measurements AS
                 p_location_id  => 'StreamTestLoc',
                 p_time_zone_id => 'UTC',
                 p_db_office_id => '&&office_id');
+        cwms_loc.store_location(
+                p_location_id  => 'StreamTestLoc2',
+                p_time_zone_id => 'UTC',
+                p_db_office_id => '&&office_id');
         commit;
     END setup;
 
@@ -54,6 +58,10 @@ CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_measurements AS
        begin
            cwms_loc.delete_location(
               p_location_id   => 'StreamTestLoc',
+              p_delete_action => cwms_util.delete_all,
+              p_db_office_id  => '&&office_id');
+           cwms_loc.delete_location(
+              p_location_id   => 'StreamTestLoc2',
               p_delete_action => cwms_util.delete_all,
               p_db_office_id  => '&&office_id');
        exception
@@ -68,6 +76,7 @@ CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_measurements AS
         l_datetime_str VARCHAR2(32) := '2023-02-24T17:10:00Z';
         l_office_id    VARCHAR2(16) := '&&office_id';
         l_location_id  VARCHAR2(57) := 'StreamTestLoc';
+        l_location_id2  VARCHAR2(57) := 'StreamTestLoc2';
         l_elev_unit    VARCHAR2(16) := 'ft';
         l_flow_unit    VARCHAR2(16) := 'cfs';
         l_temp_unit    VARCHAR2(16) := 'F';
@@ -126,11 +135,57 @@ CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_measurements AS
         ut.expect(l_retrieved_xml_str).to_be_like('%<number>17</number>%');
         ut.expect(l_retrieved_xml_str).to_be_like('%<gage-height>10</gage-height>%');
         ut.expect(l_retrieved_xml_str).to_be_like('%<channel-flow>100</channel-flow>%');
---         INSERT INTO xml_output_table (xml_data)
---         VALUES (l_retrieved_xml_str);
---
---         COMMIT;
 
+        l_meas_xml_str :=
+                '<measurement height-unit=":elev_unit" flow-unit=":flow_unit" temp-unit=":temp_unit" area-unit=":area_unit" velocity-unit=":velocity_unit" used="true" office-id=":office_id">
+                    <agency>USACE</agency>
+                    <date>:datetime</date>
+                    <location>:location</location>
+                    <number>18</number>
+                    <stream-flow-measurement>
+                        <quality>Unspecified</quality>
+                    </stream-flow-measurement>
+                    <supplemental-stream-flow-measurement>
+                        <channel-flow>100.0</channel-flow>
+                        <overbank-flow>101.0</overbank-flow>
+                        <overbank-max-depth>102.0</overbank-max-depth>
+                        <channel-max-depth>103.0</channel-max-depth>
+                        <avg-velocity>104.0</avg-velocity>
+                        <surface-velocity>105.0</surface-velocity>
+                        <max-velocity>106.0</max-velocity>
+                        <effective-flow-area>107.0</effective-flow-area>
+                        <cross-sectional-area>108.0</cross-sectional-area>
+                        <mean-gage>109.0</mean-gage>
+                        <top-width>110.0</top-width>
+                        <main-channel-area>111.0</main-channel-area>
+                        <overbank-area>112.0</overbank-area>
+                    </supplemental-stream-flow-measurement>
+                </measurement>';
+
+        l_meas_xml_str := REPLACE(l_meas_xml_str, ':office_id', l_office_id);
+        l_meas_xml_str := REPLACE(l_meas_xml_str, ':elev_unit', l_elev_unit);
+        l_meas_xml_str := REPLACE(l_meas_xml_str, ':flow_unit', l_flow_unit);
+        l_meas_xml_str := REPLACE(l_meas_xml_str, ':temp_unit', l_temp_unit);
+        l_meas_xml_str := REPLACE(l_meas_xml_str, ':area_unit', l_area_unit);
+        l_meas_xml_str := REPLACE(l_meas_xml_str, ':velocity_unit', l_velocity_unit);
+        l_meas_xml_str := REPLACE(l_meas_xml_str, ':location',  l_location_id2);
+        l_meas_xml_str := REPLACE(l_meas_xml_str, ':datetime',  l_datetime_str);
+
+        -- Store the XML
+        cwms_stream.store_meas_xml(
+                p_xml            => l_meas_xml_str,
+                p_fail_if_exists => 'F');
+
+        -- Retrieve the XML
+        l_retrieved_xml_str := cwms_stream.retrieve_meas_xml(
+                p_location_id_mask => l_location_id2,
+                p_unit_system      => 'EN',
+                p_office_id_mask   => l_office_id);
+
+        ut.expect(l_retrieved_xml_str).to_be_like('%<number>18</number>%');
+        -- Verify that the gage-height and flow elements are not present in the retrieved XML since they were removed in the second store.
+        ut.expect(l_retrieved_xml_str).not_to_be_like('%<gage-height>%');
+        ut.expect(l_retrieved_xml_str).not_to_be_like('%<flow>%');
     END test_store_and_retrieve;
 
     PROCEDURE test_store_and_retrieve_usgs IS
@@ -197,11 +252,6 @@ CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_measurements AS
         ut.expect(l_retrieved_xml_str).to_be_like('%<number>89</number>%');
         ut.expect(l_retrieved_xml_str).to_be_like('%<gage-height>13.25</gage-height>%');
         ut.expect(l_retrieved_xml_str).to_be_like('%<remarks>Import testing</remarks>%');
---         INSERT INTO xml_output_table_usgs (xml_data)
---         VALUES (l_retrieved_xml_str);
-
---         COMMIT;
-
     END test_store_and_retrieve_usgs;
 
     PROCEDURE test_retrieve_by_id IS
