@@ -9,7 +9,7 @@ CREATE TABLE AT_CWMS_TS_ID
   LOCATION_CODE         NUMBER                  NOT NULL,
   LOC_ACTIVE_FLAG       VARCHAR2(1 BYTE),
   PARAMETER_CODE        NUMBER,
-  TS_CODE               NUMBER                  NOT NULL,
+  TS_CODE               NUMBER(14, 0)                  NOT NULL,
   TS_ACTIVE_FLAG        VARCHAR2(1 BYTE),
   NET_TS_ACTIVE_FLAG    CHAR(1 BYTE),
   DB_OFFICE_ID          VARCHAR2(16 BYTE)       NOT NULL,

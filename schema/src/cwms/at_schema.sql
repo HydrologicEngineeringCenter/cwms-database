@@ -2071,7 +2071,7 @@ COMMIT ;
 
 CREATE TABLE at_ts_group_assignment
 (
-  ts_code        NUMBER,
+  ts_code        NUMBER(14, 0),
   ts_group_code  NUMBER,
   ts_attribute   NUMBER,
   ts_alias_id    VARCHAR2(256 BYTE),

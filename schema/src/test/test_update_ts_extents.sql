@@ -27,6 +27,9 @@ procedure cwdb_200_ts_extents_has_field_for_non_zero_quality;
 procedure test_cwdb_313_314_ts_extents_with_ts_with_no_values;
 --%test (TS extents not updating for new versioned time series)
 procedure test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts;
+--%test(TS extents using integer instead of number for TS_CODE)
+--%throws(-20998)
+procedure cwms_2478_ts_extents_ts_code;
 
 procedure setup;
 procedure teardown;
@@ -1031,6 +1034,67 @@ begin
    ut.expect(l_latest_non_null_time).to_equal(c_base_ts_data(23).date_time);
 end test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts;
 
+procedure cwms_2478_ts_extents_ts_code
+   is
+      l_loc_code number;
+      l_long_ts_code number := 1121087530445587;
+      l_param_code number;
+      l_param_type_code number;
+      l_interval_code number;
+      l_dur_code number;
+      l_tz_code number;
+      l_version_time date := TO_DATE('2019-01-01', 'YYYY-MM-DD');
+      l_earliest_time timestamp := TO_TIMESTAMP('2019-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS');
+      l_latest_time timestamp := TO_TIMESTAMP('2019-01-02 23:59:59', 'YYYY-MM-DD HH24:MI:SS');
+      l_latest_date date := TO_DATE('2019-01-02', 'YYYY-MM-DD');
+
+   begin
+      l_loc_code := cwms_loc.get_location_code(c_office_id, c_location_id);
+      select parameter_code
+         into l_param_code
+         from at_parameter
+         where sub_parameter_desc = 'Height';
+      select parameter_type_code
+         into l_param_type_code
+         from cwms_parameter_type
+         where parameter_type_id = 'Inst';
+      select interval_code
+         into l_interval_code
+         from cwms_interval
+         where interval = 60;
+      select duration_code
+         into l_dur_code
+         from cwms_duration
+         where duration_id = '0';
+      select time_zone_code
+         into l_tz_code
+         from cwms_time_zone
+         where time_zone_name = 'GMT';
+
+      insert into at_cwms_ts_spec values (l_long_ts_code, l_loc_code,
+                                          l_param_code, l_param_type_code,
+                                          l_interval_code, l_dur_code,
+                                          'RAW', 'N/A', 0,
+                                          0, 0,
+                                          null, l_tz_code, 'F',
+                                          'F', 'T', null,
+                                          null, 'F', null);
+
+      insert into at_ts_extents values (l_long_ts_code, l_version_time,
+                                        l_version_time, l_earliest_time,
+                                        l_earliest_time, l_version_time,
+                                        l_earliest_time, l_earliest_time,
+                                        l_latest_date, l_latest_time,
+                                        l_latest_time, l_latest_date,
+                                        l_latest_time, l_latest_time,
+                                        0.0, l_version_time,
+                                        l_earliest_time, 0.0,
+                                        l_version_time, l_earliest_time,
+                                        100.0, l_latest_date,
+                                        l_latest_time, 100.0,
+                                        l_latest_date, l_latest_time,
+                                        l_latest_time, 'F');
+end cwms_2478_ts_extents_ts_code;
 
 end test_update_ts_extents;
 /
