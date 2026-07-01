@@ -2612,30 +2612,22 @@ as
                         then cwms_util.change_timezone(p_max_date, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
                     else cwms_util.change_timezone(p_max_date, p_time_zone)
                 end
-            and sm.gage_height between
-                case
-                    when p_min_height is null
-                        then sm.gage_height
-                    else cwms_util.convert_units(p_min_height, l_height_unit, 'm')
-                end
-                and
-                case
-                    when p_max_height is null
-                        then sm.gage_height
-                    else cwms_util.convert_units(p_max_height, l_height_unit, 'm')
-                end
-            and sm.flow between
-                case
-                    when p_min_flow is null
-                        then sm.flow
-                    else cwms_util.convert_units(p_min_flow, l_flow_unit, 'cms')
-                end
-                and
-                case
-                    when p_max_flow is null
-                        then sm.flow
-                    else cwms_util.convert_units(p_max_flow, l_flow_unit, 'cms')
-                end
+            and (
+            p_min_height is null
+                or sm.gage_height >= cwms_util.convert_units(p_min_height, l_height_unit, 'm')
+            )
+            and (
+                   p_max_height is null
+                or sm.gage_height <= cwms_util.convert_units(p_max_height, l_height_unit, 'm')
+            )
+            and (
+                   p_min_flow is null
+                or sm.flow >= cwms_util.convert_units(p_min_flow, l_flow_unit, 'cms')
+            )
+            and (
+                   p_max_flow is null
+                or sm.flow <= cwms_util.convert_units(p_max_flow, l_flow_unit, 'cms')
+            )
             -- Legacy meas_number range filter (pre-UUID). Applies ONLY to legacy ids.
             -- If p_min_num/p_max_num are provided, UUID rows will be excluded by this predicate.
             and (
