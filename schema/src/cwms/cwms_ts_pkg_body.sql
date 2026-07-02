@@ -10774,7 +10774,7 @@ end retrieve_existing_item_counts;
       end if;
    end assign_ts_group;
 
-   PROCEDURE assign_ts_group (
+   PROCEDURE assign_ts_group_support_missing (
       p_ts_category_id   IN VARCHAR2,
       p_ts_group_id      IN VARCHAR2,
       p_ts_id            IN VARCHAR2,
@@ -10878,7 +10878,7 @@ end retrieve_existing_item_counts;
          INSERT INTO at_ts_group_assignment
          VALUES l_rec;
       END IF;
-   END assign_ts_group;
+   END assign_ts_group_support_missing;
 
    PROCEDURE unassign_ts_group (p_ts_category_id   IN VARCHAR2,
                                 p_ts_group_id      IN VARCHAR2,
@@ -10953,7 +10953,7 @@ end retrieve_existing_item_counts;
       END IF;
    END assign_ts_groups;
 
-   PROCEDURE assign_ts_groups2 (p_ts_category_id   IN VARCHAR2,
+   PROCEDURE assign_ts_groups_support_missing (p_ts_category_id   IN VARCHAR2,
                                 p_ts_group_id      IN VARCHAR2,
                                 p_ts_alias_array   IN ts_alias_tab_t,
                                 p_db_office_id     IN VARCHAR2 DEFAULT NULL,
@@ -10969,7 +10969,7 @@ end retrieve_existing_item_counts;
          FOR i IN 1 .. p_ts_alias_array.COUNT
             LOOP
                BEGIN
-                  cwms_ts.assign_ts_group (p_ts_category_id,
+                  cwms_ts.assign_ts_group_support_missing (p_ts_category_id,
                                            p_ts_group_id,
                                            p_ts_alias_array (i).ts_id,
                                            p_ts_alias_array (i).ts_attribute,
@@ -10998,7 +10998,7 @@ end retrieve_existing_item_counts;
                             l_error_message);
          END IF;
       END IF;
-   END assign_ts_groups2;
+   END assign_ts_groups_support_missing;
 
    PROCEDURE unassign_ts_groups (p_ts_category_id   IN VARCHAR2,
                                  p_ts_group_id      IN VARCHAR2,

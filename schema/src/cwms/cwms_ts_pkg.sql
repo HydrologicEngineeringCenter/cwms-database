@@ -3179,7 +3179,7 @@ AS
     * @param p_ignore_missing A flag ('T' or 'F') that specifies whether to ignore time series assignments that are not in the database
     * @param p_stored_ts      Whether the operation was successful (used for determining whether to mark the passed time series as a missing record)
     */
-   PROCEDURE assign_ts_group (
+   PROCEDURE assign_ts_group_support_missing (
       p_ts_category_id   IN VARCHAR2,
       p_ts_group_id      IN VARCHAR2,
       p_ts_id            IN VARCHAR2,
@@ -3202,7 +3202,7 @@ AS
     * @param p_ignore_missing A flag ('T' or 'F') that specifies whether to ignore time series assignments that are not in the database
     * @param p_missing_ts     The time series identifiers for any assignments that are not in the database.
     */
-   PROCEDURE assign_ts_groups2 (p_ts_category_id   IN VARCHAR2,
+   PROCEDURE assign_ts_groups_support_missing (p_ts_category_id   IN VARCHAR2,
                                p_ts_group_id      IN VARCHAR2,
                                p_ts_alias_array   IN ts_alias_tab_t,
                                p_db_office_id     IN VARCHAR2 DEFAULT NULL,

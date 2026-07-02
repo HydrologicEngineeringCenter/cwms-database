@@ -1616,7 +1616,7 @@ AS
     * @param p_ignore_missing    Whether to fail on location assignments for locations that are not in the database
     * @param p_missing_locations A list of locations that are not in the database and were not assigned to the group
     */
-   PROCEDURE assign_loc_groups4 (p_loc_category_id   IN VARCHAR2,
+   PROCEDURE assign_loc_groups_supports_missing (p_loc_category_id   IN VARCHAR2,
                                  p_loc_group_id 	  IN VARCHAR2,
                                  p_loc_alias_array   IN loc_alias_array3,
                                  p_db_office_id 	  IN VARCHAR2 DEFAULT NULL,

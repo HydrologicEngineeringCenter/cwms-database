@@ -144,7 +144,6 @@ procedure test_ts_categories;
 procedure test_assign_ts_ignore_missing;
 
 --%test (Test TS group assignment with ignore missing flag set to false)
---%throws(-20001)
 procedure test_assign_ts_do_not_ignore_missing;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
@@ -4625,7 +4624,7 @@ AS
       cwms_ts.store_ts_group('TestCategory', 'TestGroup', 'Group for unit tests', 'F', 'T', null, null, '&&office_id');
 
       -- Assign TS to group
-      cwms_ts.assign_ts_groups2('TestCategory', 'TestGroup', l_ts_assign, '&&office_id', 'T', l_results);
+      cwms_ts.assign_ts_groups_support_missing('TestCategory', 'TestGroup', l_ts_assign, '&&office_id', 'T', l_results);
 
       -- Verify assignment exists
       select count(*) into l_count
@@ -4676,7 +4675,10 @@ AS
       cwms_ts.store_ts_group('TestCategory', 'TestGroup', 'Group for unit tests', 'F', 'T', null, null, '&&office_id');
 
       -- Assign TS to group
-      cwms_ts.assign_ts_groups2('TestCategory', 'TestGroup', l_ts_assign, '&&office_id', 'F', l_results);
+      cwms_ts.assign_ts_groups_support_missing('TestCategory', 'TestGroup', l_ts_assign, '&&office_id', 'F', l_results);
+      exception
+         when OTHERS then
+            ut.expect(sqlerrm).to_be_like('%' || l_bad_ts_id || '%');
    end test_assign_ts_do_not_ignore_missing;
 
 END test_cwms_ts;

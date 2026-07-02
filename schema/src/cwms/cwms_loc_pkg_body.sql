@@ -5048,15 +5048,16 @@ end get_srid;
                       );
    END assign_loc_groups3;
    ------------------------------------------
-   -- assign_loc_groups4
+   -- assign_loc_groups_supports_missing
    ------------------------------------------
-   PROCEDURE assign_loc_groups4 (p_loc_category_id   IN VARCHAR2,
-                                 p_loc_group_id 	  IN VARCHAR2,
-                                 p_loc_alias_array   IN loc_alias_array3,
-                                 p_db_office_id 	  IN VARCHAR2 DEFAULT NULL,
-                                 p_ignore_missing    IN VARCHAR2 DEFAULT 'F',
-                                 p_missing_locations OUT loc_alias_array3
-                                )
+   PROCEDURE assign_loc_groups_supports_missing (
+      p_loc_category_id   IN VARCHAR2,
+      p_loc_group_id 	  IN VARCHAR2,
+      p_loc_alias_array   IN loc_alias_array3,
+      p_db_office_id 	  IN VARCHAR2 DEFAULT NULL,
+      p_ignore_missing    IN VARCHAR2 DEFAULT 'F',
+      p_missing_locations OUT loc_alias_array3
+     )
    IS
       l_db_office_id         VARCHAR2 (16);
       l_db_office_code       NUMBER;
@@ -5064,7 +5065,8 @@ end get_srid;
       l_loc_group_code       NUMBER;
       l_loc_code             NUMBER;
       l_existing_locs        loc_alias_array3 := loc_alias_array3();
-      l_loc_index            NUMBER := 0;
+      l_raise_missing        boolean := false;
+      l_error_message        VARCHAR2(10000) := '';
    BEGIN
       p_missing_locations := loc_alias_array3();
 
@@ -5123,21 +5125,31 @@ end get_srid;
                                   p_ignore_missing => p_ignore_missing);
                if l_loc_code = -1
                   THEN
-                     if p_ignore_missing = 'T'
+                     p_missing_locations.extend;
+                     p_missing_locations (p_missing_locations.COUNT) := p_loc_alias_array (i);
+                     if p_ignore_missing = 'F'
                         THEN
-                           p_missing_locations.extend;
-                           p_missing_locations (p_missing_locations.COUNT) :=
-                              p_loc_alias_array (i);
-                        ELSE
-                           cwms_err.raise('LOCATION_ID_NOT_FOUND', p_loc_alias_array (i).location_id);
+                           l_raise_missing := true;
                         END IF;
                   ELSE
-                     l_loc_index := l_loc_index + 1;
                      l_existing_locs.extend;
-                     l_existing_locs(l_loc_index) := p_loc_alias_array (i);
+                     l_existing_locs(l_existing_locs.count) := p_loc_alias_array (i);
                   END IF;
             END;
          END LOOP;
+
+      if l_raise_missing = true and p_missing_locations.count > 0 then
+         for k in 1..p_missing_locations.count loop
+            if LENGTH(l_error_message) = 0 THEN
+               l_error_message := p_missing_locations(k).location_id;
+            ELSE
+               l_error_message := l_error_message || ', ' || p_missing_locations(k).location_id;
+            end if;
+         end loop;
+         cwms_err.raise('ITEM_DOES_NOT_EXIST',
+                         'Location group assignments: ',
+                         l_error_message);
+      end if;
 
       MERGE INTO    at_loc_group_assignment a
       USING    (SELECT   get_location_code (p_db_office_id => l_db_office_id, p_location_id => plaa.location_id, p_check_aliases => 'F') location_code,
@@ -5185,7 +5197,7 @@ end get_srid;
                       ),
                       l_db_office_code
                    );
-   END;
+   END assign_loc_groups_supports_missing;
 
    -- creates it and will rename the aliases if they already exist.
    PROCEDURE assign_loc_group (p_loc_category_id   IN VARCHAR2,

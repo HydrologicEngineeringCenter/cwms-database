@@ -65,7 +65,6 @@ procedure test_mods_for_generic_geometry;
 --%test (Test location group assignment with ignore missing flag set to true)
 procedure test_assign_loc_ignore_missing;
 --%test (Test location group assignment with ignore missing flag set to false)
---%throws(-20025)
 procedure test_assign_loc_do_not_ignore_missing;
 
 procedure setup;
@@ -3723,7 +3722,7 @@ AS
       l_loc_aliases.extend;
       l_loc_aliases(2) := loc_alias_type3(l_non_existent_location, null, null, null);
 
-      cwms_loc.assign_loc_groups4('TestCategory', 'TestGroup', l_loc_aliases, l_office_id, 'T', l_missing_locs);
+      cwms_loc.assign_loc_groups_supports_missing('TestCategory', 'TestGroup', l_loc_aliases, l_office_id, 'T', l_missing_locs);
 
       ut.expect(l_missing_locs.count).to_equal(1);
       ut.expect(l_missing_locs(1).location_id).to_equal(l_non_existent_location);
@@ -3750,7 +3749,10 @@ AS
       l_loc_aliases.extend;
       l_loc_aliases(2) := loc_alias_type3(l_non_existent_location, null, null, null);
 
-      cwms_loc.assign_loc_groups4('TestCategory', 'TestGroup', l_loc_aliases, l_office_id, 'F', l_missing_locs);
+      cwms_loc.assign_loc_groups_supports_missing('TestCategory', 'TestGroup', l_loc_aliases, l_office_id, 'F', l_missing_locs);
+      EXCEPTION
+         WHEN OTHERS then
+            ut.expect(sqlerrm).to_be_like('%' || l_non_existent_location || '%');
    END;
 END test_cwms_loc;
 /
