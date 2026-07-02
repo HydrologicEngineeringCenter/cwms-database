@@ -62,6 +62,11 @@ procedure test_av_loc2_text_search;
 procedure test_null_vertical_datum;
 --%test(CWMS-2430 [DB #54] Change lat/lon to generic geometry)
 procedure test_mods_for_generic_geometry;
+--%test (Test location group assignment with ignore missing flag set to true)
+procedure test_assign_loc_ignore_missing;
+--%test (Test location group assignment with ignore missing flag set to false)
+--%throws(-20025)
+procedure test_assign_loc_do_not_ignore_missing;
 
 procedure setup;
 procedure teardown;
@@ -3697,6 +3702,56 @@ AS
       end loop;
       commit;
    end test_mods_for_generic_geometry;
+
+   PROCEDURE test_assign_loc_ignore_missing
+   IS
+      l_loc_aliases loc_alias_array3 := loc_alias_array3();
+      l_missing_locs loc_alias_array3;
+      l_stored_loc VARCHAR2(12) := 'TestLocation';
+      l_non_existent_location VARCHAR2(11) := 'NotARealLoc';
+      l_office_id VARCHAR2(3) := '&&office_id';
+   BEGIN
+      cwms_loc.store_location (p_location_id    => l_stored_loc,
+                               p_db_office_id   => l_office_id);
+      cwms_loc.STORE_LOC_CATEGORY('TestCategory', 'A test category', l_office_id);
+      cwms_loc.store_loc_group('TestCategory', 'TestGroup', 'Unit Test Group',
+                               'F', 'T', null, null, l_office_id);
+
+      l_loc_aliases.extend;
+      l_loc_aliases(1) := loc_alias_type3(l_stored_loc, null, null, null);
+
+      l_loc_aliases.extend;
+      l_loc_aliases(2) := loc_alias_type3(l_non_existent_location, null, null, null);
+
+      cwms_loc.assign_loc_groups4('TestCategory', 'TestGroup', l_loc_aliases, l_office_id, 'T', l_missing_locs);
+
+      ut.expect(l_missing_locs.count).to_equal(1);
+      ut.expect(l_missing_locs(1).location_id).to_equal(l_non_existent_location);
+
+      cwms_loc.delete_loc_group('TestCategory', 'TestGroup', 'T', l_office_id);
+   END;
+
+   PROCEDURE test_assign_loc_do_not_ignore_missing
+   IS
+      l_loc_aliases loc_alias_array3 := loc_alias_array3();
+      l_missing_locs loc_alias_array3;
+      l_stored_loc VARCHAR2(12) := 'TestLocation';
+      l_non_existent_location VARCHAR2(11) := 'NotARealLoc';
+      l_office_id VARCHAR2(3) := '&&office_id';
+   BEGIN
+      cwms_loc.store_location (p_location_id    => l_stored_loc,
+                               p_db_office_id   => l_office_id);
+      cwms_loc.STORE_LOC_CATEGORY('TestCategory', 'A test category', l_office_id);
+      cwms_loc.store_loc_group('TestCategory', 'TestGroup', 'Unit Test Group',
+                               'F', 'T', null, null, l_office_id);
+      l_loc_aliases.extend;
+      l_loc_aliases(1) := loc_alias_type3(l_stored_loc, null, null, null);
+
+      l_loc_aliases.extend;
+      l_loc_aliases(2) := loc_alias_type3(l_non_existent_location, null, null, null);
+
+      cwms_loc.assign_loc_groups4('TestCategory', 'TestGroup', l_loc_aliases, l_office_id, 'F', l_missing_locs);
+   END;
 END test_cwms_loc;
 /
 show errors;

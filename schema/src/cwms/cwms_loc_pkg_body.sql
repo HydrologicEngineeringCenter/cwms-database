@@ -203,6 +203,85 @@ AS
          RAISE;
    END get_location_code;
 
+   FUNCTION get_location_code (p_db_office_id     IN VARCHAR2,
+                               p_location_id      IN VARCHAR2,
+                               p_check_aliases    IN VARCHAR2,
+                               p_ignore_missing   IN VARCHAR2
+   )
+      RETURN NUMBER
+      IS
+      l_location_code   NUMBER;
+      l_cache_id        varchar2(271);
+      l_db_office_code    NUMBER := cwms_util.get_office_code (p_db_office_id);
+   BEGIN
+      IF p_location_id IS NULL
+      THEN
+         cwms_err.raise ('ERROR',
+                         'The P_LOCATION_ID parameter cannot be NULL'
+         );
+      END IF;
+
+      --
+      l_cache_id := to_char(l_db_office_code)||'/'||upper(p_location_id);
+      l_location_code := cwms_cache.get(g_location_code_cache, l_cache_id);
+      if l_location_code is not null then
+         return l_location_code;
+      end if;
+
+      SELECT   apl.location_code
+      INTO   l_location_code
+      FROM   at_physical_location apl, at_base_location abl
+      WHERE   apl.base_location_code = abl.base_location_code
+        AND UPPER (abl.base_location_id) =
+            UPPER (cwms_util.get_base_id (p_location_id))
+        AND NVL (UPPER (apl.sub_location_id), '.') =
+            NVL (UPPER (cwms_util.get_sub_id (p_location_id)), '.')
+        AND abl.db_office_code = l_db_office_code;
+
+      --
+      cwms_cache.put(g_location_code_cache, l_cache_id, l_location_code);
+      RETURN l_location_code;
+      --
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+         THEN
+            IF cwms_util.is_true(p_check_aliases) THEN
+               DECLARE
+                  l_office_id   VARCHAR2 (16);
+               BEGIN
+                  SELECT   office_id
+                  INTO   l_office_id
+                  FROM   cwms_office
+                  WHERE   office_code = l_db_office_code;
+
+                  l_location_code :=
+                     get_location_code_from_alias (p_alias_id  => p_location_id,
+                                                   p_office_id => l_office_id
+                     );
+                  IF l_location_code IS NULL
+                  THEN
+                     if p_ignore_missing = 'T' then
+                        return -1;
+                     else
+                        cwms_err.raise('LOCATION_ID_NOT_FOUND', p_location_id);
+                     end if;
+                  END IF;
+
+                  cwms_cache.put(g_location_code_cache, l_cache_id, l_location_code);
+                  RETURN l_location_code;
+               END;
+            ELSE
+               if p_ignore_missing = 'T' then
+                  return -1;
+               else
+                  RAISE;
+               end if;
+            END IF;
+      WHEN OTHERS
+         THEN
+            RAISE;
+   END get_location_code;
+
    FUNCTION get_location_code (p_db_office_code   IN NUMBER,
                                p_location_id      IN VARCHAR2
                               )
@@ -4968,6 +5047,9 @@ end get_srid;
                          l_db_office_code
                       );
    END assign_loc_groups3;
+   ------------------------------------------
+   -- assign_loc_groups4
+   ------------------------------------------
    PROCEDURE assign_loc_groups4 (p_loc_category_id   IN VARCHAR2,
                                  p_loc_group_id 	  IN VARCHAR2,
                                  p_loc_alias_array   IN loc_alias_array3,
@@ -4980,6 +5062,9 @@ end get_srid;
       l_db_office_code       NUMBER;
       l_loc_category_code    NUMBER;
       l_loc_group_code       NUMBER;
+      l_loc_code             NUMBER;
+      l_existing_locs        loc_alias_array3 := loc_alias_array3();
+      l_loc_index            NUMBER := 0;
    BEGIN
       p_missing_locations := loc_alias_array3();
 
@@ -5032,12 +5117,25 @@ end get_srid;
                                p_loc_group_id,
                                l_db_office_id
                );
-            EXCEPTION
-               WHEN NO_DATA_FOUND
+               l_loc_code := get_location_code (p_db_office_id => l_db_office_id,
+                                  p_location_id => p_loc_alias_array (i).location_id,
+                                  p_check_aliases => 'T',
+                                  p_ignore_missing => p_ignore_missing);
+               if l_loc_code = -1
                   THEN
-                     p_missing_locations.extend;
-                     p_missing_locations (p_missing_locations.COUNT) :=
-                        p_loc_alias_array (i);
+                     if p_ignore_missing = 'T'
+                        THEN
+                           p_missing_locations.extend;
+                           p_missing_locations (p_missing_locations.COUNT) :=
+                              p_loc_alias_array (i);
+                        ELSE
+                           cwms_err.raise('LOCATION_ID_NOT_FOUND', p_loc_alias_array (i).location_id);
+                        END IF;
+                  ELSE
+                     l_loc_index := l_loc_index + 1;
+                     l_existing_locs.extend;
+                     l_existing_locs(l_loc_index) := p_loc_alias_array (i);
+                  END IF;
             END;
          END LOOP;
 
@@ -5045,7 +5143,7 @@ end get_srid;
       USING    (SELECT   get_location_code (p_db_office_id => l_db_office_id, p_location_id => plaa.location_id, p_check_aliases => 'F') location_code,
                          plaa.loc_attribute, plaa.loc_alias_id,
                          plaa.loc_ref_id
-                FROM   TABLE (p_loc_alias_array) plaa) b
+                FROM   TABLE (l_existing_locs) plaa) b
       ON    (a.loc_group_code = l_loc_group_code
          AND a.location_code = b.location_code)
       WHEN MATCHED

@@ -182,6 +182,23 @@ AS
                               )
       RETURN NUMBER;
    /**
+    * Retrieves a location's unique numeric code
+    *
+    * @param p_db_office_id   The office that owns the location.
+    * @param p_location_id    The location identifier
+    * @param p_check_aliases  A flag ('T' or 'F') that specifies whether to check aliases if p_location_id is not found as a location identifier
+    * @param p_ignore_missing A flag ('T' or 'F') that specifies whether to ignore missing locations.
+    *                         If set to 'T', the function will return -1 when a location does not exist in the database.
+    *
+    * @return The unique numeric code that identifies the location
+    */
+   FUNCTION get_location_code (p_db_office_id     IN VARCHAR2,
+                               p_location_id      IN VARCHAR2,
+                               p_check_aliases    IN VARCHAR2,
+                               p_ignore_missing   IN VARCHAR2
+                              )
+      RETURN NUMBER;
+   /**
     * Retrieves a state's unique numeric code given its two letter state abbreviation
     *
     * @param p_state_initial The state's two letter abbreviation
