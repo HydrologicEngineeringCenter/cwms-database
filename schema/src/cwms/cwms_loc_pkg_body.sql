@@ -5065,7 +5065,6 @@ end get_srid;
       l_loc_group_code       NUMBER;
       l_loc_code             NUMBER;
       l_existing_locs        loc_alias_array3 := loc_alias_array3();
-      l_raise_missing        boolean := false;
       l_error_message        VARCHAR2(10000) := '';
    BEGIN
       p_missing_locations := loc_alias_array3();
@@ -5127,10 +5126,6 @@ end get_srid;
                   THEN
                      p_missing_locations.extend;
                      p_missing_locations (p_missing_locations.COUNT) := p_loc_alias_array (i);
-                     if p_ignore_missing = 'F'
-                        THEN
-                           l_raise_missing := true;
-                        END IF;
                   ELSE
                      l_existing_locs.extend;
                      l_existing_locs(l_existing_locs.count) := p_loc_alias_array (i);
@@ -5138,7 +5133,7 @@ end get_srid;
             END;
          END LOOP;
 
-      if l_raise_missing = true and p_missing_locations.count > 0 then
+      if p_ignore_missing = 'F' and p_missing_locations.count > 0 then
          for k in 1..p_missing_locations.count loop
             if LENGTH(l_error_message) = 0 THEN
                l_error_message := p_missing_locations(k).location_id;
