@@ -192,6 +192,8 @@ end;
 @@cwms/types/ts_prof_data_tab_t
 @@cwms/types/ts_prof_data_t
 @@cwms/types/ts_profile_t
+@@cwms/types/fcst_location_t
+@@cwms/types/fcst_location_tab_t
 @@cwms/types/fcst_file_t
 @@cwms/types/fcst_file_tab_t
 @@cwms/types/tstz_tab_t

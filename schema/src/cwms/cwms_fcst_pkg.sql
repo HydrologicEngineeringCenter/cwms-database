@@ -36,6 +36,17 @@ procedure store_fcst_spec(
    p_fail_if_exists  in varchar2 default 'T',
    p_ignore_nulls    in varchar2 default 'T',
    p_office_id       in varchar2 default null);
+
+procedure store_fcst_spec_with_locations(
+   p_fcst_spec_id    in varchar2,
+   p_fcst_designator in varchar2,
+   p_entity_id       in varchar2,
+   p_description     in varchar2 default null,
+   p_location_ids    in fcst_location_tab_t default null,
+   p_timeseries_ids  in clob     default null,
+   p_fail_if_exists  in varchar2 default 'T',
+   p_ignore_nulls    in varchar2 default 'T',
+   p_office_id       in varchar2 default null);
 /**
  * Catalogs forecast specifications that match the specified parameters. Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -227,6 +238,15 @@ procedure retrieve_fcst_spec(
    p_entity_id       out varchar2,
    p_description     out varchar2,
    p_location_id     out varchar2,
+   p_timeseries_ids  out nocopy clob,
+   p_fcst_spec_id    in varchar2,
+   p_fcst_designator in varchar2 default null,
+   p_office_id       in varchar2 default null);
+
+procedure retrieve_fcst_spec_with_locations(
+   p_entity_id       out varchar2,
+   p_description     out varchar2,
+   p_location_ids    out fcst_location_tab_t,
    p_timeseries_ids  out nocopy clob,
    p_fcst_spec_id    in varchar2,
    p_fcst_designator in varchar2 default null,
