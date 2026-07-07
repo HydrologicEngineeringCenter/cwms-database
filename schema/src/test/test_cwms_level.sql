@@ -2565,10 +2565,19 @@ begin
          p_location_level_id => c_top_of_normal_elev_id,
          p_start_time => l_start_ts,
          p_end_time => l_end_ts,
-         p_level_units => 'm',
-         p_timezone_id => 'UTC',
+         p_level_units => c_elev_unit,
+         p_timezone_id => c_timezone_id,
          p_office_id => c_office_id
       );
+      ut.expect(l_result_values.count).to_equal(l_elev_ts_data.count);
+
+      for j in 1..l_result_values.count loop
+         dbms_output.put_line('Result at '|| j || ': ' || l_result_values(j).value);
+      end loop;
+
+      for j in 1..l_elev_ts_data.count loop
+            dbms_output.put_line('Expected at '|| j || ': ' || l_elev_ts_data(j).value);
+         end loop;
 
       for j in 1..l_result_values.count loop
             if mod(j, 2) = 0 then

@@ -6414,6 +6414,7 @@ function retrieve_loc_lvl_values4(
 is
    l_level_values ztsv_array;
    l_level_values_interp ztsv_array := ztsv_array();
+   l_result_values ztsv_array;
    l_min_date_utc date;
    l_max_date_utc date;
    l_level_id_parts str_tab_t;
@@ -6524,8 +6525,12 @@ begin
          end if;
       end if;
    end loop;
-   l_level_values := l_level_values_interp;
-   return l_level_values;
+   select ztsv_type(date_time, value, quality_code)
+      bulk collect
+   into l_result_values
+   from table(l_level_values_interp)
+   where value is not null and date_time is not null;
+   return l_result_values;
 end retrieve_loc_lvl_values4;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
