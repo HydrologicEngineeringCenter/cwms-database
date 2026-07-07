@@ -13508,7 +13508,7 @@ end retrieve_existing_item_counts;
       p_timezone       in  varchar2 default null,
       p_office_id      in  varchar2 default null)
    is
-      type tsid_rec_t is record(ts_code integer, office varchar2(16), name varchar2(512));
+      type tsid_rec_t is record(ts_code number(14, 0), office varchar2(16), name varchar2(512));
       type tsid_tab_t is table of tsid_rec_t;
       type tsid_tab_tab_t is table of tsid_tab_t;
       type idx_t is table of str_tab_t index by varchar2(16);
@@ -13534,7 +13534,7 @@ end retrieve_existing_item_counts;
       l_end_utc            date;
       l_timezone           varchar2(28);
       l_office_id          varchar2(16);
-      l_code               integer;
+      l_code               number(14, 0);
       l_code_str           varchar2(32767);
       l_codes1             number_tab_t;
       l_codes2             number_tab_t;

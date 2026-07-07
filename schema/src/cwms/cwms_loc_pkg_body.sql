@@ -2802,8 +2802,8 @@ AS
          ---------------
          -- AT_FCST_xxx
             delete
-              from at_fcst_location
-             where primary_location_code in (select * from table (l_location_codes));
+             from at_fcst_location
+            where location_code in (select * from table (l_location_codes));
          -- AT_FORECAST_xxx
          select clob_code
            bulk collect
