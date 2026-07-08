@@ -58,5 +58,6 @@ schema/src/xml/hec-datatypes.xsd
 **/*.versionsBackup
 **/.vscode
 gradle.properties
-.idea/
+schema/rockylinux.xml
+/.idea/
 *.iml
