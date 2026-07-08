@@ -4912,6 +4912,7 @@ errorCodes = [
     ['-20029', 'RENAME_LOC_BASE_2',               'Unable to rename. The new Location: "%1" already exists.'                                     ],
     ['-20030', 'RENAME_LOC_BASE_3',               'Unable to rename. The new Location: "%1" matches the existing old location.'                  ],
     ['-20031', 'CAN_NOT_DELETE_LOC_1',            'Can not delete location: "%1" because Timeseries Identifiers exist.'                          ],
+    ['-20056', 'CAN_NOT_DELETE_LOC_2',            'Can not delete location: "%1" because dependent data exists: %2'                              ],
     ['-20032', 'CANNOT_DELETE_UNIT_1',            'Cannot delete or rename unit alias "%1"; it is in use by %2.'                                 ],
     ['-20033', 'DUPLICATE_XCHG_MAP',              'Mapping of "%1" to "%2 already exists in exchage set "%3", but with different parameters.'    ],
     ['-20034', 'ITEM_DOES_NOT_EXIST',             '%1 "%2" does not exist.'                                                                      ],

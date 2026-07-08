@@ -58,3 +58,5 @@ schema/src/xml/hec-datatypes.xsd
 **/*.versionsBackup
 **/.vscode
 gradle.properties
+.idea/
+*.iml
