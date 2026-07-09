@@ -3609,6 +3609,66 @@ AS
       return varchar2;
 
    /**
+    * Retrieves whether a quality code is marked as approved
+    *
+    * @param p_quality_code The quality code
+    *
+    * @return Whether the quality code is marked as approved
+    */
+   FUNCTION quality_is_approved (p_quality_code IN NUMBER)
+      RETURN BOOLEAN;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as approved
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as approved
+    */
+   FUNCTION quality_is_approved (p_value IN tsv_type)
+      RETURN BOOLEAN;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as approved
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as approved
+    */
+   FUNCTION quality_is_approved (p_value IN ztsv_type)
+      RETURN BOOLEAN;
+
+   /**
+    * Retrieves whether a quality code is marked as approved
+    *
+    * @param p_quality_code The quality code
+    *
+    * @return Whether the quality code is marked as approved  as text ('T'/'F')
+    */
+   FUNCTION quality_is_approved_text (p_quality_code IN NUMBER)
+      RETURN VARCHAR2;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as approved
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as approved as text ('T'/'F')
+    */
+   FUNCTION quality_is_approved_text (p_value IN tsv_type)
+      RETURN VARCHAR2;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as approved
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as approved  as text ('T'/'F')
+    */
+   FUNCTION quality_is_approved_text (p_value IN ztsv_type)
+      return varchar2;
+
+   /**
     * Retrieves a text description for a quality code
     *
     * @param p_quality_code The quality code

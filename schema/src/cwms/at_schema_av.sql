@@ -153,6 +153,7 @@ END;
 @@cwms/views/av_cwms_ts_id_dummy
 @@cwms/views/av_cwms_ts_id2
 @@cwms/views/av_data_q_changed
+@@cwms/views/av_data_q_approval
 @@cwms/views/av_data_q_protection
 @@cwms/views/av_data_q_range
 @@cwms/views/av_data_q_repl_cause

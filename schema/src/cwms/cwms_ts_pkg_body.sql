@@ -4605,43 +4605,47 @@ AS
    is
       /*
       Data Quality Rules :
-
+      
           1. Unless the Screened bit is set, no other bits can be set.
-
-          2. Unused bits(22, 24, 27-31, 32+) must be reset(zero).
-
+      
+          2. Unused bits (22, 24, 27-30, 32+) must be reset (zero).
+      
           3. The Okay, Missing, Questioned and Rejected bits are mutually
              exclusive.
-
+      
           4. No replacement cause or replacement method bits can be set unless
-             the changed(different) bit is also set, and if the changed(different)
+             the changed (different) bit is also set, and if the changed (different)
              bit is set, one of the cause bits and one of the replacement
              method bits must be set.
-
+      
           5. Replacement Cause integer is in range 0..4.
-
+      
           6. Replacement Method integer is in range 0..4
-
-          7. The Test Failed bits are not mutually exclusive(multiple tests can be
+      
+          7. The Test Failed bits are not mutually exclusive (multiple tests can be
              marked as failed).
-
+      
+          8. The Approved bit may not be set unless the Protected bit is also set
+      
       Bit Mappings :
-
+      
                3                   2                   1
            2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1
-
-           P - - - - - T T - T - T T T T T T M M M M C C C D R R V V V V S
-           |           <---------+---------> <--+--> <-+-> | <+> <--+--> |
-           |                     |              |      |   |  |     |    +------Screened T/F
-           |                     |              |      |   |  |     +-----------Validity Flags
-           |                     |              |      |   |  +--------------Value Range Integer
-           |                     |              |      |   +-------------------Different T/F
-           |                     |              |      +---------------Replacement Cause Integer
-           |                     |              +---------------------Replacement Method Integer
-           |                     +-------------------------------------------Test Failed Flags
+      
+           P A - - - - T T T T T T T T T T T M M M M C C C D R R V V V V S
+           | |         <---------+---------> <--+--> <-+-> | <+> <--+--> |
+           | |                   |              |      |   |  |     |    +------Screened T/F
+           | |                   |              |      |   |  |     +-----------Validity Flags
+           | |                   |              |      |   |  +--------------Value Range Integer
+           | |                   |              |      |   +-------------------Different T/F
+           | |                   |              |      +---------------Replacement Cause Integer
+           | |                   |              +---------------------Replacement Method Integer
+           | |                   +-------------------------------------------Test Failed Flags
+           | +------------------------------------------------------------------Approved T/F
            +-------------------------------------------------------------------Protected T/F
+      
       */
-      c_used_bits             constant integer := 2204106751; -- 1000 0011 0101 1111 1111 1111 1111 1111
+      c_used_bits             constant integer := 3277848575; -- 1100 0011 0101 1111 1111 1111 1111 1111
       c_screened              constant integer := 1;          -- 0000 0000 0000 0000 0000 0000 0000 0001
       c_ok                    constant integer := 2;          -- 0000 0000 0000 0000 0000 0000 0000 0010
       c_ok_mask               constant integer := 4294967267; -- 1111 1111 1111 1111 1111 1111 1110 0011
@@ -4970,10 +4974,10 @@ AS
       qq2      integer;
    begin
       if q1 is not null then
-         qq1 := bitand(q1, to_number('7FFFFFFF', 'XXXXXXXX')); -- unset protection bit
+         qq1 := bitand(q1, to_number('3FFFFFFF', 'XXXXXXXX')); -- unset protection and approval bits
       end if;
       if q2 is not null then
-         qq2 := bitand(q2, to_number('7FFFFFFF', 'XXXXXXXX')); --unset protection bit
+         qq2 := bitand(q2, to_number('3FFFFFFF', 'XXXXXXXX')); --unset protection and approval bits
       end if;
       case
       when (v1 is null) != (v2 is null) then
@@ -11423,6 +11427,51 @@ end retrieve_existing_item_counts;
       RETURN quality_is_protected_text (p_value.quality_code);
    END quality_is_protected_text;
 
+   FUNCTION quality_is_approved (p_quality_code IN NUMBER)
+      RETURN BOOLEAN
+   is
+   BEGIN
+      return bitand(p_quality_code, 1073741824) = 1073741824;
+   END quality_is_approved;
+
+   FUNCTION quality_is_approved (p_value IN tsv_type)
+      RETURN BOOLEAN
+   IS
+   BEGIN
+      RETURN quality_is_approved (p_value.quality_code);
+   END quality_is_approved;
+
+   FUNCTION quality_is_approved (p_value IN ztsv_type)
+      RETURN BOOLEAN
+   IS
+   BEGIN
+      RETURN quality_is_approved (p_value.quality_code);
+   END quality_is_approved;
+
+   FUNCTION quality_is_approved_text (p_quality_code IN NUMBER)
+      RETURN VARCHAR2
+   IS
+   begin
+      RETURN CASE quality_is_approved (p_quality_code)
+                WHEN TRUE  THEN 'T'
+                WHEN FALSE THEN 'F'
+             END;
+   END quality_is_approved_text;
+
+   FUNCTION quality_is_approved_text (p_value IN tsv_type)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      RETURN quality_is_approved_text (p_value.quality_code);
+   END quality_is_approved_text;
+
+   FUNCTION quality_is_approved_text (p_value IN ztsv_type)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      RETURN quality_is_approved_text (p_value.quality_code);
+   END quality_is_approved_text;
+
    FUNCTION get_quality_description (p_quality_code IN NUMBER)
       RETURN VARCHAR2
    IS
@@ -11472,6 +11521,11 @@ end retrieve_existing_item_counts;
          IF l_rec.protection_id != 'UNPROTECTED'
          THEN
             l_description := l_description || ', ' || l_rec.protection_id;
+         END IF;
+
+         IF l_rec.protection_id != 'NOT_APPROVED'
+         THEN
+            l_description := l_description || ', ' || l_rec.approval_id;
          END IF;
       END IF;
 
