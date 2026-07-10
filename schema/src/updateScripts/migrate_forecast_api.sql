@@ -1,22 +1,23 @@
-define cwms_schema = CWMS_20
-set define on
-set verify off
 --------------------------------------------
 -- verify that both the new tables exist  --
 --------------------------------------------
+declare
+   l_schema_support number;
 begin
-   if (select count(*)
-       from ALL_TABLES
-       where table_name = 'AT_FCST_SPEC'
-         and OWNER = cwms_schema) = 0 then
+   select count(*)
+    into l_schema_support
+    from ALL_TABLES
+    where table_name = 'AT_FCST_SPEC'
+      and OWNER = 'CWMS_20';
+   if l_schema_support = 0 then
       cwms_err.raise('ERROR', 'Expected new forecast tables to exist.');
    end if;
 end;
 /
 declare
    cursor c_forecasts is
-      select distinct forecast_id, source_office
-      from at_forecast_spec;
+      (select distinct forecast_id, source_office
+      from at_forecast_spec);
    l_forecast_spec_code at_forecast_spec.forecast_spec_code%type;
    l_pattern varchar2(10) := '(.+)-(.+)';
    l_sort_order_support number := (select COUNT(*)
@@ -57,38 +58,59 @@ begin
       ) loop
          -- check if schema supports new sort order column
          if l_sort_order_support = 0 then
-            insert into at_fcst_location (fcst_spec_code, location_code)
+            insert into at_fcst_location (fcst_spec_code, primary_location_code)
                values(l_forecast_spec_code,
                    row.target_location_code);
          else
+            -- insert with sort order of 0
             execute immediate
                'insert into at_fcst_location (fcst_spec_code, location_code, sort_order)' ||
                'values (:1, :2, :3)'
                using l_forecast_spec_code, row.target_location_code, 0;
          end if;
       end loop;
-   commit;
-   insert into at_fcst_time_series
-      select
-         s.forecast_spec_code,
-         s.ts_code
-      from at_forecast_spec s;
-   commit;
-   insert into at_fcst_inst
-      select
-         DEFAULT,
-         s.forecast_spec_code,
-         t.forecast_date,
-         (case when t.issue_date is not null then t.issue_date else t.version_date end),
-         s.max_age,
-         null,
-         (select value from at_clob where clob_code = txt.clob_code)
-      from at_forecast_spec s
+      commit;
+      -- insert into new ts table using chosen spec code
+      for row in (
+         select distinct t.ts_code
+         from at_forecast_spec s
          join at_forecast_ts t
-            on t.forecast_spec_code = s.forecast_spec_code
-                  and t.ts_code = s.ts_code
-         join CWMS_20.at_forecast_text txt
-            on txt.forecast_spec_code = s.forecast_spec_code
-                  and txt.ts_code = s.ts_code;
+              on t.forecast_spec_code = s.forecast_spec_code
+         where s.forecast_id = rec.forecast_id
+           and s.source_office = rec.source_office
+      ) loop
+         insert into at_fcst_time_series
+         select
+            l_forecast_spec_code,
+            row.ts_code
+         from at_forecast_spec s;
+      end loop;
+      commit;
+      --insert into new fcst_inst table using chosen spec code
+      for row in (
+         select t.forecast_spec_code
+         from at_forecast_spec s
+              join at_forecast_ts t
+                   on t.forecast_spec_code = s.forecast_spec_code
+         where s.forecast_id = rec.forecast_id
+           and s.source_office = rec.source_office
+      ) loop
+            insert into at_fcst_inst
+            select
+               DEFAULT,
+               l_forecast_spec_code,
+               t.forecast_date,
+               nvl(t.issue_date, t.version_date),
+               s.max_age,
+               null,
+               (select value from at_clob where clob_code = txt.clob_code)
+            from at_forecast_spec s
+                    join at_forecast_ts t
+                         on t.forecast_spec_code = row.forecast_spec_code
+                    join CWMS_20.at_forecast_text txt
+                         on txt.forecast_spec_code = row.forecast_spec_code;
+         end loop;
+      commit;
+   end loop;
    commit;
 end;
