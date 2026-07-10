@@ -21,8 +21,8 @@ declare
    l_forecast_spec_code at_forecast_spec.forecast_spec_code%type;
    l_pattern varchar2(10) := '(.+)-(.+)';
    l_sort_order_support number;
-   l_clob_value clob;
-   l_blob_value blob;
+   l_clob_value clob := empty_clob();
+   l_blob_value blob := empty_blob();
    l_warning number;
    l_dest_offset number := 1;
    l_src_offset number := 1;
@@ -88,10 +88,9 @@ begin
            and s.source_office = rec.source_office
       ) loop
          insert into at_fcst_time_series
-         select
-            l_forecast_spec_code,
-            row.ts_code
-         from at_forecast_spec s;
+         values (l_forecast_spec_code,
+                 row.ts_code);
+         commit;
       end loop;
       commit;
       --insert into new fcst_inst table using chosen spec code
@@ -144,6 +143,7 @@ begin
                          on t.forecast_spec_code = row.forecast_spec_code
                     join CWMS_20.at_forecast_text txt
                          on txt.forecast_spec_code = row.forecast_spec_code;
+            commit;
          end loop;
       end loop;
       commit;
