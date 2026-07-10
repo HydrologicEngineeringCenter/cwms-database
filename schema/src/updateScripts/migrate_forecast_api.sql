@@ -20,11 +20,19 @@ declare
       from at_forecast_spec);
    l_forecast_spec_code at_forecast_spec.forecast_spec_code%type;
    l_pattern varchar2(10) := '(.+)-(.+)';
-   l_sort_order_support number := (select COUNT(*)
-                                  from user_tab_columns
-                                  where table_name = 'AT_FCST_LOCATION'
-                                    and column_name = 'SORT_ORDER');
+   l_sort_order_support number;
+   l_clob_value clob;
+   l_blob_value blob;
+   l_warning number;
+   l_dest_offset number := 1;
+   l_src_offset number := 1;
+   l_lang_context number := dbms_lob.default_lang_ctx;
 begin
+   select COUNT(*)
+   into l_sort_order_support
+    from user_tab_columns
+    where table_name = 'AT_FCST_LOCATION'
+      and column_name = 'SORT_ORDER';
    for rec in c_forecasts loop
       select FORECAST_SPEC_CODE
       into l_forecast_spec_code
@@ -95,21 +103,49 @@ begin
          where s.forecast_id = rec.forecast_id
            and s.source_office = rec.source_office
       ) loop
+         for txt_row in (
+            select txt.clob_code, txt.forecast_spec_code
+                     from at_forecast_text txt
+                          where txt.forecast_spec_code = row.forecast_spec_code
+         ) loop
+            select value
+               into l_clob_value
+               from at_clob
+               where clob_code = txt_row.clob_code;
+            dbms_lob.converttoblob(dest_lob => l_blob_value,
+               src_clob => l_clob_value,
+               amount => 1,
+               dest_offset => l_dest_offset,
+               src_offset => l_src_offset,
+               blob_csid => dbms_lob.default_csid,
+               lang_context => l_lang_context,
+               warning => l_warning
+            );
+
             insert into at_fcst_inst
             select
-               DEFAULT,
+               cwms_seq.nextval,
                l_forecast_spec_code,
                t.forecast_date,
                nvl(t.issue_date, t.version_date),
                s.max_age,
                null,
-               (select value from at_clob where clob_code = txt.clob_code)
+               cwms_t_blob_file(
+                  (select id
+                      from at_clob
+                      where clob_code = txt.clob_code) || '.txt',
+                  'text/plain', 0,
+                  (select description
+                   from at_clob
+                   where clob_code = txt.clob_code),
+                  l_blob_value)
             from at_forecast_spec s
                     join at_forecast_ts t
                          on t.forecast_spec_code = row.forecast_spec_code
                     join CWMS_20.at_forecast_text txt
                          on txt.forecast_spec_code = row.forecast_spec_code;
          end loop;
+      end loop;
       commit;
    end loop;
    commit;
