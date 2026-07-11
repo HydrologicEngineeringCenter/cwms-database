@@ -111,6 +111,7 @@ begin
                into l_clob_value
                from at_clob
                where clob_code = txt_row.clob_code;
+            dbms_lob.createtemporary(l_blob_value, true);
             dbms_lob.converttoblob(dest_lob => l_blob_value,
                src_clob => l_clob_value,
                amount => 1,
@@ -126,7 +127,7 @@ begin
                cwms_seq.nextval,
                l_forecast_spec_code,
                t.forecast_date,
-               nvl(t.issue_date, t.version_date),
+               nvl(t.version_date, t.issue_date),
                s.max_age,
                null,
                cwms_t_blob_file(
@@ -140,9 +141,12 @@ begin
                   l_blob_value)
             from at_forecast_spec s
                     join at_forecast_ts t
-                         on t.forecast_spec_code = row.forecast_spec_code
+                         on t.forecast_spec_code = s.forecast_spec_code
                     join CWMS_20.at_forecast_text txt
-                         on txt.forecast_spec_code = row.forecast_spec_code;
+                         on txt.forecast_spec_code = s.forecast_spec_code
+            where s.forecast_id = rec.forecast_id
+            and s.source_office = rec.source_office
+            and txt.clob_code = txt_row.clob_code;
             commit;
          end loop;
       end loop;
