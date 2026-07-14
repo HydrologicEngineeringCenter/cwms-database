@@ -2065,6 +2065,23 @@ AS
       p_version_date in date default null);
 
    -- not documented
+   procedure update_ts_extents_for_office(
+      p_office_id varchar2);
+
+   -- not documented
+   procedure purge_invalid_ts_extents;
+
+   /**
+    * Returns the log messages from PURGE_INVALID_TS_EXTENTS, UPDATE_TS_EXTENTS_FOR_OFFICE, and START_UPDATE_TS_EXTENTS_JOB
+    * for the specified lookback period
+    *
+    * @param p_lookback_hours The lookback period in hours. If not specified, the lookback period defaults to 24 hours.
+    */
+   function retrieve_update_ts_extents_log_messages(
+      p_lookback_hours in binary_integer default 24)
+      return varchar2;
+
+   -- not documented
    procedure start_update_ts_extents_job;
 
    -- not documented

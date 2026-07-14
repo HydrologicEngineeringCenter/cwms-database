@@ -1734,14 +1734,18 @@ AS
       l_start_time := cwms_util.change_timezone(p_start_time, p_time_zone, 'UTC');
       l_end_time   := cwms_util.change_timezone(p_end_time,   p_time_zone, 'UTC');
       OPEN p_date_cat FOR
-           SELECT DISTINCT
+           SELECT
                   case
-                     when version_date = cwms_util.non_versioned then version_date
-                     else cwms_util.change_timezone(version_date, 'UTC', p_time_zone)
+                     when version_time = cwms_util.non_versioned then version_time
+                     else cwms_util.change_timezone(version_time, 'UTC', p_time_zone)
                   end as version_date
-             FROM av_tsv
+             FROM at_ts_extents
             WHERE ts_code = p_cwms_ts_code
-              AND date_time BETWEEN l_start_time AND l_end_time
+              AND version_time IS NOT NULL
+              AND earliest_time IS NOT NULL
+              AND latest_time IS NOT NULL
+              AND earliest_time <= l_end_time
+              AND latest_time >= l_start_time
          ORDER BY version_date;
    END get_ts_version_dates;
 
@@ -5190,13 +5194,81 @@ AS
 
    end update_ts_extents;
 
+   procedure update_ts_extents_for_office(
+      p_office_id varchar2)
+   is
+      l_office_id at_cwms_ts_id.db_office_id%type := cwms_util.get_db_office_id(p_office_id);
+      l_count     binary_integer := 0;
+      l_now       timestamp := systimestamp;
+      c_key       constant varchar2(36) := 'Update TS Extents for Office '||l_office_id;
+   begin
+      cwms_msg.log_db_message(
+         c_key,
+         'Update TS Extents for Office '||l_office_id||' started',
+         cwms_msg.msg_level_normal);
+      ----------------------------------------------
+      -- select out-of-date ts extents for office --
+      ----------------------------------------------
+      for rec in (with valid_tsx as
+                    (select tsx.ts_code,
+                            version_time,
+                            last_update
+                       from at_ts_extents tsx,
+                            at_cwms_ts_spec tss,
+                            at_cwms_ts_id tsid
+                      where tss.ts_code = tsx.ts_code
+                        and tss.delete_date is null
+                        and tsid.ts_code = tsx.ts_code
+                        and tsid.net_ts_active_flag = 'T'
+                        and tsid.db_office_id = l_office_id
+                    )
+                 select ts_code,
+                        version_time
+                   from valid_tsx
+                  where exists (select ts_code,
+                                       version_date
+                                  from av_tsv
+                                 where ts_code = valid_tsx.ts_code
+                                   and version_date = valid_tsx.version_time
+                                   and data_entry_date >= valid_tsx.last_update
+                               )
+                 )
+      loop
+         -----------------------
+         -- update the record --
+         -----------------------
+         cwms_ts.update_ts_extents(rec.ts_code, rec.version_time);
+         l_count := l_count + 1;
+      end loop;
+      cwms_msg.log_db_message(
+         c_key,
+         'Update TS Extents for Office '||l_office_id||' ended: '||l_count||' records updated',
+         cwms_msg.msg_level_normal);
+      ----------------------------------------
+      -- output log messages to dbms_output --
+      ----------------------------------------
+      for rec in (select m.report_timestamp_utc,
+                         m.msg_text
+                    from at_log_message m,
+                         at_log_message_properties p
+                   where m.report_timestamp_utc >= l_now
+                     and p.msg_id = m.msg_id
+                     and p.prop_name = 'key'
+                     and p.prop_text = c_key
+                   order by m.report_timestamp_utc
+                 )
+      loop
+         dbms_output.put_line(to_char(rec.report_timestamp_utc, 'yyyy-mm-dd hh24:mi:ss.ff3')||chr(9)||rec.msg_text);
+      end loop;
+   end update_ts_extents_for_office;
+
    procedure update_ts_extents(
       p_ts_code      in integer default null,
       p_version_date in date default null)
    is
       l_rec           at_ts_extents%rowtype;
 
-      l_updated       boolean;
+      l_updated       boolean; -- not used, but required for function calls
       l_rec1          at_ts_extents%rowtype;
       l_rec2          at_ts_extents%rowtype;
 
@@ -5205,7 +5277,7 @@ AS
          ( select ts_code, version_date, data_entry_date, date_time, value, quality_code
            from   :table_name
            where  ts_code = :ts_code and
-                  version_date = nvl(:version_date, version_date)
+                  version_date = :version_date
          )
          select q0.ts_code,
                 q0.version_date as version_time,
@@ -5350,38 +5422,60 @@ AS
                     and rownum = 1
                 ) q16 on 1=1';
    begin
-      -- This is essentially procedure update_ts_extents(p_ts_code, p_version_date)
       -- Do a full scan for TS extents, then update or insert the new extents.
-
       if p_ts_code is null then
-         -------------------------
-         -- update all ts_codes --
-         -------------------------
-         for rec in (select ts_code from at_cwms_ts_id where net_ts_active_flag = 'T') loop
-            update_ts_extents(rec.ts_code, p_version_date);
-         end loop;
+         if p_version_date is null then
+            -------------------------------------------
+            -- update all extents for default office --
+            -------------------------------------------
+            update_ts_extents_for_office(null);
+         else
+            --------------------------------------------------------
+            -- update all ts_codes for the specified version_date --
+            --------------------------------------------------------
+            for rec in (select distinct
+                               tsx.ts_code
+                          from at_ts_extents tsx,
+                               at_cwms_ts_spec tss,
+                               at_cwms_ts_id tsid
+                         where tss.ts_code = tsx.ts_code
+                           and tsid.ts_code = tsx.ts_code
+                           and tss.delete_date is null
+                           and tsid.net_ts_active_flag = 'T'
+                           and exists (select ts_code,
+                                              version_date
+                                         from av_tsv
+                                        where ts_code = tsx.ts_code
+                                          and version_date = p_version_date
+                                      )
+                       )
+            loop
+               update_ts_extents(rec.ts_code, p_version_date);
+            end loop;
+         end if;
          return;
       elsif p_version_date is null then
          ----------------------------------------------------
          -- update all version_dates for specified ts_code --
          ----------------------------------------------------
-         for rec1 in (select version_flag from at_cwms_ts_id where ts_code = p_ts_code and net_ts_active_flag = 'T') loop
-            --------------------------------
-            -- will be only 0 or 1 record --
-            --------------------------------
-            if rec1.version_flag = 'F' then
-               ------------------------------
-               -- ts_code is non-versioned --
-               ------------------------------
-               update_ts_extents(p_ts_code, cwms_util.non_versioned);
-            else
-               --------------------------
-               -- ts_code is versioned --
-               --------------------------
-               for rec2 in (select distinct version_time from at_ts_extents where ts_code = p_ts_code) loop
-                  update_ts_extents(p_ts_code, rec2.version_time);
-               end loop;
-            end if;
+         for rec in (select distinct
+                            tsx.version_time
+                       from at_ts_extents tsx,
+                            at_cwms_ts_spec tss,
+                            at_cwms_ts_id tsid
+                      where tss.ts_code = p_ts_code
+                        and tsid.ts_code = p_ts_code
+                        and tss.delete_date is null
+                        and tsid.net_ts_active_flag = 'T'
+                        and exists (select ts_code,
+                                           version_date
+                                      from av_tsv
+                                     where ts_code = p_ts_code
+                                       and version_date = tsx.version_time
+                                   )
+                    )
+         loop
+            update_ts_extents(p_ts_code, rec.version_time);
          end loop;
          return;
       end if;
@@ -5397,9 +5491,8 @@ AS
             execute immediate replace(l_query, ':table_name', rec.table_name) into l_rec1 using p_ts_code, p_version_date;
             l_updated := update_ts_extents_rec (l_rec1, l_rec2);
          exception when no_data_found then
-            -- it appears that l_rec1 is not cleared when no values are returned by the query
+            -- l_rec1 is not cleared when no values are returned by the query
             l_rec1 := null;
-            l_updated := FALSE;
          end;
       end loop;
 
@@ -5410,30 +5503,120 @@ AS
       -- when no data, insert a record with NULL extents
       -- need to set ts_code and version_time
 
-      l_rec2.ts_code := p_ts_code;
-      l_rec2.version_time := nvl(p_version_date, cwms_util.non_versioned);
-
-      -- -ts_code forces a complete update of the TS extents
-
-      l_rec2.ts_code := -l_rec2.ts_code;
-      l_updated  := update_ts_extents (l_rec2);
+      if (l_rec2.ts_code is null) then
+         -- when no data, insert a record with NULL extents
+         -- need to set ts_code and version_time
+         l_rec2.ts_code := p_ts_code;
+         l_rec2.version_time := nvl(p_version_date, cwms_util.non_versioned);
+         l_rec2.last_update := systimestamp;
+         begin
+            insert into at_ts_extents values l_rec2;
+         exception
+            when others then
+               if sqlcode = -1 then
+                  l_updated := update_ts_extents (l_rec2);
+               else
+                  raise;
+               end if;
+         end;
+         commit work WRITE BATCH;
+      else
+         -- -ts_code forces a complete update of the TS extents
+         l_rec2.ts_code := -l_rec2.ts_code;
+         l_updated  := update_ts_extents (l_rec2);
+      end if;
 
    end update_ts_extents;
 
    -- not documented
+   procedure purge_invalid_ts_extents
+   is
+      c_key   constant varchar2(24) := 'Purge Invalid TS Extents';
+      l_now   timestamp := systimestamp;
+      l_count binary_integer;
+   begin
+      cwms_msg.log_db_message(
+         c_key,
+         'Purge of invalid TS extents started',
+         cwms_msg.msg_level_normal);
+      delete
+        from at_ts_extents tsx
+       where not exists (select ts_code,
+                                version_date
+                           from av_tsv
+                          where ts_code = tsx.ts_code
+                            and version_date = tsx.version_time
+                        );
+      l_count := sql%rowcount;
+      commit;
+      cwms_msg.log_db_message(
+         c_key,
+         'Purge of invalid TS extents ended. '||l_count||' records deleted',
+         cwms_msg.msg_level_normal);
+      ----------------------------------------
+      -- output log messages to dbms_output --
+      ----------------------------------------
+      for rec in (select m.report_timestamp_utc,
+                         m.msg_text
+                    from at_log_message m,
+                         at_log_message_properties p
+                   where m.report_timestamp_utc >= l_now
+                     and p.msg_id = m.msg_id
+                     and p.prop_name = 'key'
+                     and p.prop_text = c_key
+                   order by m.report_timestamp_utc
+                 )
+      loop
+         dbms_output.put_line(to_char(rec.report_timestamp_utc, 'yyyy-mm-dd hh24:mi:ss.ff3')||chr(9)||rec.msg_text);
+      end loop;
+   end purge_invalid_ts_extents;
+
+   -- not documented
+   function retrieve_update_ts_extents_log_messages(
+      p_lookback_hours in binary_integer default 24)
+      return varchar2
+   is
+      l_results varchar2(4000);
+   begin
+      for rec in (select m.report_timestamp_utc,
+                         m.msg_text
+                    from at_log_message m,
+                         at_log_message_properties p
+                   where m.report_timestamp_utc >= sysdate - p_lookback_hours / 24
+                     and p.msg_id = m.msg_id
+                     and p.prop_name = 'key'
+                     and upper(p.prop_text) like '%TS_EXTENTS%'
+                   order by m.report_timestamp_utc
+                 )
+      loop
+         l_results := l_results||chr(10)||to_char(rec.report_timestamp_utc, 'yyyy-mm-dd hh24:mi:ss.ff3')||chr(9)||rec.msg_text;
+      end loop;
+      return substr(l_results, 1);
+   end retrieve_update_ts_extents_log_messages;
+
+   -- not documented
    procedure start_update_ts_extents_job
    is
-      l_job_name varchar2(30) := 'UPDATE_TS_EXTENTS_JOB';
-      l_now    date;
-      l_dow    varchar2(3);
-      l_start  date;
-      l_timezone varchar2(28);
+      c_msg_key           constant varchar2(28) := 'update_ts_extents_for_office';
+      l_log_msg           varchar2(256);
+      l_job_name_template varchar2(32) := 'UPDATE_TS_EXTENTS_JOB_XXX';
+      l_job_name          varchar2(32) := 'UPDATE_TS_EXTENTS_JOB_XXX';
+      l_now               date;
+      l_first_start       date;
+      l_start             date;
+      l_office_ids        str_tab_t;
 
-      function job_count return pls_integer
+      function job_count(
+         p_job_name in varchar2)
+         return binary_integer
       is
-         l_count pls_integer;
+         l_count binary_integer;
       begin
-         select count(*) into l_count from user_scheduler_jobs where job_name = l_job_name;
+         select count(*)
+           into l_count
+           from user_scheduler_jobs
+          where job_name = p_job_name;
+
          return l_count;
       end job_count;
    begin
@@ -5441,56 +5624,90 @@ AS
       -- only allow schema owner to execute --
       ----------------------------------------
       if cwms_util.get_user_id != '&cwms_schema' then
-         cwms_err.raise('ERROR', 'Must be &cwms_schema user to start job '||l_job_name);
+         cwms_err.raise('ERROR', 'Must be &cwms_schema user to start job '||l_job_name_template);
       end if;
-      ----------------------------------------------
-      -- allow only a single copy to be scheduled --
-      ----------------------------------------------
-      if job_count > 0 then
-         cwms_err.raise('ERROR', 'Cannot start job '||l_job_name||',  another instance is already running');
+      -----------------------------------------------------------------
+      -- get the offices that have time series data in this database --
+      -----------------------------------------------------------------
+      select distinct
+             db_office_id
+        bulk collect
+        into l_office_ids
+        from at_cwms_ts_id
+       order by 1;
+      ----------------------------------------------------------
+      -- set first start time to the next "Saturday 0200 UTC" --
+      ----------------------------------------------------------
+      l_now := sysdate;
+      l_first_start := to_date(to_char(next_day(l_now, 'SATURDAY'), 'yyyy-mm-dd')||' 02:00:00', 'yyyy-mm-dd hh24:mi:ss');
+      if l_first_start - l_now > 7 then
+         l_first_start := l_first_start - 7;
       end if;
-      -----------------------------------------------
-      -- get the "local" time zone of the database --
-      -----------------------------------------------
-      begin
-         select time_zone_name
-           into l_timezone
-           from (select tz.time_zone_name,
-                        count(pl.location_code)as count
-                   from at_physical_location pl,
-                        cwms_time_zone tz
-                  where tz.time_zone_code = pl.time_zone_code
-                  group by tz.time_zone_name
-                  order by 2 desc
-                )
-          where rownum = 1;
-      exception
-         when no_data_found then l_timezone := 'UTC';
-      end;
-      ----------------------------------------------------------------------------------
-      -- create the job to start next Friday at 10:00 pm local time and repeat weekly --
-      ----------------------------------------------------------------------------------
-      l_start := cwms_util.change_timezone(date '2018-07-06' + 22/24, l_timezone, 'UTC');
-      dbms_scheduler.create_job (
-         job_name            => l_job_name,
-         job_type            => 'stored_procedure',
-         job_action          => 'cwms_ts.update_ts_extents',
-         start_date          => from_tz(cast(l_start as timestamp), 'UTC'),
-         repeat_interval     => 'freq=weekly; interval=1',
-         number_of_arguments => 2,
-         comments            => 'Updates all time series extents.');
-      dbms_scheduler.set_job_argument_value(
-         job_name          => l_job_name,
-         argument_position => 1,
-         argument_value    => null);
-      dbms_scheduler.set_job_argument_value(
-         job_name          => l_job_name,
-         argument_position => 2,
-         argument_value    => null);
-      dbms_scheduler.enable(l_job_name);
-      if job_count != 1 then
-         cwms_err.raise('ERROR', 'Job '||l_job_name||' not started');
-      end if;
+      ---------------------------------------------------------------
+      -- start a weekly job for each office, starting 1 hour apart --
+      ---------------------------------------------------------------
+      for i in 1..l_office_ids.count loop
+         l_job_name := replace(l_job_name_template, 'XXX', l_office_ids(i));
+         l_start := l_first_start + (i - 1) / 24;
+         begin
+            --------------------------------------------------
+            -- first drop any existing job of the same name --
+            --------------------------------------------------
+            if job_count(l_job_name) = 1 then
+               dbms_scheduler.drop_job(l_job_name);
+               if job_count(l_job_name) = 1 then
+                  cwms_msg.log_db_message(
+                     c_msg_key,
+                     'ERROR: Job '||l_job_name||' already exists and couldn''t be dropped',
+                     cwms_msg.msg_level_normal);
+                  continue;
+               end if;
+            end if;
+            -------------------------------------------
+            -- now schedule a new job for the office --
+            -------------------------------------------
+            dbms_scheduler.create_job (
+               job_name            => l_job_name,
+               job_type            => 'stored_procedure',
+               job_action          => 'cwms_ts.update_ts_extents_for_office',
+               start_date          => from_tz(cast(l_start as timestamp), 'UTC'),
+               repeat_interval     => 'freq=weekly; interval=1',
+               number_of_arguments => 1,
+               comments            => 'Updates all time series extents for office '||l_office_ids(i));
+            dbms_scheduler.set_job_argument_value(
+               job_name          => l_job_name,
+               argument_position => 1,
+               argument_value    => l_office_ids(i));
+            dbms_scheduler.enable(l_job_name);
+         exception
+            when others then
+               cwms_msg.log_db_message(c_msg_key, sqlerrm, cwms_msg.msg_level_normal);
+               continue;
+         end;
+         if job_count(l_job_name) = 1 then
+            l_log_msg := 'SUCESS: Job '||l_job_name||' scheduled to start at '
+            ||to_char(l_start, 'yyyy-mm-dd hh24:mi:ss')||' UTC';
+         else
+            l_log_msg := 'ERROR: Job '||l_job_name ||' not started';
+         end if;
+         cwms_msg.log_db_message(c_msg_key, l_log_msg, cwms_msg.msg_level_normal);
+      end loop;
+      ----------------------------------------
+      -- output log messages to dbms_output --
+      ----------------------------------------
+      for rec in (select m.report_timestamp_utc,
+                         m.msg_text
+                    from at_log_message m,
+                         at_log_message_properties p
+                   where m.report_timestamp_utc >= cast (l_now as timestamp)
+                     and p.msg_id = m.msg_id
+                     and p.prop_name = 'key'
+                     and p.prop_text = c_msg_key
+                   order by m.report_timestamp_utc
+                 )
+      loop
+         dbms_output.put_line(to_char(rec.report_timestamp_utc, 'yyyy-mm-dd hh24:mi:ss.ff3')||chr(9)||rec.msg_text);
+      end loop;
    end start_update_ts_extents_job;
 
    -- not documented
@@ -6993,21 +7210,6 @@ AS
                l_job_name varchar2(64) := 'UTX_'||l_ts_code||'_'||to_char(l_version_date, 'yyyymmdd_hh24miss');
             begin
                begin
-                 IF (l_version_date IS NULL) THEN
-                  l_plsql_block := 'begin ';
-                  IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL) THEN
-                     l_plsql_block := l_plsql_block
-                     || 'cwms_env.set_session_user('''
-                     || SYS_CONTEXT ('CWMS_ENV','CWMS_SESSION_KEY')
-                     || ''');';
-                  END IF;
-                  l_plsql_block := l_plsql_block
-                  || 'cwms_env.set_session_office_id('''
-                  || SYS_CONTEXT ('CWMS_ENV','SESSION_OFFICE_ID')
-                  || '''); cwms_ts.update_ts_extents('''
-                  || l_ts_code
-                  || '''); end;';
-               ELSE
                   l_plsql_block := 'begin ';
                   IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL) THEN
                      l_plsql_block := l_plsql_block
@@ -7023,7 +7225,6 @@ AS
                   || ''',to_date('''
                   || TO_CHAR (l_version_date,'YYYY-MM-DD HH24:MI:SS')
                   || ''',''YYYY-MM-DD HH24:MI:SS'')); end;';
-               END IF;
                   dbms_scheduler.create_job (
                      job_name   => l_job_name,
                      job_type   => 'PLSQL_BLOCK',
@@ -11920,11 +12121,11 @@ end retrieve_existing_item_counts;
 	is
       l_version_dates date_table_type;
 	begin
-		select distinct
-             version_date
+		select
+             version_time
         bulk collect
         into l_version_dates
-        from av_tsv
+        from at_ts_extents
        where ts_code = p_ts_code
        order by 1;
 
