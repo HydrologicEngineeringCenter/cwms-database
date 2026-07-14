@@ -2491,6 +2491,111 @@ AS
       l_location_id           varchar2(57);
       l_location_id_cache_val varchar2(256);
       l_clob_codes            number_tab_t;
+      l_dependency_info       varchar2(32767);
+
+      procedure add_dependency(
+         p_dependencies in out nocopy varchar2,
+         p_name         in            varchar2,
+         p_count        in            number)
+      is
+      begin
+         if p_count > 0 then
+            if p_dependencies is not null then
+               p_dependencies := p_dependencies||'; ';
+            end if;
+            p_dependencies := p_dependencies||p_name||'='||p_count;
+         end if;
+      end add_dependency;
+
+      function get_delete_dependency_info
+         return varchar2
+      is
+         l_dependencies varchar2(32767);
+         l_count        number;
+      begin
+         select count(*)
+           into l_count
+           from at_cwms_ts_id
+          where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'time series identifiers', l_count);
+
+         select count(*) into l_count from at_location_geometry where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'location geometry', l_count);
+
+         select count(*) into l_count from at_geographic_location where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'geographic locations', l_count);
+
+         select count(*) into l_count from at_location_url where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'location URLs', l_count);
+
+         select count(*) into l_count from at_stream where stream_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'streams', l_count);
+
+         select count(*) into l_count from at_stream_location where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'stream locations', l_count);
+
+         select count(*) into l_count from at_stream_reach where stream_reach_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'stream reaches', l_count);
+
+         select count(*) into l_count from at_streamflow_meas where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'streamflow measurements', l_count);
+
+         select count(*) into l_count from at_basin where basin_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'basins', l_count);
+
+         select count(*) into l_count from at_gage where gage_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'gages', l_count);
+
+         select count(*) into l_count from at_gage where associated_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'associated gages', l_count);
+
+         select count(*) into l_count from at_display_scale where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'display scales', l_count);
+
+         select count(*) into l_count from at_location_level where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'location levels', l_count);
+
+         select count(*) into l_count from at_loc_lvl_indicator where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'location level indicators', l_count);
+
+         select count(*) into l_count from at_forecast_spec where target_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'target forecast specs', l_count);
+
+         select count(*) into l_count from at_forecast_spec where source_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'source forecast specs', l_count);
+
+         select count(*) into l_count from at_vert_datum_offset where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'vertical datum offsets', l_count);
+
+         select count(*) into l_count from at_vert_datum_local where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'local vertical datums', l_count);
+
+         select count(*) into l_count from at_entity_location where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'entity locations', l_count);
+
+         select count(*) into l_count from at_rating_spec where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'rating specs', l_count);
+
+         select count(*) into l_count from at_fcst_location where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'forecast locations', l_count);
+
+         select count(*) into l_count from at_loc_lvl_label where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'location level labels', l_count);
+
+         select count(*) into l_count from at_loc_lvl_source where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'location level sources', l_count);
+
+         select count(*) into l_count from at_ts_profile where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'time series profiles', l_count);
+
+         select count(*) into l_count from at_virtual_location_level where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'virtual location levels', l_count);
+
+         select count(*) into l_count from at_a2w_ts_codes_by_loc where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'A2W time series code associations', l_count);
+
+         return substr(l_dependencies, 1, 32767);
+      end get_delete_dependency_info;
    --
    BEGIN
       -------------------
@@ -2581,6 +2686,13 @@ AS
                 l_location_ids
            from at_physical_location
           where location_code = l_location_code;
+      end if;
+
+      if l_delete_action in (cwms_util.delete_key, cwms_util.delete_loc) then
+         l_dependency_info := get_delete_dependency_info;
+         if l_dependency_info is not null then
+            cwms_err.raise('CAN_NOT_DELETE_LOC_2', p_location_id, l_dependency_info);
+         end if;
       end if;
 
       ---------------------------------------------
@@ -2936,7 +3048,8 @@ AS
          THEN
             CLOSE l_cursor;
 
-            cwms_err.raise ('CAN_NOT_DELETE_LOC_1', p_location_id);
+            l_dependency_info := get_delete_dependency_info;
+            cwms_err.raise('CAN_NOT_DELETE_LOC_2', p_location_id, nvl(l_dependency_info, 'time series identifiers exist'));
          END IF;
 
          CASE
@@ -2981,58 +3094,59 @@ AS
              cwms_util.delete_loc,
              cwms_util.delete_loc_cascade)
       then
-         for i in 1..2 loop
-            begin
-               if l_this_is_a_base_loc
-               then -- Deleting Base Location ----------------------------------------
-                  ----------------------
-                  -- actual locations --
-                  ----------------------
-                  for rec in (select location_code
-                                from at_physical_location apl
-                               where apl.base_location_code = l_base_location_code
-                             )
-                  loop
-                     cwms_cache.remove_by_value(g_location_id_cache, get_location_id(rec.location_code));
-                     cwms_cache.remove_by_value(g_location_code_cache, rec.location_code);
-                     delete from at_location_geometry where location_code = rec.location_code;
-                     delete from at_physical_location where location_code = rec.location_code;
-                  end loop;
+         savepoint delete_location_key;
+         begin
+            --------------------------------------------------------------------------------------------------------
+            -- purge all deleted ts data types for all version dates for all ts codes associated with location(s) --
+            --------------------------------------------------------------------------------------------------------
+            for location_code in (select column_value as it from table(l_location_codes)) loop
+               for ts_code in (select ts_code as it from at_cwms_ts_spec where location_code = 0 and prev_location_code = location_code.it) loop
+                  cwms_ts.remove_deleted_ts(ts_code.it);
+               end loop;
+            end loop;
 
-                  delete
-                    from at_base_location where base_location_code = l_base_location_code;
-               else -- Deleting a single Sub Location --------------------------------
-                  delete at_location_geometry where location_code = l_location_code;
-                  delete at_physical_location where location_code = l_location_code;
-                  cwms_cache.remove_by_value(g_location_code_cache, l_location_code);
-               end if;
-               exit;
-            exception
-               when others then
-                  -------------------------------------------------------------------------------------------
-                  -- don't let deleted time series prevent deleting a location regardless of delete action --
-                  -------------------------------------------------------------------------------------------
-                  if i = 1 then
-                     --------------------------------------------------------------------------------------------------------
-                     -- purge all deleted ts data types for all version dates for all ts codes associated with location(s) --
-                     --------------------------------------------------------------------------------------------------------
-                     for location_code in (select column_value as it from table(l_location_codes)) loop
-                        for ts_code in (select ts_code as it from at_cwms_ts_spec where location_code = 0 and prev_location_code = location_code.it) loop
-                           cwms_ts.remove_deleted_ts(ts_code.it);
-                        end loop;
-                     end loop;
-                  else
-                     -------------------------------------------------------------------------
-                     -- someting other than deleted time seires prevented location deletion --
-                     --                                                                     --
-                     -- deleted time series purge will be rolled back, so no harm done      --
-                     -------------------------------------------------------------------------
-                     raise;
+            if l_this_is_a_base_loc
+            then -- Deleting Base Location ----------------------------------------
+               ----------------------
+               -- actual locations --
+               ----------------------
+               for rec in (select location_code
+                             from at_physical_location apl
+                            where apl.base_location_code = l_base_location_code
+                          )
+               loop
+                  if l_delete_action in (cwms_util.delete_all, cwms_util.delete_loc_cascade) then
+                     delete from at_location_geometry where location_code = rec.location_code;
                   end if;
-            end;
-         end loop;
-         l_location_id_cache_val := upper(l_db_office_id)||'/'||upper(l_location_id);
-         cwms_cache.remove_by_value(g_location_id_cache, l_location_id_cache_val);
+                  delete from at_physical_location where location_code = rec.location_code;
+               end loop;
+
+               delete
+                 from at_base_location where base_location_code = l_base_location_code;
+            else -- Deleting a single Sub Location --------------------------------
+               if l_delete_action in (cwms_util.delete_all, cwms_util.delete_loc_cascade) then
+                  delete at_location_geometry where location_code = l_location_code;
+               end if;
+               delete at_physical_location where location_code = l_location_code;
+            end if;
+            for i in 1..l_location_codes.count loop
+               cwms_cache.remove_by_value(g_location_id_cache, l_location_ids(i), p_match_case => 'F');
+               cwms_cache.remove_by_value(g_location_code_cache, l_location_codes(i));
+            end loop;
+            l_location_id_cache_val := upper(l_db_office_id)||'/'||upper(l_location_id);
+            cwms_cache.remove_by_value(g_location_id_cache, l_location_id_cache_val);
+         exception
+            when others then
+               rollback to delete_location_key;
+               if sqlcode = -2292 then
+                  l_dependency_info := get_delete_dependency_info;
+                  cwms_err.raise(
+                     'CAN_NOT_DELETE_LOC_2',
+                     p_location_id,
+                     nvl(l_dependency_info, sqlerrm));
+               end if;
+               raise;
+         end;
       end if;
    end delete_location;
 

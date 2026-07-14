@@ -1967,8 +1967,8 @@ AS
     --------------------------------------------------------------------------------
     procedure test_undelete_ts
     is
-      x_cannot_delete_loc_1 exception;
-      pragma exception_init(x_cannot_delete_loc_1, -20031);
+      x_cannot_delete_loc_2 exception;
+      pragma exception_init(x_cannot_delete_loc_2, -20056);
       l_base_ts_id_1 cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Code.Inst.1Hour.0.Test';
       l_base_ts_id_2 cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Flow.Inst.1Hour.0.Test';
       l_sub_ts_id_1 cwms_v_ts_id.cwms_ts_id%type := test_withsub_location_id||'.Code.Inst.1Hour.0.Test';
@@ -2062,7 +2062,7 @@ AS
          cwms_loc.delete_location(test_withsub_location_id, cwms_util.delete_key, '&&office_id');
          cwms_err.raise('ERROR', 'Expected exception not raised');
       exception
-         when x_cannot_delete_loc_1 then null;
+         when x_cannot_delete_loc_2 then null;
       end;
       -----------------------------------------------------------------------
       -- delete another time series and verify inclusion in expected views --
