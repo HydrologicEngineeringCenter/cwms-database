@@ -86,9 +86,6 @@
 @@cwms_gage_pkg
 @@cwms_gage_pkg_body
 
-@@cwms_usgs_pkg
-@@cwms_usgs_pkg_body
-
 @@cwms_entity_pkg
 @@cwms_entity_pkg_body
 
@@ -132,9 +129,6 @@
 
 @@cwms_mail_pkg
 @@cwms_mail_pkg_body
-
-@@cwms_scheduler_auth_pkg
-@@cwms_scheduler_auth_pkg_body
 
 @@cwms_pool_pkg
 @@cwms_pool_pkg_body

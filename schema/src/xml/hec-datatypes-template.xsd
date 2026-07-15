@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE xs:schema [
     <!--
- 	This file must be processed by the function CWMS_UTIL.MAKE_HEC_DATATYPES_XSD before use. The
- 	output of the function should be stored to the file "hec-datatypes.xsd" for use in other CWMS
- 	XML schema files.
+ 	This file must be processed before use. The Jython script get_hec-datatypes.py loads this file into the database
+  and creates/runs a function to process the replacements as described below. The output of the function should be
+  stored to the file accessible at https://www.hec.usace.army.mil/xmlSchema/CWMS/hec-datatypes.xsd for use in other
+  CWMS XML schema files. To process this file using the get_hec-datatypes.py script, execute "ant xml-schemas", or,
+  if also generating database documentation, "ant bundle".
 
         The following replacements are supported in the DTD section of this file:
 

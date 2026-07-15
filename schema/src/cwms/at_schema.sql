@@ -56,8 +56,6 @@ end;
 -------------------
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-@@./cwms/tables/cwms_auth_sched_entries.sql
-@@./cwms/tables/cwms_unauth_sched_entries.sql
 @@./cwms/tables/cwms_nation_sp.sql -- must be created before AT_PHYSICAL_LOCATION
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -226,8 +224,6 @@ CREATE TABLE AT_PHYSICAL_LOCATION
   LOCATION_TYPE       VARCHAR2(32),
   ELEVATION           NUMBER,
   VERTICAL_DATUM      VARCHAR2(16),
-  LONGITUDE           NUMBER,
-  LATITUDE            NUMBER,
   HORIZONTAL_DATUM    VARCHAR2(16),
   PUBLIC_NAME         VARCHAR2(57),
   LONG_NAME           VARCHAR2(80),
@@ -270,8 +266,6 @@ COMMENT ON COLUMN AT_PHYSICAL_LOCATION.COUNTY_CODE         IS 'References the co
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LOCATION_TYPE       IS 'User-defined type (e.g. "Stream Gage", "Reservoir", etc...), up to 16 characters.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.ELEVATION           IS 'Elevation of location.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.VERTICAL_DATUM      IS 'Datum of elevation.';
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LONGITUDE           IS 'Longitude of location.';
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LATITUDE            IS 'Latitude of location.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.HORIZONTAL_DATUM    IS 'Datum of longitude and latitude.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.PUBLIC_NAME         IS 'User-defined public name, up to 32 characters.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LONG_NAME           IS 'User-defined long name, up to 80 characters.';
@@ -2077,7 +2071,7 @@ COMMIT ;
 
 CREATE TABLE at_ts_group_assignment
 (
-  ts_code        NUMBER,
+  ts_code        NUMBER(14, 0),
   ts_group_code  NUMBER,
   ts_attribute   NUMBER,
   ts_alias_id    VARCHAR2(256 BYTE),
@@ -2827,113 +2821,6 @@ INSERT INTO at_properties values(
    'ts_deleted.auto_trim.interval',
    '15',
    'Interval in minutes for job TRIM_LOG_JOB to execute.');
-
------------------------------
--- AT_REPORT_TEMPLATES table
---
-CREATE TABLE at_report_templates
-(
-  ID               VARCHAR2(256 BYTE),
-  description      VARCHAR2(256 BYTE),
-  header_template  VARCHAR2(4000 BYTE),
-  record_template  VARCHAR2(4000 BYTE),
-  footer_template  VARCHAR2(4000 BYTE)
-)
-TABLESPACE CWMS_20AT_DATA
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE
-(
-  INITIAL          64 k
-  MINEXTENTS       1
-  MAXEXTENTS       2147483645
-  PCTINCREASE      0
-  BUFFER_POOL      DEFAULT
-)
-LOGGING
-NOCOMPRESS
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-
------------------------------
--- AT_REPORT_TEMPLATES comments
---
-COMMENT ON TABLE  at_report_templates                 IS 'Defines canned templates for use with CWMS_REPORT.TEXT_REPORT';
-COMMENT ON COLUMN at_report_templates.ID              IS 'Unique record identifier, using hierarchical /dir/subdir/.../file syntax';
-COMMENT ON COLUMN at_report_templates.description     IS 'Description of this set of templates';
-COMMENT ON COLUMN at_report_templates.header_template IS 'A template string for the portion of the report before the records';
-COMMENT ON COLUMN at_report_templates.record_template IS 'A template string applied to each record in the report';
-COMMENT ON COLUMN at_report_templates.footer_template IS 'A template string for the portion of the report after the records';
-
------------------------------
--- AT_REPORT_TEMPLATES indices
---
-ALTER TABLE at_report_templates ADD
-(
-  PRIMARY KEY (ID)
-  USING INDEX
-  TABLESPACE CWMS_20AT_DATA
-  PCTFREE    10
-  INITRANS   2
-  MAXTRANS   255
-  STORAGE
-  (
-    INITIAL          64 k
-    MINEXTENTS       1
-    MAXEXTENTS       2147483645
-    PCTINCREASE      0
-  )
-)
-/
-
------------------------------
--- AT_REPORT_TEMPLATES default data
---
-INSERT INTO at_report_templates
-     VALUES ('/cat_ts_table/xml', 'Generates XML from cat_ts_table records',
-             '<?xml version="1.0"?>\n<tsid_catalog>\n',
-             '  <tsid office="$1" ts_code="$4" offset="$3">$2</tsid>\n',
-             '</tsid_catalog>\n');
-
-INSERT INTO at_report_templates
-     VALUES ('/cat_ts_table/html', 'Generates HTML from cat_ts_table records',
-             '<html>
-<head>
-  <title>Time Series IDs</title>
-</head>
-<body>
-  <center>
-    <h2>Time Series IDs</h2>
-    <hr/>
-    <table border="1">
-      <tr>
-        <th>Time Series Identifier</th>
-        <th>TS Code</th>
-        <th>UTC Interval Offset</th>
-      </tr>
-',
-             '      <tr>
-        <td>$2</td>
-        <td>$4</td>
-        <td>$3</td>
-      </tr>
-',
-             '    </table>
-  </center>
-</body>
-</html>
-'           );
-
-INSERT INTO at_report_templates
-     VALUES ('/cat_ts_table/text', 'Generates text from cat_ts_table records',
-             '\nTIME SERIES CATALOG\nREPORT GENERATED BY $host AT $time\n\n',
-             '$1%-8.8s$4%-8d$3%12d$2\n', '\n$count TOTAL RECORDS PROCESSED\n');
-
-COMMIT ;
 
 -----------------------------
 -- AT_CLOB table
@@ -6310,8 +6197,45 @@ comment on column at_queue_subscriber_name.os_process_id     is 'The process ide
 
 create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_name, nvl(update_time, create_time));
 
-@@rowcps_schema.sql
+@@./cwms/tables/at_gate_ch_computation_code
+@@./cwms/tables/at_gate_release_reason_code
+@@./cwms/tables/at_project_purposes
+@@./cwms/tables/at_document_type
+@@./cwms/tables/at_lock_gate_type
+@@./cwms/tables/at_embank_structure_type
+@@./cwms/tables/at_embank_protection_type
+@@./cwms/tables/at_turbine_setting_reason
+@@./cwms/tables/at_turbine_computation_code
+@@./cwms/tables/at_physical_transfer_type
+@@./cwms/tables/at_operational_status_code
+@@./cwms/tables/at_ws_contract_type
+@@./cwms/tables/at_project
+@@./cwms/tables/at_embankment
+@@./cwms/tables/at_lock
+@@./cwms/tables/at_lockage
+@@./cwms/tables/at_turbine_characteristic
+@@./cwms/tables/at_turbine
+@@./cwms/tables/at_turbine_change
+@@./cwms/tables/at_turbine_setting
+@@./cwms/tables/at_project_congress_district
+@@./cwms/tables/at_gate_change
+@@./cwms/tables/at_outlet_characteristic
+@@./cwms/tables/at_outlet
+@@./cwms/tables/at_comp_outlet
+@@./cwms/tables/at_comp_outlet_conn
+@@./cwms/tables/at_gate_setting
+@@./cwms/tables/at_document
+@@./cwms/tables/at_water_user
+@@./cwms/tables/at_water_user_contract
+@@./cwms/tables/at_wat_usr_contract_accounting
+@@./cwms/tables/at_xref_wat_usr_contract_docs
+@@./cwms/tables/at_project_purpose
+@@./cwms/tables/at_project_agreement
+@@./cwms/tables/at_construction_history
+@@./cwms/tables/at_project_lock
+@@./cwms/tables/at_prj_lck_revoker_rights
 ---
+@@./cwms/tables/at_location_geometry
 @@./cwms/tables/at_pool_name
 @@./cwms/tables/at_pool
 @@./cwms/tables/at_ts_extents
@@ -6334,3 +6258,4 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_fcst_inst
 @@./cwms/tables/at_fcst_info
 @@./cwms/tables/run_stats
+

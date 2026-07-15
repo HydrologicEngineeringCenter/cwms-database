@@ -92,7 +92,6 @@ CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
 --%test (CWDB-134 STORE_TS_MULTI doen't hide individual error messages)
  procedure cwdb_134_test_store_multi_does_not_hide_error_messages;
 
---%disabled on 2026-04-07 by Mike Perryman because of flaky results on GitHub and difficulty assesing why
 --%test (CWDB-211 Update TSV DML counters to include streamed DML)
  procedure cwdb_211_update_tsv_dml_counters_to_include_streamed_dml;
 
@@ -140,6 +139,9 @@ procedure test_delete_ts_group_cascade;
 
 --%test (Test existence of expected time series categories)
 procedure test_ts_categories;
+
+--%test (Test quality codes after addition of approved bit)
+procedure test_quality_codes;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -1965,8 +1967,8 @@ AS
     --------------------------------------------------------------------------------
     procedure test_undelete_ts
     is
-      x_cannot_delete_loc_1 exception;
-      pragma exception_init(x_cannot_delete_loc_1, -20031);
+      x_cannot_delete_loc_2 exception;
+      pragma exception_init(x_cannot_delete_loc_2, -20056);
       l_base_ts_id_1 cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Code.Inst.1Hour.0.Test';
       l_base_ts_id_2 cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Flow.Inst.1Hour.0.Test';
       l_sub_ts_id_1 cwms_v_ts_id.cwms_ts_id%type := test_withsub_location_id||'.Code.Inst.1Hour.0.Test';
@@ -2060,7 +2062,7 @@ AS
          cwms_loc.delete_location(test_withsub_location_id, cwms_util.delete_key, '&&office_id');
          cwms_err.raise('ERROR', 'Expected exception not raised');
       exception
-         when x_cannot_delete_loc_1 then null;
+         when x_cannot_delete_loc_2 then null;
       end;
       -----------------------------------------------------------------------
       -- delete another time series and verify inclusion in expected views --
@@ -2220,7 +2222,7 @@ AS
       -----------------------------------
       -- wait until top of next minute --
       -----------------------------------
-      dbms_session.sleep(60 - extract(second from systimestamp));
+      dbms_session.sleep(60 - extract(second from systimestamp) + 1);
       l_time := trunc(systimestamp, 'MI') + interval '000 00:01:00' day to second;
       for test_streaming in 0..1 loop
          cwms_tsv.is_stream_session := test_streaming = 1; -- normally set from username at init of cwms_tsv package
@@ -4585,6 +4587,53 @@ AS
       ut.expect(l_count).to_equal(l_expected_categories.count);
 
    end test_ts_categories;
+
+   ---------------------------------------------------------------------------------
+   -- procedure test_quality_codes
+   ---------------------------------------------------------------------------------
+   procedure test_quality_codes
+   is
+      l_quality           integer;
+      c_all_bits_set      integer := power(2, 32) - 1;
+      c_expected_qual     constant integer := 3277825253; -- 1100 0011 0101 1111 1010 1100 1110 0101
+                                                          -- PA** **TT *T*T TTTT TMMM MCCC DRRV VVVS (only 9 of 11 possible tests failed defined)
+      c_expected_desc     constant varchar2(256) :=
+                                   'Screened, Validity=Missing, Range=Range_3, Modified (Cause=Restored, Method=Graphical), '||
+                                   'Failed=Absolute_Value+Constant_Value+Rate_Of_Change+Relative_Value+Duration_Value+'||
+                                   'Neg_Increment+Skip_List+User_Defined+Distribution, Protected, Approved';
+      c_expected_validity constant varchar2(7) := 'MISSING';
+      c_expected_range    constant integer := 3;
+      c_expected_modified constant integer := 1;
+      c_expected_cause    constant integer := 4;
+      c_expected_method   constant integer := 4;
+      c_expected_failed   constant integer := 1727;
+      c_range_mask        constant integer := 3;
+      c_range_shift       constant integer := 5;
+      c_modified_mask     constant integer := 1;
+      c_modified_shift    constant integer := 7;
+      c_cause_mask        constant integer := 7;
+      c_cause_shift       constant integer := 8;
+      c_method_mask       constant integer := 15;
+      c_method_shift      constant integer := 11;
+      c_failed_mask       constant integer := 4095;
+      c_failed_shift      constant integer := 15;
+   begin
+      l_quality := cwms_ts.clean_quality_code(c_all_bits_set);
+      ut.expect(l_quality).to_equal(c_expected_qual);
+      ut.expect(cwms_ts.quality_is_okay(l_quality)).to_be_false;
+      ut.expect(cwms_ts.quality_is_missing(l_quality)).to_be_true;
+      ut.expect(cwms_ts.quality_is_questionable(l_quality)).to_be_false;
+      ut.expect(cwms_ts.quality_is_rejected(l_quality)).to_be_false;
+      ut.expect(cwms_ts.quality_is_protected(l_quality)).to_be_true;
+      ut.expect(cwms_ts.quality_is_approved(l_quality)).to_be_true;
+      ut.expect(cwms_ts.get_quality_description(l_quality)).to_equal(c_expected_desc);
+      ut.expect(cwms_ts.get_quality_validity(l_quality)).to_equal(c_expected_validity);
+      ut.expect(bitand(l_quality / power(2, c_range_shift), c_range_mask)).to_equal(c_expected_range);
+      ut.expect(bitand(l_quality / power(2, c_modified_shift), c_modified_mask)).to_equal(c_expected_modified);
+      ut.expect(bitand(l_quality / power(2, c_cause_shift), c_cause_mask)).to_equal(c_expected_cause);
+      ut.expect(bitand(l_quality / power(2, c_method_shift), c_method_mask)).to_equal(c_expected_method);
+      ut.expect(bitand(l_quality / power(2, c_failed_shift), c_failed_mask)).to_equal(c_expected_failed);
+   end test_quality_codes;
 
 END test_cwms_ts;
 /
