@@ -140,6 +140,11 @@ procedure test_delete_ts_group_cascade;
 --%test (Test existence of expected time series categories)
 procedure test_ts_categories;
 
+--%test (Test TS group assignment with ignore missing flag set to true)
+procedure test_assign_ts_ignore_missing;
+
+--%test (Test TS group assignment with ignore missing flag set to false)
+procedure test_assign_ts_do_not_ignore_missing;
 --%test (Test quality codes after addition of approved bit)
 procedure test_quality_codes;
 
@@ -4589,6 +4594,94 @@ AS
    end test_ts_categories;
 
    ---------------------------------------------------------------------------------
+   -- procedure test_assign_ts_ignore_missing
+   ---------------------------------------------------------------------------------
+   procedure test_assign_ts_ignore_missing
+   is
+      l_count integer;
+      l_ts_id varchar2(200) := test_base_location_id||'.Flow.Inst.1Hour.0.Test2';
+      l_results ts_alias_tab_t;
+      l_ts_assign ts_alias_tab_t := ts_alias_tab_t();
+      l_bad_ts_id varchar(200) := test_base_location_id||'.Flow.Inst.1Hour.0.Test3';
+   begin
+      setup;
+      cwms_ts.create_ts('&&office_id', l_ts_id);
+
+      -- Add ts assignment
+      l_ts_assign.extend;
+      l_ts_assign(1) := ts_alias_t(ts_id => l_ts_id,
+                                   ts_attribute => null,
+                                   ts_alias_id => null,
+                                   ts_ref_id => null);
+
+      -- Add invalid TS assignment
+      l_ts_assign.extend;
+      l_ts_assign(2) := ts_alias_t(ts_id => l_bad_ts_id,
+                                   ts_attribute => null,
+                                   ts_alias_id => null,
+                                   ts_ref_id => null);
+
+      -- Create a test category and group
+      cwms_ts.store_ts_category('TestCategory', 'Category for unit tests', '&&office_id');
+      cwms_ts.store_ts_group('TestCategory', 'TestGroup', 'Group for unit tests', 'F', 'T', null, null, '&&office_id');
+
+      -- Assign TS to group
+      cwms_ts.assign_ts_groups_support_missing('TestCategory', 'TestGroup', l_ts_assign, '&&office_id', 'T', l_results);
+
+      -- Verify assignment exists
+      select count(*) into l_count
+      from at_ts_group_assignment
+      where ts_group_code = (select ts_group_code
+                             from at_ts_group
+                             where ts_category_code = (select ts_category_code
+                                                       from at_ts_category
+                                                       where db_office_code = cwms_util.get_office_code('&&office_id')
+                                                         and upper(ts_category_id) = 'TESTCATEGORY')
+                               and upper(ts_group_id) = 'TESTGROUP');
+      ut.expect(l_count).to_equal(1);
+
+      ut.expect(l_results.count).to_equal(1);
+      ut.expect(l_results(1).ts_id).to_equal(l_bad_ts_id);
+   end test_assign_ts_ignore_missing;
+
+   ---------------------------------------------------------------------------------
+   -- procedure test_assign_ts_do_not_ignore_missing
+   ---------------------------------------------------------------------------------
+   procedure test_assign_ts_do_not_ignore_missing
+   is
+      l_count integer;
+      l_ts_id varchar2(200) := test_base_location_id||'.Flow.Inst.1Hour.0.Test2';
+      l_results ts_alias_tab_t;
+      l_ts_assign ts_alias_tab_t := ts_alias_tab_t();
+      l_bad_ts_id varchar(200) := test_base_location_id|| '.Flow.Inst.1Hour.0.Test3';
+   begin
+      setup;
+      cwms_ts.create_ts('&&office_id', l_ts_id);
+
+      -- Add ts assignment
+      l_ts_assign.extend;
+      l_ts_assign(1) := ts_alias_t(ts_id => l_ts_id,
+                         ts_attribute => null,
+                         ts_alias_id => null,
+                         ts_ref_id => null);
+
+      -- Add invalid TS assignment
+      l_ts_assign.extend;
+      l_ts_assign(1) := ts_alias_t(ts_id => l_bad_ts_id,
+                                 ts_attribute => null,
+                                 ts_alias_id => null,
+                                 ts_ref_id => null);
+
+      -- Create a test category and group
+      cwms_ts.store_ts_category('TestCategory', 'Category for unit tests', '&&office_id');
+      cwms_ts.store_ts_group('TestCategory', 'TestGroup', 'Group for unit tests', 'F', 'T', null, null, '&&office_id');
+
+      -- Assign TS to group
+      cwms_ts.assign_ts_groups_support_missing('TestCategory', 'TestGroup', l_ts_assign, '&&office_id', 'F', l_results);
+      exception
+         when OTHERS then
+            ut.expect(sqlerrm).to_be_like('%' || l_bad_ts_id || '%');
+   end test_assign_ts_do_not_ignore_missing;
    -- procedure test_quality_codes
    ---------------------------------------------------------------------------------
    procedure test_quality_codes
