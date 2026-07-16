@@ -20,14 +20,10 @@ no_such_object exception;
  order by object_name;
 */
 table_names constant object_tab_t := object_tab_t(
-   'AT_ALARM',
-   'AT_ALARM_CRITERIA',
-   'AT_ALARM_ID',
    'AT_BASE_LOCATION',
    'AT_BASIN',
    'AT_CLOB',
    'AT_COMPOUND_RATING',
-   'AT_COMP_VT',
    'AT_CONSTRUCTION_HISTORY',
    'AT_CWMS_TS_ID',
    'AT_CWMS_TS_SPEC',
