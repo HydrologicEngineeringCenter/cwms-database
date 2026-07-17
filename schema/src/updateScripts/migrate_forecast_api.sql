@@ -81,12 +81,10 @@ begin
                     and forecast_date = old_ts.forecast_date
                     and issue_date = old_ts.issue_date
                   fetch next 1 row only;
-               select start_date, END_DATE
+               select min(start_date), max(END_DATE)
                   into l_ts_start, l_ts_end
                   from av_tsv
-                  where ts_code = l_ts_row.ts_code
-                     and version_date = l_ts_row.version_date
-                  fetch next 1 row only;
+                  where ts_code = l_ts_row.ts_code;
                cwms_ts.CHANGE_VERSION_DATE(l_ts_row.ts_code, l_ts_row.version_date, old_ts.issue_date, l_ts_start, l_ts_end);
             end if;
             l_new_inst.fcst_inst_code := cwms_seq.nextval;
@@ -129,7 +127,7 @@ begin
                   quality_code => null,
                   the_blob     => l_blob);
             end if;
-            insert into at_fcst_inst values (l_new_inst);
+            insert into at_fcst_inst values l_new_inst;
             commit;
          end loop;
       ------------------------------
