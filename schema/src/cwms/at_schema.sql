@@ -2238,6 +2238,115 @@ ALTER TABLE at_screening ADD (
 /
 
 ---------------------------------
+-- AT_COMP_VT table.
+--
+
+CREATE TABLE at_comp_vt
+(
+  comp_vt_code           NUMBER,
+  comp_vt_id             VARCHAR2(16 BYTE),
+  db_office_code         NUMBER,
+  filename_datchk1       VARCHAR2(32 BYTE),
+  filename_datchk2       VARCHAR2(32 BYTE),
+  filename_trn_in        VARCHAR2(32 BYTE),
+  default_time_window    VARCHAR2(32 BYTE),
+  context_start_date     VARCHAR2(32 BYTE),
+  exchange_set_extract   VARCHAR2(32 BYTE),
+  exchange_set_post_raw  VARCHAR2(32 BYTE),
+  exchange_set_post_rev  VARCHAR2(32 BYTE)
+)
+TABLESPACE CWMS_20AT_DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+CREATE UNIQUE INDEX at_comp_vt_pk ON at_comp_vt
+(comp_vt_code)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+CREATE UNIQUE INDEX at_comp_vt_u01 ON at_comp_vt
+(comp_vt_id, db_office_code)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+ALTER TABLE at_comp_vt ADD (
+  CONSTRAINT at_comp_vt_pk
+ PRIMARY KEY
+ (comp_vt_code)
+    USING INDEX
+    TABLESPACE CWMS_20AT_DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+ALTER TABLE at_comp_vt ADD (
+  CONSTRAINT at_comp_vt_u01
+ UNIQUE (comp_vt_id, db_office_code)
+    USING INDEX
+    TABLESPACE CWMS_20AT_DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+ALTER TABLE at_comp_vt ADD (
+  CONSTRAINT at_comp_vt_r01
+ FOREIGN KEY (db_office_code)
+ REFERENCES cwms_office (office_code))
+/
+---------------------------------
 -- AT_TRANSFORM_CRITERIA table.
 --
 
