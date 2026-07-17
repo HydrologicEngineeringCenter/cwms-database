@@ -68,6 +68,8 @@ procedure test_assign_loc_ignore_missing;
 procedure test_assign_loc_do_not_ignore_missing;
 --%test (CWMS-2508 [DB #186] location geometry nearest-city normalization)
 procedure test_location_geometry_nearest_city_normalization;
+--%test (Test simple deletion not Delete_All or Delete_Loc_Cascade or Delete_Cascade)
+procedure test_delete_loc;
 
 procedure setup;
 procedure teardown;
@@ -3977,6 +3979,28 @@ AS
       
       commit;
    end test_location_geometry_nearest_city_normalization; 
+
+
+   PROCEDURE test_delete_loc
+   IS
+      l_stored_loc VARCHAR2(12) := 'ToDelete';
+      l_office_id VARCHAR2(3) := '&&office_id';
+   BEGIN
+      cwms_loc.store_location (p_location_id    => l_stored_loc,
+                               p_db_office_id   => l_office_id,
+                               p_geometry       => sdo_geometry(
+                                       2001,
+                                       4326,
+                                       null,
+                                       sdo_elem_info_array(1, 2, 1),
+                                       sdo_ordinate_array(
+                                          l_longitude,      l_latitude,
+                                          l_longitude-.005, l_latitude+.005)),
+                               );
+
+      cwms_loc.delete_location(l_stored_loc, cwms_util.delete_loc, l_office_id);
+   END;
+
 END test_cwms_loc;
 /
 show errors;
