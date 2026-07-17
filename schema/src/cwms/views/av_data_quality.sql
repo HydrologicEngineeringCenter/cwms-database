@@ -13,6 +13,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_QUALITY', n
  * @see view av_data_q_repl_method
  * @see view av_data_q_test_failed
  * @see view av_data_q_protection
+ * @see view av_data_q_approval
  *
  * @field quality_code   The numeric data quality code
  * @field screened_id    Specifies whether the value has been screened
@@ -23,6 +24,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_QUALITY', n
  * @field repl_method_id Specifies how the value was changed, if it was
  * @field test_failed_id Specifies which test(s), if any, were failed when the value was screened
  * @field protection_id  Specifies whether the value is protected from further change
+ * @field approval_id    Specifies whether the value has been manually approved 
  */
 ');
 create view av_data_quality as select * from cwms_data_quality;

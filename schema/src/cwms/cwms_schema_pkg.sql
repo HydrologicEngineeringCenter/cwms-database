@@ -20,10 +20,14 @@ no_such_object exception;
  order by object_name;
 */
 table_names constant object_tab_t := object_tab_t(
+   'AT_ALARM',
+   'AT_ALARM_CRITERIA',
+   'AT_ALARM_ID',
    'AT_BASE_LOCATION',
    'AT_BASIN',
    'AT_CLOB',
    'AT_COMPOUND_RATING',
+   'AT_COMP_VT',
    'AT_CONSTRUCTION_HISTORY',
    'AT_CWMS_TS_ID',
    'AT_CWMS_TS_SPEC',
@@ -270,6 +274,7 @@ view_names constant object_tab_t := object_tab_t(
    'AV_DATAEXCHANGE_JOB',
    'AV_DATA_QUALITY',
    'AV_DATA_Q_CHANGED',
+   'AV_DATA_Q_APPROVAL',
    'AV_DATA_Q_PROTECTION',
    'AV_DATA_Q_RANGE',
    'AV_DATA_Q_REPL_CAUSE',
