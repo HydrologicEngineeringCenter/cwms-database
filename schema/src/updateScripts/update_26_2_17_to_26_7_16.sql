@@ -87,17 +87,23 @@ drop package cwms_usgs;
 drop public synonym cwms_usgs;
 
 PROMPT ################################################################################
+PROMPT ADDING SEARCH_DOC COLUMN TO AT_PHYSICAL_LOCATION
+select systimestamp from dual;
+
+@@./26_07_16/add_search_doc
+
+PROMPT ################################################################################
 PROMPT MOVING LATLON TO GEOMETRY
 select systimestamp from dual;
 
 @@./26_07_16/update_latlon_to_geometry
 
 PROMPT ################################################################################
-PROMPT UPDATING AT_FCST TABLES AND VIEWS
+PROMPT UPDATING AT_FCS
 select systimestamp from dual;
 
 alter table at_fcst_location rename column primary_location_code to location_code;
-alter table at_fcst_location add sort_order number;
+alter table at_fcst_location add sort_order number not null;
 comment on table at_fcst_location  is 'Holds information on locations for forecasts';
 comment on column at_fcst_location.location_code is 'References locations for forecast';
 comment on column at_fcst_location.sort_order is 'Sort order for locations (-1 = primary location)';
@@ -105,8 +111,10 @@ comment on column at_fcst_location.sort_order is 'Sort order for locations (-1 =
 drop index at_fcst_info_pk;
 create unique index at_fcst_info_pk on at_fcst_info(fcst_inst_code, upper(key));
 drop index at_fcst_info_idx1;
-create unique index at_fcst_info_idx1 on at_fcst_info(upper(key), value);
+create index at_fcst_info_idx1 on at_fcst_info(upper(key));
 
+@@../cwms/types/fcst_location_t
+@@../cwms/types/fcst_location_tab_t
 delete from at_clob where id in ('/VIEWDOCS/AV_FCST_INFO', '/VIEWDOCS/AV_FCST_LOCATION');
 @@../cwms/views/av_fcst_info
 @@../cwms/views/av_fcst_location
@@ -186,20 +194,29 @@ end;
 -- whenever sqlerror continue;
 -- whenever sqlerror exit;
 
--- PROMPT ################################################################################
--- PROMPT CREATING AND ALTERING TYPE SPECIFICATIONS
--- select systimestamp from dual;
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING TYPE SPECIFICATIONS
+select systimestamp from dual;
 
--- PROMPT ################################################################################
--- PROMPT CREATING AND ALTERING TYPE BODIES
--- select systimestamp from dual;
+drop type streamflow_meas_t force;
+@@../cwms/types/streamflow_meas_t
+drop type streamflow_meas2_t force;
+@@../cwms/types/streamflow_meas2_t
+
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING TYPE BODIES
+select systimestamp from dual;
+
+@@../cwms/types/rating_spec_t-body
+@@../cwms/types/streamflow_meas_t-body
+@@../cwms/types/streamflow_meas2_t-body
 
 PROMPT ################################################################################
 PROMPT UPDATING PACKAGE SPECIFICATIONS
 select systimestamp from dual;
 
 @@../cwms/cwms_fcst_pkg
-@@../cwms/cwms_loc_pkg
+@@../cwms/cwms_stream_pkg
 @@../cwms/cwms_ts_pkg
 @@../cwms/cwms_vt_pkg
 
@@ -208,7 +225,8 @@ PROMPT UPDATING PACKAGE BODIES
 select systimestamp from dual;
 
 @@../cwms/cwms_fcst_pkg_body
-@@../cwms/cwms_loc_pkg_body
+@@../cwms/cwms_level_pkg_body
+@@../cwms/cwms_stream_pkg_body
 @@../cwms/cwms_ts_pkg_body
 @@../cwms/cwms_vt_pkg_body
 
@@ -259,6 +277,7 @@ select systimestamp from dual;
 promp ################################################################################
 PROMPT REMAINING INVALID OBJECTS...
 select systimestamp from dual;
+
 select owner||'.'||substr(object_name, 1, 30) as invalid_object,
        object_type
   from all_objects
@@ -275,11 +294,27 @@ select owner||'.'||substr(name, 1, 30) as name,
  order by owner, type, name, sequence;
 /
 
+PROMPT ################################################################################
+PROMPT RESTORING PACKGE STATE
+select systimestamp from dual;
+
+-- I don't know why this is neccessary.
+-- It will fail, but then the state of the packages is no longer discarded.
+-- It prevents the following when running ./26_07_16/update_db_change_log:
+--     ORA-04068: existing state of packages has been discarded
+--     ORA-04061: existing state of package body "CWMS_20.CWMS_UTIL" has been
+--     invalidated
+--     ORA-04065: not executed, altered or dropped package body "CWMS_20.CWMS_UTIL"
+--     Help: https://docs.oracle.com/error-help/db/ora-04068/
+
+whenever sqlerror continue;
+select cwms_util.change_timezone(sysdate, 'UTC', 'US/Central') from dual;
 whenever sqlerror exit;
 
 PROMPT ################################################################################
 PROMPT UPDATING DB_CHANGE_LOG
 select systimestamp from dual;
+
 @@./26_07_16/update_db_change_log
 select substr(version, 1, 10) as version,
        to_char(version_date, 'yyyy-mm-dd hh24:mi') as version_date,
