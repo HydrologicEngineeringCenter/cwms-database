@@ -3144,7 +3144,7 @@ AS
                
                delete from at_location_geometry where location_code = l_base_location_code;
                -- The base location always has an entry in at_physical_location, so we need to delete it here
-               delete from at_physical_location where location_code = l_base_location_code;
+               delete from at_physical_location where location_code in (l_base_location_code, l_location_code);
                delete from at_base_location where base_location_code = l_base_location_code;
             else -- Deleting a single Sub Location --------------------------------
                delete at_location_geometry where location_code = l_location_code;

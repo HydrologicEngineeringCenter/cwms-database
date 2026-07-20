@@ -3983,10 +3983,11 @@ AS
 
    PROCEDURE test_delete_loc
    IS
-      l_stored_loc VARCHAR2(12)          := 'ToDelete';
+      l_stored_loc VARCHAR2(64)          := 'ToDelete';
+      l_stored_sub1 VARCHAR2(64)         := l_stored_loc || '-Sub1';
       l_office_id  VARCHAR2(3)           := '&&office_id';
-      l_latitude   av_loc.latitude%type  := 70.4;
-      l_longitude  av_loc.longitude%type := -121.5;
+      l_geom varchar2(64);
+      l_loc_code number;
    BEGIN
       cwms_loc.store_location3 (p_location_id    => l_stored_loc,
                                 p_db_office_id   => l_office_id,
@@ -4002,6 +4003,45 @@ AS
       );
 
       cwms_loc.delete_location(l_stored_loc, cwms_util.delete_loc, l_office_id);
+
+      cwms_loc.store_location3 (p_location_id    => l_stored_loc,
+                                p_db_office_id   => l_office_id,
+                                
+                                p_geometry       => sdo_geometry(
+                                             2002,
+                                             4326,
+                                             null,
+                                             sdo_elem_info_array(1, 2, 1),
+                                             sdo_ordinate_array(
+                                                -95.123, 34.345,
+                                                -95.234, 34.456))
+      );
+
+
+      cwms_loc.store_location3 (p_location_id    => l_stored_sub1,
+                                p_db_office_id   => l_office_id,
+                                
+                                p_geometry       => sdo_geometry(
+                                             2002,
+                                             4326,
+                                             null,
+                                             sdo_elem_info_array(1, 2, 1),
+                                             sdo_ordinate_array(
+                                                -95.123, 34.345,
+                                                -95.234, 34.456))
+      );
+
+      cwms_loc.delete_location(l_stored_sub1, cwms_util.delete_loc, l_office_id);
+      select geometry_type into l_geom from cwms_20.av_loc2 where location_id = l_stored_loc and unit_system = 'SI';
+      ut.expect(l_geom).to_equal('LINE');
+      -- TODO: assert base still present and has the geometry      
+      cwms_loc.delete_location(l_stored_loc, cwms_util.delete_loc, l_office_id);
+      begin
+         select geometry_type into l_geom from cwms_20.av_loc2 where location_id = l_stored_loc and unit_system = 'SI';
+      exception
+         when no_data_found then null;
+         when others then raise;
+      end;
    END;
 
 END test_cwms_loc;
