@@ -8564,6 +8564,32 @@ end unassign_loc_groups;
       p_vert_datum_info := l_vert_datum_info;
    end get_vertical_datum_info;
 
+   procedure get_vertical_datum_info_list(
+      p_vert_datum_info out str_tab_t,
+      p_office_id       in  varchar2,
+      p_location_mask   in  varchar2,
+      p_unit     in  varchar2)
+   is
+      l_vert_datum_info varchar2(32767);
+   begin
+      for row in (
+         select loc.location_code
+         from av_loc2 loc
+         where loc.db_office_id = p_office_id
+         and loc.unit_id = p_unit
+         and (loc.base_location_id like p_location_mask
+            or loc.sub_location_id like p_location_mask
+            or loc.base_location_id||'-'||loc.sub_location_id like p_location_mask)
+      ) loop
+         l_vert_datum_info := get_vertical_datum_info_f(
+            row.location_code,
+            p_unit
+         );
+         p_vert_datum_info.extend;
+         p_vert_datum_info(p_vert_datum_info.count) := l_vert_datum_info;
+      end loop;
+   end get_vertical_datum_info_list;
+
    procedure get_vertical_datum_info(
       p_vert_datum_info out varchar2,
       p_location_id     in  varchar2,

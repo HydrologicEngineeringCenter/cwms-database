@@ -2647,6 +2647,18 @@ AS
       p_location_code   in  number,
       p_unit            in  varchar2);
    /**
+    * Retrieves a list of XML strings containing the elevation, native datum, and current elevation offsets to other datums for the location mask and specified units
+    *
+    * @param p_vert_datum_info The XML-encoded vertical datum information string
+    * @param p_location_code   The unique numeric code identifying the location
+    * @param p_unit            The unit to return the elevation and elevation offsets in
+    */
+   procedure get_vertical_datum_info_list(
+      p_vert_datum_info out str_tab_t,
+      p_office_id       in  varchar2,
+      p_location_mask   in  varchar2,
+      p_unit     in  varchar2);
+   /**
     * Retrieves a XML string containing the elevation, native datum, and current elevation offsets to other datums for the specified location or locations.
     * The in and out parmeters are limited to 4000 characters since they are of type varchar2.
     *
