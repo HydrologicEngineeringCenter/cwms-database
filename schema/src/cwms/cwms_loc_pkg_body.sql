@@ -8565,15 +8565,16 @@ end unassign_loc_groups;
    end get_vertical_datum_info;
 
    procedure get_vertical_datum_info_list(
-      p_vert_datum_info out str_tab_t,
+      p_vert_datum_info out clob_tab_t,
       p_office_id       in  varchar2,
       p_location_mask   in  varchar2,
-      p_unit     in  varchar2)
+      p_unit            in  varchar2)
    is
       l_vert_datum_info varchar2(32767);
    begin
+      p_vert_datum_info := clob_tab_t();
       for row in (
-         select loc.location_code
+         select loc.location_id, loc.db_office_id
          from av_loc2 loc
          where loc.db_office_id = p_office_id
          and loc.unit_id = p_unit
@@ -8581,9 +8582,10 @@ end unassign_loc_groups;
             or loc.sub_location_id like p_location_mask
             or loc.base_location_id||'-'||loc.sub_location_id like p_location_mask)
       ) loop
-         l_vert_datum_info := get_vertical_datum_info_f(
-            row.location_code,
-            p_unit
+         get_vertical_datum_info2(l_vert_datum_info,
+            row.location_id,
+            p_unit,
+            row.db_office_id
          );
          p_vert_datum_info.extend;
          p_vert_datum_info(p_vert_datum_info.count) := l_vert_datum_info;
