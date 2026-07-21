@@ -2720,199 +2720,100 @@ AS
 ----------------------------------------------------
 procedure test_vertical_datum_info_bulk
    is
-      type offset_rec_t is record(
-         datum1         at_vert_datum_offset.vertical_datum_id_1%type,
-         datum2         at_vert_datum_offset.vertical_datum_id_1%type,
-         effective_date at_vert_datum_offset.effective_date%type,
-         offset         at_vert_datum_offset.offset%type,
-         description    at_vert_datum_offset.description%type);
-type offset_tab_t is table of offset_rec_t;
-l_result clob_tab_t := clob_tab_t();
-l_expected_xml clob :=
-'<vertical-datum-info-series office="&&office_id" unit="ft">
-  <location>TestLoc1</location>
-  <native-datum>TestDatum</native-datum>
-  <elevation>500</elevation>
-  <offset time="2000-01-01T00:00:00Z" estimate="false">
-    <to-datum>NGVD-29</to-datum>
-    <value>1.1</value>
-    <description>1st Offset</description>
-  </offset>
-  <offset time="2000-01-01T00:00:00Z" estimate="true">
-    <to-datum>NAVD-88</to-datum>
-    <value>1.15</value>
-    <description/>
-  </offset>
-  <offset time="2010-01-01T00:00:00Z" estimate="false">
-    <to-datum>NGVD-29</to-datum>
-    <value>1.3</value>
-    <description>2nd Offset</description>
-  </offset>
-  <offset time="2010-01-01T00:00:00Z" estimate="true">
-    <to-datum>NAVD-88</to-datum>
-    <value>1.35</value>
-    <description/>
-  </offset>
-  <offset time="2012-05-11T00:00:00Z" estimate="false">
-    <to-datum>NAVD-88</to-datum>
-    <value>1.785</value>
-    <description/>
-  </offset>
-  <offset time="2020-01-01T00:00:00Z" estimate="false">
-    <to-datum>NGVD-29</to-datum>
-    <value>1.5</value>
-    <description>3rd Offset</description>
-  </offset>
-  <offset time="2020-01-01T00:00:00Z" estimate="false">
-    <to-datum>NAVD-88</to-datum>
-    <value>1.985</value>
-    <description/>
-  </offset>
-</vertical-datum-info-series>';
+      l_office_id             av_loc.db_office_id%TYPE;
+      l_location_id1          av_loc.location_id%TYPE;
+      l_vertical_datum        AV_LOC.VERTICAL_DATUM%TYPE;
+      l_elevation             AV_LOC.ELEVATION%TYPE;
+      l_xml                   varchar2(4096);
+      l_rounding_spec         varchar2(10) := '4444567894';
+      l_result                clob_tab_t := clob_tab_t();
+BEGIN
+   --------------------------------
+   -- cleanup any previous tests --
+   --------------------------------
+   setup;
+   ----------------------------------------------------
+   -- create the location and get the location codes --
+   ----------------------------------------------------
+   l_office_id := '&&office_id';
+   l_location_id1 := 'TestLoc1';
 
-l_empty_xml clob :=
-'<vertical-datum-info-series office="&&office_id" unit="ft">
-  <location>TestLoc1</location>
-  <native-datum>OTHER</native-datum>
-  <elevation>500</elevation>
-</vertical-datum-info-series>';
-l_expected_offsets offset_tab_t;
-l_count binary_integer;
-begin
-   teardown;
-   l_expected_offsets := offset_tab_t();
-   l_expected_offsets.extend(7);
 
-   l_expected_offsets(1).datum1 := 'LOCAL';
-   l_expected_offsets(1).datum2 := 'NGVD29';
-   l_expected_offsets(1).effective_date := date '2000-01-01';
-   l_expected_offsets(1).offset := 1.1;
-   l_expected_offsets(1).description := '1st Offset';
+   cwms_loc.store_location (p_location_id    => l_location_id1,
+                            p_db_office_id   => l_office_id,
+                            p_vertical_datum   => 'NGVD29');
 
-   l_expected_offsets(2).datum1 := 'LOCAL';
-   l_expected_offsets(2).datum2 := 'NAVD88';
-   l_expected_offsets(2).effective_date := date '2000-01-01';
-   l_expected_offsets(2).offset := 1.15;
-   l_expected_offsets(2).description := 'ESTIMATE';
+   SELECT vertical_datum
+   INTO l_vertical_datum
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id1
+     AND unit_system = 'EN';
 
-   l_expected_offsets(3).datum1 := 'LOCAL';
-   l_expected_offsets(3).datum2 := 'NGVD29';
-   l_expected_offsets(3).effective_date := date '2010-01-01';
-   l_expected_offsets(3).offset := 1.3;
-   l_expected_offsets(3).description := '2nd Offset';
+   ut.expect (l_vertical_datum).to_equal ('NGVD29');
 
-   l_expected_offsets(4).datum1 := 'LOCAL';
-   l_expected_offsets(4).datum2 := 'NAVD88';
-   l_expected_offsets(4).effective_date := date '2010-01-01';
-   l_expected_offsets(4).offset := 1.35;
-   l_expected_offsets(4).description := 'ESTIMATE';
+   l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in">' ||
+               '<location>'||l_location_id1||'</location>' ||
+               '<native-datum>NGVD-29</native-datum>' ||
+               '<elevation>19200</elevation>' ||
+               '<offset estimate="false">' ||
+                  '<to-datum>NGVD-29</to-datum>' ||
+                  '<value>0.0</value>' ||
+               '</offset>' ||
+               '<offset estimate="true">' ||
+                  '<to-datum>NAVD-88</to-datum>' ||
+                  '<value>-5.846</value>' ||
+               '</offset>' ||
+            '</vertical-datum-info>';
 
-   l_expected_offsets(5).datum1 := 'LOCAL';
-   l_expected_offsets(5).datum2 := 'NAVD88';
-   l_expected_offsets(5).effective_date := date '2012-05-11';
-   l_expected_offsets(5).offset := 1.785;
-   l_expected_offsets(5).description := null;
-
-   l_expected_offsets(6).datum1 := 'LOCAL';
-   l_expected_offsets(6).datum2 := 'NGVD29';
-   l_expected_offsets(6).effective_date := date '2020-01-01';
-   l_expected_offsets(6).offset := 1.5;
-   l_expected_offsets(6).description := '3rd Offset';
-
-   l_expected_offsets(7).datum1 := 'LOCAL';
-   l_expected_offsets(7).datum2 := 'NAVD88';
-   l_expected_offsets(7).effective_date := date '2020-01-01';
-   l_expected_offsets(7).offset := 1.985;
-   l_expected_offsets(7).description := null;
-
-   cwms_loc.store_location(
-      p_location_id    => 'TestLoc1',
-      p_db_office_id   => '&&office_id',
-      p_elevation      => 500,
-      p_elev_unit_id   => 'ft',
-      p_vertical_datum => 'LOCAL');
-
-   ut.expect(cwms_loc.get_vertical_datum_info_series_f('TestLoc1', 'ft', '&&office_id')).to_equal(l_empty_xml);
-
-   cwms_loc.set_local_vert_datum_name(
-      p_location_id     => 'TestLoc1',
-      p_vert_datum_name => 'TestDatum',
-      p_fail_if_exists  => 'F',
-      p_office_id       => '&&office_id');
-
-   l_empty_xml := replace(l_empty_xml, 'OTHER', 'TestDatum');
-   ut.expect(cwms_loc.get_vertical_datum_info_series_f('TestLoc1', 'ft', '&&office_id')).to_equal(l_empty_xml);
-
-   cwms_loc.store_vertical_datum_offset(
-      p_location_id         => 'TestLoc1',
-      p_vertical_datum_id_1 => 'NGVD29',
-      p_vertical_datum_id_2 => 'NAVD88',
-      p_offset              => .05,
-      p_unit                => 'ft',
-      p_time_zone           => 'UTC',
-      p_description         => 'VERTCON ESTIMATE',
-      p_office_id           => '&&office_id');
-
-   cwms_loc.store_vertical_datum_offset(
-      p_location_id         => 'TestLoc1',
-      p_vertical_datum_id_1 => 'LOCAL',
-      p_vertical_datum_id_2 => 'NGVD29',
-      p_offset              => 1.1,
-      p_unit                => 'ft',
-      p_effective_date      => date '2000-01-01',
-      p_time_zone           => 'UTC',
-      p_description         => '1st Offset',
-      p_office_id           => '&&office_id');
-
-   cwms_loc.store_vertical_datum_offset(
-      p_location_id         => 'TestLoc1',
-      p_vertical_datum_id_1 => 'LOCAL',
-      p_vertical_datum_id_2 => 'NGVD29',
-      p_offset              => 1.3,
-      p_unit                => 'ft',
-      p_effective_date      => date '2010-01-01',
-      p_time_zone           => 'UTC',
-      p_description         => '2nd Offset',
-      p_office_id           => '&&office_id');
-
-   cwms_loc.store_vertical_datum_offset(
-      p_location_id         => 'TestLoc1',
-      p_vertical_datum_id_1 => 'NGVD29',
-      p_vertical_datum_id_2 => 'NAVD88',
-      p_offset              => .485,
-      p_unit                => 'ft',
-      p_effective_date      => date '2012-05-11',
-      p_time_zone           => 'UTC',
-      p_description         => 'Survey Value',
-      p_office_id           => '&&office_id');
-
-   cwms_loc.store_vertical_datum_offset(
-      p_location_id         => 'TestLoc1',
-      p_vertical_datum_id_1 => 'LOCAL',
-      p_vertical_datum_id_2 => 'NGVD29',
-      p_offset              => 1.5,
-      p_unit                => 'ft',
-      p_effective_date      => date '2020-01-01',
-      p_time_zone           => 'UTC',
-      p_description         => '3rd Offset',
-      p_office_id           => '&&office_id');
-
+   cwms_loc.set_vertical_datum_info (
+      l_xml,
+      'F');
    commit;
 
-   ut.expect(cwms_loc.get_vertical_datum_info_series_f('TestLoc1', 'ft', '&&office_id')).to_equal(l_expected_xml);
+   SELECT elevation
+   INTO l_elevation
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id1
+     AND unit_system = 'EN';
 
-   select count(*)
-   into l_count
-   from av_vert_datum_offset
-   where location_id = 'TestLoc1'
-     and office_id = '&&office_id';
+   ut.expect (abs(l_elevation-1600)).to_be_less_or_equal (0.01);
+   ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-1600)).to_be_less_or_equal (0.01);
 
-   ut.expect(l_count).to_equal(l_expected_offsets.count);
+   l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in">' ||
+               '<location>'||l_location_id1||'</location>' ||
+               '<native-datum>NGVD-29</native-datum>' ||
+               '<elevation>19200.01</elevation>' ||
+               '<offset estimate="false">' ||
+                  '<to-datum>NGVD-29</to-datum>' ||
+                  '<value>0.0</value>' ||
+               '</offset>' ||
+               '<offset estimate="true">' ||
+                  '<to-datum>NAVD-88</to-datum>' ||
+                  '<value>-5.846</value>' ||
+               '</offset>' ||
+            '</vertical-datum-info>';
 
-   cwms_loc.get_vertical_datum_info_list(l_result, '&&office_id', 'TestLoc1', 'ft');
+   cwms_loc.set_vertical_datum_info (
+      l_xml,
+      'F');
+   commit;
+
+   SELECT elevation
+   INTO l_elevation
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id1
+     AND unit_system = 'EN';
+
+   ut.expect (abs(l_elevation-1600)).to_be_less_or_equal (0.01);
+   ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-1600)).to_be_less_or_equal (0.01);
+
+   cwms_loc.get_vertical_datum_info_list(l_result, l_office_id, l_location_id1, 'in');
 
    ut.expect(l_result.count).to_equal(1);
-   ut.expect(l_result(l_result.count)).to_equal(l_expected_xml);
+   ut.expect(to_char(l_result(l_result.count))).to_equal(to_char(l_xml));
 
 end test_vertical_datum_info_bulk;
 
