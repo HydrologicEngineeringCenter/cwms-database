@@ -51,7 +51,6 @@ spool &logfile append;
 -------------------
 -- do the update --
 -------------------
-
 PROMPT ################################################################################
 PROMPT VERIFYING EXPECTED VERSION
 select systimestamp from dual;
@@ -111,6 +110,19 @@ select systimestamp from dual;
 
 PROMPT ################################################################################
 PROMPT UPDATING AT_FCST
+PROMPT ADDING SEARCH_DOC COLUMN TO AT_PHYSICAL_LOCATION
+select systimestamp from dual;
+
+@@./26_07_16/add_search_doc
+
+PROMPT ################################################################################
+PROMPT MOVING LATLON TO GEOMETRY
+select systimestamp from dual;
+
+@@./26_07_16/update_latlon_to_geometry
+
+PROMPT ################################################################################
+PROMPT UPDATING AT_FCS
 select systimestamp from dual;
 
 alter table at_fcst_location rename column primary_location_code to location_code;

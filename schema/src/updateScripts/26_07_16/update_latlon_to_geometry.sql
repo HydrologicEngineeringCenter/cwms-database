@@ -221,7 +221,7 @@ delete from at_clob where id in ('/VIEWDOCS/AV_LOC','/VIEWDOCS/AV_LOC2');
 @@../cwms/views/av_loc
 @@../cwms/views/av_loc2
 
-@@../cwms/cwms_loc_pkg
+@@../cwms_loc_pkg
 
 @@../cwms/cwms_cat_pkg_body
 @@../cwms/cwms_embank_pkg_body
