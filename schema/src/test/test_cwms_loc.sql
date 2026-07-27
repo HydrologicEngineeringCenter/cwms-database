@@ -2722,12 +2722,15 @@ procedure test_vertical_datum_info_bulk
    is
       l_office_id             av_loc.db_office_id%TYPE;
       l_location_id1          av_loc.location_id%TYPE;
+      l_location_id2          av_loc.location_id%TYPE;
       l_vertical_datum        AV_LOC.VERTICAL_DATUM%TYPE;
       l_elevation             AV_LOC.ELEVATION%TYPE;
       l_xml                   varchar2(4096);
+      l_xml2                  varchar2(4096);
       l_rounding_spec         varchar2(10) := '4444567894';
       l_result                clob_tab_t := clob_tab_t();
       l_expected_xml          varchar2(4096);
+      l_expected_xml2         varchar2(4096);
 BEGIN
    --------------------------------
    -- cleanup any previous tests --
@@ -2737,10 +2740,14 @@ BEGIN
    -- create the location and get the location codes --
    ----------------------------------------------------
    l_office_id := '&&office_id';
-   l_location_id1 := 'TestLoc1';
+   l_location_id1 := 'TestDatumLoc1';
+   l_location_id2 := 'TestDatumLoc2';
 
 
    cwms_loc.store_location (p_location_id    => l_location_id1,
+                            p_db_office_id   => l_office_id,
+                            p_vertical_datum   => 'NGVD29');
+   cwms_loc.store_location (p_location_id    => l_location_id2,
                             p_db_office_id   => l_office_id,
                             p_vertical_datum   => 'NGVD29');
 
@@ -2749,6 +2756,15 @@ BEGIN
    FROM av_loc
    WHERE     db_office_id = l_office_id
      AND location_id = l_location_id1
+     AND unit_system = 'EN';
+
+   ut.expect (l_vertical_datum).to_equal ('NGVD29');
+
+   SELECT vertical_datum
+   INTO l_vertical_datum
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id2
      AND unit_system = 'EN';
 
    ut.expect (l_vertical_datum).to_equal ('NGVD29');
@@ -2777,9 +2793,38 @@ BEGIN
             '  </offset>' || CHR(10) ||
             '</vertical-datum-info>';
 
+   l_xml2 := '<vertical-datum-info office="'||l_office_id||'" unit="ft">' || CHR(10) ||
+            '  <location>'||l_location_id2||'</location>' || CHR(10) ||
+            '  <native-datum>NGVD-29</native-datum>' || CHR(10) ||
+            '  <elevation>29200</elevation>' || CHR(10) ||
+            '  <offset estimate="false">' || CHR(10) ||
+            '    <to-datum>NGVD-29</to-datum>' || CHR(10) ||
+            '    <value>0.0</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '  <offset estimate="true">' || CHR(10) ||
+            '    <to-datum>NAVD-88</to-datum>' || CHR(10) ||
+            '    <value>-15.846</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '</vertical-datum-info>';
+
+   l_expected_xml2 := '<vertical-datum-info office="'||l_office_id||'" unit="ft">' || CHR(10) ||
+                     '  <location>'||l_location_id2||'</location>' || CHR(10) ||
+                     '  <native-datum>NGVD-29</native-datum>' || CHR(10) ||
+                     '  <elevation>29200</elevation>' || CHR(10) ||
+                     '  <offset estimate="true">' || CHR(10) ||
+                     '    <to-datum>NAVD-88</to-datum>' || CHR(10) ||
+                     '    <value>-15.846</value>' || CHR(10) ||
+                     '  </offset>' || CHR(10) ||
+                     '</vertical-datum-info>';
+
    cwms_loc.set_vertical_datum_info (
       l_location_id1,
       l_xml,
+      'F',
+      '&&office_id');
+   cwms_loc.set_vertical_datum_info (
+      l_location_id2,
+      l_xml2,
       'F',
       '&&office_id');
    commit;
@@ -2794,11 +2839,30 @@ BEGIN
    ut.expect (abs(l_elevation-19200)).to_be_less_or_equal (0.01);
    ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-19200)).to_be_less_or_equal (0.01);
 
+   SELECT elevation
+   INTO l_elevation
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id2
+     AND unit_system = 'EN';
+
+   ut.expect (abs(l_elevation-29200)).to_be_less_or_equal (0.01);
+   ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-29200)).to_be_less_or_equal (0.01);
+
    cwms_loc.get_vertical_datum_info_list(l_result, l_office_id, l_location_id1, 'EN');
 
    ut.expect(l_result.count).to_equal(1);
    if l_result.count = 1 then
       ut.expect(to_char(l_result(l_result.count))).to_equal(to_char(l_expected_xml));
+   end if;
+
+   cwms_loc.get_vertical_datum_info_list(l_result, l_office_id, 'TestDatumLoc%', 'EN');
+
+   ut.expect(l_result.count).to_equal(2);
+
+   if l_result.count = 2 then
+      ut.expect(to_char(l_result(1))).to_equal(to_char(l_expected_xml));
+      ut.expect(to_char(l_result(2))).to_equal(to_char(l_expected_xml2));
    end if;
 end test_vertical_datum_info_bulk;
 
