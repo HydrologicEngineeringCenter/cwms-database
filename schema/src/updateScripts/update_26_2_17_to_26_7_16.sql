@@ -97,6 +97,13 @@ drop package cwms_usgs;
 drop public synonym cwms_usgs;
 
 PROMPT ################################################################################
+PROMPT REMOVING CWMS_MAIL
+select systimestamp from dual;
+
+drop package cwms_mail;
+drop public synonym cwms_mail;
+
+PROMPT ################################################################################
 PROMPT ADDING AT_USER_LISTS AND AT_USER_LIST_MEMBERS TABLES 
 select systimestamp from dual;
 
