@@ -66,6 +66,8 @@ procedure test_mods_for_generic_geometry;
 procedure test_assign_loc_ignore_missing;
 --%test (Test location group assignment with ignore missing flag set to false)
 procedure test_assign_loc_do_not_ignore_missing;
+--%test (CWMS-2508 [DB #186] location geometry nearest-city normalization)
+procedure test_location_geometry_nearest_city_normalization;
 
 procedure setup;
 procedure teardown;
@@ -2075,7 +2077,7 @@ AS
       ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A for Unknown State or State N/A');
       ut.expect(l_rec.state_initial).to_equal('00');
       ut.expect(l_rec.nation_id).to_be_null;
-      ut.expect(l_rec.bounding_office_id).to_be_null;
+      ut.expect(l_rec.bounding_office_id).to_equal('UNK');
       ut.expect(l_rec.nearest_city).to_be_null;
       -- create with bad lat/lon with null info
       l_rec := store_location(0, 0, null, null, null, null, null);
@@ -2098,19 +2100,17 @@ AS
       ut.expect(l_rec.nation_id).to_equal('United States');
       ut.expect(l_rec.bounding_office_id).to_equal('POA');
       ut.expect(l_rec.nearest_city).to_equal('Juneau');
-      -- create with valid lat/lon with non-null info (shoud be overriden by values retrieved by lat/lon)
-      l_rec := store_location(59.994444444444, -139.486388888889, 'King', 'WA', 'US', 'NWS', 'Seattle', p_delete => false);
-      ut.expect(l_rec.county_name).to_equal('Yakutat');
+      -- create with valid lat/lon with non-null info (specified values should overwrite previous values)
+      l_rec := store_location(58.3248121, -134.2998469, 'King', 'WA', 'US', 'NWS', 'Seattle', p_delete => false);
+      ut.expect(l_rec.county_name).to_equal('Juneau');
       ut.expect(l_rec.state_initial).to_equal('AK');
       ut.expect(l_rec.nation_id).to_equal('United States');
-      -- Behavior changed with CWDB-290. P_BOUNDING_OFFICE_ID now overrides P_LATITUDE/P_LONGITUDE (MDP 18Jun2024)
-      -- ut.expect(l_rec.bounding_office_id).to_equal('POA');
       ut.expect(l_rec.bounding_office_id).to_equal('NWS');
-      ut.expect(l_rec.nearest_city).to_equal('Juneau, Alaska');
-      -- update with valid lat/lon with non-null info (should overwrite existing values)
-      l_rec := store_location(59.994444444444, -139.486388888889, 'King', 'WA', 'US', 'NWS', 'Seattle');
-      ut.expect(l_rec.county_name).to_equal('King');
-      ut.expect(l_rec.state_initial).to_equal('WA');
+      ut.expect(l_rec.nearest_city).to_equal('Seattle');
+      -- update with valid lat/lon with non-null info (specified values should overwrite existing values)
+      l_rec := store_location(59.994444444444, -139.486388888889, 'Yakutat', 'AK', 'US', 'NWS', 'Seattle');
+      ut.expect(l_rec.county_name).to_equal('Yakutat');
+      ut.expect(l_rec.state_initial).to_equal('AK');
       ut.expect(l_rec.nation_id).to_equal('United States');
       ut.expect(l_rec.bounding_office_id).to_equal('NWS');
       ut.expect(l_rec.nearest_city).to_equal('Seattle');
@@ -3120,11 +3120,11 @@ AS
                   ut.expect(l_view_rec.nearest_city).to_be_null;
             end;
          else
-            -------------------------------------------
-            -- is a base location, info must be null --
-            -------------------------------------------
-            ut.expect(l_view_rec.county_name).to_be_null;
-            ut.expect(l_view_rec.state_initial).to_be_null;
+            ---------------------------------------------------
+            -- is a base location, info must be null/unknown --
+            ---------------------------------------------------
+            ut.expect(l_view_rec.county_name).to_equal('Unknown County or County N/A for Unknown State or State N/A');
+            ut.expect(l_view_rec.state_initial).to_equal('00');
             ut.expect(l_view_rec.nation_id).to_be_null;
             ut.expect(l_view_rec.nearest_city).to_be_null;
          end if;
@@ -3754,6 +3754,229 @@ AS
          WHEN OTHERS then
             ut.expect(sqlerrm).to_be_like('%' || l_non_existent_location || '%');
    END;
+
+   --------------------------------------------------------------------------------
+   -- procedure test_location_geometry_nearest_city_normalization
+   --------------------------------------------------------------------------------
+   procedure test_location_geometry_nearest_city_normalization
+   is
+      l_office_id    av_loc.db_office_id%type;
+      l_location_id  av_loc.location_id%type;
+      l_location_id1 av_loc.location_id%type;
+      l_location_id2 av_loc.location_id%type;
+      l_nearest_city av_loc.nearest_city%type;
+      l_latitude number;
+      l_longitude number;
+      l_geometry sdo_geometry;
+      exc_location_id_not_found exception;
+      pragma exception_init (exc_location_id_not_found, -20025);
+      
+      procedure assert_equals(p1 varchar2, p2 varchar2) is
+      begin
+         if (p1 is null) != (p2 is null) then
+            cwms_err.raise('ERROR', nvl(p1, '<NULL>')||' != '||nvl(p2, '<NULL>'));
+         end if;
+         if p1 is not null and p1 != p2 then
+            cwms_err.raise('ERROR', '"'||p1||'" != "'||p2||'"');
+         end if;
+      end assert_equals;
+   begin
+      l_office_id := '&&office_id';
+      l_location_id := 'TestLoc';
+      l_location_id1 := l_location_id||'-SubLoc1';
+      l_location_id2 := l_location_id||'-SubLoc2';
+      l_latitude := 36.147157;
+      l_longitude := -96.089009;
+      l_geometry := sdo_geometry(2001, 4326, sdo_point_type(l_longitude, l_latitude, null), null, null);
+      for use_geometry in 0..1 loop
+      dbms_output.put_line(case use_geometry when 1 then 'USING GEOMETRY' else 'USING LAT/LON' end);
+         --------------------------------------------------------------
+         -- delete the base location and sub-locations if they exist --
+         --------------------------------------------------------------
+         begin
+            cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
+         exception
+            when exc_location_id_not_found then null;
+         end;
+         -----------------------------------------------------------------------------------------
+         -- store a base location without a city and assert it maps to 'Sand Springs, Oklahoma' --
+         -----------------------------------------------------------------------------------------
+         dbms_output.put_line(chr(9)||'Storing base location without city');
+         if use_geometry = 1 then
+            cwms_loc.store_location3(
+               p_location_id  => l_location_id,
+               p_geometry     => l_geometry,
+               p_nearest_city => null,
+               p_db_office_id => l_office_id);
+         else
+            cwms_loc.store_location2(
+               p_location_id  => l_location_id,
+               p_latitude     => l_latitude,
+               p_longitude    => l_longitude,
+               p_nearest_city => null,
+               p_db_office_id => l_office_id);
+         end if;
+
+         select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+            assert_equals(l_nearest_city, 'Sand Springs, Oklahoma');       
+         --------------------------------------------------------------------------------
+         -- store a base location with a city and assert it maps to the specified city --
+         --------------------------------------------------------------------------------
+         dbms_output.put_line(chr(9)||'Storing base location with city');
+         if use_geometry = 1 then
+            cwms_loc.store_location3(
+               p_location_id  => l_location_id,
+               p_geometry     => l_geometry,
+               p_nearest_city => 'SAND SPRINGS, OK',
+               p_db_office_id => l_office_id);
+         else
+            cwms_loc.store_location2(
+               p_location_id  => l_location_id,
+               p_latitude     => l_latitude,
+               p_longitude    => l_longitude,
+               p_nearest_city => 'SAND SPRINGS, OK',
+               p_db_office_id => l_office_id);
+         end if;
+
+         select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+            assert_equals(l_nearest_city, 'SAND SPRINGS, OK');       
+         ---------------------------------------------------------------------------------
+         -- store a sub-location with no city and assert it inherits from base location --
+         ---------------------------------------------------------------------------------
+         dbms_output.put_line(chr(9)||'Storing sub-location without city');
+         if use_geometry = 1 then
+            cwms_loc.store_location3(
+               p_location_id  => l_location_id1,
+               p_geometry     => l_geometry,
+               p_nearest_city => null,
+               p_db_office_id => l_office_id);
+         else
+            cwms_loc.store_location2(
+               p_location_id  => l_location_id1,
+               p_latitude     => l_latitude,
+               p_longitude    => l_longitude,
+               p_nearest_city => null,
+               p_db_office_id => l_office_id);
+         end if;
+
+         select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+            and location_id = l_location_id1
+            and unit_system = 'EN';
+            assert_equals(l_nearest_city, 'SAND SPRINGS, OK');       
+         --------------------------------------------------------------------------------
+         -- store a sub-location with a city and assert it maps to the specified city --
+         --------------------------------------------------------------------------------
+         dbms_output.put_line(chr(9)||'Storing sub-location with city');
+         if use_geometry = 1 then
+            cwms_loc.store_location3(
+               p_location_id  => l_location_id2,
+               p_geometry     => l_geometry,
+               p_nearest_city => 'TULSA, OK',
+               p_db_office_id => l_office_id);
+         else
+            cwms_loc.store_location2(
+               p_location_id  => l_location_id2,
+               p_latitude     => l_latitude,
+               p_longitude    => l_longitude,
+               p_nearest_city => 'TULSA, OK',
+               p_db_office_id => l_office_id);
+         end if;
+
+         select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+            and location_id = l_location_id2
+            and unit_system = 'EN';
+            assert_equals(l_nearest_city, 'TULSA, OK');       
+         --------------------------------------------------
+         -- update base location to have no nearest city --
+         --------------------------------------------------
+         dbms_output.put_line(chr(9)||'Setting base location nearest_city to null');
+         update at_physical_location
+            set nearest_city = null
+         where location_code = cwms_loc.get_location_code(l_office_id, l_location_id);
+      select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+         and location_id = l_location_id
+         and unit_system = 'EN';
+      
+      assert_equals(l_nearest_city, null);       
+         cwms_loc.delete_location(l_location_id1, cwms_util.delete_all, l_office_id);
+      cwms_loc.delete_location(l_location_id2, cwms_util.delete_all, l_office_id);
+         ----------------------------------------------------------------------------------------------
+      -- store a sub-location with no city and assert sets default city instead of ineriting null --
+      ----------------------------------------------------------------------------------------------
+      dbms_output.put_line(chr(9)||'Storing sub-location without city');
+      if use_geometry = 1 then
+         cwms_loc.store_location3(
+            p_location_id  => l_location_id1,
+            p_geometry     => l_geometry,
+            p_nearest_city => null,
+            p_db_office_id => l_office_id);
+      else
+         cwms_loc.store_location2(
+            p_location_id  => l_location_id1,
+            p_latitude     => l_latitude,
+            p_longitude    => l_longitude,
+            p_nearest_city => null,
+            p_db_office_id => l_office_id);
+      end if;
+      
+      select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+         and location_id = l_location_id1
+         and unit_system = 'EN';
+      
+      assert_equals(l_nearest_city, 'Sand Springs, Oklahoma');       
+      --------------------------------------------------------------------------------
+      -- store a sub-location with a city and assert it maps to the specified city --
+      --------------------------------------------------------------------------------
+      dbms_output.put_line(chr(9)||'Storing sub-location with city');
+      if use_geometry = 1 then
+         cwms_loc.store_location3(
+            p_location_id  => l_location_id2,
+            p_geometry     => l_geometry,
+            p_nearest_city => 'SAND SPRINGS, OK',
+            p_db_office_id => l_office_id);
+      else
+         cwms_loc.store_location2(
+            p_location_id  => l_location_id2,
+            p_latitude     => l_latitude,
+            p_longitude    => l_longitude,
+            p_nearest_city => 'SAND SPRINGS, OK',
+            p_db_office_id => l_office_id);
+      end if;
+      
+      select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+         and location_id = l_location_id2
+         and unit_system = 'EN';
+      
+      assert_equals(l_nearest_city, 'SAND SPRINGS, OK');       
+      end loop;
+      
+      commit;
+   end test_location_geometry_nearest_city_normalization; 
 END test_cwms_loc;
 /
 show errors;
