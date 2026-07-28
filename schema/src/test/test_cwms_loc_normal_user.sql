@@ -2052,7 +2052,7 @@ AS
       ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A for Unknown State or State N/A');
       ut.expect(l_rec.state_initial).to_equal('00');
       ut.expect(l_rec.nation_id).to_be_null;
-      ut.expect(l_rec.bounding_office_id).to_be_null;
+      ut.expect(l_rec.bounding_office_id).to_equal('UNK');
       ut.expect(l_rec.nearest_city).to_be_null;
       -- create with bad lat/lon with null info
       l_rec := store_location(0, 0, null, null, null, null, null);
@@ -2075,19 +2075,17 @@ AS
       ut.expect(l_rec.nation_id).to_equal('United States');
       ut.expect(l_rec.bounding_office_id).to_equal('POA');
       ut.expect(l_rec.nearest_city).to_equal('Juneau');
-      -- create with valid lat/lon with non-null info (shoud be overriden by values retrieved by lat/lon)
-      l_rec := store_location(59.994444444444, -139.486388888889, 'King', 'WA', 'US', 'NWS', 'Seattle', p_delete => false);
-      ut.expect(l_rec.county_name).to_equal('Yakutat');
+      -- create with valid lat/lon with non-null info (specified values should overwrite previous values)
+      l_rec := store_location(58.3248121, -134.2998469, 'King', 'WA', 'US', 'NWS', 'Seattle', p_delete => false);
+      ut.expect(l_rec.county_name).to_equal('Juneau');
       ut.expect(l_rec.state_initial).to_equal('AK');
       ut.expect(l_rec.nation_id).to_equal('United States');
-      -- Behavior changed with CWDB-290. P_BOUNDING_OFFICE_ID now overrides P_LATITUDE/P_LONGITUDE (MDP 18Jun2024)
-      -- ut.expect(l_rec.bounding_office_id).to_equal('POA');
       ut.expect(l_rec.bounding_office_id).to_equal('NWS');
-      ut.expect(l_rec.nearest_city).to_equal('Juneau, Alaska');
-      -- update with valid lat/lon with non-null info (should overwrite existing values)
-      l_rec := store_location(59.994444444444, -139.486388888889, 'King', 'WA', 'US', 'NWS', 'Seattle');
-      ut.expect(l_rec.county_name).to_equal('King');
-      ut.expect(l_rec.state_initial).to_equal('WA');
+      ut.expect(l_rec.nearest_city).to_equal('Seattle');
+      -- update with valid lat/lon with non-null info (specified values should overwrite existing values)
+      l_rec := store_location(59.994444444444, -139.486388888889, 'Yakutat', 'AK', 'US', 'NWS', 'Seattle');
+      ut.expect(l_rec.county_name).to_equal('Yakutat');
+      ut.expect(l_rec.state_initial).to_equal('AK');
       ut.expect(l_rec.nation_id).to_equal('United States');
       ut.expect(l_rec.bounding_office_id).to_equal('NWS');
       ut.expect(l_rec.nearest_city).to_equal('Seattle');
