@@ -290,12 +290,6 @@ select systimestamp from dual;
 @@./26_07_16/add_search_doc
 
 PROMPT ################################################################################
-PROMPT MOVING LATLON TO GEOMETRY
-select systimestamp from dual;
-
-@@./26_07_16/update_latlon_to_geometry
-
-PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
 select systimestamp from dual;
 
