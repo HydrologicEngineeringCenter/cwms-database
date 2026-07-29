@@ -2563,22 +2563,14 @@ begin
          p_office_id         => c_office_id);
       commit;
       l_result_values := cwms_level.retrieve_loc_lvl_values4(
-         p_location_level_id => c_top_of_normal_elev_id || i,
-         p_start_time => l_start_ts,
-         p_end_time => cast(l_end_ts + 1 as timestamp),
-         p_level_units => c_elev_unit,
-         p_timezone_id => c_timezone_id,
-         p_office_id => c_office_id
+         p_location_level_id  => c_top_of_normal_elev_id || i,
+         p_start_time         => l_start_ts,
+         p_end_time           => l_end_ts,
+         p_level_units        => c_elev_unit,
+         p_timezone_id        => c_timezone_id,
+         p_office_id          => c_office_id
       );
       ut.expect(l_result_values.count).to_equal(l_elev_ts_data.count);
-
-      for j in 1..l_result_values.count loop
-         dbms_output.put_line('Result at '|| j || ': ' || l_result_values(j).value || ' time: ' || l_result_values(j).date_time);
-      end loop;
-
-      for j in 1..l_elev_ts_data.count loop
-         dbms_output.put_line('Expected at '|| j || ': ' || l_elev_ts_data(j).value || ' time: ' || l_elev_ts_data(j).date_time);
-      end loop;
 
       for j in 1..l_result_values.count loop
          if l_interpolate(i) = 'T' then

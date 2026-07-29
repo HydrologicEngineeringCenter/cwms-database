@@ -6401,8 +6401,8 @@ end retrieve_loc_lvl_values3;
 function retrieve_loc_lvl_values4(
    p_location_level_id       in  varchar2,
    p_specified_times         in  ztsv_array default null,
-   p_start_time              in  date default null,
-   p_end_time                in  date default null,
+   p_start_time              in  timestamp default null,
+   p_end_time                in  timestamp default null,
    p_level_units             in  varchar2,
    p_attribute_id            in  varchar2 default null,
    p_attribute_value         in  number   default null,
@@ -6469,7 +6469,7 @@ begin
       l_attr_id_parts :=  cwms_util.split_text(p_attribute_id, '.');
    end if;
    l_min_date_utc := cwms_util.CHANGE_TIMEZONE(p_start_time, p_timezone_id, 'UTC');
-   l_max_date_utc := cwms_util.CHANGE_TIMEZONE(p_end_time, p_timezone_id, 'UTC');
+   l_max_date_utc := cwms_util.CHANGE_TIMEZONE(p_end_time + 1, p_timezone_id, 'UTC');
    retrieve_loc_lvl_values_utc(
       p_level_values            => l_level_values,
       p_location_id             => l_level_id_parts(1),

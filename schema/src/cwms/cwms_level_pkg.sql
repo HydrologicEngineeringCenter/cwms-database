@@ -1476,8 +1476,8 @@ function retrieve_loc_lvl_values3(
 function retrieve_loc_lvl_values4(
    p_location_level_id       in  varchar2,
    p_specified_times         in  ztsv_array default null,
-   p_start_time              in  date default null,
-   p_end_time                in  date default null,
+   p_start_time              in  timestamp default null,
+   p_end_time                in  timestamp default null,
    p_level_units             in  varchar2,
    p_attribute_id            in  varchar2 default null,
    p_attribute_value         in  number   default null,
