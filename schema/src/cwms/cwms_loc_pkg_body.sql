@@ -8578,9 +8578,7 @@ end unassign_loc_groups;
          from av_loc2 loc
          where loc.db_office_id = p_office_id
          and loc.unit_system = p_unit_system
-         and (loc.base_location_id like p_location_mask
-            or loc.sub_location_id like p_location_mask
-            or loc.base_location_id||'-'||loc.sub_location_id like p_location_mask)
+         and loc.location_id like p_location_mask
       ) loop
          get_vertical_datum_info2(l_vert_datum_info,
             row.location_id,
