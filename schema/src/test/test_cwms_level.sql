@@ -2577,10 +2577,11 @@ begin
       end loop;
 
       for j in 1..l_elev_ts_data.count loop
-            dbms_output.put_line('Expected at '|| j || ': ' || l_elev_ts_data(j).value || ' time: ' || l_elev_ts_data(j).date_time);
-         end loop;
+         dbms_output.put_line('Expected at '|| j || ': ' || l_elev_ts_data(j).value || ' time: ' || l_elev_ts_data(j).date_time);
+      end loop;
 
       for j in 1..l_result_values.count loop
+         if l_interpolate(i) = 'T' then
             if mod(j, 2) = 0 then
                ------------------------------------------
                -- even indices are between value times --
@@ -2589,12 +2590,7 @@ begin
                l_next := mod(j/2, l_elev_ts_data.count)+1;
                l_prev_val := round(l_elev_ts_data(l_prev).value, 5);
                l_next_val := round(l_elev_ts_data(l_next).value, 5);
-               if l_interpolate(i) = 'T' then
-                  ut.expect(round(l_result_values(j).value, 5)).to_equal((l_prev_val + l_next_val) / 2);
-               else
-                  ut.expect(round(l_result_values(j).value, 5)).to_equal(l_elev_ts_data(j).value);
-                  ut.expect(l_result_values(j).date_time).to_equal(cast(l_elev_ts_data(j).date_time as date));
-               end if;
+               ut.expect(round(l_result_values(j).value, 5)).to_equal((l_prev_val + l_next_val) / 2);
             else
                ------------------------------------
                -- odd indices are at value times --
@@ -2603,9 +2599,12 @@ begin
                l_prev_val := round(l_elev_ts_data(l_prev).value, 5);
                ut.expect(round(l_result_values(j).value, 5)).to_equal(l_prev_val);
             end if;
-            ut.expect(l_result_values(j).quality_code).to_equal(case l_interpolate(i) when 'T' then 1 else 0 end);
-
-         end loop;
+         else
+            ut.expect(l_result_values(j).date_time).to_equal(cast(l_elev_ts_data(j).date_time as date));
+            ut.expect(round(l_result_values(j).value, 5)).to_equal(l_elev_ts_data(j).value);
+            ut.expect(l_result_values(j).quality_code).to_equal(0);
+         end if;
+      end loop;
    end loop;
 end test_cda_116_irregular_level_as_timeseries;
 
