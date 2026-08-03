@@ -639,66 +639,19 @@ AS
       l_base_loc_exists        BOOLEAN := TRUE;
       l_sub_loc_exists          BOOLEAN := TRUE;
       l_location_kind_code     NUMBER := 1; -- SITE
-      l_bounding_office_code    NUMBER := NULL;
-      l_nation_code             VARCHAR2 (2);
-      l_cwms_office_code       NUMBER (14) := cwms_util.get_office_code ('CWMS');
+      l_bounding_office_code   at_physical_location.office_code%type;
+      l_nation_code            at_physical_location.nation_code%type;
       l_lat_lon_specified      boolean := p_latitude is not null and p_longitude is not null;
-      l_county_code            integer;
-      l_nearest_city_tab       str_tab_t;
-      l_nearest_city           cwms_cities_sp.city_name%type;
       l_srid                   mdsys.sdo_coord_ref_sys.srid%type;
    BEGIN
-      if l_lat_lon_specified then
-         l_county_code := get_county_code(p_latitude, p_longitude);
-         if mod(l_county_code, 1000) = 0 then
-            l_county_code := nvl(p_county_code, l_county_code);
-         end if;
-         l_nation_code := get_nation_id(p_latitude, p_longitude);
-         if l_nation_code is null and p_nation_id is not null then
-            ------------------------------------------------
-            -- allow nation to be passed in as code or id --
-            ------------------------------------------------
-            if length(p_nation_id) = 2 then
-               l_nation_code := upper(p_nation_id);
-            else
-               begin
-                  select fips_cntry
-                    into l_nation_code
-                    from cwms_nation_sp
-                   where upper(long_name) = upper(p_nation_id);
-               exception
-                  when no_data_found then
-                     cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
-               end;
-            end if;
-         end if;
-         if p_bounding_office_id is not null then
-            BEGIN
-               SELECT   office_code
-                 INTO   l_bounding_office_code
-                 FROM   cwms_office
-                WHERE   office_id = UPPER (p_bounding_office_id);
-            EXCEPTION
-                  when no_data_found then
-                     cwms_err.raise ('INVALID_ITEM', p_bounding_office_id, 'office id');
-               END;
-         else
-            l_bounding_office_code := get_bounding_ofc_code(p_latitude, p_longitude);
-         end if;
-         l_nearest_city_tab := get_nearest_city(p_latitude, p_longitude);
-         l_nearest_city := case
-                           when l_nearest_city_tab(1) is null then p_nearest_city
-                           when l_nearest_city_tab(2) is null then l_nearest_city_tab(1)
-                           else l_nearest_city_tab(1)||', '||l_nearest_city_tab(2)
-                           end;
-      else
-         l_county_code := nvl(p_county_code, 0); -- 0 = unknown county, unknown state
+      if p_bounding_office_id is not null then
+         l_bounding_office_code := cwms_util.get_db_office_code(p_bounding_office_id);
+      end if;
+      if p_nation_id is not null then
          ------------------------------------------------
          -- allow nation to be passed in as code or id --
          ------------------------------------------------
-         if p_nation_id is null then
-            l_nation_code := null;
-         elsif length(p_nation_id) = 2 then
+         if length(p_nation_id) = 2 then
             l_nation_code := upper(p_nation_id);
          else
             begin
@@ -711,18 +664,6 @@ AS
                   cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
             end;
          end if;
-         if p_bounding_office_id is not null then
-            BEGIN
-               SELECT   office_code
-                 INTO   l_bounding_office_code
-                 FROM   cwms_office
-                WHERE   office_id = UPPER (p_bounding_office_id);
-            EXCEPTION
-                  when no_data_found then
-                     cwms_err.raise ('INVALID_ITEM', p_bounding_office_id, 'office id');
-               END;
-         end if;
-         l_nearest_city := p_nearest_city;
       end if;
       BEGIN
          -- Check if base_location exists -
@@ -762,7 +703,6 @@ AS
                l_sub_loc_exists := FALSE;
          END;
       END IF;
-
       IF NOT l_base_loc_exists OR NOT l_sub_loc_exists
       THEN
          ---------.
@@ -815,7 +755,7 @@ AS
                         p_base_location_code,
                         p_base_location_code,
                         p_time_zone_code,
-                        l_county_code,
+                        p_county_code,
                         p_location_type,
                         p_elevation,
                         p_vertical_datum,
@@ -830,7 +770,7 @@ AS
                         p_published_longitude,
                         l_bounding_office_code,
                         l_nation_code,
-                        l_nearest_city
+                        p_nearest_city
                      );
             if l_lat_lon_specified then
                l_srid := get_location_srid(p_base_location_code);
@@ -888,7 +828,7 @@ AS
                            p_base_location_code,
                            p_sub_location_id,
                            p_time_zone_code,
-                           l_county_code,
+                           p_county_code,
                            p_location_type,
                            p_elevation,
                            p_vertical_datum,
@@ -903,7 +843,7 @@ AS
                            p_published_longitude,
                            l_bounding_office_code,
                            l_nation_code,
-                           l_nearest_city
+                           p_nearest_city
                         )
             RETURNING   location_code
                   INTO   p_location_code;

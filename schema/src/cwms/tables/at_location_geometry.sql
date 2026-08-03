@@ -67,48 +67,88 @@ begin
          l_old_nation_code at_physical_location.nation_code%type;
          l_old_office_code at_physical_location.office_code%type;
          l_old_nearest_city at_physical_location.nearest_city%type;
+         l_base_location_code at_physical_location.base_location_code%type;
          l_new_county_code at_physical_location.county_code%type;
          l_new_nation_code at_physical_location.nation_code%type;
          l_new_office_code at_physical_location.office_code%type;
          l_new_nearest_city at_physical_location.nearest_city%type;
       begin
-         select county_code,
+         select base_location_code,
+                county_code,
                 nation_code,
                 office_code,
                 nearest_city
-           into l_old_county_code,
+           into l_base_location_code,
+                l_old_county_code,
                 l_old_nation_code,
                 l_old_office_code,
                 l_old_nearest_city
            from at_physical_location
           where location_code = :new.location_code;
+          
+         -------------------------------------------------------------------------------------------
+         -- set county, nation, bounding office, and nearest city from following preference order --
+         -- 1. existing value                                                                     --
+         -- 2. inherit value from base location                                                   --
+         -- 3. generate value from lat/lon                                                        --
+         -------------------------------------------------------------------------------------------
+         if l_old_county_code is not null then
+            l_new_county_code := l_old_county_code;
+         else
+            if l_base_location_code != :new.location_code then
+               select county_code into l_new_county_code from at_physical_location where location_code = l_base_location_code;
+            end if;
+            if l_new_county_code is null then
+               l_new_county_code := cwms_loc.get_county_code(:new.latitude, :new.longitude);
+            end if;
+         end if;
 
-         l_new_county_code  := case
-                               when l_old_county_code is null then cwms_loc.get_county_code(:new.latitude, :new.longitude)
-                               else l_old_county_code
-                               end;
-         l_new_nation_code  := case
-                               when l_old_nation_code is null then cwms_loc.get_nation_id(:new.latitude, :new.longitude)
-                               else l_old_nation_code
-                               end;
-         l_new_office_code  := case
-                               when l_old_office_code is null then cwms_loc.get_bounding_ofc_code(:new.latitude, :new.longitude)
-                               else l_old_office_code
-                               end;
-         l_new_nearest_city := case
-                               when l_old_nearest_city is null then trim(',' from trim(' ' from cwms_util.join_text(
-                                       cwms_loc.get_nearest_city(:new.latitude, :new.longitude), ', ')))
-                               else l_old_nearest_city
-                               end;
+         if l_old_nation_code is not null then
+            l_new_nation_code := l_old_nation_code;
+         else
+            if l_base_location_code != :new.location_code then
+               select nation_code into l_new_nation_code from at_physical_location where location_code = l_base_location_code;
+            end if;
+            if l_new_nation_code is null then
+               l_new_nation_code := cwms_loc.get_nation_id(:new.latitude, :new.longitude);
+            end if;
+         end if;
 
-         if l_new_county_code  != nvl(l_old_county_code,  -1)  or
-            l_new_nation_code  != nvl(l_old_nation_code,  '@') or
-            l_new_office_code  != nvl(l_old_office_code,  -1)  or
-            l_new_nearest_city != nvl(l_old_nearest_city, '@')
+         if l_old_office_code is not null then
+            l_new_office_code := l_old_office_code;
+         else
+            if l_base_location_code != :new.location_code then
+               select office_code into l_new_office_code from at_physical_location where location_code = l_base_location_code;
+            end if;
+            if l_new_office_code is null then
+               l_new_office_code := cwms_loc.get_bounding_ofc_code(:new.latitude, :new.longitude);
+               if l_new_office_code = 0 then
+                  l_new_office_code := null;
+               end if;
+            end if;
+         end if;
+
+         if l_old_nearest_city is not null then
+            l_new_nearest_city := l_old_nearest_city;
+         else
+            if l_base_location_code != :new.location_code then
+               select nearest_city into l_new_nearest_city from at_physical_location where location_code = l_base_location_code;
+            end if;
+            if l_new_nearest_city is null then
+               l_new_nearest_city := trim(',' from trim(' ' from cwms_util.join_text(cwms_loc.get_nearest_city(:new.latitude, :new.longitude), ', ')));
+            end if;
+         end if;
+         
+         if l_new_county_code  = nvl(l_old_county_code,  -1)  and
+            l_new_nation_code  = nvl(l_old_nation_code,  '@') and
+            l_new_office_code  = nvl(l_old_office_code,  -1)  and
+            l_new_nearest_city = nvl(l_old_nearest_city, '@')
          then
+            null;
+         else
             update at_physical_location
-               set county_code  = l_new_county_code,
-                   nation_code  = l_new_nation_code,
+               set county_code  = nvl(l_new_county_code, 0),
+                   nation_code = l_new_nation_code,
                    office_code  = l_new_office_code,
                    nearest_city = l_new_nearest_city
              where location_code = :new.location_code;
