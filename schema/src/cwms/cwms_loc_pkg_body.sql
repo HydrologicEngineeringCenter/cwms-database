@@ -2538,8 +2538,9 @@ AS
           where location_code in (select * from table(l_location_codes));
          add_dependency(l_dependencies, 'time series identifiers', l_count);
 
-         select count(*) into l_count from at_location_geometry where location_code in (select * from table(l_location_codes));
-         add_dependency(l_dependencies, 'location geometry', l_count);
+         -- at_location_geometry is not a dependencie in the sense of these other objects.
+         -- it is simply where the location geographic information is stored and is attached to the at_physical_location row
+         -- in a roughly 1:1 manner. E.g. a sub-location may share it, but a given physical location only has one entry in the table.
 
          select count(*) into l_count from at_geographic_location where location_code in (select * from table(l_location_codes));
          add_dependency(l_dependencies, 'geographic locations', l_count);
@@ -3129,23 +3130,18 @@ AS
                ----------------------
                -- actual locations --
                ----------------------
+            
                for rec in (select location_code
-                             from at_physical_location apl
-                            where apl.base_location_code = l_base_location_code
-                          )
+                           from at_physical_location apl
+                           where apl.base_location_code = l_base_location_code
+                        )
                loop
-                  if l_delete_action in (cwms_util.delete_all, cwms_util.delete_loc_cascade) then
-                     delete from at_location_geometry where location_code = rec.location_code;
-                  end if;
+                  delete from at_location_geometry where location_code = rec.location_code;
                   delete from at_physical_location where location_code = rec.location_code;
                end loop;
-
-               delete
-                 from at_base_location where base_location_code = l_base_location_code;
+               delete from at_base_location where base_location_code = l_base_location_code;
             else -- Deleting a single Sub Location --------------------------------
-               if l_delete_action in (cwms_util.delete_all, cwms_util.delete_loc_cascade) then
-                  delete at_location_geometry where location_code = l_location_code;
-               end if;
+               delete at_location_geometry where location_code = l_location_code;
                delete at_physical_location where location_code = l_location_code;
             end if;
             for i in 1..l_location_codes.count loop
