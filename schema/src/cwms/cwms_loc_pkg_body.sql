@@ -3130,20 +3130,15 @@ AS
                ----------------------
                -- actual locations --
                ----------------------
-               if l_delete_action in (cwms_util.delete_key, cwms_util.delete_all, cwms_util.delete_loc_cascade) then
-                  for rec in (select location_code
-                              from at_physical_location apl
-                              where apl.base_location_code = l_base_location_code
-                           )
-                  loop
-                     delete from at_location_geometry where location_code = rec.location_code;
-                     delete from at_physical_location where location_code = rec.location_code;
-                  end loop;
-               end if;
-
-               delete from at_location_geometry where location_code = l_location_code;
-               -- The base location always has an entry in at_physical_location, so we need to delete it here
-               delete from at_physical_location where location_code = l_location_code;
+            
+               for rec in (select location_code
+                           from at_physical_location apl
+                           where apl.base_location_code = l_base_location_code
+                        )
+               loop
+                  delete from at_location_geometry where location_code = rec.location_code;
+                  delete from at_physical_location where location_code = rec.location_code;
+               end loop;
                delete from at_base_location where base_location_code = l_base_location_code;
             else -- Deleting a single Sub Location --------------------------------
                delete at_location_geometry where location_code = l_location_code;
