@@ -29,6 +29,8 @@ declare
    l_ts_start date;
    l_ts_end date;
    l_count number;
+   l_version_date date;
+   l_distinct_count number;
 begin
    -- determine which forecast location table schema is available
    select COUNT(*)
@@ -73,24 +75,40 @@ begin
                      where forecast_spec_code = old_spec.forecast_spec_code
          )
          loop
-            if (old_ts.issue_date != old_ts.forecast_date) then
+            select count(*)
+            into l_distinct_count
+            from (select distinct forecast_date, issue_date
+                                  from at_forecast_ts
+                                  where forecast_spec_code = old_spec.forecast_spec_code);
+            if l_distinct_count = 1 then
+               l_new_inst.issue_date_time := old_ts.issue_date;
                select *
-                  into l_ts_row
-                  from at_forecast_ts
-                  where forecast_spec_code = old_spec.forecast_spec_code
-                    and forecast_date = old_ts.forecast_date
-                    and issue_date = old_ts.issue_date
-                  fetch next 1 row only;
+               into l_ts_row
+               from at_forecast_ts
+               where forecast_spec_code = old_spec.forecast_spec_code
+                 and forecast_date = old_ts.forecast_date
+                 and issue_date = old_ts.issue_date
+               fetch next 1 row only;
                select min(start_date), max(END_DATE)
-                  into l_ts_start, l_ts_end
-                  from av_tsv
-                  where ts_code = l_ts_row.ts_code;
-               cwms_ts.CHANGE_VERSION_DATE(l_ts_row.ts_code, l_ts_row.version_date, old_ts.issue_date, l_ts_start, l_ts_end);
+               into l_ts_start, l_ts_end
+               from av_tsv
+               where ts_code = l_ts_row.ts_code;
+--                cwms_ts.CHANGE_VERSION_DATE(l_ts_row.ts_code, l_ts_row.version_date, old_ts.issue_date, l_ts_start, l_ts_end);
+               dbms_output.put_line('change version date from: ' || l_ts_row.forecast_date || ' to ' || old_ts.issue_date);
+            end if;
+            if l_distinct_count > 1 then
+               select version_date
+               into l_version_date
+               from at_forecast_ts
+               where forecast_spec_code = old_spec.forecast_spec_code
+                 and forecast_date = old_ts.forecast_date
+                 and issue_date = old_ts.issue_date
+               fetch next 1 row only;
+               l_new_inst.issue_date_time := l_version_date;
             end if;
             l_new_inst.fcst_inst_code := cwms_seq.nextval;
             l_new_inst.fcst_spec_code := l_new_spec.fcst_spec_code;
             l_new_inst.fcst_date_time := old_ts.forecast_date;
-            l_new_inst.issue_date_time := old_ts.issue_date;
             l_new_inst.max_age := old_spec.max_age;
             begin
                select value
