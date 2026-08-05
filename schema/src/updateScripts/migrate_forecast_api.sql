@@ -31,6 +31,7 @@ declare
    l_count number;
    l_version_date date;
    l_distinct_count number;
+   l_distinct_new_count number;
 begin
    -- determine which forecast location table schema is available
    select COUNT(*)
@@ -110,43 +111,53 @@ begin
             l_new_inst.fcst_spec_code := l_new_spec.fcst_spec_code;
             l_new_inst.fcst_date_time := old_ts.forecast_date;
             l_new_inst.max_age := old_spec.max_age;
-            begin
-               select value
-               into l_clob
-               from at_clob
-               where clob_code = (select clob_code
-                                  from at_forecast_text
-                                  where forecast_spec_code = old_spec.forecast_spec_code
-                                    and forecast_date = old_ts.forecast_date
-                                    and issue_date = old_ts.issue_date
-               );
-            exception
-               when no_data_found then l_clob := null;
-            end;
-            if l_clob is not null then
-               dbms_lob.createtemporary(l_blob, true);
-               l_src_offset := 1;
-               l_dst_offset := 1;
-               l_lang_ctx   := dbms_lob.default_lang_ctx;
 
-               dbms_lob.converttoblob(
-                  dest_lob     => l_blob,
-                  src_clob     => l_clob,
-                  amount       => dbms_lob.lobmaxsize,
-                  dest_offset  => l_dst_offset,
-                  src_offset   => l_src_offset,
-                  blob_csid    => dbms_lob.default_csid,
-                  lang_context => l_lang_ctx,
-                  warning      => l_warning);
+            select count(*)
+            into l_distinct_new_count
+            from (select distinct fcst_spec_code, FCST_DATE_TIME, issue_date_time
+                  from at_fcst_inst
+                  where fcst_spec_code = l_new_spec.fcst_spec_code
+                     and fcst_date_time = l_new_inst.fcst_date_time
+                     and issue_date_time = l_new_inst.issue_date_time);
+            if (l_distinct_new_count = 0) then
+               begin
+                  select value
+                  into l_clob
+                  from at_clob
+                  where clob_code = (select clob_code
+                                     from at_forecast_text
+                                     where forecast_spec_code = old_spec.forecast_spec_code
+                                       and forecast_date = old_ts.forecast_date
+                                       and issue_date = old_ts.issue_date
+                  );
+               exception
+                  when no_data_found then l_clob := null;
+               end;
+               if l_clob is not null then
+                  dbms_lob.createtemporary(l_blob, true);
+                  l_src_offset := 1;
+                  l_dst_offset := 1;
+                  l_lang_ctx   := dbms_lob.default_lang_ctx;
 
-               l_new_inst.blob_file := blob_file_t(
-                  filename     => 'forecast.txt',
-                  media_type   => 'text/plain',
-                  quality_code => null,
-                  the_blob     => l_blob);
+                  dbms_lob.converttoblob(
+                     dest_lob     => l_blob,
+                     src_clob     => l_clob,
+                     amount       => dbms_lob.lobmaxsize,
+                     dest_offset  => l_dst_offset,
+                     src_offset   => l_src_offset,
+                     blob_csid    => dbms_lob.default_csid,
+                     lang_context => l_lang_ctx,
+                     warning      => l_warning);
+
+                  l_new_inst.blob_file := blob_file_t(
+                     filename     => 'forecast.txt',
+                     media_type   => 'text/plain',
+                     quality_code => null,
+                     the_blob     => l_blob);
+               end if;
+               insert into at_fcst_inst values l_new_inst;
+               commit;
             end if;
-            insert into at_fcst_inst values l_new_inst;
-            commit;
          end loop;
       ------------------------------
       -- insert into new ts table --
