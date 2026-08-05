@@ -1,6 +1,6 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
-import os, random, sys
+import os, random, re, sys
 pgmdir = os.path.split(sys.argv[0])[0]
 if pgmdir not in sys.path : sys.path.append(pgmdir)
 import unitConversions
@@ -47,39 +47,20 @@ db_cwms_count = -1
 office_ids   = []
 tempFilename = getRandomFilename()
 
-#-----------------------------------------------------------------------------#
-# Prefixes are pre-pended to every line of the first-round output to identify #
-# which script should actually contain the commands. After the first-round    #
-# output is complete, it is read back in and split into individual scripts.   #
-#-----------------------------------------------------------------------------#
-prefix = ["BUILDCWMS~", "BUILDUSER~", "BUILDCWMS,BUILDUSER~", "BUILDCWMS,BUILDUSER,DROPCWMS,DROPUSER~"]
-CWMS, USER, BUILD, ALL = 0, 1, 2, 3
+sqlFileName = {
+    "BUILDCWMS": "py_BuildCwms.sql",
+    "DROPCWMS" : "dropCwms.sql",
+}
 
-sqlFileName              = {}
-sqlFileName["BUILDCWMS"] = "py_BuildCwms.sql"
-#sqlFileName["BUILDUSER"] = "buildCwmsPd.sql"
-sqlFileName["DROPCWMS"]  = "dropCwms.sql"
-#sqlFileName["DROPUSER"]  = "dropCwmsPd.sql"
-
-logFileName              = {}
-logFileName["BUILDCWMS"] = "buildCwms.lst"
-#logFileName["BUILDUSER"] = "buildCwmsPd.lst"
-logFileName["DROPCWMS"]  = "dropCwms.lst"
-#logFileName["DROPUSER"]  = "dropCwmsPd.lst"
+logFileName = {
+    "BUILDCWMS": "BuildCwms.lst",
+    "DROPCWMS" : "dropCwms.lst",
+}
 
 cwmsTableSpaceName = "CWMS_20DATA"
 atTableSpaceName = "CWMS_20AT_DATA"
 aqTableSpaceName = "CWMS_AQ"
 aqExTableSpaceName = "CWMS_AQ_EX"
-#userTableSpaceName = "%sCWMSDATA" % user
-#tsTableSpaceName = "%sCWMSTS" % user
-#tsTableSpaceName = "CWMS_20_TSV"
-#userSchema = "%sCWMSPD" % user
-
-cwmsSequences = [
-#    NAME             START  INCREMENT  MINIMUM  MAXIMUM  CYCLE  CACHE
-    #["CWMS_LOG_MSG_SEQ",  0,        1,         0,          999,   True, 20],
-]
 
 #------------------------------------------------------------------------------#
 # Table information.  Each table must have an entry in the tableInfo list, and #
@@ -90,10 +71,7 @@ tableInfo = [
     {"ID" : "states",                 "TABLE" : "CWMS_STATE",                     "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "counties",               "TABLE" : "CWMS_COUNTY",                    "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "cwmsOffice",             "TABLE" : "CWMS_OFFICE",                    "SCHEMA" : "CWMS", "USERACCESS" : True},
-#   {"ID" : "subLocation",            "TABLE" : "CWMS_SUBCWMS",                   "SCHEMA" : "CWMS", "USERACCESS" : False},
     {"ID" : "intervalOffset",         "TABLE" : "CWMS_INTERVAL_OFFSET",           "SCHEMA" : "CWMS", "USERACCESS" : False},
-#   {"ID" : "validValues",            "TABLE" : "CWMS_VALID_VALUES",              "SCHEMA" : "CWMS", "USERACCESS" : False},
-#   {"ID" : "errorMessage",           "TABLE" : "CWMS_ERROR_MSG",                 "SCHEMA" : "CWMS", "USERACCESS" : False},
     {"ID" : "errorMessageNew",        "TABLE" : "CWMS_ERROR",                     "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "timezone",               "TABLE" : "CWMS_TIME_ZONE",                 "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "timezoneAlias",          "TABLE" : "CWMS_TIME_ZONE_ALIAS",           "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -101,10 +79,8 @@ tableInfo = [
     {"ID" : "interval",               "TABLE" : "CWMS_INTERVAL",                  "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "duration",               "TABLE" : "CWMS_DURATION",                  "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "shefDuration",           "TABLE" : "CWMS_SHEF_DURATION",             "SCHEMA" : "CWMS", "USERACCESS" : True},
-#   {"ID" : "catalog",                "TABLE" : "CWMS_META_CATALOG",              "SCHEMA" : "CWMS", "USERACCESS" : False},
     {"ID" : "abstractParam",          "TABLE" : "CWMS_ABSTRACT_PARAMETER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "unit",                   "TABLE" : "CWMS_UNIT",                      "SCHEMA" : "CWMS", "USERACCESS" : True},
-#   {"ID" : "cwmsUnit",               "TABLE" : "CWMS_DB_UNIT",                   "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "conversion",             "TABLE" : "CWMS_UNIT_CONVERSION",           "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "parameterType",          "TABLE" : "CWMS_PARAMETER_TYPE",            "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "parameter",              "TABLE" : "CWMS_BASE_PARAMETER",            "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -128,7 +104,6 @@ tableInfo = [
     {"ID" : "interpolateUnits",       "TABLE" : "CWMS_INTERPOLATE_UNITS",         "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "gageMethod",             "TABLE" : "CWMS_GAGE_METHOD",               "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "gageType",               "TABLE" : "CWMS_GAGE_TYPE",                 "SCHEMA" : "CWMS", "USERACCESS" : True},
-#   {"ID" : "streamType",             "TABLE" : "CWMS_STREAM_TYPE",               "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "vertconHeader",          "TABLE" : "CWMS_VERTCON_HEADER",            "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "vertconData",            "TABLE" : "CWMS_VERTCON_DATA",              "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "verticalDatum",          "TABLE" : "CWMS_VERTICAL_DATUM",            "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -157,8 +132,6 @@ for item in tableInfo :
     schemaName = item["SCHEMA"]
     schema[id] = schemaName
     if schemaName == "CWMS" : userAccess[id] = item["USERACCESS"]
-
-
 
 #---------------#
 # SHEF_Duration #
@@ -4702,7 +4675,10 @@ parameters = [
     [46,    "Electric Charge Rate",             "Current",     "Current",            "ampere",  "ampere",  "ampere",      "Electric current flowing past a point in a circuit"                          ],
     [47,    "Frequency",                        "Freq",        "Frequency",          "Hz",      "Hz",      "Hz",          "The number of cycles or occurrences per time unit"                           ],
     [48,    "None",                             "Probability", "Probability",        "n/a",     "n/a",     "n/a",         "Expected fraction of all events for a specific event"                        ],
-    [49,    "Depth Velocity",                   "DepthVelocity",          "Depth Velocity",  "m2/s",    "m2/s",   "ft2/s",          "Depth Velocity"                        ],
+    [49,    "Depth Velocity",                   "DepthVelocity", "Depth Velocity",   "m2/s",    "m2/s",   "ft2/s",        "Depth Velocity"                                                              ],
+	[50,    "Volume Rate",                      "NBS",         "Net Basin Supply",   "cms",     "cms",     "cfs",         "Volume rate of Net Basin Supply to body of water"                            ],
+    [51,    "Volume Rate",                      "NTS",         "Net Total Supply",   "cms",     "cms",     "cfs",         "Volume rate of Net Total Supply to body of water"                            ],
+    [52,    "None",                             "ProbExceed",  "Probability of Exceedance", "%",  "%",     "%",           "Ratio expressed as hundredths for Probability of Exceedance"                 ],
 #   Negative base parameter codes for non-value parmameters (i.e., no entries in AT_TSV... tables)
     [-1,    "None",                             "Text",     "Text Data",          "n/a",     "n/a",     "n/a",         "Text data only, no numeric values"                                           ],
     [-2,    "None",                             "Binary",   "Binary Data",        "n/a",     "n/a",     "n/a",         "Binary data such as images, documents, etc..."                               ],
@@ -4912,6 +4888,7 @@ errorCodes = [
     ['-20029', 'RENAME_LOC_BASE_2',               'Unable to rename. The new Location: "%1" already exists.'                                     ],
     ['-20030', 'RENAME_LOC_BASE_3',               'Unable to rename. The new Location: "%1" matches the existing old location.'                  ],
     ['-20031', 'CAN_NOT_DELETE_LOC_1',            'Can not delete location: "%1" because Timeseries Identifiers exist.'                          ],
+    ['-20056', 'CAN_NOT_DELETE_LOC_2',            'Can not delete location: "%1" because dependent data exists: %2'                              ],
     ['-20032', 'CANNOT_DELETE_UNIT_1',            'Cannot delete or rename unit alias "%1"; it is in use by %2.'                                 ],
     ['-20033', 'DUPLICATE_XCHG_MAP',              'Mapping of "%1" to "%2 already exists in exchage set "%3", but with different parameters.'    ],
     ['-20034', 'ITEM_DOES_NOT_EXIST',             '%1 "%2" does not exist.'                                                                      ],
@@ -5521,7 +5498,6 @@ usgsParameters = [
 def main() :
     global db_office_id
     global office_ids
-    global prefix
     global testAccount
     global db_cwms_count
     #-------------------------#
@@ -6848,58 +6824,6 @@ def main() :
         unitLoadTemplate +=");\n"
     unitLoadTemplate +="COMMIT;\n"
 
-    sys.stderr.write("Building cwmsUnitCreationTemplate\n")
-    global cwmsUnitCreationTemplate
-    cwmsUnitCreationTemplate = \
-    '''
-    -- ## TABLE ###############################################
-    -- ## @TABLE
-    -- ##
-    CREATE TABLE @TABLE
-       (
-           UNIT_CODE      NUMBER(14) NOT NULL
-       )
-           PCTFREE 10
-           PCTUSED 40
-           INITRANS 1
-           MAXTRANS 255
-           TABLESPACE @DATASPACE
-           STORAGE
-           (
-              INITIAL 200K
-              NEXT 200K
-              MINEXTENTS 1
-              MAXEXTENTS 200
-              PCTINCREASE 25
-              FREELISTS 1
-              FREELIST GROUPS 1
-              BUFFER_POOL DEFAULT
-           );
-
-    -----------------------------
-    -- @TABLE constraints
-    --
-    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (UNIT_CODE);
-    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY (UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
-
-    -----------------------------
-    -- @TABLE comments
-    --
-    COMMENT ON TABLE @TABLE IS 'Contains references to all units allowed in CWMS database';
-    COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'Primary key used for relating cwms units to other entities';
-    COMMIT;
-
-    '''
-
-    sys.stderr.write("Building cwmsUnitLoadTemplate\n")
-    global cwmsUnitLoadTemplate
-    cwmsUnitLoadTemplate = ''
-    for i in range(len(cwmsUnitParamDefsById)) :
-        cwmsUnitCode = cwmsUnitParamDefsById[cwmsUnitParamIds[i]]
-        cwmsUnitLoadTemplate +="INSERT INTO @cwmsUnitTableName (UNIT_CODE) VALUES (\n"
-        cwmsUnitLoadTemplate +="\t%d);\n" % cwmsUnitCode
-    cwmsUnitLoadTemplate +="COMMIT;\n"
-
     sys.stderr.write("Building parameterTypeCreationTemplate\n")
     global parameterTypeCreationTemplate
     parameterTypeCreationTemplate = \
@@ -7055,9 +6979,9 @@ def main() :
     COMMENT ON COLUMN @TABLE.BASE_PARAMETER_CODE IS 'Primary key used to relate parameters other entities';
     COMMENT ON COLUMN @TABLE.BASE_PARAMETER_ID IS 'Short identifier of parameter';
     COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_CODE IS 'Foreign key referencing @abstractParamTableName table';
-    COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'This is the db storage unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
-    COMMENT ON COLUMN @TABLE.DISPLAY_UNIT_CODE_SI IS 'This is the default SI display unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
-    COMMENT ON COLUMN @TABLE.DISPLAY_UNIT_CODE_EN IS 'This is the default Non-SI display unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
+    COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'This is the db storage unit for this parameter. Foreign key referencing @unitTableName table.';
+    COMMENT ON COLUMN @TABLE.DISPLAY_UNIT_CODE_SI IS 'This is the default SI display unit for this parameter. Foreign key referencing @unitTableName table.';
+    COMMENT ON COLUMN @TABLE.DISPLAY_UNIT_CODE_EN IS 'This is the default Non-SI display unit for this parameter. Foreign key referencing @unitTableName table.';
     COMMENT ON COLUMN @TABLE.LONG_NAME IS 'Full name of parameter';
     COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description of parameter';
 
@@ -9892,115 +9816,94 @@ def main() :
     # Redirect stdout to the temp file
     #------------------------------------------------------------------------------
     sys.stdout = open(tempFilename, "w")
-
-    #print prefix[ALL] + "SET TIME ON"
-    #print "BUILDCWMS~SPOOL %s" % logFileName["BUILDCWMS"]
-    #print "BUILDUSER~SPOOL %s" % logFileName["BUILDUSER"]
-    #print "DROPCWMS~SPOOL %s"  % logFileName["DROPCWMS"]
-    #print "DROPUSER~SPOOL %s"  % logFileName["DROPUSER"]
-    #print prefix[ALL] + "SELECT SYSDATE FROM DUAL;"
-    #print prefix[ALL] + "SET ECHO ON"
-    print(prefix[ALL] + "SET SERVEROUTPUT ON")
-    #print prefix[ALL] + "BEGIN DBMS_OUTPUT.ENABLE(20000); END;"
-    #print prefix[ALL] + "/"
+    print("BUILDCWMS,DROPCWMS~SET SERVEROUTPUT ON")
 
     for table in tables_rev :
-        tableName = eval("%sTableName" % table)
+        tableName = eval(f"{table}TableName")
 
         if   tableName.startswith("CWMS") : tableSpaceName = cwmsTableSpaceName
         elif tableName.startswith("AT")   : tableSpaceName = atTableSpaceName
         else : raise Exception("Don't know what tablespace to use for %s" % tableName)
-        #if "TSV" in tableName or tableName.startswith("CWMS_DATA_Q") : tableSpaceName = tsTableSpaceName
 
-        if schema[table] == "CWMS"  : thisPrefix = prefix[CWMS]
-        else                        : thisPrefix = prefix[USER]
-        dropPrefix = thisPrefix.replace("BUILD", "DROP")
-        lines = eval("%sCreationTemplate.split('\\n')" % table)        
-        for i in list(range(len(lines))) : lines[i] = thisPrefix + lines[i]
-        exec("%sCreationTemplate = '\\n'.join(lines)" % table)        
-        exec("global %sCreationStr; %sCreationStr = %sCreationTemplate.replace('@TABLE', '%s')" % (table, table, table, tableName))
-        exec("%sCreationStr = %sCreationStr.replace('@DATASPACE', '%s')" % (table, table, tableSpaceName))
+        #--------------------------------------#
+        # output the command to drop the table #
+        #--------------------------------------#
+        print(re.sub(r"^\s*", "DROPCWMS~", f'''
+            DROP TABLE {tableName};
+            COMMIT;''', flags=re.M))
+        #----------------------------------#
+        # output the table creation string #
+        #----------------------------------#
+        exec(re.sub(r"^\s*", "", f'''
+            global {table}CreationTemplate, {table}CreationStr
+            lines = eval(f"{table}CreationTemplate.split('\\\\n')")
+            for i in list(range(len(lines))) : lines[i] = "BUILDCWMS~" + lines[i]
+            {table}CreationTemplate = "\\n".join(lines)
+            {table}CreationStr = {table}CreationTemplate.replace("@TABLE", "{tableName}")
+            {table}CreationStr = {table}CreationStr.replace("@DATASPACE", "{tableSpaceName}")
+            {table}CreationStr = re.sub(r"@(\\w+)", lambda m: str(eval(m.group(1))), {table}CreationStr)''', flags=re.M))
+        #----------------------------------------------#
+        # output the table loading string if it exists #
+        #----------------------------------------------#
         try :
-            lines = eval("%sLoadTemplate.split('\\n')" % table)
-            for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
-            exec("%sLoadTemplate = '\\n'.join(lines)" % table)
-            exec("global %sLoadStr; %sLoadStr = %sLoadTemplate.replace('@TABLE', '%s')" % (table, table, table, tableName))
-        except Exception as e:
-            #print("***** %s *****" %s str(e))
-            pass            
-        try :
-            lines = eval("%sTestTemplate.split('\\n')" % table)
-            for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
-            exec("%sTestTemplate = '\\n'.join(lines)" % table)
-            exec("global %sTestStr; %sTestStr = %sTestTemplate.replace('@TABLE', '%s')" % (table, table, table, tableName))
-        except :
+            exec(re.sub(r"^\s*", "", f'''
+                global {table}LoadTemplate, {table}LoadStr
+                lines = eval(f"{table}LoadTemplate.split('\\\\n')")
+                for i in list(range(len(lines))) : lines[i] = "BUILDCWMS~" + lines[i]
+                {table}LoadTemplate = "\\n".join(lines)
+                {table}LoadStr = {table}LoadTemplate.replace("@TABLE", "{tableName}")
+                {table}LoadStr = re.sub(r"@(\\w+)", lambda m: str(eval(m.group(1))), {table}LoadStr)''', flags=re.M))
+        except NameError as ne:
+            # load template not defined
             pass
-        print(dropPrefix)
-        print("%sDROP TABLE %s;" % (dropPrefix, tableName))
-        print("%sCOMMIT;" % dropPrefix)
-    #print("*******TEST*****")
+        #----------------------------------------------#
+        # output the table testing string if it exists #
+        #----------------------------------------------#
+        try :
+            exec(re.sub(r"^\s*", "", f'''
+                global {table}TestTemplate, {table}TestStr
+                lines = eval(f"{table}TestTemplate.split('\\\\n')")
+                for i in list(range(len(lines))) : lines[i] = "BUILDCWMS~" + lines[i]
+                {table}TestTemplate = "\\n".join(lines)
+                {table}TestStr = {table}TestTemplate.replace("@TABLE", "{tableName}")
+                {table}TestStr = re.sub(r"@(\\w+)", lambda m: str(eval(m.group(1))), {table}TestStr)''', flags=re.M))
+        except NameError as ne:
+            # test template not defined
+            pass
+        
     #==============================================================================
     # Create CWMS_SEQ for the specified db_office_id's offset...
     #==============================================================================
     dbMinValue =  db_office_code[db_office_id] + (100*db_cwms_count)
     dbStartIndex = dbMinValue
-    dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
-    print(dropPrefix + "DROP SEQUENCE CWMS_SEQ;")
-    print(prefix[CWMS] + "CREATE SEQUENCE CWMS_SEQ")
-    print(prefix[CWMS] + "\tSTART WITH %s" % dbStartIndex)
-    print(prefix[CWMS] + "\tINCREMENT BY 1000")
-    print(prefix[CWMS] + "\tMINVALUE %s" % dbMinValue)
-    print(prefix[CWMS] + "\tMAXVALUE 1.0e38")
-    print(prefix[CWMS] + "\tNOCYCLE")
-    print(prefix[CWMS] + "\tCACHE 20")
-    print(prefix[CWMS] + "\tORDER;")
-
-    #==============================================================================
-    # Create any other sequences...
-    #==============================================================================
-    cycleStr = ['NOCYCLE', 'CYCLE']
-    if len(cwmsSequences) :
-        dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
-        for name, start, increment, minimum, maximum, cycle, cache in cwmsSequences :
-            print(dropPrefix + "DROP SEQUENCE %s;" % name)
-            print(prefix[CWMS] + "CREATE SEQUENCE %s" % name)
-            print(prefix[CWMS] + "\tSTART WITH %s" % repr(start))
-            print(prefix[CWMS] + "\tINCREMENT BY %s" % repr(increment))
-            print(prefix[CWMS] + "\tMINVALUE %s" % repr(minimum))
-            print(prefix[CWMS] + "\tMAXVALUE %s" % repr(maximum))
-            print(prefix[CWMS] + "\t%s" % cycleStr[cycle])
-            print(prefix[CWMS] + "\tCACHE %s" % repr(cache))
-            print(prefix[CWMS] + "\tORDER;")
-
-    print(dropPrefix + "COMMIT;")
-    print(prefix[CWMS] + "COMMIT;")
-
-    dropPrefix = prefix[USER].replace('BUILD', 'DROP')
-    for table in tables :
-        print(eval("%sCreationStr" % table))
-    #    if schema[table] == "CWMS" and userAccess[table] :
-    #        tableName = eval("%sTableName" % table)
-    #        print prefix[CWMS] + "GRANT SELECT ON %s TO %s;" % (tableName, userSchema)
-    #        print prefix[CWMS] + "GRANT REFERENCES ON %s TO %s;" % (tableName, userSchema)
-            # generate private synonyms in the user schema
-    #        print prefix[USER] + "CREATE OR REPLACE SYNONYM %s FOR %s.%s;" % (tableName, schema[table], tableName)
-    #        print dropPrefix + "DROP SYNONYM %s;" % (tableName)
-    print(dropPrefix + "COMMIT;")
+    print(re.sub(r"^\s*", "DROPCWMS~", '''
+        DROP SEQUENCE CWMS_SEQ;
+        COMMIT;''', flags=re.M))
+    
+    print(re.sub(r"^\s*", "BUILDCWMS~", f'''
+        CREATE SEQUENCE CWMS_SEQ
+        \tSTART WITH {dbStartIndex}
+        \tINCREMENT BY 1000
+        \tMINVALUE {dbMinValue}
+        \tMAXVALUE 1.0e38
+        \tNOCYCLE
+        \tCACHE 20
+        \tORDER;
+        COMMIT;''', flags=re.M))
 
     for table in tables :
+        print(eval(f"{table}CreationStr"))
         try :
-            print(eval("%sLoadStr" % table))
-        except :
+            print(eval(f"{table}LoadStr"))
+        except NameError as ne:
+            # load string not defined
             pass
     for table in tables :
         try :
-            print(eval("%sTestStr" % table))
-        except :
+            print(eval(f"{table}TestStr"))
+        except NameError as ne:
+            # load string not defined
             pass
-
-    #print prefix[ALL] + "SPOOL OFF"
-    #print prefix[ALL] + "SET ECHO OFF"
-    #print prefix[ALL] + "SET TIME OFF"
 
     #--------------------------------------------------------------------#
     # read in the output we just generated and parse to individual files #
@@ -10014,20 +9917,14 @@ def main() :
     tempFile.close()
     sys.stderr.write("Writing to files %s\n" % sqlFileName.values())
     buildCwms = open(sqlFileName["BUILDCWMS"], "w")
-    #buildUser = open(sqlFileName["BUILDUSER"], "w")
     dropCwms  = open(sqlFileName["DROPCWMS"], "w")
-    #dropUser  = open(sqlFileName["DROPUSER"], "w")
     for line in lines :
         if (line.strip() == "") : continue
         prefix, line = line.split("~", 1)
         if prefix.find("BUILDCWMS") != -1 : buildCwms.write(line)
-        #if prefix.find("BUILDUSER") != -1 : buildUser.write(line)
         if prefix.find("DROPCWMS")  != -1 : dropCwms.write(line)
-        #if prefix.find("DROPUSER")  != -1 : dropUser.write(line)
     buildCwms.close()
-    #buildUser.close()
     dropCwms.close()
-    #dropUser.close()
     os.remove(tempFilename)
 
 if __name__ in ("__main__", "main") : main()

@@ -629,15 +629,6 @@ begin
    if l_message is not null then
       l_message := l_message||'</table></body></html>';
    end if;
-   ----------------
-   -- send email --
-   ----------------
-   cwms_mail.send_mail(
-      p_from       => lower(l_dbname)||'.db.cwms@usace.army.mil',
-      p_to         => l_to_addrs,
-      p_subject    => l_count||' Unauthorized Database Scheduler Entries',
-      p_message    => l_message,
-      p_is_html    => 'T');
    ----------------------------------------------------------------------------
    -- delete any authorized scheduler entries from cwms_unauth_sched_entries --
    ----------------------------------------------------------------------------
