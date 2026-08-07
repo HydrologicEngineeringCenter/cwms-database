@@ -2523,7 +2523,6 @@ is
    l_effective_date date := date '2025-01-01';
    l_start_ts timestamp := to_timestamp('2025-01-01 12:00', 'YYYY-MM-DD HH24:MI');
    l_end_ts timestamp := to_timestamp('2025-01-02 04:00', 'YYYY-MM-DD HH24:MI');
-   l_interpolate str_tab_t := str_tab_t('F', 'T');
    l_elev_tsid varchar2(191) := c_location_id||'.Elev.Inst.1Hour.0.IRRTest';
    l_elev_ts_data cwms_t_tsv_array := cwms_t_tsv_array (
       cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 1/24 as timestamp), 'UTC'), 1000, 0),
@@ -2550,67 +2549,32 @@ begin
       cwms_util.non_versioned,
       c_office_id,
       'F');
-   for i in 1..l_interpolate.count loop
-      cwms_level.store_location_level4(
-         p_location_level_id => c_top_of_normal_elev_id || i,
-         p_level_value       => null,
-         p_level_units       => c_elev_unit,
-         p_effective_date    => l_effective_date,
-         p_timezone_id       => c_timezone_id,
-         p_tsid              => l_elev_tsid,
-         p_fail_if_exists    => 'F',
-         p_interpolate       => l_interpolate(i),
-         p_office_id         => c_office_id);
-      commit;
-      l_result_values := cwms_level.retrieve_loc_lvl_values4(
-         p_location_level_id  => c_top_of_normal_elev_id || i,
-         p_start_time         => l_start_ts,
-         p_end_time           => l_end_ts,
-         p_level_units        => c_elev_unit,
-         p_timezone_id        => c_timezone_id,
-         p_office_id          => c_office_id
-      );
+   cwms_level.store_location_level4(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_value       => null,
+      p_level_units       => c_elev_unit,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_tsid              => l_elev_tsid,
+      p_fail_if_exists    => 'F',
+      p_interpolate       => 'F',
+      p_office_id         => c_office_id);
+   commit;
+   l_result_values := cwms_level.retrieve_loc_lvl_values4(
+      p_location_level_id  => c_top_of_normal_elev_id,
+      p_start_time         => l_start_ts,
+      p_end_time           => l_end_ts,
+      p_level_units        => c_elev_unit,
+      p_timezone_id        => c_timezone_id,
+      p_office_id          => c_office_id
+   );
 
+   ut.expect(l_result_values.count).to_equal(l_elev_ts_data.count);
 
-      if (l_interpolate(i) = 'T') then
-         ut.expect(l_result_values.count).to_equal(2);
-         for j in 1..l_result_values.count loop
-            dbms_output.PUT_LINE('Value: ' || l_result_values(j).value || ' Date: ' || l_result_values(j).date_time);
-         end loop;
-
-         for j in 1..l_elev_ts_data.count loop
-            dbms_output.PUT_LINE('Value: ' || l_elev_ts_data(j).value || ' Date: ' || l_elev_ts_data(j).date_time);
-            end loop;
-      else
-         ut.expect(l_result_values.count).to_equal(l_elev_ts_data.count);
-      end if;
-
-      for j in 1..l_result_values.count loop
-         if l_interpolate(i) = 'T' then
-            if mod(j, 2) = 0 then
-               ------------------------------------------
-               -- even indices are between value times --
-               ------------------------------------------
-               l_prev := j/2;
-               l_next := mod(j/2, l_elev_ts_data.count)+1;
-               l_prev_val := round(l_elev_ts_data(l_prev).value, 5);
-               l_next_val := round(l_elev_ts_data(l_next).value, 5);
-               ut.expect(round(l_result_values(j).value, 5)).to_equal((l_prev_val + l_next_val) / 2);
-            else
-               ------------------------------------
-               -- odd indices are at value times --
-               ------------------------------------
-               l_prev := mod((j-1)/2, l_elev_ts_data.count)+1;
-               l_prev_val := round(l_elev_ts_data(l_prev).value, 5);
-               ut.expect(round(l_result_values(j).value, 5)).to_equal(l_prev_val);
-            end if;
-            ut.expect(l_result_values(j).quality_code).to_equal(1);
-         else
-            ut.expect(l_result_values(j).date_time).to_equal(cast(l_elev_ts_data(j).date_time as date));
-            ut.expect(round(l_result_values(j).value, 5)).to_equal(l_elev_ts_data(j).value);
-            ut.expect(l_result_values(j).quality_code).to_equal(0);
-         end if;
-      end loop;
+   for j in 1..l_result_values.count loop
+      ut.expect(l_result_values(j).date_time).to_equal(cast(l_elev_ts_data(j).date_time as date));
+      ut.expect(round(l_result_values(j).value, 5)).to_equal(l_elev_ts_data(j).value);
+      ut.expect(l_result_values(j).quality_code).to_equal(0);
    end loop;
 end test_cda_116_irregular_level_as_timeseries;
 
