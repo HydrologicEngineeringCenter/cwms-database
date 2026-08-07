@@ -6487,50 +6487,7 @@ begin
       p_attribute_duration_id   => l_attr_id_parts(3),
       p_level_precedence        => p_level_precedence,
       p_office_id               => p_office_id);
-   -----------------------------------------
-   -- set up variables to do lookups with --
-   -----------------------------------------
-   select date_time - l_min_date_utc
-      bulk collect
-   into l_date_offsets
-   from table(l_level_values);
-   l_seq_props := cwms_lookup.analyze_sequence(l_date_offsets);
-   l_level_values_interp.extend(l_level_values.count);
-   for i in 1..l_level_values.count loop
-      l_level_values_interp(i) := ztsv_type(l_level_values(i).date_time, null, 0);
-      l_date_offset := l_level_values(i).date_time - l_min_date_utc;
-      l_hi_idx := cwms_lookup.find_high_index(l_date_offset, l_date_offsets, l_seq_props);
-      l_lo_idx := l_hi_idx -1 ;
-      l_ratio  := cwms_lookup.find_ratio(
-         p_log_used                => l_log_used,
-         p_value                   => l_date_offset,
-         p_sequence                => l_date_offsets,
-         p_high_index              => l_hi_idx,
-         p_increasing              => l_seq_props.increasing_range,
-         p_in_range_behavior       => cwms_lookup.method_linear,
-         p_out_range_low_behavior  => cwms_lookup.method_null,   -- set values to null before earliest effective date
-         p_out_range_high_behavior => cwms_lookup.method_linear);
-      if l_ratio is not null then
-         if l_level_values(l_lo_idx).quality_code = 0 then
-            ----------------------
-            -- no interpolation --
-            ----------------------
-            l_level_values_interp(i).value := l_level_values(l_lo_idx).value;
-         else
-            -------------------
-            -- interpolation --
-            -------------------
-            l_level_values_interp(i).value := l_level_values(l_lo_idx).value + l_ratio * (l_level_values(l_hi_idx).value - l_level_values(l_lo_idx).value);
-            l_level_values_interp(i).quality_code := 1;
-         end if;
-      end if;
-   end loop;
-   select ztsv_type(date_time, value, quality_code)
-      bulk collect
-   into l_result_values
-   from table(l_level_values_interp)
-   where value is not null and date_time is not null;
-   return l_result_values;
+   return l_level_values;
 end retrieve_loc_lvl_values4;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
