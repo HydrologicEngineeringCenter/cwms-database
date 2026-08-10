@@ -6418,19 +6418,11 @@ function retrieve_loc_lvl_values4(
    return ztsv_array
 is
    l_level_values          ztsv_array;
-   l_level_values_interp   ztsv_array := ztsv_array();
-   l_result_values         ztsv_array;
+   l_result_values         ztsv_array := ztsv_array();
    l_min_date_utc          date;
    l_max_date_utc          date;
    l_level_id_parts        str_tab_t;
    l_attr_id_parts         str_tab_t;
-   l_hi_idx                pls_integer;
-   l_lo_idx                pls_integer;
-   l_log_used              boolean;
-   l_ratio                 number;
-   l_date_offset           number;
-   l_date_offsets          number_tab_t;
-   l_seq_props             cwms_lookup.sequence_properties_t;
 begin
    -- sanity checks
    if p_location_level_id is null then
@@ -6492,7 +6484,12 @@ begin
       p_attribute_duration_id   => l_attr_id_parts(3),
       p_level_precedence        => p_level_precedence,
       p_office_id               => p_office_id);
-   return l_level_values;
+   select ztsv_type(date_time, value, quality_code)
+      bulk collect
+   into l_result_values
+   from table(l_level_values)
+   where value is not null;
+   return l_result_values;
 end retrieve_loc_lvl_values4;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values

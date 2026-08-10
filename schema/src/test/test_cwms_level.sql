@@ -2589,7 +2589,7 @@ begin
       c_office_id,
       'F');
    cwms_level.store_location_level4(
-      p_location_level_id => c_top_of_normal_elev_id,
+      p_location_level_id => c_top_of_normal_elev_id || 'IRR',
       p_level_value       => null,
       p_level_units       => c_elev_unit,
       p_effective_date    => l_effective_date,
@@ -2600,7 +2600,7 @@ begin
       p_office_id         => c_office_id);
    commit;
    l_result_values := cwms_level.retrieve_loc_lvl_values4(
-      p_location_level_id  => c_top_of_normal_elev_id,
+      p_location_level_id  => c_top_of_normal_elev_id || 'IRR',
       p_start_time         => l_start_ts,
       p_end_time           => l_end_ts,
       p_level_units        => c_elev_unit,
