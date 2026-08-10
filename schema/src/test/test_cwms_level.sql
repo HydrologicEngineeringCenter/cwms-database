@@ -35,6 +35,12 @@ procedure test_cwdb_304_null_values_in_av_location_level_curval;
 procedure test_issue_61_monthly_seasonal_values_with_origin_day_gt_28;
 --%test(Issue 83: level-as-timeseries retrieval bug for seasonal data)
 procedure test_issue_83_retrieve_seasonal_as_timeseries;
+--%test(CWMS-2498: disallow sub-minute level effective date)
+--%throws(-20998)
+procedure test_subminute_effective_date;
+--%test(CWMS-2498: disallow sub-minute level effective date for virtual storage)
+--%throws(-20998)
+procedure test_subminute_effective_date_virtual;
 --%test(CDA-116: irregular level-as-timeseries retrieval)
 procedure test_cda_116_irregular_level_as_timeseries;
 
@@ -2513,6 +2519,39 @@ begin
    end loop;
 
 end test_issue_83_retrieve_seasonal_as_timeseries;
+
+procedure test_subminute_effective_date
+is
+   l_constant_value number := 125.6;
+   l_effective_date timestamp := to_timestamp('2025-01-01 12:00:25', 'YYYY-MM-DD HH24:MI:SS', 'NLS_DATE_LANGUAGE=AMERICAN');
+begin
+   cwms_level.store_location_level4(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_value       => l_constant_value,
+      p_level_units       => c_elev_unit,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_expiration_date   => null,
+      p_office_id         => c_office_id);
+end test_subminute_effective_date;
+
+procedure test_subminute_effective_date_virtual
+is
+   l_constant_value number := 125.6;
+   l_effective_date timestamp := to_timestamp('2025-01-01 12:00:25', 'YYYY-MM-DD HH24:MI:SS', 'NLS_DATE_LANGUAGE=AMERICAN');
+   l_constituents str_tab_tab_t := str_tab_tab_t(
+      str_tab_t()
+   );
+begin
+   cwms_level.STORE_VIRTUAL_LOCATION_LEVEL(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_constituents      => l_constituents,
+      p_fail_if_exists    => 'F',
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_expiration_date   => null,
+      p_office_id         => c_office_id);
+end test_subminute_effective_date_virtual;
 
 --------------------------------------------------------------------------------
 -- procedure test_cda_116_irregular_level_as_timeseries

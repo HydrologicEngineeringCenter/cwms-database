@@ -203,6 +203,85 @@ AS
          RAISE;
    END get_location_code;
 
+   FUNCTION get_location_code (p_db_office_id     IN VARCHAR2,
+                               p_location_id      IN VARCHAR2,
+                               p_check_aliases    IN VARCHAR2,
+                               p_ignore_missing   IN VARCHAR2
+   )
+      RETURN NUMBER
+      IS
+      l_location_code   NUMBER;
+      l_cache_id        varchar2(271);
+      l_db_office_code    NUMBER := cwms_util.get_office_code (p_db_office_id);
+   BEGIN
+      IF p_location_id IS NULL
+      THEN
+         cwms_err.raise ('ERROR',
+                         'The P_LOCATION_ID parameter cannot be NULL'
+         );
+      END IF;
+
+      --
+      l_cache_id := to_char(l_db_office_code)||'/'||upper(p_location_id);
+      l_location_code := cwms_cache.get(g_location_code_cache, l_cache_id);
+      if l_location_code is not null then
+         return l_location_code;
+      end if;
+
+      SELECT   apl.location_code
+      INTO   l_location_code
+      FROM   at_physical_location apl, at_base_location abl
+      WHERE   apl.base_location_code = abl.base_location_code
+        AND UPPER (abl.base_location_id) =
+            UPPER (cwms_util.get_base_id (p_location_id))
+        AND NVL (UPPER (apl.sub_location_id), '.') =
+            NVL (UPPER (cwms_util.get_sub_id (p_location_id)), '.')
+        AND abl.db_office_code = l_db_office_code;
+
+      --
+      cwms_cache.put(g_location_code_cache, l_cache_id, l_location_code);
+      RETURN l_location_code;
+      --
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+         THEN
+            IF cwms_util.is_true(p_check_aliases) THEN
+               DECLARE
+                  l_office_id   VARCHAR2 (16);
+               BEGIN
+                  SELECT   office_id
+                  INTO   l_office_id
+                  FROM   cwms_office
+                  WHERE   office_code = l_db_office_code;
+
+                  l_location_code :=
+                     get_location_code_from_alias (p_alias_id  => p_location_id,
+                                                   p_office_id => l_office_id
+                     );
+                  IF l_location_code IS NULL
+                  THEN
+                     if p_ignore_missing = 'T' then
+                        return -1;
+                     else
+                        cwms_err.raise('LOCATION_ID_NOT_FOUND', p_location_id);
+                     end if;
+                  END IF;
+
+                  cwms_cache.put(g_location_code_cache, l_cache_id, l_location_code);
+                  RETURN l_location_code;
+               END;
+            ELSE
+               if p_ignore_missing = 'T' then
+                  return -1;
+               else
+                  RAISE;
+               end if;
+            END IF;
+      WHEN OTHERS
+         THEN
+            RAISE;
+   END get_location_code;
+
    FUNCTION get_location_code (p_db_office_code   IN NUMBER,
                                p_location_id      IN VARCHAR2
                               )
@@ -560,66 +639,19 @@ AS
       l_base_loc_exists        BOOLEAN := TRUE;
       l_sub_loc_exists          BOOLEAN := TRUE;
       l_location_kind_code     NUMBER := 1; -- SITE
-      l_bounding_office_code    NUMBER := NULL;
-      l_nation_code             VARCHAR2 (2);
-      l_cwms_office_code       NUMBER (14) := cwms_util.get_office_code ('CWMS');
+      l_bounding_office_code   at_physical_location.office_code%type;
+      l_nation_code            at_physical_location.nation_code%type;
       l_lat_lon_specified      boolean := p_latitude is not null and p_longitude is not null;
-      l_county_code            integer;
-      l_nearest_city_tab       str_tab_t;
-      l_nearest_city           cwms_cities_sp.city_name%type;
       l_srid                   mdsys.sdo_coord_ref_sys.srid%type;
    BEGIN
-      if l_lat_lon_specified then
-         l_county_code := get_county_code(p_latitude, p_longitude);
-         if mod(l_county_code, 1000) = 0 then
-            l_county_code := nvl(p_county_code, l_county_code);
-         end if;
-         l_nation_code := get_nation_id(p_latitude, p_longitude);
-         if l_nation_code is null and p_nation_id is not null then
-            ------------------------------------------------
-            -- allow nation to be passed in as code or id --
-            ------------------------------------------------
-            if length(p_nation_id) = 2 then
-               l_nation_code := upper(p_nation_id);
-            else
-               begin
-                  select fips_cntry
-                    into l_nation_code
-                    from cwms_nation_sp
-                   where upper(long_name) = upper(p_nation_id);
-               exception
-                  when no_data_found then
-                     cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
-               end;
-            end if;
-         end if;
-         if p_bounding_office_id is not null then
-            BEGIN
-               SELECT   office_code
-                 INTO   l_bounding_office_code
-                 FROM   cwms_office
-                WHERE   office_id = UPPER (p_bounding_office_id);
-            EXCEPTION
-                  when no_data_found then
-                     cwms_err.raise ('INVALID_ITEM', p_bounding_office_id, 'office id');
-               END;
-         else
-            l_bounding_office_code := get_bounding_ofc_code(p_latitude, p_longitude);
-         end if;
-         l_nearest_city_tab := get_nearest_city(p_latitude, p_longitude);
-         l_nearest_city := case
-                           when l_nearest_city_tab(1) is null then p_nearest_city
-                           when l_nearest_city_tab(2) is null then l_nearest_city_tab(1)
-                           else l_nearest_city_tab(1)||', '||l_nearest_city_tab(2)
-                           end;
-      else
-         l_county_code := nvl(p_county_code, 0); -- 0 = unknown county, unknown state
+      if p_bounding_office_id is not null then
+         l_bounding_office_code := cwms_util.get_db_office_code(p_bounding_office_id);
+      end if;
+      if p_nation_id is not null then
          ------------------------------------------------
          -- allow nation to be passed in as code or id --
          ------------------------------------------------
-         if p_nation_id is null then
-            l_nation_code := null;
-         elsif length(p_nation_id) = 2 then
+         if length(p_nation_id) = 2 then
             l_nation_code := upper(p_nation_id);
          else
             begin
@@ -632,18 +664,6 @@ AS
                   cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
             end;
          end if;
-         if p_bounding_office_id is not null then
-            BEGIN
-               SELECT   office_code
-                 INTO   l_bounding_office_code
-                 FROM   cwms_office
-                WHERE   office_id = UPPER (p_bounding_office_id);
-            EXCEPTION
-                  when no_data_found then
-                     cwms_err.raise ('INVALID_ITEM', p_bounding_office_id, 'office id');
-               END;
-         end if;
-         l_nearest_city := p_nearest_city;
       end if;
       BEGIN
          -- Check if base_location exists -
@@ -683,7 +703,6 @@ AS
                l_sub_loc_exists := FALSE;
          END;
       END IF;
-
       IF NOT l_base_loc_exists OR NOT l_sub_loc_exists
       THEN
          ---------.
@@ -736,7 +755,7 @@ AS
                         p_base_location_code,
                         p_base_location_code,
                         p_time_zone_code,
-                        l_county_code,
+                        p_county_code,
                         p_location_type,
                         p_elevation,
                         p_vertical_datum,
@@ -751,7 +770,7 @@ AS
                         p_published_longitude,
                         l_bounding_office_code,
                         l_nation_code,
-                        l_nearest_city
+                        p_nearest_city
                      );
             if l_lat_lon_specified then
                l_srid := get_location_srid(p_base_location_code);
@@ -809,7 +828,7 @@ AS
                            p_base_location_code,
                            p_sub_location_id,
                            p_time_zone_code,
-                           l_county_code,
+                           p_county_code,
                            p_location_type,
                            p_elevation,
                            p_vertical_datum,
@@ -824,7 +843,7 @@ AS
                            p_published_longitude,
                            l_bounding_office_code,
                            l_nation_code,
-                           l_nearest_city
+                           p_nearest_city
                         )
             RETURNING   location_code
                   INTO   p_location_code;
@@ -2491,6 +2510,112 @@ AS
       l_location_id           varchar2(57);
       l_location_id_cache_val varchar2(256);
       l_clob_codes            number_tab_t;
+      l_dependency_info       varchar2(32767);
+
+      procedure add_dependency(
+         p_dependencies in out nocopy varchar2,
+         p_name         in            varchar2,
+         p_count        in            number)
+      is
+      begin
+         if p_count > 0 then
+            if p_dependencies is not null then
+               p_dependencies := p_dependencies||'; ';
+            end if;
+            p_dependencies := p_dependencies||p_name||'='||p_count;
+         end if;
+      end add_dependency;
+
+      function get_delete_dependency_info
+         return varchar2
+      is
+         l_dependencies varchar2(32767);
+         l_count        number;
+      begin
+         select count(*)
+           into l_count
+           from at_cwms_ts_id
+          where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'time series identifiers', l_count);
+
+         -- at_location_geometry is not a dependencie in the sense of these other objects.
+         -- it is simply where the location geographic information is stored and is attached to the at_physical_location row
+         -- in a roughly 1:1 manner. E.g. a sub-location may share it, but a given physical location only has one entry in the table.
+
+         select count(*) into l_count from at_geographic_location where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'geographic locations', l_count);
+
+         select count(*) into l_count from at_location_url where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'location URLs', l_count);
+
+         select count(*) into l_count from at_stream where stream_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'streams', l_count);
+
+         select count(*) into l_count from at_stream_location where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'stream locations', l_count);
+
+         select count(*) into l_count from at_stream_reach where stream_reach_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'stream reaches', l_count);
+
+         select count(*) into l_count from at_streamflow_meas where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'streamflow measurements', l_count);
+
+         select count(*) into l_count from at_basin where basin_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'basins', l_count);
+
+         select count(*) into l_count from at_gage where gage_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'gages', l_count);
+
+         select count(*) into l_count from at_gage where associated_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'associated gages', l_count);
+
+         select count(*) into l_count from at_display_scale where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'display scales', l_count);
+
+         select count(*) into l_count from at_location_level where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'location levels', l_count);
+
+         select count(*) into l_count from at_loc_lvl_indicator where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'location level indicators', l_count);
+
+         select count(*) into l_count from at_forecast_spec where target_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'target forecast specs', l_count);
+
+         select count(*) into l_count from at_forecast_spec where source_location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'source forecast specs', l_count);
+
+         select count(*) into l_count from at_vert_datum_offset where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'vertical datum offsets', l_count);
+
+         select count(*) into l_count from at_vert_datum_local where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'local vertical datums', l_count);
+
+         select count(*) into l_count from at_entity_location where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'entity locations', l_count);
+
+         select count(*) into l_count from at_rating_spec where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'rating specs', l_count);
+
+         select count(*) into l_count from at_fcst_location where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'forecast locations', l_count);
+
+         select count(*) into l_count from at_loc_lvl_label where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'location level labels', l_count);
+
+         select count(*) into l_count from at_loc_lvl_source where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'location level sources', l_count);
+
+         select count(*) into l_count from at_ts_profile where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'time series profiles', l_count);
+
+         select count(*) into l_count from at_virtual_location_level where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'virtual location levels', l_count);
+
+         select count(*) into l_count from at_a2w_ts_codes_by_loc where location_code in (select * from table(l_location_codes));
+         add_dependency(l_dependencies, 'A2W time series code associations', l_count);
+
+         return substr(l_dependencies, 1, 32767);
+      end get_delete_dependency_info;
    --
    BEGIN
       -------------------
@@ -2581,6 +2706,13 @@ AS
                 l_location_ids
            from at_physical_location
           where location_code = l_location_code;
+      end if;
+
+      if l_delete_action in (cwms_util.delete_key, cwms_util.delete_loc) then
+         l_dependency_info := get_delete_dependency_info;
+         if l_dependency_info is not null then
+            cwms_err.raise('CAN_NOT_DELETE_LOC_2', p_location_id, l_dependency_info);
+         end if;
       end if;
 
       ---------------------------------------------
@@ -2802,8 +2934,8 @@ AS
          ---------------
          -- AT_FCST_xxx
             delete
-              from at_fcst_location
-             where primary_location_code in (select * from table (l_location_codes));
+             from at_fcst_location
+            where location_code in (select * from table (l_location_codes));
          -- AT_FORECAST_xxx
          select clob_code
            bulk collect
@@ -2936,7 +3068,8 @@ AS
          THEN
             CLOSE l_cursor;
 
-            cwms_err.raise ('CAN_NOT_DELETE_LOC_1', p_location_id);
+            l_dependency_info := get_delete_dependency_info;
+            cwms_err.raise('CAN_NOT_DELETE_LOC_2', p_location_id, nvl(l_dependency_info, 'time series identifiers exist'));
          END IF;
 
          CASE
@@ -2981,58 +3114,54 @@ AS
              cwms_util.delete_loc,
              cwms_util.delete_loc_cascade)
       then
-         for i in 1..2 loop
-            begin
-               if l_this_is_a_base_loc
-               then -- Deleting Base Location ----------------------------------------
-                  ----------------------
-                  -- actual locations --
-                  ----------------------
-                  for rec in (select location_code
-                                from at_physical_location apl
-                               where apl.base_location_code = l_base_location_code
-                             )
-                  loop
-                     cwms_cache.remove_by_value(g_location_id_cache, get_location_id(rec.location_code));
-                     cwms_cache.remove_by_value(g_location_code_cache, rec.location_code);
-                     delete from at_location_geometry where location_code = rec.location_code;
-                     delete from at_physical_location where location_code = rec.location_code;
-                  end loop;
+         savepoint delete_location_key;
+         begin
+            --------------------------------------------------------------------------------------------------------
+            -- purge all deleted ts data types for all version dates for all ts codes associated with location(s) --
+            --------------------------------------------------------------------------------------------------------
+            for location_code in (select column_value as it from table(l_location_codes)) loop
+               for ts_code in (select ts_code as it from at_cwms_ts_spec where location_code = 0 and prev_location_code = location_code.it) loop
+                  cwms_ts.remove_deleted_ts(ts_code.it);
+               end loop;
+            end loop;
 
-                  delete
-                    from at_base_location where base_location_code = l_base_location_code;
-               else -- Deleting a single Sub Location --------------------------------
-                  delete at_location_geometry where location_code = l_location_code;
-                  delete at_physical_location where location_code = l_location_code;
-                  cwms_cache.remove_by_value(g_location_code_cache, l_location_code);
+            if l_this_is_a_base_loc
+            then -- Deleting Base Location ----------------------------------------
+               ----------------------
+               -- actual locations --
+               ----------------------
+            
+               for rec in (select location_code
+                           from at_physical_location apl
+                           where apl.base_location_code = l_base_location_code
+                        )
+               loop
+                  delete from at_location_geometry where location_code = rec.location_code;
+                  delete from at_physical_location where location_code = rec.location_code;
+               end loop;
+               delete from at_base_location where base_location_code = l_base_location_code;
+            else -- Deleting a single Sub Location --------------------------------
+               delete at_location_geometry where location_code = l_location_code;
+               delete at_physical_location where location_code = l_location_code;
+            end if;
+            for i in 1..l_location_codes.count loop
+               cwms_cache.remove_by_value(g_location_id_cache, l_location_ids(i), p_match_case => 'F');
+               cwms_cache.remove_by_value(g_location_code_cache, l_location_codes(i));
+            end loop;
+            l_location_id_cache_val := upper(l_db_office_id)||'/'||upper(l_location_id);
+            cwms_cache.remove_by_value(g_location_id_cache, l_location_id_cache_val);
+         exception
+            when others then
+               rollback to delete_location_key;
+               if sqlcode = -2292 then
+                  l_dependency_info := get_delete_dependency_info;
+                  cwms_err.raise(
+                     'CAN_NOT_DELETE_LOC_2',
+                     p_location_id,
+                     nvl(l_dependency_info, sqlerrm));
                end if;
-               exit;
-            exception
-               when others then
-                  -------------------------------------------------------------------------------------------
-                  -- don't let deleted time series prevent deleting a location regardless of delete action --
-                  -------------------------------------------------------------------------------------------
-                  if i = 1 then
-                     --------------------------------------------------------------------------------------------------------
-                     -- purge all deleted ts data types for all version dates for all ts codes associated with location(s) --
-                     --------------------------------------------------------------------------------------------------------
-                     for location_code in (select column_value as it from table(l_location_codes)) loop
-                        for ts_code in (select ts_code as it from at_cwms_ts_spec where location_code = 0 and prev_location_code = location_code.it) loop
-                           cwms_ts.remove_deleted_ts(ts_code.it);
-                        end loop;
-                     end loop;
-                  else
-                     -------------------------------------------------------------------------
-                     -- someting other than deleted time seires prevented location deletion --
-                     --                                                                     --
-                     -- deleted time series purge will be rolled back, so no harm done      --
-                     -------------------------------------------------------------------------
-                     raise;
-                  end if;
-            end;
-         end loop;
-         l_location_id_cache_val := upper(l_db_office_id)||'/'||upper(l_location_id);
-         cwms_cache.remove_by_value(g_location_id_cache, l_location_id_cache_val);
+               raise;
+         end;
       end if;
    end delete_location;
 
@@ -4968,6 +5097,152 @@ end get_srid;
                          l_db_office_code
                       );
    END assign_loc_groups3;
+   ------------------------------------------
+   -- assign_loc_groups_supports_missing
+   ------------------------------------------
+   PROCEDURE assign_loc_groups_supports_missing (
+      p_loc_category_id   IN VARCHAR2,
+      p_loc_group_id 	  IN VARCHAR2,
+      p_loc_alias_array   IN loc_alias_array3,
+      p_db_office_id 	  IN VARCHAR2 DEFAULT NULL,
+      p_ignore_missing    IN VARCHAR2 DEFAULT 'F',
+      p_missing_locations OUT loc_alias_array3
+     )
+   IS
+      l_db_office_id         VARCHAR2 (16);
+      l_db_office_code       NUMBER;
+      l_loc_category_code    NUMBER;
+      l_loc_group_code       NUMBER;
+      l_loc_code             NUMBER;
+      l_existing_locs        loc_alias_array3 := loc_alias_array3();
+      l_error_message        VARCHAR2(10000) := '';
+   BEGIN
+      p_missing_locations := loc_alias_array3();
+
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      BEGIN
+         l_loc_category_code :=
+            get_loc_category_code (p_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise (
+                  'GENERIC_ERROR',
+                  'The category id: ' || p_loc_category_id || ' does not exist.'
+               );
+      END;
+
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id,
+                                l_db_office_code
+            );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise (
+                  'GENERIC_ERROR',
+                  'There is no group: '
+                     || p_loc_group_id
+                     || ' in the '
+                     || p_loc_category_id
+                     || ' category.'
+               );
+      END;
+
+      FOR i IN 1 .. p_loc_alias_array.COUNT
+         LOOP
+            BEGIN
+               check_alias_id (p_loc_alias_array (i).loc_alias_id,
+                               p_loc_alias_array (i).location_id,
+                               p_loc_category_id,
+                               p_loc_group_id,
+                               l_db_office_id
+               );
+               l_loc_code := get_location_code (p_db_office_id => l_db_office_id,
+                                  p_location_id => p_loc_alias_array (i).location_id,
+                                  p_check_aliases => 'T',
+                                  p_ignore_missing => p_ignore_missing);
+               if l_loc_code = -1
+                  THEN
+                     p_missing_locations.extend;
+                     p_missing_locations (p_missing_locations.COUNT) := p_loc_alias_array (i);
+                  ELSE
+                     l_existing_locs.extend;
+                     l_existing_locs(l_existing_locs.count) := p_loc_alias_array (i);
+                  END IF;
+            END;
+         END LOOP;
+
+      if p_ignore_missing = 'F' and p_missing_locations.count > 0 then
+         for k in 1..p_missing_locations.count loop
+            if LENGTH(l_error_message) = 0 THEN
+               l_error_message := p_missing_locations(k).location_id;
+            ELSE
+               l_error_message := l_error_message || ', ' || p_missing_locations(k).location_id;
+            end if;
+         end loop;
+         cwms_err.raise('ITEM_DOES_NOT_EXIST',
+                         'Location group assignments: ',
+                         l_error_message);
+      end if;
+
+      MERGE INTO    at_loc_group_assignment a
+      USING    (SELECT   get_location_code (p_db_office_id => l_db_office_id, p_location_id => plaa.location_id, p_check_aliases => 'F') location_code,
+                         plaa.loc_attribute, plaa.loc_alias_id,
+                         plaa.loc_ref_id
+                FROM   TABLE (l_existing_locs) plaa) b
+      ON    (a.loc_group_code = l_loc_group_code
+         AND a.location_code = b.location_code)
+      WHEN MATCHED
+         THEN
+         UPDATE SET
+                   a.loc_attribute = b.loc_attribute,
+                   a.loc_alias_id = b.loc_alias_id,
+                   a.loc_ref_code =
+                      DECODE (
+                         b.loc_ref_id,
+                         NULL, NULL,
+                         get_location_code (p_db_office_code   => l_db_office_code,
+                                            p_location_id      => b.loc_ref_id,
+                                            p_check_aliases    => 'F'
+                         )
+                      )
+      WHEN NOT MATCHED
+         THEN
+         INSERT       (location_code,
+                       loc_group_code,
+                       loc_attribute,
+                       loc_alias_id,
+                       loc_ref_code,
+                       office_code
+         )
+         VALUES    (
+                      b.location_code,
+                      l_loc_group_code,
+                      b.loc_attribute,
+                      b.loc_alias_id,
+                      DECODE (
+                         b.loc_ref_id,
+                         NULL, NULL,
+                         get_location_code (
+                            p_db_office_code   => l_db_office_code,
+                            p_location_id      => b.loc_ref_id,
+                            p_check_aliases    => 'F'
+                         )
+                      ),
+                      l_db_office_code
+                   );
+   END assign_loc_groups_supports_missing;
 
    -- creates it and will rename the aliases if they already exist.
    PROCEDURE assign_loc_group (p_loc_category_id   IN VARCHAR2,

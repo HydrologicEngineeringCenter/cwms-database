@@ -12,6 +12,10 @@ procedure test_fcst_spec_ops;
 procedure test_fcst_inst_ops;
 --%test(Test forecast info uppercase keys and uniqueness)
 procedure test_fcst_info_uniqueness;
+--%test(Test store/retrieve forecast spec with multiple locations and sort orders)
+procedure test_fcst_spec_with_locations_ops;
+--%test(Test fcst spec with locations validates timeseries location constraints and orphan prevention)
+procedure test_fcst_spec_with_locations_ts_location_constraints;
 
 procedure setup;
 procedure teardown;
@@ -288,7 +292,8 @@ begin
                from cwms_v_fcst_location
                where office_id = c_office_id
                   and fcst_spec_id = c_fcst_spec_id
-                  and fcst_designator = c_fcst_designator;
+                  and fcst_designator = c_fcst_designator
+                  and is_primary = 'T';
                if has_location = 1 then
                   ut.expect(l_count).to_equal(1);
                   select location_id
@@ -296,7 +301,8 @@ begin
                   from cwms_v_fcst_location
                   where office_id = c_office_id
                      and fcst_spec_id = c_fcst_spec_id
-                     and fcst_designator = c_fcst_designator;
+                     and fcst_designator = c_fcst_designator
+                     and is_primary = 'T';
                   ut.expect(l_location_id_out).to_equal(c_location_id);
                else
                   ut.expect(l_count).to_equal(0);
@@ -307,7 +313,8 @@ begin
                from cwms_v_fcst_location
                where office_id = c_office_id
                   and fcst_spec_id = c_fcst_spec_id
-                  and fcst_designator is null;
+                  and fcst_designator is null
+                  and is_primary = 'T';
                if has_location = 1 then
                   ut.expect(l_count).to_equal(1);
                   select location_id
@@ -315,7 +322,8 @@ begin
                   from cwms_v_fcst_location
                   where office_id = c_office_id
                      and fcst_spec_id = c_fcst_spec_id
-                     and fcst_designator is null;
+                     and fcst_designator is null
+                     and is_primary = 'T';
                   ut.expect(l_location_id_out).to_equal(c_location_id);
                else
                   ut.expect(l_count).to_equal(0);
@@ -469,7 +477,8 @@ begin
             from cwms_v_fcst_location
             where office_id = c_office_id
                and fcst_spec_id = c_fcst_spec_id
-               and fcst_designator = l_fcst_designator;
+               and fcst_designator = l_fcst_designator
+               and is_primary = 'T';
             ut.expect(l_count).to_equal(0);
             select count(*)
             into l_count
@@ -1080,6 +1089,362 @@ begin
       p_office_id       => c_office_id);
 
 end test_fcst_info_uniqueness;
+---------------------------------------------------------------------------------
+-- procedure test_fcst_spec_with_locations_ops
+---------------------------------------------------------------------------------
+procedure test_fcst_spec_with_locations_ops
+is
+   l_entity_id            at_entity.entity_id%type := 'CE'||c_office_id;
+   l_description_in       varchar2(256) := 'Test forecast spec with locations';
+   l_description_out      varchar2(256);
+   l_entity_id_out        at_entity.entity_id%type;
+   l_timeseries_ids_out   clob;
+   l_location_ids_in      fcst_location_tab_t := fcst_location_tab_t();
+   l_location_ids_out     fcst_location_tab_t;
+   l_loc_id_1             varchar2(256) := c_location_id;
+   l_loc_id_2             varchar2(256) := c_location_id||'_2';
+   l_loc_id_3             varchar2(256) := c_location_id||'_3';
+   l_location_ids_merge   fcst_location_tab_t := fcst_location_tab_t();
+
+   procedure clear_spec_locations
+   is
+   begin
+      cwms_fcst.store_fcst_spec_with_locations(
+         p_fcst_spec_id    => c_fcst_spec_id,
+         p_fcst_designator => c_fcst_designator,
+         p_entity_id       => l_entity_id,
+         p_description     => l_description_in,
+         p_location_ids    => null,
+         p_timeseries_ids  => null,
+         p_fail_if_exists  => 'F',
+         p_ignore_nulls    => 'F',
+         p_office_id       => c_office_id);
+   end clear_spec_locations;
+begin
+   -- additional locations for multi-location store
+   cwms_loc.store_location(
+      p_location_id  => l_loc_id_2,
+      p_time_zone_id => c_time_zone_id,
+      p_active       => 'T',
+      p_db_office_id => c_office_id);
+
+   cwms_loc.store_location(
+      p_location_id  => l_loc_id_3,
+      p_time_zone_id => c_time_zone_id,
+      p_active       => 'T',
+      p_db_office_id => c_office_id);
+
+   -- build incoming location list (primary + non-primary)
+   l_location_ids_in.extend(3);
+   l_location_ids_in(1) := fcst_location_t(l_loc_id_2, 10);
+   l_location_ids_in(2) := fcst_location_t(l_loc_id_1, -1);
+   l_location_ids_in(3) := fcst_location_t(l_loc_id_3, 20);
+
+   -- store using new method, replacing existing location set
+   cwms_fcst.store_fcst_spec_with_locations(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => l_entity_id,
+      p_description     => l_description_in,
+      p_location_ids    => l_location_ids_in,
+      p_timeseries_ids  => null,
+      p_fail_if_exists  => 'F',
+      p_ignore_nulls    => 'F',
+      p_office_id       => c_office_id);
+
+   -- retrieve and verify
+   cwms_fcst.retrieve_fcst_spec_with_locations(
+      p_entity_id       => l_entity_id_out,
+      p_description     => l_description_out,
+      p_location_ids    => l_location_ids_out,
+      p_timeseries_ids  => l_timeseries_ids_out,
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_office_id       => c_office_id);
+
+   ut.expect(l_entity_id_out).to_equal(l_entity_id);
+   ut.expect(l_description_out).to_equal(l_description_in);
+   ut.expect(l_timeseries_ids_out).to_be_null;
+
+   -- retrieval is ordered by sort_order in implementation
+   ut.expect(l_location_ids_out.count).to_equal(3);
+
+   ut.expect(l_location_ids_out(1).location_id).to_equal(l_loc_id_1);
+   ut.expect(l_location_ids_out(1).sort_order).to_equal(-1);
+
+   ut.expect(l_location_ids_out(2).location_id).to_equal(l_loc_id_2);
+   ut.expect(l_location_ids_out(2).sort_order).to_equal(10);
+
+   ut.expect(l_location_ids_out(3).location_id).to_equal(l_loc_id_3);
+   ut.expect(l_location_ids_out(3).sort_order).to_equal(20);
+
+   -- cleanup after op #1
+   clear_spec_locations;
+
+   -- --------------------------------------------------------------------------
+   -- verify merge semantics: p_ignore_nulls = 'T' with partial location input
+   -- expected: existing non-primary retained unless explicitly updated, primary replaced
+   -- --------------------------------------------------------------------------
+   -- re-seed baseline for this op
+   cwms_fcst.store_fcst_spec_with_locations(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => l_entity_id,
+      p_description     => l_description_in,
+      p_location_ids    => l_location_ids_in,
+      p_timeseries_ids  => null,
+      p_fail_if_exists  => 'F',
+      p_ignore_nulls    => 'F',
+      p_office_id       => c_office_id);
+
+   l_location_ids_merge.extend(2);
+   l_location_ids_merge(1) := fcst_location_t(l_loc_id_2, 15); -- update existing non-primary
+   l_location_ids_merge(2) := fcst_location_t(l_loc_id_3, -1); -- replace primary
+
+   cwms_fcst.store_fcst_spec_with_locations(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => l_entity_id,
+      p_description     => l_description_in,
+      p_location_ids    => l_location_ids_merge,
+      p_timeseries_ids  => null,
+      p_fail_if_exists  => 'F',
+      p_ignore_nulls    => 'T',
+      p_office_id       => c_office_id);
+
+   cwms_fcst.retrieve_fcst_spec_with_locations(
+      p_entity_id       => l_entity_id_out,
+      p_description     => l_description_out,
+      p_location_ids    => l_location_ids_out,
+      p_timeseries_ids  => l_timeseries_ids_out,
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_office_id       => c_office_id);
+
+   -- sorted by sort_order: -1, 15
+    ut.expect(l_location_ids_out.count).to_equal(2);
+
+   ut.expect(l_location_ids_out(1).location_id).to_equal(l_loc_id_3);
+   ut.expect(l_location_ids_out(1).sort_order).to_equal(-1);
+
+   ut.expect(l_location_ids_out(2).location_id).to_equal(l_loc_id_2);
+   ut.expect(l_location_ids_out(2).sort_order).to_equal(15);
+
+   -- --------------------------------------------------------------------------
+   -- verify replace semantics: p_ignore_nulls = 'F' with NULL p_location_ids clears all
+   -- --------------------------------------------------------------------------
+   -- re-seed before clear test
+   cwms_fcst.store_fcst_spec_with_locations(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => l_entity_id,
+      p_description     => l_description_in,
+      p_location_ids    => l_location_ids_in,
+      p_timeseries_ids  => null,
+      p_fail_if_exists  => 'F',
+      p_ignore_nulls    => 'F',
+      p_office_id       => c_office_id);
+
+   cwms_fcst.store_fcst_spec_with_locations(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => l_entity_id,
+      p_description     => l_description_in,
+      p_location_ids    => null,
+      p_timeseries_ids  => null,
+      p_fail_if_exists  => 'F',
+      p_ignore_nulls    => 'F',
+      p_office_id       => c_office_id);
+
+   cwms_fcst.retrieve_fcst_spec_with_locations(
+      p_entity_id       => l_entity_id_out,
+      p_description     => l_description_out,
+      p_location_ids    => l_location_ids_out,
+      p_timeseries_ids  => l_timeseries_ids_out,
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_office_id       => c_office_id);
+
+   ut.expect(nvl(l_location_ids_out.count, 0)).to_equal(0);
+
+   -- cleanup after op #3 (idempotent/safe)
+   clear_spec_locations;
+
+   -- --------------------------------------------------------------------------
+   -- re-seed, then verify ignore semantics: p_ignore_nulls = 'T' + NULL locations => no change
+   -- --------------------------------------------------------------------------
+   cwms_fcst.store_fcst_spec_with_locations(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => l_entity_id,
+      p_description     => l_description_in,
+      p_location_ids    => l_location_ids_in, -- original 3
+      p_timeseries_ids  => null,
+      p_fail_if_exists  => 'F',
+      p_ignore_nulls    => 'F',
+      p_office_id       => c_office_id);
+
+   cwms_fcst.store_fcst_spec_with_locations(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => l_entity_id,
+      p_description     => l_description_in,
+      p_location_ids    => null,
+      p_timeseries_ids  => null,
+      p_fail_if_exists  => 'F',
+      p_ignore_nulls    => 'T',
+      p_office_id       => c_office_id);
+
+   cwms_fcst.retrieve_fcst_spec_with_locations(
+      p_entity_id       => l_entity_id_out,
+      p_description     => l_description_out,
+      p_location_ids    => l_location_ids_out,
+      p_timeseries_ids  => l_timeseries_ids_out,
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_office_id       => c_office_id);
+
+   ut.expect(l_location_ids_out.count).to_equal(3);
+   declare
+       l_found_1 boolean := false;
+       l_found_2 boolean := false;
+       l_found_3 boolean := false;
+   begin
+       for i in 1 .. l_location_ids_out.count loop
+          if l_location_ids_out(i).location_id = l_loc_id_1 then
+             l_found_1 := true;
+             ut.expect(l_location_ids_out(i).sort_order).to_equal(-1);
+
+          elsif l_location_ids_out(i).location_id = l_loc_id_2 then
+             l_found_2 := true;
+             ut.expect(l_location_ids_out(i).sort_order).to_equal(10);
+
+          elsif l_location_ids_out(i).location_id = l_loc_id_3 then
+             l_found_3 := true;
+             ut.expect(l_location_ids_out(i).sort_order).to_equal(20);
+          end if;
+       end loop;
+
+       ut.expect(l_found_1).to_be_true;
+       ut.expect(l_found_2).to_be_true;
+       ut.expect(l_found_3).to_be_true;
+   end;
+
+   -- cleanup after op #4
+   clear_spec_locations;
+end test_fcst_spec_with_locations_ops;
+---------------------------------------------------------------------------------
+-- procedure test_fcst_spec_with_locations_ts_location_constraints
+---------------------------------------------------------------------------------
+procedure test_fcst_spec_with_locations_ts_location_constraints
+is
+   l_entity_id          at_entity.entity_id%type := 'CE'||c_office_id;
+   l_description_in     varchar2(256) := 'TS/location constraint test';
+   l_loc_id_1           varchar2(256) := c_location_id;
+   l_loc_id_2           varchar2(256) := c_location_id||'_2';
+   l_loc_id_3           varchar2(256) := c_location_id||'_3';
+   l_location_ids       fcst_location_tab_t := fcst_location_tab_t();
+   l_timeseries_valid   clob;
+   l_timeseries_invalid clob;
+begin
+   -- Create extra locations used by this test
+   cwms_loc.store_location(
+      p_location_id  => l_loc_id_2,
+      p_time_zone_id => c_time_zone_id,
+      p_active       => 'T',
+      p_db_office_id => c_office_id);
+
+   cwms_loc.store_location(
+      p_location_id  => l_loc_id_3,
+      p_time_zone_id => c_time_zone_id,
+      p_active       => 'T',
+      p_db_office_id => c_office_id);
+
+   -- Build baseline location set for spec (primary=l_loc_id_1, secondary=l_loc_id_2)
+   l_location_ids.extend(2);
+   l_location_ids(1) := fcst_location_t(l_loc_id_1, -1);
+   l_location_ids(2) := fcst_location_t(l_loc_id_2, 10);
+
+   -- Create TS at location 1 (valid) and location 3 (invalid vs baseline)
+   l_timeseries_valid   := l_loc_id_1||'.Stage.Inst.1Hour.0.Fcst';
+   l_timeseries_invalid := l_loc_id_3||'.Stage.Inst.1Hour.0.Fcst';
+
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_timeseries_valid,
+      p_units           => 'ft',
+      p_timeseries_data => cwms_t_ztsv_array(),
+      p_store_rule      => cwms_util.replace_all,
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id);
+
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_timeseries_invalid,
+      p_units           => 'ft',
+      p_timeseries_data => cwms_t_ztsv_array(),
+      p_store_rule      => cwms_util.replace_all,
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id);
+
+   -- Seed spec with valid locations only
+   cwms_fcst.store_fcst_spec_with_locations(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => l_entity_id,
+      p_description     => l_description_in,
+      p_location_ids    => l_location_ids,
+      p_timeseries_ids  => null,
+      p_fail_if_exists  => 'F',
+      p_ignore_nulls    => 'F',
+      p_office_id       => c_office_id);
+
+   -- 1) Incoming TS must be constrained to final locations -> expect error for l_loc_id_3 TS
+   begin
+      cwms_fcst.store_fcst_spec_with_locations(
+         p_fcst_spec_id    => c_fcst_spec_id,
+         p_fcst_designator => c_fcst_designator,
+         p_entity_id       => l_entity_id,
+         p_description     => l_description_in,
+         p_location_ids    => l_location_ids,
+         p_timeseries_ids  => l_timeseries_invalid,
+         p_fail_if_exists  => 'F',
+         p_ignore_nulls    => 'T',
+         p_office_id       => c_office_id);
+      cwms_err.raise('ERROR', 'Expected timeseries/location constraint exception not raised');
+   exception
+      when others then
+         ut.expect(dbms_utility.format_error_stack).to_be_like('%not constrained to any location%');
+   end;
+
+   -- Store a valid TS so we can test orphan prevention on later location change
+   cwms_fcst.store_fcst_spec_with_locations(
+      p_fcst_spec_id    => c_fcst_spec_id,
+      p_fcst_designator => c_fcst_designator,
+      p_entity_id       => l_entity_id,
+      p_description     => l_description_in,
+      p_location_ids    => l_location_ids,
+      p_timeseries_ids  => l_timeseries_valid,
+      p_fail_if_exists  => 'F',
+      p_ignore_nulls    => 'T',
+      p_office_id       => c_office_id);
+
+   -- 2) Removing/replacing locations that orphan existing TS must fail
+   begin
+      cwms_fcst.store_fcst_spec_with_locations(
+         p_fcst_spec_id    => c_fcst_spec_id,
+         p_fcst_designator => c_fcst_designator,
+         p_entity_id       => l_entity_id,
+         p_description     => l_description_in,
+         p_location_ids    => fcst_location_tab_t(fcst_location_t(l_loc_id_2, -1)), -- drops l_loc_id_1 from final set
+         p_timeseries_ids  => null,
+         p_fail_if_exists  => 'F',
+         p_ignore_nulls    => 'F',
+         p_office_id       => c_office_id);
+      cwms_err.raise('ERROR', 'Expected orphan-prevention exception not raised');
+   exception
+      when others then
+         ut.expect(dbms_utility.format_error_stack).to_be_like('%would orphan existing time series%');
+   end;
+end test_fcst_spec_with_locations_ts_location_constraints;
 
 end test_cwms_fcst;
 /

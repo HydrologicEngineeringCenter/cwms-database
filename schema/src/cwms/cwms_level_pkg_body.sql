@@ -2054,6 +2054,11 @@ begin
          'ERROR',
          'Location level parameter type of '||p_parameter_type_id||' cannot have 0 (zero) duration');
    end if;
+   if p_effective_date != trunc(p_effective_date, 'MI') then
+      cwms_err.raise(
+         'ERROR',
+         'Location level effective date cannot have non-zero seconds');
+   end if;
    -------------------------------------------------------
    -- default the time zone to the location's time zone --
    -------------------------------------------------------
@@ -16027,6 +16032,11 @@ begin
    -------------------
    if p_location_level_id is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_LEVEL_ID');
+   end if;
+   if p_effective_date != trunc(p_effective_date, 'MI') then
+      cwms_err.raise(
+         'ERROR',
+         'Location level effective date cannot have non-zero seconds');
    end if;
    if (p_constituents is null or p_constituents.count = 0 or p_constituent_connections is null) and not l_ignore_nulls then
       cwms_err.raise(
