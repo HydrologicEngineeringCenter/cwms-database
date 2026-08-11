@@ -52,6 +52,8 @@ procedure store_loc_group_cwms_cat;
 procedure test_international_location;
 --%test(Test get vertical datum info series)
 procedure test_vertical_datum_info_series_f;
+--%test(Test get vertical datum info bulk)
+procedure test_vertical_datum_info_bulk;
 --%test(Test issue #57 - query vertical datum offset)
 procedure test_query_vertical_datum_offset;
 --%test(Search location using Oracle Text via AV_LOC)
@@ -68,6 +70,8 @@ procedure test_assign_loc_ignore_missing;
 procedure test_assign_loc_do_not_ignore_missing;
 --%test (CWMS-2508 [DB #186] location geometry nearest-city normalization)
 procedure test_location_geometry_nearest_city_normalization;
+--%test (Test simple deletion)
+procedure test_delete_loc;
 
 procedure setup;
 procedure teardown;
@@ -2713,6 +2717,157 @@ AS
 
    end test_vertical_datum_info_series_f;
 
+----------------------------------------------------
+-- procedure test_vertical_datum_info_bulk --
+----------------------------------------------------
+procedure test_vertical_datum_info_bulk
+   is
+      l_office_id             av_loc.db_office_id%TYPE;
+      l_location_id1          av_loc.location_id%TYPE;
+      l_location_id2          av_loc.location_id%TYPE;
+      l_vertical_datum        AV_LOC.VERTICAL_DATUM%TYPE;
+      l_elevation             AV_LOC.ELEVATION%TYPE;
+      l_xml                   varchar2(4096);
+      l_xml2                  varchar2(4096);
+      l_rounding_spec         varchar2(10) := '4444567894';
+      l_result                clob_tab_t := clob_tab_t();
+      l_expected_xml          varchar2(4096);
+      l_expected_xml2         varchar2(4096);
+BEGIN
+   --------------------------------
+   -- cleanup any previous tests --
+   --------------------------------
+   setup;
+   ----------------------------------------------------
+   -- create the location and get the location codes --
+   ----------------------------------------------------
+   l_office_id := '&&office_id';
+   l_location_id1 := 'TestDatumLoc1';
+   l_location_id2 := 'TestDatumLoc2';
+
+
+   cwms_loc.store_location (p_location_id    => l_location_id1,
+                            p_db_office_id   => l_office_id,
+                            p_vertical_datum   => 'NGVD29');
+   cwms_loc.store_location (p_location_id    => l_location_id2,
+                            p_db_office_id   => l_office_id,
+                            p_vertical_datum   => 'NGVD29');
+
+   SELECT vertical_datum
+   INTO l_vertical_datum
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id1
+     AND unit_system = 'EN';
+
+   ut.expect (l_vertical_datum).to_equal ('NGVD29');
+
+   SELECT vertical_datum
+   INTO l_vertical_datum
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id2
+     AND unit_system = 'EN';
+
+   ut.expect (l_vertical_datum).to_equal ('NGVD29');
+
+   l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="ft">' || CHR(10) ||
+            '  <location>'||l_location_id1||'</location>' || CHR(10) ||
+            '  <native-datum>NGVD-29</native-datum>' || CHR(10) ||
+            '  <elevation>19200</elevation>' || CHR(10) ||
+            '  <offset estimate="false">' || CHR(10) ||
+            '    <to-datum>NGVD-29</to-datum>' || CHR(10) ||
+            '    <value>0.0</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '  <offset estimate="true">' || CHR(10) ||
+            '    <to-datum>NAVD-88</to-datum>' || CHR(10) ||
+            '    <value>-5.846</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '</vertical-datum-info>';
+
+   l_expected_xml := '<vertical-datum-info office="'||l_office_id||'" unit="ft">' || CHR(10) ||
+            '  <location>'||l_location_id1||'</location>' || CHR(10) ||
+            '  <native-datum>NGVD-29</native-datum>' || CHR(10) ||
+            '  <elevation>19200</elevation>' || CHR(10) ||
+            '  <offset estimate="true">' || CHR(10) ||
+            '    <to-datum>NAVD-88</to-datum>' || CHR(10) ||
+            '    <value>-5.846</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '</vertical-datum-info>';
+
+   l_xml2 := '<vertical-datum-info office="'||l_office_id||'" unit="ft">' || CHR(10) ||
+            '  <location>'||l_location_id2||'</location>' || CHR(10) ||
+            '  <native-datum>NGVD-29</native-datum>' || CHR(10) ||
+            '  <elevation>29200</elevation>' || CHR(10) ||
+            '  <offset estimate="false">' || CHR(10) ||
+            '    <to-datum>NGVD-29</to-datum>' || CHR(10) ||
+            '    <value>0.0</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '  <offset estimate="true">' || CHR(10) ||
+            '    <to-datum>NAVD-88</to-datum>' || CHR(10) ||
+            '    <value>-15.846</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '</vertical-datum-info>';
+
+   l_expected_xml2 := '<vertical-datum-info office="'||l_office_id||'" unit="ft">' || CHR(10) ||
+                     '  <location>'||l_location_id2||'</location>' || CHR(10) ||
+                     '  <native-datum>NGVD-29</native-datum>' || CHR(10) ||
+                     '  <elevation>29200</elevation>' || CHR(10) ||
+                     '  <offset estimate="true">' || CHR(10) ||
+                     '    <to-datum>NAVD-88</to-datum>' || CHR(10) ||
+                     '    <value>-15.846</value>' || CHR(10) ||
+                     '  </offset>' || CHR(10) ||
+                     '</vertical-datum-info>';
+
+   cwms_loc.set_vertical_datum_info (
+      l_location_id1,
+      l_xml,
+      'F',
+      '&&office_id');
+   cwms_loc.set_vertical_datum_info (
+      l_location_id2,
+      l_xml2,
+      'F',
+      '&&office_id');
+   commit;
+
+   SELECT elevation
+   INTO l_elevation
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id1
+     AND unit_system = 'EN';
+
+   ut.expect (abs(l_elevation-19200)).to_be_less_or_equal (0.01);
+   ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-19200)).to_be_less_or_equal (0.01);
+
+   SELECT elevation
+   INTO l_elevation
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id2
+     AND unit_system = 'EN';
+
+   ut.expect (abs(l_elevation-29200)).to_be_less_or_equal (0.01);
+   ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-29200)).to_be_less_or_equal (0.01);
+
+   cwms_loc.get_vertical_datum_info_list(l_result, l_office_id, l_location_id1, 'EN');
+
+   ut.expect(l_result.count).to_equal(1);
+   if l_result.count = 1 then
+      ut.expect(to_char(l_result(l_result.count))).to_equal(to_char(l_expected_xml));
+   end if;
+
+   cwms_loc.get_vertical_datum_info_list(l_result, l_office_id, 'TestDatumLoc%', 'EN');
+
+   ut.expect(l_result.count).to_equal(2);
+
+   if l_result.count = 2 then
+      ut.expect(to_char(l_result(1))).to_equal(to_char(l_expected_xml));
+      ut.expect(to_char(l_result(2))).to_equal(to_char(l_expected_xml2));
+   end if;
+end test_vertical_datum_info_bulk;
+
    --------------------------------------------------------------------------------
    -- procedure test_query_vertical_datum_offset
    --------------------------------------------------------------------------------
@@ -3977,6 +4132,71 @@ AS
       
       commit;
    end test_location_geometry_nearest_city_normalization; 
+
+
+   PROCEDURE test_delete_loc
+   IS
+      l_stored_loc VARCHAR2(64)          := 'ToDelete';
+      l_stored_sub1 VARCHAR2(64)         := l_stored_loc || '-Sub1';
+      l_office_id  VARCHAR2(3)           := '&&office_id';
+      l_geom varchar2(64);
+      l_loc_code number;
+   BEGIN
+      cwms_loc.store_location3 (p_location_id    => l_stored_loc,
+                                p_db_office_id   => l_office_id,
+                                
+                                p_geometry       => sdo_geometry(
+                                             2002,
+                                             4326,
+                                             null,
+                                             sdo_elem_info_array(1, 2, 1),
+                                             sdo_ordinate_array(
+                                                -95.123, 34.345,
+                                                -95.234, 34.456))
+      );
+
+      cwms_loc.delete_location(l_stored_loc, cwms_util.delete_loc, l_office_id);
+
+      cwms_loc.store_location3 (p_location_id    => l_stored_loc,
+                                p_db_office_id   => l_office_id,
+                                
+                                p_geometry       => sdo_geometry(
+                                             2002,
+                                             4326,
+                                             null,
+                                             sdo_elem_info_array(1, 2, 1),
+                                             sdo_ordinate_array(
+                                                -95.123, 34.345,
+                                                -95.234, 34.456))
+      );
+
+
+      cwms_loc.store_location3 (p_location_id    => l_stored_sub1,
+                                p_db_office_id   => l_office_id,
+                                
+                                p_geometry       => sdo_geometry(
+                                             2002,
+                                             4326,
+                                             null,
+                                             sdo_elem_info_array(1, 2, 1),
+                                             sdo_ordinate_array(
+                                                -95.123, 34.345,
+                                                -95.234, 34.456))
+      );
+
+      cwms_loc.delete_location(l_stored_sub1, cwms_util.delete_loc, l_office_id);
+      select geometry_type into l_geom from cwms_20.av_loc2 where location_id = l_stored_loc and unit_system = 'SI';
+      ut.expect(l_geom).to_equal('LINE');
+      -- TODO: assert base still present and has the geometry      
+      cwms_loc.delete_location(l_stored_loc, cwms_util.delete_loc, l_office_id);
+      begin
+         select geometry_type into l_geom from cwms_20.av_loc2 where location_id = l_stored_loc and unit_system = 'SI';
+      exception
+         when no_data_found then null;
+         when others then raise;
+      end;
+   END;
+
 END test_cwms_loc;
 /
 show errors;

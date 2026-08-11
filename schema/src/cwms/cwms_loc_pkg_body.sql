@@ -2538,8 +2538,9 @@ AS
           where location_code in (select * from table(l_location_codes));
          add_dependency(l_dependencies, 'time series identifiers', l_count);
 
-         select count(*) into l_count from at_location_geometry where location_code in (select * from table(l_location_codes));
-         add_dependency(l_dependencies, 'location geometry', l_count);
+         -- at_location_geometry is not a dependencie in the sense of these other objects.
+         -- it is simply where the location geographic information is stored and is attached to the at_physical_location row
+         -- in a roughly 1:1 manner. E.g. a sub-location may share it, but a given physical location only has one entry in the table.
 
          select count(*) into l_count from at_geographic_location where location_code in (select * from table(l_location_codes));
          add_dependency(l_dependencies, 'geographic locations', l_count);
@@ -3129,23 +3130,18 @@ AS
                ----------------------
                -- actual locations --
                ----------------------
+            
                for rec in (select location_code
-                             from at_physical_location apl
-                            where apl.base_location_code = l_base_location_code
-                          )
+                           from at_physical_location apl
+                           where apl.base_location_code = l_base_location_code
+                        )
                loop
-                  if l_delete_action in (cwms_util.delete_all, cwms_util.delete_loc_cascade) then
-                     delete from at_location_geometry where location_code = rec.location_code;
-                  end if;
+                  delete from at_location_geometry where location_code = rec.location_code;
                   delete from at_physical_location where location_code = rec.location_code;
                end loop;
-
-               delete
-                 from at_base_location where base_location_code = l_base_location_code;
+               delete from at_base_location where base_location_code = l_base_location_code;
             else -- Deleting a single Sub Location --------------------------------
-               if l_delete_action in (cwms_util.delete_all, cwms_util.delete_loc_cascade) then
-                  delete at_location_geometry where location_code = l_location_code;
-               end if;
+               delete at_location_geometry where location_code = l_location_code;
                delete at_physical_location where location_code = l_location_code;
             end if;
             for i in 1..l_location_codes.count loop
@@ -8503,6 +8499,32 @@ end unassign_loc_groups;
          ||'</vertical-datum-info>';
       p_vert_datum_info := l_vert_datum_info;
    end get_vertical_datum_info;
+
+   procedure get_vertical_datum_info_list(
+      p_vert_datum_info out clob_tab_t,
+      p_office_id       in  varchar2,
+      p_location_mask   in  varchar2 default '%',
+      p_unit_system     in  varchar2 default 'EN')
+   is
+      l_vert_datum_info varchar2(32767);
+   begin
+      p_vert_datum_info := clob_tab_t();
+      for row in (
+         select loc.location_id, loc.db_office_id, loc.unit_id
+         from av_loc2 loc
+         where loc.db_office_id = p_office_id
+         and loc.unit_system = p_unit_system
+         and loc.location_id like p_location_mask
+      ) loop
+         get_vertical_datum_info2(l_vert_datum_info,
+            row.location_id,
+            row.unit_id,
+            row.db_office_id
+         );
+         p_vert_datum_info.extend;
+         p_vert_datum_info(p_vert_datum_info.count) := l_vert_datum_info;
+      end loop;
+   end get_vertical_datum_info_list;
 
    procedure get_vertical_datum_info(
       p_vert_datum_info out varchar2,
