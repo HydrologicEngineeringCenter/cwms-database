@@ -2730,7 +2730,7 @@ procedure test_vertical_datum_info_bulk
       l_xml                   varchar2(4096);
       l_xml2                  varchar2(4096);
       l_rounding_spec         varchar2(10) := '4444567894';
-      l_result                clob_tab_t := clob_tab_t();
+      l_result                str_tab_t := str_tab_t();
       l_expected_xml          varchar2(4096);
       l_expected_xml2         varchar2(4096);
 BEGIN

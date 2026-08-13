@@ -8501,14 +8501,14 @@ end unassign_loc_groups;
    end get_vertical_datum_info;
 
    procedure get_vertical_datum_info_list(
-      p_vert_datum_info out clob_tab_t,
+      p_vert_datum_info out str_tab_t,
       p_office_id       in  varchar2,
       p_location_mask   in  varchar2 default '%',
       p_unit_system     in  varchar2 default 'EN')
    is
       l_vert_datum_info varchar2(32767);
    begin
-      p_vert_datum_info := clob_tab_t();
+      p_vert_datum_info := str_tab_t();
       for row in (
          select loc.location_id, loc.db_office_id, loc.unit_id
          from av_loc2 loc
