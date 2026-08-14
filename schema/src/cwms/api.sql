@@ -139,6 +139,9 @@
 @@cwms_ts_profile_pkg
 @@cwms_ts_profile_pkg_body
 
+@@cwms_a2w_pkg
+@@cwms_a2w_pkg_body
+
 @@runstats_pkg
 @@runstats_pkg_body
 

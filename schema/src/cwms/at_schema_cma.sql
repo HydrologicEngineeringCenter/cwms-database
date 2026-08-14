@@ -10,6 +10,11 @@ DECLARE
 
 	table_names   id_array_t
 		:= id_array_t ('at_a2w_ts_codes_by_loc',
+                               'at_a2w_attributes',
+                               'at_published_level',
+                               'at_published_rating',
+                               'at_published_ts',
+                               'cwms_published_id',
                                'at_cma_error_log',
                                'at_data_dissem',
                                'cwms_cities_sp',
@@ -27,6 +32,8 @@ DECLARE
 
 	view_names   id_array_t
 		:= id_array_t ('av_a2w_ts_codes_by_loc',
+                               'av_a2w_attributes',
+                               'av_published_ts',
                                'av_base_parameter_units',
                                'av_base_param_display_units',
                                'av_cities_sp',
@@ -81,6 +88,12 @@ END;
 prompt create table at_a2w_ts_codes_by_loc
 @@cwms/tables/at_a2w_ts_codes_by_loc.sql
 --
+prompt create table cwms_published_id, at_published_ts, at_published_rating, at_published_level
+@@cwms/tables/at_published.sql
+--
+prompt create table at_a2w_attributes
+@@cwms/tables/at_a2w_attributes.sql
+--
 prompt create table at_cma_error_log
 @@cwms/tables/at_cma_error_log.sql
 --
@@ -132,6 +145,12 @@ prompt create view av_a2w_ts_codes_by_loc
 @@cwms/views/av_a2w_ts_codes_by_loc.sql
 prompt create view av_a2w_ts_codes_by_loc2
 @@cwms/views/av_a2w_ts_codes_by_loc2.sql
+--
+prompt create view av_published_ts
+@@cwms/views/av_published_ts.sql
+--
+prompt create view av_a2w_attributes
+@@cwms/views/av_a2w_attributes.sql
 --
 prompt create view av_base_parameter_units
 @@cwms/views/av_base_parameter_units.sql
