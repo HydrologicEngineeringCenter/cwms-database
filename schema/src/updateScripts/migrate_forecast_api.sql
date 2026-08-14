@@ -31,6 +31,8 @@ declare
    l_count number;
    l_distinct_count number;
    l_distinct_new_count number;
+   l_sort_order number;
+   l_unique_loc number;
 begin
    -- determine which forecast location table schema is available
    select COUNT(*)
@@ -93,6 +95,7 @@ begin
                from av_tsv
                where ts_code = l_ts_row.ts_code;
                cwms_ts.CHANGE_VERSION_DATE(l_ts_row.ts_code, l_ts_row.version_date, old_ts.issue_date, l_ts_start, l_ts_end);
+               l_new_inst.notes := 'Changed version date for time series with code ' || l_ts_row.ts_code || ' from ' || l_ts_row.version_date || ' to ' || old_ts.version_date;
             elsif l_distinct_count > 1 then
                l_new_inst.issue_date_time := old_ts.version_date;
             end if;
@@ -167,21 +170,49 @@ begin
                     ts_row.ts_code);
             commit;
          end if;
+         ---------------------------
+         -- populate new location --
+         ---------------------------
+         -- get location code for time series
+         for unique_location in (
+            select distinct location_code
+               from av_cwms_ts_id2
+               where ts_code = ts_row.ts_code
+         ) loop
+            if (unique_location.location_code = old_spec.target_location_code) then
+               l_sort_order := -1;
+            else
+               l_sort_order := 0;
+            end if;
+            -- check if schema supports new sort order column and location code column name
+            if l_sort_order_support = 0 then
+               select count(*)
+               into l_unique_loc
+               from (select * from at_fcst_location l
+               where l.fcst_spec_code = l_new_spec.fcst_spec_code
+                 and l.primary_location_code = unique_location.location_code);
+               if (l_unique_loc != 0) then
+                  continue;
+               end if;
+               insert into at_fcst_location values (l_new_spec.fcst_spec_code, unique_location.location_code);
+            else
+               select count(*)
+               into l_unique_loc
+               from (select * from at_fcst_location l
+                     where l.fcst_spec_code = l_new_spec.fcst_spec_code
+                       and l.location_code = unique_location.location_code);
+               if (l_unique_loc != 0) then
+
+                  continue;
+               end if;
+               execute immediate
+                  'insert into at_fcst_location (fcst_spec_code, location_code, sort_order)' ||
+                  'values (:1, :2, :3)'
+                  using l_new_spec.fcst_spec_code, unique_location.location_code, l_sort_order;
+            end if;
+            commit;
+         end loop;
       end loop;
-      ---------------------------
-      -- populate new location --
-      ---------------------------
-      -- check if schema supports new sort order column
-      if l_sort_order_support = 0 then
-         insert into at_fcst_location values (l_new_spec.fcst_spec_code, old_spec.target_location_code);
-      else
-         -- insert with sort order of 0
-         execute immediate
-            'insert into at_fcst_location (fcst_spec_code, location_code, sort_order)' ||
-            'values (:1, :2, :3)'
-            using l_new_spec.fcst_spec_code, old_spec.target_location_code, 0;
-      end if;
-      commit;
    end loop;
    commit;
 end;
