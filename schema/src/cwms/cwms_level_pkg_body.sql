@@ -6466,7 +6466,8 @@ begin
       l_attr_id_parts :=  cwms_util.split_text(p_attribute_id, '.');
    end if;
    l_min_date_utc := cwms_util.CHANGE_TIMEZONE(p_start_time, p_timezone_id, 'UTC');
-   l_max_date_utc := cwms_util.CHANGE_TIMEZONE(p_end_time, p_timezone_id, 'UTC');
+   -- set end date to just past desired end to include data at end time
+   l_max_date_utc := cwms_util.CHANGE_TIMEZONE(p_end_time + 1, p_timezone_id, 'UTC');
    retrieve_loc_lvl_values_utc(
       p_level_values            => l_level_values,
       p_location_id             => l_level_id_parts(1),
