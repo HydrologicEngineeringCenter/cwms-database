@@ -6466,7 +6466,7 @@ begin
       l_attr_id_parts :=  cwms_util.split_text(p_attribute_id, '.');
    end if;
    l_min_date_utc := cwms_util.CHANGE_TIMEZONE(p_start_time, p_timezone_id, 'UTC');
-   l_max_date_utc := cwms_util.CHANGE_TIMEZONE(p_end_time + 1, p_timezone_id, 'UTC');
+   l_max_date_utc := cwms_util.CHANGE_TIMEZONE(p_end_time, p_timezone_id, 'UTC');
    retrieve_loc_lvl_values_utc(
       p_level_values            => l_level_values,
       p_location_id             => l_level_id_parts(1),
@@ -6488,7 +6488,8 @@ begin
       bulk collect
    into l_result_values
    from table(l_level_values)
-   where value is not null;
+   where value is not null
+     and date_time <= l_max_date_utc;
    return l_result_values;
 end retrieve_loc_lvl_values4;
 --------------------------------------------------------------------------------
