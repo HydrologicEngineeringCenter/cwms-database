@@ -7807,6 +7807,12 @@ AS
                 delete_date = l_delete_date,
                 prev_location_code = l_location_code
           where ts_code = l_ts_code;
+         -----------------------------------------------------------
+         -- remove the ts extents for the deleted time series id  --
+         -- the underlying time series values are not deleted, so --
+         -- the extents can be rebuilt if the ts id is undeleted  --
+         -----------------------------------------------------------
+         delete from at_ts_extents where ts_code = l_ts_code;
       elsif l_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
          --------------------
          -- dependent data --
@@ -8388,6 +8394,17 @@ AS
              delete_date = null,
              prev_location_code = null
        where ts_code = p_ts_code;
+      -------------------------------------------------------------
+      -- rebuild the ts extents that were removed by delete_ts   --
+      -- (delete_key/delete_ts_id action) at delete time. the     --
+      -- underlying time series values were never removed, so    --
+      -- recompute extents for every version date that has data   --
+      -------------------------------------------------------------
+      for rec in (select distinct version_date
+                    from av_tsv
+                   where ts_code = p_ts_code) loop
+         update_ts_extents(p_ts_code, rec.version_date);
+      end loop;
    end undelete_ts;
 
    procedure undelete_ts(

@@ -646,7 +646,7 @@ AS
     *   </tr>
     *   <tr>
     *     <td class="descr">cwms_util.delete_ts_id<br>cwms_util.delete_key</td>
-    *     <td class="descr">deletes only the time series identifier, and then only if it has no time series values</td>
+    *     <td class="descr">deletes only the time series identifier, and then only if it has no time series values. Any existing time series extents (at_ts_extents) for the identifier are also removed; they are rebuilt automatically from the existing time series values if the identifier is later restored with undelete_ts</td>
     *   </tr>
     *   <tr>
     *     <td class="descr">cwms_util.delete_ts_data<br>cwms_util.delete_data</td>
@@ -684,7 +684,7 @@ AS
     *   </tr>
     *   <tr>
     *     <td class="descr">cwms_util.delete_ts_id<br>cwms_util.delete_key</td>
-    *     <td class="descr">deletes only the time series identifier, and then only if it has no time series values</td>
+    *     <td class="descr">deletes only the time series identifier, and then only if it has no time series values. Any existing time series extents (at_ts_extents) for the identifier are also removed; they are rebuilt automatically from the existing time series values if the identifier is later restored with undelete_ts</td>
     *   </tr>
     *   <tr>
     *     <td class="descr">cwms_util.delete_ts_data<br>cwms_util.delete_data</td>
@@ -846,6 +846,7 @@ AS
    /**
     * Undeletes a time series that has been deleted with p_delete_action of cwms_util.delete_key or cwms_util.delete_ts_id.
     * Time series values that have been otherwise deleted via delete_ts, purge_ts, or cwms_loc.delete_location cannot be recovered.
+    * Time series extents (at_ts_extents) that were removed when the identifier was deleted are recomputed from the existing time series values.
     *
     * @param p_ts_code The unique numeric code identifying the time series to be undeleted. Can be found in av_deleted_ts_id.
     */
@@ -854,6 +855,7 @@ AS
    /**
     * Undeletes a time series that has been deleted with p_delete_action of cwms_util.delete_key or cwms_util.delete_ts_id.
     * Time series values that have been otherwise deleted via delete_ts, purge_ts, or cwms_loc.delete_location cannot be recovered.
+    * Time series extents (at_ts_extents) that were removed when the identifier was deleted are recomputed from the existing time series values.
     *
     * @param p_cwms_ts_id The identifier of the time series to be undeleted.
     * @param p_office_id  The office that owns the time series to be undeleted.
