@@ -244,8 +244,6 @@ insert into at_parameter values (50, 53, 50, null, 'Net Basin Supply');
 insert into at_parameter values (51, 53, 51, null, 'Net Total Supply');
 insert into at_parameter values (52, 53, 52, null, 'Probability of Exceedance');
 
-insert into at_ts_category values (11, 'SHEF Export', 53, 'Category for local groups for exporting SHEF data');
-
 insert into at_sec_user_groups values (53, 6, 'SHOW STACK TRACE', 'Users allowed to receive server stack traces in explicitly enabled debug responses.');
 
 whenever sqlerror exit;
