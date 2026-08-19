@@ -1092,6 +1092,7 @@ INSERT INTO at_loc_group VALUES ( 8, 1, 'TVA Station ID'     , 'Tennessee Valley
 INSERT INTO at_loc_group VALUES ( 9, 1, 'NRCS Station ID'    ,'Natural Resources Conservation Service Station ID'                                         , 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (10, 1, 'USGS GNIS ID'       , 'The ID used by the USGS GNIS APEX App to define a record in the Geographic Names database', 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (11, 1, 'NIDID'              , 'The National Inventory of Dams ID used by the NID and Corps Inventory of Dams Subset'     , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES (12, 1, 'NOAA Tides and Currents ID' , 'NOAA Tides and Currents Station IDs'                                              , 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (201,10,'USGS Measurements'  , 'These Locations will be used to store Measurement data acquired from the USGS'            , 53, NULL, NULL, NULL);
 COMMIT ;
 -----

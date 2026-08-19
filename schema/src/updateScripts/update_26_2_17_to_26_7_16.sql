@@ -104,6 +104,11 @@ drop package cwms_mail;
 drop public synonym cwms_mail;
 
 PROMPT ################################################################################
+PROMPT adding NOAA Tides and Currents ID location group
+select systimestamp from dual;   
+@./26_07_16/NOAA_tides_loc_group
+
+PROMPT ################################################################################
 PROMPT ADDING AT_USER_LISTS AND AT_USER_LIST_MEMBERS TABLES 
 select systimestamp from dual;
 
