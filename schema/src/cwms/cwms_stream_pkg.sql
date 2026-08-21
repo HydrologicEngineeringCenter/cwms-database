@@ -2332,7 +2332,60 @@ procedure delete_streamflow_meas(
    p_qualities        in varchar2 default null,
    p_time_zone        in varchar2 default null,
    p_office_id_mask   in varchar2 default null);
-   
+
+/**
+ * Deletes a single stream flow measurement that matches an exact measurement identifier. Unlike
+ * delete_streamflow_meas, which filters on a p_min_num/p_max_num range that only matches legacy
+ * numeric/hex measurement numbers, this procedure matches p_meas_id exactly and so works for both
+ * legacy numeric/hex measurement numbers and UUID measurement numbers.
+ *
+ * @param p_location_id_mask A wildcard-enabled string used to match the location(s) to delete the measurement from.  Matching is
+ *                           accomplished with glob-style wildcards, as shown below, instead of sql-style wildcards
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ * @param p_meas_id          The exact measurement number to delete - either a legacy numeric/hex id or a UUID. This parameter is required
+ * @param p_unit_system      The unit system (EN/SI) to for for the height and flow boundaries. If EN, height and flow must be specified in ft and cfs, otherwise they must be specified in m and cms. If not specified, the English unit system is used
+ * @param p_min_date         The earliest date to delete the measurement for, in the time zone indicated by the p_time_zone parameters. If not specified, no earliest date will be used
+ * @param p_max_date         The latest date to delete the measurement for, in the time zone indicated by the p_time_zone parameters. If not specified, no latest date will be used
+ * @param p_min_height       The minimum gage height to delete the measurement for. If not specified, no minimum gage height will be used
+ * @param p_max_height       The maximum gage height to delete the measurement for. If not specified, no maximum gage height will be used
+ * @param p_min_flow         The minimum flow to delete the measurement for. If not specified, no minimum flow will be used
+ * @param p_max_flow         The maximum flow to delete the measurement for. If not specified, no maximum flow will be used
+ * @param p_agencies         The measuring agencies to delete the measurement for, as a comma-separated list. If not specified, measurements from any agency will be deleted
+ * @param p_qualities        The measurement qualities to delete the measurement for, as a comma-separated list. If not specified, measurements of any quality will be deleted
+ * @param p_time_zone        The time zone for the p_min_date and p_max_date parameters. If not specified, the local time zone for each location will be used
+ * @param p_office_id mask   A wildcard-enabled string used to match the location(s) to delete the measurement from.  Matching is
+ *                           accomplished with glob-style wildcards, as shown above, instead of sql-style wildcards. If not specified, the session user's default office is used. To
+ *                           delete from all offices, use '*'
+ */
+procedure delete_streamflow_meas_by_id(
+   p_location_id_mask in varchar2,
+   p_meas_id          in varchar2,
+   p_unit_system      in varchar2 default 'EN',
+   p_min_date         in date default null,
+   p_max_date         in date default null,
+   p_min_height       in number default null,
+   p_max_height       in number default null,
+   p_min_flow         in number default null,
+   p_max_flow         in number default null,
+   p_agencies         in varchar2 default null,
+   p_qualities        in varchar2 default null,
+   p_time_zone        in varchar2 default null,
+   p_office_id_mask   in varchar2 default null);
+
 end cwms_stream;
 /
 show errors;
