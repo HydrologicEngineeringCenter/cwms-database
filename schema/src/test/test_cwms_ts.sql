@@ -2217,6 +2217,12 @@ AS
          p_store_rule      => cwms_util.replace_all,
          p_version_date    => cwms_util.non_versioned,
          p_office_id       => '&&office_id');
+      -----------------------------------------------------------------------
+      -- commit so the new time series id is visible outside this session --
+      -- (UPDATE_TS_EXTENTS uses an autonomous transaction and would fail --
+      -- silently on an as-yet-uncommitted, brand new ts id)              --
+      -----------------------------------------------------------------------
+      commit;
 
       l_ts_code := cwms_ts.get_ts_code(l_ts_id, '&&office_id');
       -----------------------------------------------------------------------
@@ -2224,6 +2230,7 @@ AS
       -- known, deterministic starting point for the test                 --
       -----------------------------------------------------------------------
       cwms_ts.update_ts_extents(l_ts_code, cwms_util.non_versioned);
+      commit;
 
       select count(*) into l_count from at_ts_extents where ts_code = l_ts_code;
       ut.expect(l_count).to_equal(1);
@@ -2240,14 +2247,19 @@ AS
       -- EXTENTS rows for the ts_code are removed                         --
       -----------------------------------------------------------------------
       cwms_ts.delete_ts(l_ts_id, cwms_util.delete_key, '&&office_id');
+      commit;
 
       select count(*) into l_count from at_ts_extents where ts_code = l_ts_code;
       ut.expect(l_count).to_equal(0);
       -----------------------------------------------------------------------
       -- undelete the time series and verify the extents are rebuilt from --
-      -- the (never removed) underlying time series values                --
+      -- the (never removed) underlying time series values. UNDELETE_TS   --
+      -- schedules the rebuild asynchronously (see cwms_ts_pkg_body),     --
+      -- so commit and give the scheduled job a few seconds to run        --
       -----------------------------------------------------------------------
       cwms_ts.undelete_ts(l_ts_id, '&&office_id');
+      commit;
+      dbms_session.sleep(10);
 
       select count(*) into l_count from at_ts_extents where ts_code = l_ts_code;
       ut.expect(l_count).to_equal(1);
