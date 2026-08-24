@@ -2198,6 +2198,34 @@ AS
                                          cwms_t_ztsv(timestamp '2023-02-03 01:00:00', 1, 0),
                                          cwms_t_ztsv(timestamp '2023-02-03 02:00:00', 2, 0),
                                          cwms_t_ztsv(timestamp '2023-02-03 03:00:00', 3, 0));
+      -----------------------------------------------------------------------
+      -- UNDELETE_TS rebuilds AT_TS_EXTENTS by scheduling a dbms_scheduler --
+      -- job (named 'UTX_<ts_code>_<timestamp>') a few seconds out rather --
+      -- than recomputing it inline (see cwms_ts_pkg_body.undelete_ts),   --
+      -- so that the job - which runs in its own session - only sees     --
+      -- this transaction's changes once they are committed. Rather than --
+      -- sleeping/polling for the background scheduler to eventually     --
+      -- pick it up, this will run it now so the test can verify results --
+      -----------------------------------------------------------------------
+      procedure run_extents_job_now(p_ts_code in number)
+      is
+      begin
+         for rec in (select job_name
+                       from user_scheduler_jobs
+                      where job_name like 'UTX\_'||p_ts_code||'\_%' escape '\') loop
+            begin
+               dbms_scheduler.run_job(rec.job_name, use_current_session => true);
+            exception
+               when others then
+                  -- ORA-27476 (job no longer exists) or ORA-27478 (job is
+                  -- already running) both mean the background scheduler beat
+                  -- us to it - the job has run or is running either way
+                  if sqlcode not in (-27476, -27478) then
+                     raise;
+                  end if;
+            end;
+         end loop;
+      end run_extents_job_now;
     begin
       teardown;
       -------------------
@@ -2254,12 +2282,12 @@ AS
       -----------------------------------------------------------------------
       -- undelete the time series and verify the extents are rebuilt from --
       -- the (never removed) underlying time series values. UNDELETE_TS   --
-      -- schedules the rebuild asynchronously (see cwms_ts_pkg_body),     --
-      -- so commit and give the scheduled job a few seconds to run        --
+      -- schedules the rebuild asynchronously (see cwms_ts_pkg_body), so  --
+      -- commit, then run the scheduled job now instead of waiting on it  --
       -----------------------------------------------------------------------
       cwms_ts.undelete_ts(l_ts_id, '&&office_id');
       commit;
-      dbms_session.sleep(10);
+      run_extents_job_now(l_ts_code);
 
       select count(*) into l_count from at_ts_extents where ts_code = l_ts_code;
       ut.expect(l_count).to_equal(1);
