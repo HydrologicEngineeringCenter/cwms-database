@@ -2799,83 +2799,37 @@ as
          ) ;
    end delete_streamflow_meas;
 
+--------------------------------------------------------------------------------
+-- procedure delete_streamflow_meas_by_id
+-- New UUID-capable delete: deletes the measurement matching p_meas_id exactly, whether
+-- p_meas_id is a legacy numeric/hex measurement number or a UUID. p_meas_id is required so
+-- this procedure cannot be used to bulk-delete measurements the way delete_streamflow_meas can.
+-- location_code + meas_number is the table's primary key, so location mask + meas_id is
+-- sufficient to identify the row(s) to delete; no other filters are needed.
+--------------------------------------------------------------------------------
    procedure delete_streamflow_meas_by_id(
          p_location_id_mask in varchar2,
          p_meas_id          in varchar2,
-         p_unit_system      in varchar2 default 'EN',
-         p_min_date         in date default null,
-         p_max_date         in date default null,
-         p_min_height       in number default null,
-         p_max_height       in number default null,
-         p_min_flow         in number default null,
-         p_max_flow         in number default null,
-         p_agencies         in varchar2 default null,
-         p_qualities        in varchar2 default null,
-         p_time_zone        in varchar2 default null,
          p_office_id_mask   in varchar2 default null)
    is
       l_location_id_mask varchar2(256) := cwms_util.normalize_wildcards(p_location_id_mask) ;
       l_office_id_mask   varchar2(64)  := cwms_util.normalize_wildcards(p_office_id_mask) ;
-      l_height_unit      varchar2(16) ;
-      l_flow_unit        varchar2(16) ;
-      l_agencies str_tab_t;
-      l_qualities str_tab_t;
-      l_time_zone  varchar2(28) ;
-      l_min_date   date;
-      l_max_date   date;
-      l_min_height number;
-      l_max_height number;
-      l_min_flow   number;
-      l_max_flow   number;
    begin
       if p_meas_id is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_MEAS_ID') ;
       end if;
-      l_time_zone := nvl(p_time_zone, 'UTC') ;
-      l_min_date  := cwms_util.change_timezone(p_min_date, l_time_zone, 'UTC') ;
-      l_max_date  := cwms_util.change_timezone(p_max_date, l_time_zone, 'UTC') ;
-      if coalesce(p_min_height, p_max_height, p_min_flow, p_max_flow) is not null then
-         l_height_unit := cwms_util.get_default_units('Stage', upper(trim(p_unit_system))) ;
-         l_flow_unit   := cwms_util.get_default_units('Flow', upper(trim(p_unit_system))) ;
-         l_min_height  := cwms_util.convert_to_db_units(p_min_height, 'Stage', l_height_unit) ;
-         l_max_height  := cwms_util.convert_to_db_units(p_max_height, 'Stage', l_height_unit) ;
-         l_min_flow    := cwms_util.convert_to_db_units(p_min_flow, 'Flow', l_flow_unit) ;
-         l_max_flow    := cwms_util.convert_to_db_units(p_max_flow, 'Flow', l_flow_unit) ;
-      end if;
-      if p_agencies is null then
-          select distinct entity_id bulk collect into l_agencies from at_entity;
-      else
-          select trim(upper(column_value)) bulk collect
-            into l_agencies
-            from table(cwms_util.split_text(p_agencies, ',')) ;
-      end if;
-      if p_qualities is null then
-          select qual_id bulk collect into l_qualities from cwms_usgs_meas_qual;
-         l_qualities.extend;
-         l_qualities(l_qualities.count) := '@';
-      else
-          select substr(trim(upper(column_value)), 1, 1) bulk collect
-            into l_qualities
-            from table(cwms_util.split_text(p_qualities, ',')) ;
-         l_qualities.extend;
-      end if;
-       delete
-         from at_streamflow_meas
-        where rowid in
-         (
-             select sm.rowid
-               from at_streamflow_meas sm,
-               av_loc2 v2
-              where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
-            and v2.location_id like l_location_id_mask escape '\'
-            and sm.location_code = v2.location_code
-            and sm.date_time between nvl(l_min_date, sm.date_time) and nvl(l_max_date, sm.date_time)
-            and sm.gage_height between nvl(l_min_height, sm.gage_height) and nvl(l_max_height, sm.gage_height)
-            and sm.flow between nvl(l_min_flow, sm.flow) and nvl(l_max_flow, sm.flow)
-            and sm.meas_number = p_meas_id
-            and nvl(sm.agency_code, 1) in (select entity_code from at_entity where entity_id in (select * from table(l_agencies)))
-            and nvl(sm.quality, '@') in (select * from table(l_qualities))
-         ) ;
+      delete
+        from at_streamflow_meas
+       where rowid in
+        (
+            select sm.rowid
+              from at_streamflow_meas sm,
+                   av_loc2 v2
+             where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
+               and v2.location_id like l_location_id_mask escape '\'
+               and sm.location_code = v2.location_code
+               and sm.meas_number = p_meas_id
+        ) ;
    end delete_streamflow_meas_by_id;
 
 --------------------------------------------------------------------------------
