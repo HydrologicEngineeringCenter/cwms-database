@@ -7807,6 +7807,12 @@ AS
                 delete_date = l_delete_date,
                 prev_location_code = l_location_code
           where ts_code = l_ts_code;
+         -----------------------------------------------------------
+         -- remove the ts extents for the deleted time series id  --
+         -- the underlying time series values are not deleted, so --
+         -- the extents can be rebuilt if the ts id is undeleted  --
+         -----------------------------------------------------------
+         delete from at_ts_extents where ts_code = l_ts_code;
       elsif l_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
          --------------------
          -- dependent data --
@@ -8388,6 +8394,59 @@ AS
              delete_date = null,
              prev_location_code = null
        where ts_code = p_ts_code;
+      -----------------------------------------------------------------------
+      -- rebuild the ts extents that were removed by delete_ts. the        --
+      -- underlying time series values were never removed, so schedule a  --
+      -- job (mirroring the pattern used by purge_ts_data) to recompute    --
+      -- the extents for every version date that has data. this is done   --
+      -- asynchronously, a few seconds from now, so that the job (which    --
+      -- runs in its own session) sees the at_cwms_ts_spec update above    --
+      -- only after it has committed - calling update_ts_extents directly --
+      -- here could fail silently, since its autonomous transaction can't --
+      -- see this transaction's uncommitted changes                       --
+      -----------------------------------------------------------------------
+      for rec in (select distinct version_date
+                    from av_tsv
+                   where ts_code = p_ts_code) loop
+         declare
+            job_name_already_exists exception;
+            pragma exception_init(job_name_already_exists, -27477);
+            l_plsql_block varchar2(256);
+            l_job_name    varchar2(64) := 'UTX_'||p_ts_code||'_'||to_char(rec.version_date, 'yyyymmdd_hh24miss');
+         begin
+            l_plsql_block := 'begin ';
+            if sys_context('cwms_env', 'cwms_session_key') is not null then
+               l_plsql_block := l_plsql_block
+                  || 'cwms_env.set_session_user('''
+                  || sys_context('cwms_env', 'cwms_session_key')
+                  || ''');';
+            end if;
+            l_plsql_block := l_plsql_block
+               || 'cwms_env.set_session_office_id('''
+               || sys_context('cwms_env', 'session_office_id')
+               || '''); cwms_ts.update_ts_extents('''
+               || p_ts_code
+               || ''',to_date('''
+               || to_char(rec.version_date, 'yyyy-mm-dd hh24:mi:ss')
+               || ''',''yyyy-mm-dd hh24:mi:ss'')); end;';
+            dbms_scheduler.create_job(
+               job_name   => l_job_name,
+               job_type   => 'PLSQL_BLOCK',
+               job_action => l_plsql_block,
+               start_date => systimestamp + interval '000 00:00:05' day to second,
+               comments   => 'Rebuilds the time series extents after UNDELETE_TS.');
+            dbms_scheduler.enable(l_job_name);
+         exception
+            when job_name_already_exists then
+               cwms_msg.log_db_message(
+                  cwms_msg.msg_level_normal,
+                  'UPDATE_TS_EXTENTS with '
+                  ||p_ts_code
+                  ||', '
+                  ||to_char(rec.version_date)
+                  ||' already running.');
+         end;
+      end loop;
    end undelete_ts;
 
    procedure undelete_ts(
