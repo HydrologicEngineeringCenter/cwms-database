@@ -2802,8 +2802,9 @@ as
 --------------------------------------------------------------------------------
 -- procedure delete_streamflow_meas_by_id
 -- New UUID-capable delete: deletes the measurement matching p_meas_id exactly, whether
--- p_meas_id is a legacy numeric/hex measurement number or a UUID. p_meas_id is required so
--- this procedure cannot be used to bulk-delete measurements the way delete_streamflow_meas can.
+-- p_meas_id is a legacy numeric/hex measurement number or a UUID. p_meas_id is required
+-- as this procedure's intent is to delete a single meas by id.
+-- Bulk-delete of measurements can be achieved via the existing delete_streamflow_meas procedure.
 -- location_code + meas_number is the table's primary key, so location mask + meas_id is
 -- sufficient to identify the row(s) to delete; no other filters are needed.
 --------------------------------------------------------------------------------
