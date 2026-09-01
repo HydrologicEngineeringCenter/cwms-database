@@ -1964,7 +1964,6 @@ AS
       l_parts                 str_tab_t;
    BEGIN
       if cwms_util.output_debug_info then
-         dbms_output.enable(200000);
          dbms_output.put_line('create_ts_code(');
          dbms_output.put_line('   p_cwms_ts_id        => '||p_cwms_ts_id);
          dbms_output.put_line('   p_utc_offset        => '||p_utc_offset);

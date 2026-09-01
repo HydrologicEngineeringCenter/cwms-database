@@ -248,7 +248,6 @@ is
    end;
 
 begin
-   dbms_output.enable(2000000);
    select max(schema_version)
      into l_max_version
      from cwms_schema_object_version;
@@ -281,7 +280,6 @@ end check_schema_version;
 procedure output_schema_versions
 is
 begin
-   dbms_output.enable(2000000);
    for rec in (select * from cwms_schema_object_version) loop
       dbms_output.put_line(
          'insert into cwms_schema_object_version values ('''

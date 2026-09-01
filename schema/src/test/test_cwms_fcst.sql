@@ -174,7 +174,6 @@ is
    l_timeseries_id      at_cwms_ts_id.cwms_ts_id%type;
    l_tsid_crsr          sys_refcursor;
 begin
-   dbms_output.enable(null);
    for has_designator in 0..1 loop
       l_fcst_designator := case when has_designator = 1 then c_fcst_designator else null end;
       for has_location in 0..1 loop
