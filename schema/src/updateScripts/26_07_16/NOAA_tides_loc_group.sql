@@ -14,7 +14,8 @@ insert into at_loc_group (
           'NOAA Tides and Currents Station IDs',
           53,
           null,
-          null null
+          null,
+          null
      from dual
     where not exists (
       select 1
