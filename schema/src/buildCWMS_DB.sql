@@ -389,7 +389,6 @@ begin
    cwms_ts.start_truncate_ts_msg_arch_job;
 end;
 /
-@@cwms/create_sec_triggers
 @@cwms/create_user_policies
 @@cwms/at_dd_flag_trig
 prompt Recompiling all invalid objects...
