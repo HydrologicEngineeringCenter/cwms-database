@@ -1,5 +1,5 @@
 /* Formatted on 6/16/2011 12:31:38 PM (QP5 v5.163.1008.3004) */
-CREATE OR REPLACE PACKAGE cwms_apex
+create or replace PACKAGE cwms_apex
 AS
 	c_app_logic_yes	VARCHAR2 (1) DEFAULT 'T';
 	c_app_logic_no 	VARCHAR2 (1) DEFAULT 'F';
@@ -71,19 +71,6 @@ AS
 	-- to contain the column headings, these are set in session state...
 	-- for the specified headings item.
 
-	PROCEDURE parse_file (
-		p_file_name 				  IN		VARCHAR2,
-		p_collection_name 		  IN		VARCHAR2,
-		p_error_collection_name   IN		VARCHAR2,
-		p_headings_item			  IN		VARCHAR2,
-		p_columns_item 			  IN		VARCHAR2,
-		p_ddl_item					  IN		VARCHAR2,
-		p_number_of_records			  OUT NUMBER,
-		p_number_of_columns			  OUT NUMBER,
-		p_is_csv 					  IN		VARCHAR2 DEFAULT 'T',
-		p_db_office_id 			  IN		VARCHAR2,
-		p_process_id				  IN		VARCHAR2
-	);
 
 
 	FUNCTION get_equal_predicate (p_column_id 		  IN VARCHAR2,
@@ -97,26 +84,7 @@ AS
 		RETURN VARCHAR2;
 
 
-	PROCEDURE store_parsed_crit_file (
-		p_parsed_collection_name		IN VARCHAR2,
-		p_store_err_collection_name	IN VARCHAR2,
-		p_loc_group_id 					IN VARCHAR2,
-		p_data_stream_id					IN VARCHAR2,
-		p_db_office_id 					IN VARCHAR2 DEFAULT NULL,
-		p_unique_process_id				IN VARCHAR2
-	);
-
-	PROCEDURE store_parsed_crit_csv_file (
-		p_parsed_collection_name		IN VARCHAR2,
-		p_store_err_collection_name	IN VARCHAR2,
-		p_loc_group_id 					IN VARCHAR2,
-		p_data_stream_id					IN VARCHAR2,
-		p_db_office_id 					IN VARCHAR2 DEFAULT NULL,
-		p_unique_process_id				IN VARCHAR2
-	);
-
-
-	PROCEDURE aa1 (p_string IN VARCHAR2);
+    PROCEDURE aa1 (p_string IN VARCHAR2);
 
 	PROCEDURE store_parsed_loc_short_file (
 		p_parsed_collection_name		IN VARCHAR2,
