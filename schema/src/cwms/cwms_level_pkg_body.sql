@@ -5581,6 +5581,7 @@ begin
                l_level_values(l_level_values.count) := l_combined_values_hash(l_date_str);
                l_date_str := l_combined_values_hash.next(l_date_str);
             end loop;
+            l_combined_values_hash.delete;
          end if;
       end if;
       -----------------------------------------------------------------------
@@ -6399,6 +6400,99 @@ begin
       p_level_precedence  => p_level_precedence);
    return l_level_values;
 end retrieve_loc_lvl_values3;
+--------------------------------------------------------------------------------
+-- FUNCTION retrieve_loc_lvl_values4
+--------------------------------------------------------------------------------
+function retrieve_loc_lvl_values4(
+   p_location_level_id       in  varchar2,
+   p_specified_times         in  ztsv_array default null,
+   p_start_time              in  timestamp default null,
+   p_end_time                in  timestamp default null,
+   p_level_units             in  varchar2,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
+   return ztsv_array
+is
+   l_level_values          ztsv_array;
+   l_result_values         ztsv_array := ztsv_array();
+   l_min_date_utc          date;
+   l_max_date_utc          date;
+   l_level_id_parts        str_tab_t;
+   l_attr_id_parts         str_tab_t;
+begin
+   -- sanity checks
+   if p_location_level_id is null then
+      cwms_err.raise(
+         'ERROR',
+         'Location Level ID must not be null.');
+   end if;
+   if p_level_units is null then
+      cwms_err.raise(
+         'ERROR',
+         'Location Level units must not be null.');
+   end if;
+   if p_specified_times is not null then
+      retrieve_loc_lvl_values3(
+             p_level_values => l_level_values,
+             p_specified_times => p_specified_times,
+             p_location_level_id => p_location_level_id,
+             p_level_units => p_level_units,
+             p_attribute_id => p_attribute_id,
+             p_attribute_value => p_attribute_value,
+             p_attribute_units => p_attribute_units,
+             p_timezone_id => p_timezone_id,
+             p_office_id => p_office_id,
+             p_level_precedence => p_level_precedence
+      );
+      return l_level_values;
+   end if;
+   -- do retrieval for irregular level as ts
+   if p_start_time is null or p_end_time is null then
+      cwms_err.raise(
+         'ERROR',
+         'Location Level start and end timestamps must not be null.');
+   end if;
+   ---------------------------------------------------------
+   -- get the location level values the level breakpoints --
+   ---------------------------------------------------------
+   l_level_id_parts := cwms_util.split_text(p_location_level_id, '.');
+   if p_attribute_id is null then
+      l_attr_id_parts := str_tab_t(null, null, null);
+   else
+      l_attr_id_parts :=  cwms_util.split_text(p_attribute_id, '.');
+   end if;
+   l_min_date_utc := cwms_util.CHANGE_TIMEZONE(p_start_time, p_timezone_id, 'UTC');
+   -- set end date to just past desired end to include data at end time
+   l_max_date_utc := cwms_util.CHANGE_TIMEZONE(p_end_time + 1, p_timezone_id, 'UTC');
+   retrieve_loc_lvl_values_utc(
+      p_level_values            => l_level_values,
+      p_location_id             => l_level_id_parts(1),
+      p_parameter_id            => l_level_id_parts(2),
+      p_parameter_type_id       => l_level_id_parts(3),
+      p_duration_id             => l_level_id_parts(4),
+      p_spec_level_id           => l_level_id_parts(5),
+      p_level_units             => p_level_units,
+      p_start_time_utc          => l_min_date_utc,
+      p_end_time_utc            => l_max_date_utc,
+      p_attribute_value         => p_attribute_value,
+      p_attribute_units         => p_attribute_units,
+      p_attribute_parameter_id  => l_attr_id_parts(1),
+      p_attribute_param_type_id => l_attr_id_parts(2),
+      p_attribute_duration_id   => l_attr_id_parts(3),
+      p_level_precedence        => p_level_precedence,
+      p_office_id               => p_office_id);
+   select ztsv_type(date_time, value, quality_code)
+      bulk collect
+   into l_result_values
+   from table(l_level_values)
+   where value is not null
+     and date_time <= l_max_date_utc;
+   return l_result_values;
+end retrieve_loc_lvl_values4;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
 --
@@ -16722,6 +16816,7 @@ begin
          end);
       l_date_str := l_dates.next(l_date_str);
    end loop;
+   l_dates.delete;
    --------------------------------------------------------------
    -- set the quality (interpolation) value of the first value --
    --------------------------------------------------------------
