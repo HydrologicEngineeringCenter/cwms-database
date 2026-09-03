@@ -2332,7 +2332,40 @@ procedure delete_streamflow_meas(
    p_qualities        in varchar2 default null,
    p_time_zone        in varchar2 default null,
    p_office_id_mask   in varchar2 default null);
-   
+
+/**
+ * Deletes a single stream flow measurement that matches an exact measurement identifier. Unlike
+ * delete_streamflow_meas, which filters on a p_min_num/p_max_num range that only matches legacy
+ * numeric/hex measurement numbers, this procedure matches p_meas_id exactly and so works for both
+ * legacy numeric/hex measurement numbers and UUID measurement numbers.
+ *
+ * @param p_location_id_mask A wildcard-enabled string used to match the location(s) to delete the measurement from.  Matching is
+ *                           accomplished with glob-style wildcards, as shown below, instead of sql-style wildcards
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ * @param p_meas_id          The exact measurement number to delete - either a legacy numeric/hex id or a UUID. This parameter is required
+ * @param p_office_id mask   A wildcard-enabled string used to match the location(s) to delete the measurement from.  Matching is
+ *                           accomplished with glob-style wildcards, as shown above, instead of sql-style wildcards. If not specified, the session user's default office is used. To
+ *                           delete from all offices, use '*'
+ */
+procedure delete_streamflow_meas_by_id(
+   p_location_id_mask in varchar2,
+   p_meas_id          in varchar2,
+   p_office_id_mask   in varchar2 default null);
+
 end cwms_stream;
 /
 show errors;
