@@ -3307,7 +3307,7 @@ AS
       l_max_version           boolean;
       l_retrieve_data_entry   boolean;
       l_ts_retrieved          ztsv_entry_array;
-      l_default_unit          cwms_unit.unit_id%type;
+      l_storage_unit          cwms_unit.unit_id%type;
       l_interval              integer;
       l_offset                integer;
       l_top_of_interval       date;
@@ -3412,12 +3412,15 @@ AS
          end;
       end if;
       if p_units is null then
-         cwms_display.retrieve_user_unit(
-            p_unit_id      => l_unit_id,
-            p_parameter_id => cwms_util.split_text(l_cwms_ts_id, 2, '.'),
-            p_unit_system  => upper(p_unit_system),
-            p_user_id      => cwms_util.get_user_id,
-            p_office_id    => l_office_id);
+         l_unit_id := get_ts_display_units(l_cwms_ts_id, p_unit_system, l_office_id, 'F');
+         if l_unit_id is null then
+            cwms_display.retrieve_user_unit(
+               p_unit_id      => l_unit_id,
+               p_parameter_id => cwms_util.split_text(l_cwms_ts_id, 2, '.'),
+               p_unit_system  => upper(p_unit_system),
+               p_user_id      => cwms_util.get_user_id,
+               p_office_id    => l_office_id);
+         end if;
       else
          l_unit_id := cwms_util.get_unit_id(p_units, l_office_id);
       end if;
@@ -3487,10 +3490,11 @@ AS
       ---------------------
       -- handle the unit --
       ---------------------
-      l_default_unit := cwms_util.get_default_units(l_parameter_id, upper(p_unit_system));
-      if l_unit_id != l_default_unit then
+      -- retrieve_ts_raw returns storage units, regardless of the requested system.
+      l_storage_unit := cwms_util.get_unit_id2(cwms_util.get_db_unit_code(l_parameter_id));
+      if l_unit_id != l_storage_unit then
          for i in 1..l_ts_retrieved.count loop
-            l_ts_retrieved(i).value := cwms_util.convert_units(l_ts_retrieved(i).value, l_default_unit, l_unit_id);
+            l_ts_retrieved(i).value := cwms_util.convert_units(l_ts_retrieved(i).value, l_storage_unit, l_unit_id);
          end loop;
       end if;
       ----------------------------------------------
@@ -10946,6 +10950,90 @@ end retrieve_existing_item_counts;
        );
    END delete_ts_group;
 
+   procedure set_ts_display_units(
+      p_ts_id       in varchar2,
+      p_units       in varchar2,
+      p_unit_system in varchar2 default 'EN',
+      p_office_id   in varchar2 default null)
+   is
+      l_ts_code     number(14);
+      l_unit_code   number(14);
+      l_units       cwms_unit.unit_id%type;
+      l_parameter   at_cwms_ts_id.parameter_id%type;
+      l_converted   binary_double;
+      l_unit_system varchar2(2);
+   begin
+      if p_unit_system is null or upper(p_unit_system) not in ('EN', 'SI') then
+         cwms_err.raise('INVALID_ITEM', nvl(p_unit_system, '<NULL>'), 'Unit System. Use either SI or EN');
+      end if;
+      l_unit_system := upper(p_unit_system);
+      l_ts_code := get_ts_code(p_ts_id, cwms_util.get_db_office_code(p_office_id));
+      if p_units is null then
+         delete from at_ts_display_units
+          where ts_code = l_ts_code and unit_system = l_unit_system;
+         return;
+      end if;
+
+      begin
+         l_units := cwms_util.get_unit_id(p_units, p_office_id);
+         select unit_code into l_unit_code from cwms_unit where unit_id = l_units;
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_ITEM', p_units, 'CWMS unit identifier or alias');
+      end;
+      select parameter_id into l_parameter from at_cwms_ts_id where ts_code = l_ts_code;
+      -- Validate dimension compatibility before changing any preference.
+      l_converted := cwms_util.convert_units(1, cwms_util.get_default_units(l_parameter), l_units);
+
+      -- A default is not an override. Let future parameter defaults take effect.
+      if l_units = cwms_util.get_default_units(l_parameter, l_unit_system) then
+         delete from at_ts_display_units
+          where ts_code = l_ts_code and unit_system = l_unit_system;
+         return;
+      end if;
+
+      merge into at_ts_display_units d
+      using (select l_ts_code ts_code, l_unit_system unit_system from dual) s
+         on (d.ts_code = s.ts_code and d.unit_system = s.unit_system)
+      when matched then update set d.unit_code = l_unit_code
+      when not matched then insert (ts_code, unit_system, unit_code)
+         values (s.ts_code, s.unit_system, l_unit_code);
+   end set_ts_display_units;
+
+   function get_ts_display_units(
+      p_ts_id         in varchar2,
+      p_unit_system   in varchar2 default 'EN',
+      p_office_id     in varchar2 default null,
+      p_default_units in varchar2 default 'T')
+      return varchar2
+   is
+      l_ts_code       number(14);
+      l_parameter     at_cwms_ts_id.parameter_id%type;
+      l_units         cwms_unit.unit_id%type;
+      l_default_units cwms_unit.unit_id%type;
+      l_use_default   boolean;
+   begin
+      if p_unit_system is null or upper(p_unit_system) not in ('EN', 'SI') then
+         cwms_err.raise('INVALID_ITEM', nvl(p_unit_system, '<NULL>'), 'Unit System. Use either SI or EN');
+      end if;
+      l_use_default := cwms_util.return_true_or_false(p_default_units);
+      l_ts_code := get_ts_code(p_ts_id, cwms_util.get_db_office_code(p_office_id));
+      select parameter_id into l_parameter from at_cwms_ts_id where ts_code = l_ts_code;
+      l_default_units := cwms_util.get_default_units(l_parameter, upper(p_unit_system));
+      begin
+         select u.unit_id into l_units
+           from at_ts_display_units d
+           join cwms_unit u on u.unit_code = d.unit_code
+          where d.ts_code = l_ts_code and d.unit_system = upper(p_unit_system);
+      exception
+         when no_data_found then null;
+      end;
+      if l_use_default then
+         return nvl(l_units, l_default_units);
+      end if;
+      return case when l_units != l_default_units then l_units end;
+   end get_ts_display_units;
+
    procedure assign_ts_group (
       p_ts_category_id   in varchar2,
       p_ts_group_id      in varchar2,
@@ -10953,7 +11041,9 @@ end retrieve_existing_item_counts;
       p_ts_attribute     in number default null,
       p_ts_alias_id      in varchar2 default null,
       p_ref_ts_id        in varchar2 default null,
-      p_db_office_id     in varchar2 default null)
+      p_db_office_id     in varchar2 default null,
+      p_units            in varchar2 default null,
+      p_unit_system      in varchar2 default 'EN')
    is
       l_office_code     number(14);
       l_ts_group_code   number(14);
@@ -11015,6 +11105,10 @@ end retrieve_existing_item_counts;
       ------------------------
       -- prepare the record --
       ------------------------
+      -- Omitted units preserve the existing preference for legacy callers.
+      if p_units is not null then
+         set_ts_display_units(p_ts_id, p_units, p_unit_system, p_db_office_id);
+      end if;
       l_rec.ts_attribute := nvl(p_ts_attribute, l_rec.ts_attribute);
       l_rec.ts_alias_id  := nvl(p_ts_alias_id, l_rec.ts_alias_id);
       l_rec.ts_ref_code  := nvl(l_ts_ref_code, l_rec.ts_ref_code);
@@ -14360,7 +14454,10 @@ end retrieve_existing_item_counts;
                      --------------------------------
                      l_parts := cwms_util.split_text(l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name, '.');
                      if l_units(l_indexes(l_text).i) in ('EN', 'SI') then
-                        l_unit := cwms_util.get_default_units(l_parts(2), l_units(l_indexes(l_text).i));
+                        l_unit := get_ts_display_units(
+                           l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name,
+                           l_units(l_indexes(l_text).i),
+                           l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office);
                      else
                         l_unit := l_units(l_indexes(l_text).i);
                         declare
