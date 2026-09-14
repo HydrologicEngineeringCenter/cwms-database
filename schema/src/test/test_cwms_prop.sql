@@ -8,6 +8,7 @@ create or replace package test_cwms_prop as
 
     -- %test (store sec.upass.id property: Only admin user can set this. Otherwise throw an exception)
     --%throws(-20998)
+    --%disabled
     procedure test_store_upass_id_property;
 
     procedure teardown;

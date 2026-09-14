@@ -22,11 +22,9 @@ AS
     PROCEDURE setup
     IS
     BEGIN
-     execute immediate 'alter trigger &cwms_schema..ST_PROPERTIES disable';
      insert into at_properties values(53,'CWMSDB','sec.upass.id','&upass_id','UPASS USER');
      insert into at_sec_cwms_users(userid) values ('deleteme');
      commit;
-     execute immediate 'alter trigger &cwms_schema..ST_PROPERTIES enable';
     END;
 
     PROCEDURE teardown
