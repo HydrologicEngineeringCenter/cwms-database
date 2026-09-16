@@ -1,3 +1,4 @@
+whenever sqlerror continue;
 drop package cwms_shef;
 
 drop view av_active_flag;
@@ -47,3 +48,4 @@ delete
               '/VIEWDOCS/ZV_CURRENT_CRIT_FILE_CODE'
              );
 
+whenever sqlerror exit;
