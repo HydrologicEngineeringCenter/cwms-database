@@ -122,51 +122,73 @@ begin
    l_project_id_mask := cwms_util.normalize_wildcards(
       upper(nvl(p_project_id, '%')), true);
    open p_embankment_cat for
-      select po.office_id as project_office_id,
-             pbl.base_location_id
-             ||substr('-', 1, length(ppl.sub_location_id))
-             ||ppl.sub_location_id as project_id,
-             o.office_id as db_office_id,
-             bl.base_location_id,
-             pl.sub_location_id,
-             tz.time_zone_name,
-             pl.latitude,
-             pl.longitude,
-             pl.horizontal_datum,
-             pl.elevation * uc.factor + uc.offset as elevation,
-             uc.to_unit_id as elev_unit_id,
-             pl.vertical_datum,
-             pl.public_name,
-             pl.long_name,
-             pl.description,
-             pl.active_flag
-        from at_embankment e,
-             at_physical_location ppl,
-             at_base_location pbl,
-             cwms_office po,
-             at_physical_location pl,
-             at_base_location bl,
-             cwms_office o,
-             cwms_time_zone tz,
-             at_display_units du,
-             cwms_unit_conversion uc,
-             cwms_base_parameter bp
-       where ppl.location_code = e.embankment_project_loc_code
-         and pbl.base_location_code = ppl.base_location_code
-         and pbl.base_location_id
-             ||substr('-', 1, length(ppl.sub_location_id))
-             ||ppl.sub_location_id like l_project_id_mask
-         and po.office_code = pbl.db_office_code
-         and pl.location_code = e.embankment_location_code
-         and bl.base_location_code = pl.base_location_code
-         and o.office_code = bl.db_office_code
-         and o.office_id like l_office_id_mask
-         and tz.time_zone_code = pl.time_zone_code
-         and bp.base_parameter_id = 'Elev'
-         and uc.from_unit_code = bp.unit_code
-         and du.parameter_code = bp.base_parameter_code           
-         and du.unit_system = 'EN'
-         and uc.to_unit_code = du.display_unit_code;
+      select project_office_id,
+             project_id,
+             db_office_id,
+             base_location_id,
+             sub_location_id,
+             time_zone_name,
+             latitude,
+             longitude,
+             horizontal_datum,
+             elevation,
+             elev_unit_id,
+             vertical_datum,
+             public_name,
+             long_name,
+             description,
+             active_flag
+        from (select pl.location_code,
+                     po.office_id as project_office_id,
+                     pbl.base_location_id
+                     ||substr('-', 1, length(ppl.sub_location_id))
+                     ||ppl.sub_location_id as project_id,
+                     o.office_id as db_office_id,
+                     bl.base_location_id,
+                     pl.sub_location_id,
+                     tz.time_zone_name,
+                     pl.horizontal_datum,
+                     pl.elevation * uc.factor + uc.offset as elevation,
+                     uc.to_unit_id as elev_unit_id,
+                     pl.vertical_datum,
+                     pl.public_name,
+                     pl.long_name,
+                     pl.description,
+                     pl.active_flag
+                from at_embankment e,
+                     at_physical_location ppl,
+                     at_base_location pbl,
+                     cwms_office po,
+                     at_physical_location pl,
+                     at_base_location bl,
+                     cwms_office o,
+                     cwms_time_zone tz,
+                     at_display_units du,
+                     cwms_unit_conversion uc,
+                     cwms_base_parameter bp
+               where ppl.location_code = e.embankment_project_loc_code
+                 and pbl.base_location_code = ppl.base_location_code
+                 and pbl.base_location_id
+                     ||substr('-', 1, length(ppl.sub_location_id))
+                     ||ppl.sub_location_id like l_project_id_mask
+                 and po.office_code = pbl.db_office_code
+                 and pl.location_code = e.embankment_location_code
+                 and bl.base_location_code = pl.base_location_code
+                 and o.office_code = bl.db_office_code
+                 and o.office_id like l_office_id_mask
+                 and tz.time_zone_code = pl.time_zone_code
+                 and bp.base_parameter_id = 'Elev'
+                 and uc.from_unit_code = bp.unit_code
+                 and du.parameter_code = bp.base_parameter_code
+                 and du.unit_system = 'EN'
+                 and uc.to_unit_code = du.display_unit_code
+             ) q1
+             left outer join
+             (select location_code,
+                     latitude,
+                     longitude
+                from at_location_geometry
+             ) q2 on q2.location_code = q1.location_code;
 end cat_embankment;
 
 

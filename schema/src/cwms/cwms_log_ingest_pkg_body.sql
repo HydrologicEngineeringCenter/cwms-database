@@ -880,7 +880,7 @@ begin
    exception
       when no_data_found then
          cwms_err.raise(
-            'ITEM DOES NOT EXIST',
+            'ITEM_DOES_NOT_EXIST',
             'Application log file',
             cwms_util.get_db_office_id(p_office_id)
             ||'/'
@@ -1028,7 +1028,7 @@ begin
    exception
       when no_data_found then
          cwms_err.raise(
-            'ITEM DOES NOT EXIST',
+            'ITEM_DOES_NOT_EXIST',
             'Application log file',
             cwms_util.get_db_office_id(p_office_id)
             ||'/'
@@ -1221,7 +1221,7 @@ begin
    exception
       when no_data_found then
          cwms_err.raise(
-            'ITEM DOES NOT EXIST',
+            'ITEM_DOES_NOT_EXIST',
             'Application log file',
             cwms_util.get_db_office_id(p_office_id)
             ||'/'
@@ -1302,7 +1302,7 @@ begin
    exception
       when no_data_found then
          cwms_err.raise(
-            'ITEM DOES NOT EXIST',
+            'ITEM_DOES_NOT_EXIST',
             'Application log file',
             cwms_util.get_db_office_id(p_office_id)
             ||'/'

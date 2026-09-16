@@ -2612,30 +2612,22 @@ as
                         then cwms_util.change_timezone(p_max_date, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
                     else cwms_util.change_timezone(p_max_date, p_time_zone)
                 end
-            and sm.gage_height between
-                case
-                    when p_min_height is null
-                        then sm.gage_height
-                    else cwms_util.convert_units(p_min_height, l_height_unit, 'm')
-                end
-                and
-                case
-                    when p_max_height is null
-                        then sm.gage_height
-                    else cwms_util.convert_units(p_max_height, l_height_unit, 'm')
-                end
-            and sm.flow between
-                case
-                    when p_min_flow is null
-                        then sm.flow
-                    else cwms_util.convert_units(p_min_flow, l_flow_unit, 'cms')
-                end
-                and
-                case
-                    when p_max_flow is null
-                        then sm.flow
-                    else cwms_util.convert_units(p_max_flow, l_flow_unit, 'cms')
-                end
+            and (
+            p_min_height is null
+                or sm.gage_height >= cwms_util.convert_units(p_min_height, l_height_unit, 'm')
+            )
+            and (
+                   p_max_height is null
+                or sm.gage_height <= cwms_util.convert_units(p_max_height, l_height_unit, 'm')
+            )
+            and (
+                   p_min_flow is null
+                or sm.flow >= cwms_util.convert_units(p_min_flow, l_flow_unit, 'cms')
+            )
+            and (
+                   p_max_flow is null
+                or sm.flow <= cwms_util.convert_units(p_max_flow, l_flow_unit, 'cms')
+            )
             -- Legacy meas_number range filter (pre-UUID). Applies ONLY to legacy ids.
             -- If p_min_num/p_max_num are provided, UUID rows will be excluded by this predicate.
             and (
@@ -2806,6 +2798,40 @@ as
             and nvl(sm.quality, '@') in (select * from table(l_qualities))
          ) ;
    end delete_streamflow_meas;
+
+--------------------------------------------------------------------------------
+-- procedure delete_streamflow_meas_by_id
+-- New UUID-capable delete: deletes the measurement matching p_meas_id exactly, whether
+-- p_meas_id is a legacy numeric/hex measurement number or a UUID. p_meas_id is required
+-- as this procedure's intent is to delete a single meas by id.
+-- Bulk-delete of measurements can be achieved via the existing delete_streamflow_meas procedure.
+-- location_code + meas_number is the table's primary key, so location mask + meas_id is
+-- sufficient to identify the row(s) to delete; no other filters are needed.
+--------------------------------------------------------------------------------
+   procedure delete_streamflow_meas_by_id(
+         p_location_id_mask in varchar2,
+         p_meas_id          in varchar2,
+         p_office_id_mask   in varchar2 default null)
+   is
+      l_location_id_mask varchar2(256) := cwms_util.normalize_wildcards(p_location_id_mask) ;
+      l_office_id_mask   varchar2(64)  := cwms_util.normalize_wildcards(p_office_id_mask) ;
+   begin
+      if p_meas_id is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_MEAS_ID') ;
+      end if;
+      delete
+        from at_streamflow_meas
+       where rowid in
+        (
+            select sm.rowid
+              from at_streamflow_meas sm,
+                   av_loc2 v2
+             where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
+               and v2.location_id like l_location_id_mask escape '\'
+               and sm.location_code = v2.location_code
+               and sm.meas_number = p_meas_id
+        ) ;
+   end delete_streamflow_meas_by_id;
 
 --------------------------------------------------------------------------------
 -- function retrieve_streamflow_meas_by_id (UUID/ID exact match)

@@ -1,3 +1,4 @@
+set escape \
 CREATE OR REPLACE package &&cwms_schema..test_cwms_loc as
 
 --%suite(Test cwms_loc package code)
@@ -51,6 +52,8 @@ procedure store_loc_group_cwms_cat;
 procedure test_international_location;
 --%test(Test get vertical datum info series)
 procedure test_vertical_datum_info_series_f;
+--%test(Test get vertical datum info bulk)
+procedure test_vertical_datum_info_bulk;
 --%test(Test issue #57 - query vertical datum offset)
 procedure test_query_vertical_datum_offset;
 --%test(Search location using Oracle Text via AV_LOC)
@@ -59,6 +62,16 @@ procedure test_av_loc_text_search;
 procedure test_av_loc2_text_search;
 --%test(Test retrieval of vertical datum XML for location with null vertical datum)
 procedure test_null_vertical_datum;
+--%test(CWMS-2430 [DB #54] Change lat/lon to generic geometry)
+procedure test_mods_for_generic_geometry;
+--%test (Test location group assignment with ignore missing flag set to true)
+procedure test_assign_loc_ignore_missing;
+--%test (Test location group assignment with ignore missing flag set to false)
+procedure test_assign_loc_do_not_ignore_missing;
+--%test (CWMS-2508 [DB #186] location geometry nearest-city normalization)
+procedure test_location_geometry_nearest_city_normalization;
+--%test (Test simple deletion)
+procedure test_delete_loc;
 
 procedure setup;
 procedure teardown;
@@ -679,7 +692,7 @@ AS
         ut.expect (l_loc_active).to_equal ('F');
         ut.expect (l_active).to_equal ('F');
         ut.expect (l_bounding_office_id).to_equal ('NWP');
-        ut.expect (l_nearest_city).to_equal ('Springfield');
+        ut.expect (l_nearest_city).to_equal ('Springfield, Oregon');
         ut.expect (l_county).to_equal ('Lane');
         ut.expect (l_country).to_equal ('United States');
         ut.expect (l_location_kind_id).to_equal ('SITE');
@@ -2003,7 +2016,7 @@ AS
       ut.expect(l_rec.state_initial).to_equal('ON');
       ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A for Ontario');
       ut.expect(l_rec.nation_id).to_equal('Canada');
-      ut.expect(l_rec.nearest_city).to_equal('Sault Ste. Marie');
+      ut.expect(l_rec.nearest_city).to_equal('Sault Ste. Marie, Michigan');
    end test_cwdb_159_store_location_in_ontario_canada;
    --------------------------------------------------------------------------------
    -- procedure test_cwdb_239_improve_creation_of_new_locations_with_lat_lon
@@ -2062,13 +2075,13 @@ AS
       ut.expect(l_rec.state_initial).to_equal('AK');
       ut.expect(l_rec.nation_id).to_equal('United States');
       ut.expect(l_rec.bounding_office_id).to_equal('POA');
-      ut.expect(l_rec.nearest_city).to_equal('Juneau');
+      ut.expect(l_rec.nearest_city).to_equal('Juneau, Alaska');
       -- create with null lat/lon with null info
       l_rec := store_location(null, null, null, null, null, null, null);
       ut.expect(l_rec.county_name).to_equal('Unknown County or County N/A for Unknown State or State N/A');
       ut.expect(l_rec.state_initial).to_equal('00');
       ut.expect(l_rec.nation_id).to_be_null;
-      ut.expect(l_rec.bounding_office_id).to_be_null;
+      ut.expect(l_rec.bounding_office_id).to_equal('UNK');
       ut.expect(l_rec.nearest_city).to_be_null;
       -- create with bad lat/lon with null info
       l_rec := store_location(0, 0, null, null, null, null, null);
@@ -2091,19 +2104,17 @@ AS
       ut.expect(l_rec.nation_id).to_equal('United States');
       ut.expect(l_rec.bounding_office_id).to_equal('POA');
       ut.expect(l_rec.nearest_city).to_equal('Juneau');
-      -- create with valid lat/lon with non-null info (shoud be overriden by values retrieved by lat/lon)
-      l_rec := store_location(59.994444444444, -139.486388888889, 'King', 'WA', 'US', 'NWS', 'Seattle', p_delete => false);
-      ut.expect(l_rec.county_name).to_equal('Yakutat');
+      -- create with valid lat/lon with non-null info (specified values should overwrite previous values)
+      l_rec := store_location(58.3248121, -134.2998469, 'King', 'WA', 'US', 'NWS', 'Seattle', p_delete => false);
+      ut.expect(l_rec.county_name).to_equal('Juneau');
       ut.expect(l_rec.state_initial).to_equal('AK');
       ut.expect(l_rec.nation_id).to_equal('United States');
-      -- Behavior changed with CWDB-290. P_BOUNDING_OFFICE_ID now overrides P_LATITUDE/P_LONGITUDE (MDP 18Jun2024)
-      -- ut.expect(l_rec.bounding_office_id).to_equal('POA');
       ut.expect(l_rec.bounding_office_id).to_equal('NWS');
-      ut.expect(l_rec.nearest_city).to_equal('Juneau');
-      -- update with valid lat/lon with non-null info (should overwrite existing values)
-      l_rec := store_location(59.994444444444, -139.486388888889, 'King', 'WA', 'US', 'NWS', 'Seattle');
-      ut.expect(l_rec.county_name).to_equal('King');
-      ut.expect(l_rec.state_initial).to_equal('WA');
+      ut.expect(l_rec.nearest_city).to_equal('Seattle');
+      -- update with valid lat/lon with non-null info (specified values should overwrite existing values)
+      l_rec := store_location(59.994444444444, -139.486388888889, 'Yakutat', 'AK', 'US', 'NWS', 'Seattle');
+      ut.expect(l_rec.county_name).to_equal('Yakutat');
+      ut.expect(l_rec.state_initial).to_equal('AK');
       ut.expect(l_rec.nation_id).to_equal('United States');
       ut.expect(l_rec.bounding_office_id).to_equal('NWS');
       ut.expect(l_rec.nearest_city).to_equal('Seattle');
@@ -2706,6 +2717,157 @@ AS
 
    end test_vertical_datum_info_series_f;
 
+----------------------------------------------------
+-- procedure test_vertical_datum_info_bulk --
+----------------------------------------------------
+procedure test_vertical_datum_info_bulk
+   is
+      l_office_id             av_loc.db_office_id%TYPE;
+      l_location_id1          av_loc.location_id%TYPE;
+      l_location_id2          av_loc.location_id%TYPE;
+      l_vertical_datum        AV_LOC.VERTICAL_DATUM%TYPE;
+      l_elevation             AV_LOC.ELEVATION%TYPE;
+      l_xml                   varchar2(4096);
+      l_xml2                  varchar2(4096);
+      l_rounding_spec         varchar2(10) := '4444567894';
+      l_result                clob_tab_t := clob_tab_t();
+      l_expected_xml          varchar2(4096);
+      l_expected_xml2         varchar2(4096);
+BEGIN
+   --------------------------------
+   -- cleanup any previous tests --
+   --------------------------------
+   setup;
+   ----------------------------------------------------
+   -- create the location and get the location codes --
+   ----------------------------------------------------
+   l_office_id := '&&office_id';
+   l_location_id1 := 'TestDatumLoc1';
+   l_location_id2 := 'TestDatumLoc2';
+
+
+   cwms_loc.store_location (p_location_id    => l_location_id1,
+                            p_db_office_id   => l_office_id,
+                            p_vertical_datum   => 'NGVD29');
+   cwms_loc.store_location (p_location_id    => l_location_id2,
+                            p_db_office_id   => l_office_id,
+                            p_vertical_datum   => 'NGVD29');
+
+   SELECT vertical_datum
+   INTO l_vertical_datum
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id1
+     AND unit_system = 'EN';
+
+   ut.expect (l_vertical_datum).to_equal ('NGVD29');
+
+   SELECT vertical_datum
+   INTO l_vertical_datum
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id2
+     AND unit_system = 'EN';
+
+   ut.expect (l_vertical_datum).to_equal ('NGVD29');
+
+   l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="ft">' || CHR(10) ||
+            '  <location>'||l_location_id1||'</location>' || CHR(10) ||
+            '  <native-datum>NGVD-29</native-datum>' || CHR(10) ||
+            '  <elevation>19200</elevation>' || CHR(10) ||
+            '  <offset estimate="false">' || CHR(10) ||
+            '    <to-datum>NGVD-29</to-datum>' || CHR(10) ||
+            '    <value>0.0</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '  <offset estimate="true">' || CHR(10) ||
+            '    <to-datum>NAVD-88</to-datum>' || CHR(10) ||
+            '    <value>-5.846</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '</vertical-datum-info>';
+
+   l_expected_xml := '<vertical-datum-info office="'||l_office_id||'" unit="ft">' || CHR(10) ||
+            '  <location>'||l_location_id1||'</location>' || CHR(10) ||
+            '  <native-datum>NGVD-29</native-datum>' || CHR(10) ||
+            '  <elevation>19200</elevation>' || CHR(10) ||
+            '  <offset estimate="true">' || CHR(10) ||
+            '    <to-datum>NAVD-88</to-datum>' || CHR(10) ||
+            '    <value>-5.846</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '</vertical-datum-info>';
+
+   l_xml2 := '<vertical-datum-info office="'||l_office_id||'" unit="ft">' || CHR(10) ||
+            '  <location>'||l_location_id2||'</location>' || CHR(10) ||
+            '  <native-datum>NGVD-29</native-datum>' || CHR(10) ||
+            '  <elevation>29200</elevation>' || CHR(10) ||
+            '  <offset estimate="false">' || CHR(10) ||
+            '    <to-datum>NGVD-29</to-datum>' || CHR(10) ||
+            '    <value>0.0</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '  <offset estimate="true">' || CHR(10) ||
+            '    <to-datum>NAVD-88</to-datum>' || CHR(10) ||
+            '    <value>-15.846</value>' || CHR(10) ||
+            '  </offset>' || CHR(10) ||
+            '</vertical-datum-info>';
+
+   l_expected_xml2 := '<vertical-datum-info office="'||l_office_id||'" unit="ft">' || CHR(10) ||
+                     '  <location>'||l_location_id2||'</location>' || CHR(10) ||
+                     '  <native-datum>NGVD-29</native-datum>' || CHR(10) ||
+                     '  <elevation>29200</elevation>' || CHR(10) ||
+                     '  <offset estimate="true">' || CHR(10) ||
+                     '    <to-datum>NAVD-88</to-datum>' || CHR(10) ||
+                     '    <value>-15.846</value>' || CHR(10) ||
+                     '  </offset>' || CHR(10) ||
+                     '</vertical-datum-info>';
+
+   cwms_loc.set_vertical_datum_info (
+      l_location_id1,
+      l_xml,
+      'F',
+      '&&office_id');
+   cwms_loc.set_vertical_datum_info (
+      l_location_id2,
+      l_xml2,
+      'F',
+      '&&office_id');
+   commit;
+
+   SELECT elevation
+   INTO l_elevation
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id1
+     AND unit_system = 'EN';
+
+   ut.expect (abs(l_elevation-19200)).to_be_less_or_equal (0.01);
+   ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-19200)).to_be_less_or_equal (0.01);
+
+   SELECT elevation
+   INTO l_elevation
+   FROM av_loc
+   WHERE     db_office_id = l_office_id
+     AND location_id = l_location_id2
+     AND unit_system = 'EN';
+
+   ut.expect (abs(l_elevation-29200)).to_be_less_or_equal (0.01);
+   ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-29200)).to_be_less_or_equal (0.01);
+
+   cwms_loc.get_vertical_datum_info_list(l_result, l_office_id, l_location_id1, 'EN');
+
+   ut.expect(l_result.count).to_equal(1);
+   if l_result.count = 1 then
+      ut.expect(to_char(l_result(l_result.count))).to_equal(to_char(l_expected_xml));
+   end if;
+
+   cwms_loc.get_vertical_datum_info_list(l_result, l_office_id, 'TestDatumLoc%', 'EN');
+
+   ut.expect(l_result.count).to_equal(2);
+
+   if l_result.count = 2 then
+      ut.expect(to_char(l_result(1))).to_equal(to_char(l_expected_xml));
+      ut.expect(to_char(l_result(2))).to_equal(to_char(l_expected_xml2));
+   end if;
+end test_vertical_datum_info_bulk;
+
    --------------------------------------------------------------------------------
    -- procedure test_query_vertical_datum_offset
    --------------------------------------------------------------------------------
@@ -2849,7 +3011,1193 @@ AS
        ut.expect(l_vert_datum_info).to_be_null();
 
     end test_null_vertical_datum;
+
+   --------------------------------------------------------------------------------
+   -- function equivalent_geometries
+   --------------------------------------------------------------------------------
+   function equivalent_geometries (
+      p_geometry_1 in sdo_geometry,
+      p_geometry_2 in sdo_geometry,
+      p_tolerance  in number default 0.001)
+      return boolean
+   is
+   begin
+      if (p_geometry_1 is null) != (p_geometry_2 is null) then
+        return false;
+      else
+         return sdo_geom.relate(p_geometry_1, 'EQUAL', p_geometry_2, p_tolerance) = 'EQUAL';
+      end if;
+   exception
+      when others then return false;
+   end equivalent_geometries;
+
+   --------------------------------------------------------------------------------
+   -- procedure test_mods_for_generic_geometry
+   --------------------------------------------------------------------------------
+   procedure test_mods_for_generic_geometry
+   is
+      type info_rec_t is record(
+                         location_kind av_loc.location_kind_id%type,
+                         elevation     av_loc.elevation%type,
+                         vert_datum    av_loc.vertical_datum%type,
+                         latitude      av_loc.latitude%type,
+                         longitude     av_loc.longitude%type,
+                         horiz_datum   av_loc.horizontal_datum%type,
+                         county_name   av_loc.county_name%type,
+                         state_initial av_loc.state_initial%type,
+                         nation_id     av_loc.nation_id%type,
+                         nearest_city  av_loc.nearest_city%type,
+                         time_zone     av_loc.time_zone_name%type);
+      type info_tab_t is table of info_rec_t index by varchar2(32767);
+      l_info                 info_tab_t;
+      l_view_rec             av_loc%rowtype;
+      l_view_rec_base        av_loc%rowtype;
+      l_office_id            av_loc.db_office_id%type;
+      l_location_kind_id     av_loc.location_kind_id%type;
+      l_elevation            av_loc.elevation%type;
+      l_horizontal_datum     av_loc.horizontal_datum%type;
+      l_location_id          av_loc.location_id%type;
+      l_latitude             av_loc.latitude%type;
+      l_vertical_datum       av_loc.vertical_datum%type;
+      l_longitude            av_loc.longitude%type;
+      l_time_zone_id         av_loc.time_zone_name%type;
+      l_data                 clob;
+      l_data_tab             str_tab_tab_t;
+      l_county_state         str_tab_t;
+      l_location_codes       number_tab_t;
+      l_count                binary_integer;
+      l_crsr                 sys_refcursor;
+      l_crsr2                sys_refcursor;
+      l_db_office_ids        str_tab_t;
+      l_db_office_ids2       str_tab_t;
+      l_location_ids         str_tab_t;
+      l_base_location_ids    str_tab_t;
+      l_sub_location_ids     str_tab_t;
+      l_state_initials       str_tab_t;
+      l_county_names         str_tab_t;
+      l_time_zone_names      str_tab_t;
+      l_location_types       str_tab_t;
+      l_latitudes            number_tab_t;
+      l_longitudes           number_tab_t;
+      l_horizontal_datums    str_tab_t;
+      l_elevations           number_tab_t;
+      l_elev_unit_ids        str_tab_t;
+      l_vertical_datums      str_tab_t;
+      l_public_names         str_tab_t;
+      l_long_names           str_tab_t;
+      l_descriptions         str_tab_t;
+      l_active_flags         str_tab_t;
+      l_location_kind_ids    str_tab_t;
+      l_map_labels           str_tab_t;
+      l_published_latitudes  number_tab_t;
+      l_published_longitudes number_tab_t;
+      l_bounding_office_ids  str_tab_t;
+      l_nation_ids           str_tab_t;
+      l_nearest_cities       str_tab_t;
+      l_geometry             sdo_geometry;
+      l_vidx                 integer;
+      exc_location_id_not_found EXCEPTION;
+      PRAGMA EXCEPTION_INIT (exc_location_id_not_found, -20025);
+   begin
+      -----------------------------------------------
+      -- retrieve and parse the locations to store --
+      -----------------------------------------------
+      l_office_id := '&&office_id';
+      dbms_lob.createtemporary(l_data, true);
+      select value
+        into l_data
+        from at_clob
+       where id = '/TEST/CWMS-2430_locations_for_test_mods_for_generic_geometry';
+      l_data_tab := cwms_util.parse_delimited_text (
+         p_text 	         => l_data,
+         p_field_delimiter => chr(9),
+         p_keep_quotes     => 'T');
+      for i in 1..l_data_tab.count loop
+         exit when l_data_tab(i).count < 13;
+         l_location_id      := l_data_tab(i)(2);
+         l_location_kind_id := l_data_tab(i)(3);
+         l_elevation        := to_number(l_data_tab(i)(4));
+         l_vertical_datum   := l_data_tab(i)(5);
+         l_latitude         := to_number(l_data_tab(i)(6));
+         l_longitude        := to_number(l_data_tab(i)(7));
+         l_horizontal_datum := l_data_tab(i)(8);
+         l_time_zone_id     := l_data_tab(i)(9);
+         ----------------------------------------------------------
+         -- compute data from lat/lon and store as expected data --
+         ----------------------------------------------------------
+         l_county_state := cwms_loc.get_county_id(l_latitude, l_longitude);
+         l_info(l_location_id) := info_rec_t(
+            l_location_kind_id,                                                             -- location kind
+            l_elevation,                                                                    -- elevation
+            l_vertical_datum,                                                               -- vertical datum
+            l_latitude,                                                                     -- latitude
+            l_longitude,                                                                    -- longitude
+            l_horizontal_datum,                                                             -- horizontal datum
+            l_county_state(1),                                                              -- county name
+            l_county_state(2),                                                              -- state initial
+            null,                                                                           -- nation id (populated below)
+            cwms_util.join_text(cwms_loc.get_nearest_city(l_latitude, l_longitude), ', '),  -- nearest city
+            l_time_zone_id);                                                                -- time zone
+         select cntry_name
+           into l_info(l_location_id).nation_id
+           from cwms_nation_sp
+          where fips_cntry = cwms_loc.get_nation_id(l_latitude, l_longitude);
+         ---------------------------------------------------------------------------
+         -- store location without data computed from lat/lon (will auto-compute) --
+         ---------------------------------------------------------------------------
+         cwms_loc.store_location2 (
+            p_location_id      => l_location_id,
+            p_elevation        => l_elevation,
+            p_elev_unit_id     => 'ft',
+            p_vertical_datum   => l_vertical_datum,
+            p_latitude         => l_latitude,
+            p_longitude        => l_longitude,
+            p_horizontal_datum => l_horizontal_datum,
+            p_time_zone_id     => l_time_zone_id,
+            p_active           => 'T',
+            p_db_office_id     => l_office_id,
+            p_location_kind_id => l_location_kind_id);
+      end loop;
+      commit;
+      ------------------------------------------------------------
+      -- validate lat/lon and values auto-computed from lat/lon --
+      ------------------------------------------------------------
+      l_location_codes := number_tab_t();
+      for i in 1..l_data_tab.count loop
+         exit when l_data_tab(i).count < 13;
+         l_location_codes.extend;
+         l_location_id := l_data_tab(i)(2);
+         l_latitude    := to_number(l_data_tab(i)(6));
+         l_longitude   := to_number(l_data_tab(i)(7));
+         dbms_output.put_line('--1> '||l_location_id);
+         select *
+           into l_view_rec
+           from av_loc
+          where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+         l_location_codes(i) := l_view_rec.location_code;
+         ut.expect(l_view_rec.latitude).to_equal(l_latitude);
+         ut.expect(l_view_rec.longitude).to_equal(l_longitude);
+         ut.expect(l_view_rec.county_name).to_equal(l_info(l_location_id).county_name);
+         ut.expect(l_view_rec.state_initial).to_equal(l_info(l_location_id).state_initial);
+         ut.expect(l_view_rec.nation_id).to_equal(l_info(l_location_id).nation_id);
+         ut.expect(l_view_rec.nearest_city).to_equal(l_info(l_location_id).nearest_city);
+      end loop;
+      --------------------------------------
+      -- clear at_location_geometry table --
+      --------------------------------------
+      delete
+        from at_location_geometry
+       where location_code in (select column_value
+                                 from table(l_location_codes))
+          or location_code in (select base_location_code
+                                 from at_physical_location
+                                where location_code in (select column_value
+                                                          from table(l_location_codes)
+                                                       )
+                              );
+      select count(*)
+        into l_count
+        from at_location_geometry
+       where location_code in (select column_value from table(l_location_codes));
+      ut.expect(l_count).to_equal(0);
+      -------------------------------------------------------------------------------------------------------
+      -- delete from at_location_geometry and verify lat/lons are null but computed values are not changed --
+      -------------------------------------------------------------------------------------------------------
+      for i in 1..l_data_tab.count loop
+         exit when l_data_tab(i).count < 13;
+         l_location_id      := l_data_tab(i)(2);
+         dbms_output.put_line('--2> '||l_location_id);
+         delete
+           from at_location_geometry
+          where location_code = l_location_codes(i);
+         select *
+           into l_view_rec
+           from av_loc
+          where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+         ut.expect(l_view_rec.latitude).to_be_null;
+         ut.expect(l_view_rec.longitude).to_be_null;
+         ut.expect(l_view_rec.county_name).to_equal(l_info(l_location_id).county_name);
+         ut.expect(l_view_rec.state_initial).to_equal(l_info(l_location_id).state_initial);
+         ut.expect(l_view_rec.nation_id).to_equal(l_info(l_location_id).nation_id);
+         ut.expect(l_view_rec.nearest_city).to_equal(l_info(l_location_id).nearest_city);
+      end loop;
+      ---------------------------------
+      -- set computed values to null --
+      ---------------------------------
+      update at_physical_location
+         set county_code = null,
+             nation_code = null,
+             nearest_city = null
+       where location_code in (select column_value from table(l_location_codes));
+      ----------------------------------------------------------------------------------------
+      -- verify computed values are null before setting lat/lons and are correct afterwards --
+      ----------------------------------------------------------------------------------------
+      for i in 1..l_data_tab.count loop
+         exit when l_data_tab(i).count < 13;
+         l_location_id := l_data_tab(i)(2);
+         dbms_output.put_line('--3> '||l_location_id);
+         select *
+           into l_view_rec
+           from av_loc
+          where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+         if instr(l_location_id, '-') > 0 then
+            -----------------------------------------
+            -- possibly has a base location stored --
+            -----------------------------------------
+            begin
+               select *
+                 into l_view_rec_base
+                 from av_loc
+                where db_office_id = l_office_id
+                  and location_id = cwms_util.split_text(l_location_id, 1, '-')
+                  and unit_system = 'EN';
+               ----------------------------------------------------------------------------
+               -- has a base location stored, info is inherited (may or may not be null) --
+               ----------------------------------------------------------------------------
+               ut.expect(nvl(l_view_rec.county_name,   '@')).to_equal(nvl(l_view_rec_base.county_name,   '@'));
+               ut.expect(nvl(l_view_rec.state_initial, '@')).to_equal(nvl(l_view_rec_base.state_initial, '@'));
+               ut.expect(nvl(l_view_rec.nation_id,     '@')).to_equal(nvl(l_view_rec_base.nation_id,     '@'));
+               ut.expect(nvl(l_view_rec.nearest_city,  '@')).to_equal(nvl(l_view_rec_base.nearest_city,  '@'));
+            exception
+               when no_data_found then
+                  ------------------------------------------------
+                  -- no base location stored, info must be null --
+                  ------------------------------------------------
+                  ut.expect(l_view_rec.county_name).to_be_null;
+                  ut.expect(l_view_rec.state_initial).to_be_null;
+                  ut.expect(l_view_rec.nation_id).to_be_null;
+                  ut.expect(l_view_rec.nearest_city).to_be_null;
+            end;
+         else
+            ---------------------------------------------------
+            -- is a base location, info must be null/unknown --
+            ---------------------------------------------------
+            ut.expect(l_view_rec.county_name).to_equal('Unknown County or County N/A for Unknown State or State N/A');
+            ut.expect(l_view_rec.state_initial).to_equal('00');
+            ut.expect(l_view_rec.nation_id).to_be_null;
+            ut.expect(l_view_rec.nearest_city).to_be_null;
+         end if;
+         ------------------------------------------
+         -- set lat/lon and verify computed_info --
+         ------------------------------------------
+         l_location_id := l_data_tab(i)(2);
+         l_latitude    := to_number(l_data_tab(i)(6));
+         l_longitude   := to_number(l_data_tab(i)(7));
+         cwms_loc.store_location (
+            p_location_id 	=> l_location_id,
+            p_latitude 	   => l_latitude,
+            p_longitude 	=> l_longitude,
+            p_db_office_id => l_office_id);
+         select *
+           into l_view_rec
+           from av_loc
+          where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+         ut.expect(l_view_rec.latitude).to_equal(l_latitude);
+         ut.expect(l_view_rec.longitude).to_equal(l_longitude);
+         ut.expect(l_view_rec.county_name).to_equal(l_info(l_location_id).county_name);
+         ut.expect(l_view_rec.state_initial).to_equal(l_info(l_location_id).state_initial);
+         ut.expect(l_view_rec.nation_id).to_equal(l_info(l_location_id).nation_id);
+         ut.expect(l_view_rec.nearest_city).to_equal(l_info(l_location_id).nearest_city);
+      end loop;
+      ----------------------------------------------------------
+      -- test mods to cwms_cat.cat_location and cat_location2 --
+      ----------------------------------------------------------
+      cwms_cat.cat_location(
+         p_cwms_cat       => l_crsr,
+         p_elevation_unit => 'ft' ,
+         p_db_office_id   => l_office_id);
+      fetch l_crsr
+       bulk collect
+       into l_db_office_ids,
+            l_location_ids,
+            l_base_location_ids,
+            l_sub_location_ids,
+            l_state_initials,
+            l_county_names,
+            l_time_zone_names,
+            l_location_types,
+            l_latitudes,
+            l_longitudes,
+            l_horizontal_datums,
+            l_elevations,
+            l_elev_unit_ids,
+            l_vertical_datums,
+            l_public_names,
+            l_long_names,
+            l_descriptions,
+            l_active_flags;
+      close l_crsr;
+      for i in 1..l_db_office_ids.count loop
+         if l_info.exists(l_location_ids(i)) then
+            dbms_output.put_line('--4> '||l_location_ids(i));
+            ut.expect(l_base_location_ids(i)).to_equal(cwms_util.get_base_id(l_location_ids(i)));
+            ut.expect(l_sub_location_ids(i)).to_equal(cwms_util.get_sub_id(l_location_ids(i)));
+            ut.expect(l_state_initials(i)).to_equal(l_info(l_location_ids(i)).state_initial);
+            ut.expect(l_county_names(i)).to_equal(l_info(l_location_ids(i)).county_name);
+            ut.expect(l_time_zone_names(i)).to_equal(l_info(l_location_ids(i)).time_zone);
+            ut.expect(round(l_latitudes(i), 6)).to_equal(round(l_info(l_location_ids(i)).latitude, 6));
+            ut.expect(round(l_longitudes(i), 6)).to_equal(round(l_info(l_location_ids(i)).longitude, 6));
+            ut.expect(l_horizontal_datums(i)).to_equal(l_info(l_location_ids(i)).horiz_datum);
+            ut.expect(round(l_elevations(i), 6)).to_equal(round(l_info(l_location_ids(i)).elevation, 6));
+            ut.expect(replace(l_vertical_datums(i), 'LOCAL', 'OTHER')).to_equal(l_info(l_location_ids(i)).vert_datum);
+         end if;
+      end loop;
+
+      cwms_cat.cat_location2(
+         p_cwms_cat       => l_crsr,
+         p_elevation_unit => 'ft' ,
+         p_db_office_id   => l_office_id);
+      fetch l_crsr
+       bulk collect
+       into l_db_office_ids,
+            l_location_ids,
+            l_base_location_ids,
+            l_sub_location_ids,
+            l_state_initials,
+            l_county_names,
+            l_time_zone_names,
+            l_location_types,
+            l_latitudes,
+            l_longitudes,
+            l_horizontal_datums,
+            l_elevations,
+            l_elev_unit_ids,
+            l_vertical_datums,
+            l_public_names,
+            l_long_names,
+            l_descriptions,
+            l_active_flags,
+            l_location_kind_ids,
+            l_map_labels,
+            l_published_latitudes,
+            l_published_longitudes,
+            l_bounding_office_ids,
+            l_nation_ids,
+            l_nearest_cities;
+      close l_crsr;
+      for i in 1..l_db_office_ids.count loop
+         if l_info.exists(l_location_ids(i)) then
+            dbms_output.put_line('--5> '||l_location_ids(i));
+            ut.expect(l_base_location_ids(i)).to_equal(cwms_util.get_base_id(l_location_ids(i)));
+            ut.expect(l_sub_location_ids(i)).to_equal(cwms_util.get_sub_id(l_location_ids(i)));
+            ut.expect(l_state_initials(i)).to_equal(l_info(l_location_ids(i)).state_initial);
+            ut.expect(l_county_names(i)).to_equal(l_info(l_location_ids(i)).county_name);
+            ut.expect(l_time_zone_names(i)).to_equal(l_info(l_location_ids(i)).time_zone);
+            ut.expect(round(l_latitudes(i), 6)).to_equal(round(l_info(l_location_ids(i)).latitude, 6));
+            ut.expect(round(l_longitudes(i), 6)).to_equal(round(l_info(l_location_ids(i)).longitude, 6));
+            ut.expect(l_horizontal_datums(i)).to_equal(l_info(l_location_ids(i)).horiz_datum);
+            ut.expect(round(l_elevations(i), 6)).to_equal(round(l_info(l_location_ids(i)).elevation, 6));
+            ut.expect(replace(l_vertical_datums(i), 'LOCAL', 'OTHER')).to_equal(l_info(l_location_ids(i)).vert_datum);
+            ut.expect(l_nation_ids(i)).to_equal(l_info(l_location_ids(i)).nation_id);
+            ut.expect(l_nearest_cities(i)).to_equal(l_info(l_location_ids(i)).nearest_city);
+         end if;
+      end loop;
+      -------------------------------------------
+      -- test mods to cwms_project.cat_project --
+      -------------------------------------------
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'BIGH')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         'Small sediment load due to clay soil and pastureland in drainage basin. Avg sedimentation rate of 22 ac-ft/yr is expected with 80% of sediment deposited below elev 858.0; remaining 20% expected to be deposited between elev 858.0-867.5.',
+         'There is no significant downstream urban development near the dam.',
+         'The bankfull capacity below the dam is 1,700 cfs.',
+         null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'MARI')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         'Large amount of sedimentation due to large amount of agriculture in drainage basin and absence of upstream reservoirs. 1982 survey indicated sedimentation rate of 336.7ac-ft/yr. Marion reservoir has 5 degradation ranges extending to river mile 120.0.',
+         'Florence, KS is downstream from the dam on the Cottonwood River.',
+         'Bankfull capacity below the dam is 8700 cfs (stage 17.8 ft). Bankfull capacity at Marion Levee is 4900 cfs (stage 16.0 ft). Bankfull capacity at Florence is 7400 cfs (stage 21.0 ft). Bankfull capacity at Plymouth is 9800 cfs (stage 28.0 ft).',
+         null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'PATM')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         'Sedimentation information unavailable.',
+         'There is no significant downstream urban development near the dam.',
+         'Bankfull capacity below the dam is 800 cfs. Bankfull capacity at Chicota gage is 6800 cfs (stage 20.0 ft). Bankfull capacity at Arthur City is 85,385 cfs (stage 27.0 ft).',
+         null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'HUGO')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         'Kiamichi River is a light sediment-bearing system. Most of the basin is in forest or grasslands, so little sheet erosion has occurred. Banks \& beds of stream \& tributaries contribute little sediment. Total sedimentation rate is 0.20 ac-ft/sq mi/yr.',
+         'Sawyer, OK (pop. 274) is immediately southeast of the dam.',
+         'Bankfull capacity below the dam is 20,000 cfs. Bankfull capacity at the DeKalb gage is 46,900 cfs (stage 23.7 ft). Bankfull capacity at Index, AR is 95,000 cfs (stage 19.8 ft).',
+         null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'EUFA')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         'Lake inflow carries large amount of sediment from Canadian, North Canadian, and Deep Fork Rivers. During high-flow, bank caving and erosion becomes a problem. Avg annual sedimentation rate is 9,417 ac-ft/yr.',
+         'Eufala, OK is located on the Eufala Reservoir. Whitefield is located downstream from the dam on the mainstem of the Canadian River.',
+         'Bankfull Capacity at Whitefield, OK is 40,000 cfs (stage 13.01 ft).',
+         null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'COUN')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         'Relatively large amount of sedimentation at due to agriculture in drainage basin and absence of upstream reservoirs. Original design estimated sedimentation rate of 206 ac-ft/yr, but 1985 survey indicated a sedimentation rate of 212 ac-ft/yr.',
+         'Council Grove, KS and Americus, KS are both on mainstem of the Neosho River.',
+         'Bankfull capacity at Council Grove, KS is 3,500 cfs (stage 15.0). Bankfull capacity at Americus, KS is 16,000 cfs (stage 27.50).',
+         null,
+         null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'CHOU')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         null,
+         null,null,null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'NEWT')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         null,
+         null,null,null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'ROBE')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         null,
+         null,null,null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'WDMA')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         'There are no regulation procedures for sediment, however, W.D. Mayo Reservoir does provide sediment storage for the benefit of the McClellan-Kerr Arkansas River Navigation System. See Plate 2-4 for sedimentation deposition and degradation.',
+         null,null,null,null), 'F');
+      cwms_project.store_project(project_obj_t(
+         location_obj_t(cwms_loc.get_location_code(l_office_id, 'WEBB')),
+         null,null,null,null,0,0,0,0,'$',null,null,null,
+         null,
+         null,null,null,null), 'F');
+
+      cwms_project.cat_project (
+         p_project_cat  => l_crsr,
+         p_basin_cat    => l_crsr2, -- dummy, not used
+         p_db_office_id => l_office_id);
+
+      close l_crsr2;
+      fetch l_crsr
+       bulk collect
+       into l_db_office_ids,
+            l_base_location_ids,
+            l_sub_location_ids,
+            l_time_zone_names,
+            l_latitudes,
+            l_longitudes,
+            l_horizontal_datums,
+            l_elevations,
+            l_elev_unit_ids,
+            l_vertical_datums,
+            l_public_names,
+            l_long_names,
+            l_descriptions,
+            l_active_flags;
+      close l_crsr;
+      for i in 1..l_db_office_ids.count loop
+         l_location_id := l_base_location_ids(i)||substr('-', 1, length(l_sub_location_ids(i)))||l_sub_location_ids(i);
+         dbms_output.put_line('--6> '||l_location_id);
+         ut.expect(l_time_zone_names(i)).to_equal(l_info(l_location_id).time_zone);
+         ut.expect(round(l_latitudes(i), 6)).to_equal(round(l_info(l_location_id).latitude, 6));
+         ut.expect(round(l_longitudes(i), 6)).to_equal(round(l_info(l_location_id).longitude, 6));
+         ut.expect(l_horizontal_datums(i)).to_equal(l_info(l_location_id).horiz_datum);
+         ut.expect(round(cwms_util.convert_units(l_elevations(i), 'm', 'ft'), 6)).to_equal(round(l_info(l_location_id).elevation, 6));
+         ut.expect(replace(l_vertical_datums(i), 'LOCAL', 'OTHER')).to_equal(l_info(l_location_id).vert_datum);
+      end loop;
+      ---------------------------------------------
+      -- test mods to cwms_embank.cat_embankment --
+      ---------------------------------------------
+      cwms_embank.store_embankment(embankment_obj_t(
+         location_ref_t('BIGH', l_office_id),location_obj_t(location_ref_t('BIGH-Dam', l_office_id)),
+         lookup_type_obj_t(l_office_id,'Rolled Earth-Filled','Rolled Earth-Filled','T'),
+         lookup_type_obj_t(l_office_id,'Rock Riprap','Rock Riprap','T'),
+         lookup_type_obj_t(l_office_id,'Grass-Covered Soil','Grass-Covered Soil','T'),
+         0.3,0.3,3902,83,32,'ft'), 'F');
+      cwms_embank.store_embankment(embankment_obj_t(
+         location_ref_t('MARI', l_office_id),location_obj_t(location_ref_t('MARI-Dam', l_office_id)),
+         lookup_type_obj_t(l_office_id,'Rolled Earth-Filled','Rolled Earth-Filled','T'),
+         lookup_type_obj_t(l_office_id,'Rock Riprap','Rock Riprap','T'),
+         lookup_type_obj_t(l_office_id,'Grass-Covered Soil','Grass-Covered Soil','T'),
+         0.3,0.3,8375,67,32,'ft'),'F');
+      cwms_embank.store_embankment(embankment_obj_t(
+         location_ref_t('PATM', l_office_id),location_obj_t(location_ref_t('PATM-Dam', l_office_id)),
+         lookup_type_obj_t(l_office_id,'Rolled Earth-Filled','Rolled Earth-Filled','T'),
+         lookup_type_obj_t(l_office_id,'Rock Riprap','Rock Riprap','T'),
+         lookup_type_obj_t(l_office_id,'Grass-Covered Soil','Grass-Covered Soil','T'),
+         0.3,0.4,7080,96,32,'ft'),'F');
+      cwms_embank.store_embankment(embankment_obj_t(
+         location_ref_t('HUGO', l_office_id),location_obj_t(location_ref_t('HUGO-Dam', l_office_id)),
+         lookup_type_obj_t(l_office_id,'Rolled Earth-Filled','Rolled Earth-Filled','T'),
+         lookup_type_obj_t(l_office_id,'Rock Riprap','Rock Riprap','T'),
+         lookup_type_obj_t(l_office_id,'Grass-Covered Soil','Grass-Covered Soil','T'),
+         0.4,0.4,10200,101,32,'ft'),'F');
+      cwms_embank.store_embankment(embankment_obj_t(
+         location_ref_t('EUFA', l_office_id),location_obj_t(location_ref_t('EUFA-Dam', l_office_id)),
+         lookup_type_obj_t(l_office_id,'Rolled Earth-Filled','Rolled Earth-Filled','T'),
+         lookup_type_obj_t(l_office_id,'Rock Riprap','Rock Riprap','T'),
+         lookup_type_obj_t(l_office_id,'Grass-Covered Soil','Grass-Covered Soil','T'),
+         0.3,0.4,3200,114,32,'ft'),'F');
+      cwms_embank.store_embankment(embankment_obj_t(
+         location_ref_t('COUN', l_office_id),location_obj_t(location_ref_t('COUN-Dam', l_office_id)),
+         lookup_type_obj_t(l_office_id,'Rolled Earth-Filled','Rolled Earth-Filled','T'),
+         lookup_type_obj_t(l_office_id,'Rock Riprap','Rock Riprap','T'),
+         lookup_type_obj_t(l_office_id,'Grass-Covered Soil','Grass-Covered Soil','T'),
+         0.33,0.36,6500,96,32,'ft'),'F');
+      commit;
+      for rec in (select distinct project_id from av_embankment) loop
+         cwms_embank.cat_embankment(l_crsr, rec.project_id, l_office_id);
+         fetch l_crsr
+          bulk collect
+          into l_db_office_ids,
+               l_location_ids,
+               l_db_office_ids2,
+               l_base_location_ids,
+               l_sub_location_ids,
+               l_time_zone_names,
+               l_latitudes,
+               l_longitudes,
+               l_horizontal_datums,
+               l_elevations,
+               l_elev_unit_ids,
+               l_vertical_datums,
+               l_public_names,
+               l_long_names,
+               l_descriptions,
+               l_active_flags;
+         close l_crsr;
+         ut.expect(l_db_office_ids.count).to_equal(1);
+         ut.expect(l_db_office_ids(1)).to_equal(l_office_id);
+         ut.expect(l_location_ids(1)).to_equal(rec.project_id);
+         ut.expect(l_db_office_ids2(1)).to_equal(l_office_id);
+         ut.expect(l_base_location_ids(1)).to_equal(rec.project_id);
+         ut.expect(l_sub_location_ids(1)).to_equal('Dam');
+         ut.expect(l_time_zone_names(1)).to_equal(l_info(rec.project_id).time_zone);
+         l_location_id := rec.project_id||'-'||l_sub_location_ids(1);
+         if l_info.exists(l_location_id) then
+            --------------------------------------
+            -- location was stored in this test --
+            --------------------------------------
+            ut.expect(round(l_latitudes(1), 6)).to_equal(round(l_info(l_location_id).latitude, 6));
+            ut.expect(round(l_longitudes(1), 6)).to_equal(round(l_info(l_location_id).longitude, 6));
+            ut.expect(l_horizontal_datums(1)).to_equal(l_info(l_location_id).horiz_datum);
+            ut.expect(round(cwms_util.convert_units(l_elevations(1), l_elev_unit_ids(1), 'ft'), 6)).to_equal(round(l_info(l_location_id).elevation, 6));
+            ut.expect(replace(l_vertical_datums(1), 'LOCAL', 'OTHER')).to_equal(l_info(l_location_id).vert_datum);
+            ----------------------------------------
+            -- test cwms_loc.get_location_lat_lon --
+            ----------------------------------------
+            l_location_id := rec.project_id||'-Dam';
+            cwms_loc.get_location_lat_lon(
+               p_lat           => l_latitude,
+               p_lon           => l_longitude,
+               p_location_code => cwms_loc.get_location_code(l_office_id, l_location_id));
+            ut.expect(l_latitude).to_equal(l_latitudes(1));
+            ut.expect(l_longitude).to_equal(l_longitudes(1));
+            -------------------------------------
+            -- test cwms_loc.retrieve_geometry --
+            -------------------------------------
+            l_geometry := cwms_loc.retrieve_geometry(
+               p_location_id  => l_location_id,
+               p_db_office_id => l_office_id);
+            ut.expect(l_geometry.sdo_point.x).to_equal(l_longitude);
+            ut.expect(l_geometry.sdo_point.y).to_equal(l_latitude);
+            ----------------------------------------------------------
+            -- test cwms_loc.store_geometry with non-point geometry --
+            ----------------------------------------------------------
+            -- store a line geometry for the embankment --
+            l_geometry := sdo_geometry(
+               2002,
+               4326,
+               null,
+               sdo_elem_info_array(1, 2, 1),
+               sdo_ordinate_array(
+                  l_longitude,      l_latitude,
+                  l_longitude-.005, l_latitude+.005));
+            cwms_loc.store_geometry(
+               p_location_id    => l_location_id,
+               p_geometry       => l_geometry,
+               p_fail_if_exists => 'F',
+               p_db_office_id   => l_office_id);
+            -- verify lat/lon is null --
+            declare
+               l_lat at_location_geometry.latitude%type;
+               l_lon at_location_geometry.longitude%type;
+            begin
+               cwms_loc.get_location_lat_lon(
+                  p_lat           => l_lat,
+                  p_lon           => l_lon,
+                  p_location_code => cwms_loc.get_location_code(l_office_id, l_location_id));
+               ut.expect(l_lat).to_be_null;
+               ut.expect(l_lon).to_be_null;
+            end;
+            -- verify points in line --
+            l_geometry := cwms_loc.retrieve_geometry(
+               p_location_id  => l_location_id,
+               p_db_office_id => l_office_id);
+            ut.expect(l_geometry.sdo_ordinates(1)).to_equal(l_longitude);
+            ut.expect(l_geometry.sdo_ordinates(2)).to_equal(l_latitude);
+            ut.expect(l_geometry.sdo_ordinates(3)).to_equal(l_longitude-.005);
+            ut.expect(l_geometry.sdo_ordinates(4)).to_equal(l_latitude+.005);
+            -- verify can't store null geometry
+            begin
+               cwms_loc.store_geometry(
+                  p_location_id    => l_location_id,
+                  p_geometry       => null,
+                  p_fail_if_exists => 'F',
+                  p_db_office_id   => l_office_id);
+               cwms_err.raise('Expected exception not raised');      
+            exception
+               when others then
+                  ut.expect(regexp_like(dbms_utility.format_error_stack, '.+P_Geometry is not allowed to be null.+', 'mn')).to_be_true;
+            end;
+            -- verify can't store invalid geometry
+            begin
+               cwms_loc.store_geometry(
+                  p_location_id    => l_location_id,
+                  p_geometry       => sdo_geometry(
+                                         2001,
+                                         4326,
+                                         null,
+                                         sdo_elem_info_array(1, 2, 1),
+                                         sdo_ordinate_array(
+                                            l_longitude,      l_latitude,
+                                            l_longitude-.005, l_latitude+.005)),
+                  p_fail_if_exists => 'F',
+                  p_db_office_id   => l_office_id);
+               cwms_err.raise('Expected exception not raised');      
+            exception
+               when others then
+                  ut.expect(regexp_like(dbms_utility.format_error_stack, '.+Invalid geometry: Error = ORA-13028.+', 'mn')).to_be_true;
+            end;
+         else
+            ------------------------------------------
+            -- location was stored before this test --
+            ------------------------------------------
+            ut.expect(l_latitudes(1)).to_be_null;
+            ut.expect(l_longitudes(1)).to_be_null;
+            ut.expect(l_horizontal_datums(1)).to_be_null;
+            ut.expect(l_elevations(1)).to_be_null;
+            ut.expect(l_vertical_datums(1)).to_be_null;
+         end if;
+      end loop;
+      -------------------------------------
+      -- test mods to cwms_lock.cat_lock --
+      -------------------------------------
+      cwms_lock.store_lock(lock_obj_t(
+         location_ref_t(cwms_loc.get_location_code(l_office_id, 'CHOU')),
+         location_obj_t(location_ref_t('CHOU-Lock', l_office_id)),
+         1468800,'ft3',110,600,9,21,'ft',null,'ft',null,null,null,null,null,null,null), 'F');
+      cwms_lock.store_lock(lock_obj_t(
+         location_ref_t(cwms_loc.get_location_code(l_office_id, 'NEWT')),
+         location_obj_t(location_ref_t('NEWT-Lock', l_office_id)),
+         1468800,'ft3',110,600,9,21,'ft',null,'ft',null,null,null,null,null,null,null), 'F');
+      cwms_lock.store_lock(lock_obj_t(
+         location_ref_t(cwms_loc.get_location_code(l_office_id, 'ROBE')),
+         location_obj_t(location_ref_t('ROBE-Lock', l_office_id)),
+         3196800,'ft3',110,600,9,48,'ft',null,'ft',null,null,null,null,null,null,null), 'F');
+      cwms_lock.store_lock(lock_obj_t(
+         location_ref_t(cwms_loc.get_location_code(l_office_id, 'WDMA')),
+         location_obj_t(location_ref_t('WDMA-Lock', l_office_id)),
+         1296000,'ft3',110,600,9,20,'ft',null,'ft',null,null,null,null,null,null,null), 'F');
+      cwms_lock.store_lock(lock_obj_t(
+         location_ref_t(cwms_loc.get_location_code(l_office_id, 'WEBB')),
+         location_obj_t(location_ref_t('WEBB-Lock', l_office_id)),
+         1987200,'ft3',110,600,9,30,'ft',null,'ft',null,null,null,null,null,null,null), 'F');
+      commit;
+      for rec in (select distinct project_id from av_lock where unit_system = 'EN') loop
+         cwms_lock.cat_lock(l_crsr, rec.project_id, l_office_id);
+         fetch l_crsr
+          bulk collect
+          into l_db_office_ids,
+               l_location_ids,
+               l_db_office_ids2,
+               l_base_location_ids,
+               l_sub_location_ids,
+               l_time_zone_names,
+               l_latitudes,
+               l_longitudes,
+               l_horizontal_datums,
+               l_elevations,
+               l_elev_unit_ids,
+               l_vertical_datums,
+               l_public_names,
+               l_long_names,
+               l_descriptions,
+               l_active_flags;
+         close l_crsr;
+         ut.expect(l_db_office_ids.count).to_equal(1);
+         ut.expect(l_db_office_ids(1)).to_equal(l_office_id);
+         ut.expect(l_location_ids(1)).to_equal(rec.project_id);
+         ut.expect(l_db_office_ids2(1)).to_equal(l_office_id);
+         ut.expect(l_base_location_ids(1)).to_equal(rec.project_id);
+         ut.expect(l_sub_location_ids(1)).to_equal('Lock');
+         ut.expect(l_time_zone_names(1)).to_equal(l_info(rec.project_id).time_zone);
+         l_location_id := rec.project_id||'-'||l_sub_location_ids(1);
+         if l_info.exists(l_location_id) then
+            ut.expect(round(l_latitudes(1), 6)).to_equal(round(l_info(l_location_id).latitude, 6));
+            ut.expect(round(l_longitudes(1), 6)).to_equal(round(l_info(l_location_id).longitude, 6));
+            ut.expect(l_horizontal_datums(1)).to_equal(l_info(l_location_id).horiz_datum);
+            ut.expect(round(cwms_util.convert_units(l_elevations(1), l_elev_unit_ids(1), 'ft'), 6)).to_equal(round(l_info(l_location_id).elevation, 6));
+            ut.expect(replace(l_vertical_datums(1), 'LOCAL', 'OTHER')).to_equal(l_info(l_location_id).vert_datum);
+         else
+            ut.expect(l_latitudes(1)).to_be_null;
+            ut.expect(l_longitudes(1)).to_be_null;
+            ut.expect(l_horizontal_datums(1)).to_be_null;
+            ut.expect(l_elevations(1)).to_be_null;
+            ut.expect(l_vertical_datums(1)).to_be_null;
+         end if;
+      end loop;
+      -------------------------------------------------
+      -- test store_location3 and retrieve_location3 --
+      -------------------------------------------------
+      declare
+         l_geom  sdo_geometry;
+         l_geom2 sdo_geometry;
+         l_loc   location_obj_t;
+      begin
+         l_geom := sdo_geometry(
+            2002,
+            4326,
+            null,
+            sdo_elem_info_array(1, 2, 1),
+            sdo_ordinate_array(
+               -95.123, 34.345,
+               -95.234, 34.456));
+         -- store location --
+         l_location_id := 'TestLoc-Geometry';
+         cwms_loc.store_location3(
+            p_location_id  => l_location_id,
+            p_geometry     => l_geom,
+            p_db_office_id => l_office_id);
+         -- verify null lat/lon --
+         cwms_loc.get_location_lat_lon(
+            p_lat           => l_latitude,
+            p_lon           => l_longitude,
+            p_location_code => cwms_loc.get_location_code(l_office_id, l_location_id));
+         ut.expect(l_latitude).to_be_null;
+         ut.expect(l_longitude).to_be_null;
+         -- verify same geometry --
+         l_loc := location_obj_t(location_ref_t(l_location_id, l_office_id));
+         cwms_loc.retrieve_location3(
+            p_location_id        => l_location_id,
+            p_elev_unit_id       => l_loc.elev_unit_id,
+            p_location_type      => l_loc.location_type,
+            p_elevation          => l_loc.elevation,
+            p_vertical_datum     => l_loc.vertical_datum,
+            p_geometry           => l_geom2,
+            p_horizontal_datum   => l_loc.horizontal_datum,
+            p_public_name        => l_loc.public_name,
+            p_long_name          => l_loc.long_name,
+            p_description        => l_loc.description,
+            p_time_zone_id       => l_loc.time_zone_name,
+            p_county_name        => l_loc.county_name,
+            p_state_initial      => l_loc.state_initial,
+            p_active             => l_loc.active_flag,
+            p_location_kind_id   => l_loc.location_kind_id,
+            p_map_label          => l_loc.map_label,
+            p_published_latitude => l_loc.published_latitude,
+            p_published_longitude=> l_loc.published_longitude,
+            p_bounding_office_id => l_loc.bounding_office_id,
+            p_nation_id          => l_loc.nation_id,
+            p_nearest_city       => l_loc.nearest_city,
+            p_alias_cursor       => l_crsr,
+            p_db_office_id       => l_office_id);
+
+         ut.expect(equivalent_geometries(l_geom, l_geom2)).to_be_true;
+
+         -- store location w/ null geometry and verify
+         cwms_loc.store_location3(
+            p_location_id  => l_location_id,
+            p_geometry     => null,
+            p_ignorenulls  => 'F',
+            p_db_office_id => l_office_id);
+
+         cwms_loc.retrieve_location3(
+            p_location_id        => l_location_id,
+            p_elev_unit_id       => l_loc.elev_unit_id,
+            p_location_type      => l_loc.location_type,
+            p_elevation          => l_loc.elevation,
+            p_vertical_datum     => l_loc.vertical_datum,
+            p_geometry           => l_geom2,
+            p_horizontal_datum   => l_loc.horizontal_datum,
+            p_public_name        => l_loc.public_name,
+            p_long_name          => l_loc.long_name,
+            p_description        => l_loc.description,
+            p_time_zone_id       => l_loc.time_zone_name,
+            p_county_name        => l_loc.county_name,
+            p_state_initial      => l_loc.state_initial,
+            p_active             => l_loc.active_flag,
+            p_location_kind_id   => l_loc.location_kind_id,
+            p_map_label          => l_loc.map_label,
+            p_published_latitude => l_loc.published_latitude,
+            p_published_longitude=> l_loc.published_longitude,
+            p_bounding_office_id => l_loc.bounding_office_id,
+            p_nation_id          => l_loc.nation_id,
+            p_nearest_city       => l_loc.nearest_city,
+            p_alias_cursor       => l_crsr,
+            p_db_office_id       => l_office_id);
+
+         ut.expect(l_geom2 is null).to_be_true;
+
+         cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
+      end;
+
+      ------------------------------------------
+      -- delete locations stored in this test --
+      ------------------------------------------
+      for i in 1..l_data_tab.count loop
+         exit when l_data_tab(i).count < 13;
+         l_location_id := l_data_tab(i)(2);
+         begin
+            cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
+         exception
+            when exc_location_id_not_found then null;
+         end;
+      end loop;
+      commit;
+   end test_mods_for_generic_geometry;
+
+   PROCEDURE test_assign_loc_ignore_missing
+   IS
+      l_loc_aliases loc_alias_array3 := loc_alias_array3();
+      l_missing_locs loc_alias_array3;
+      l_stored_loc VARCHAR2(12) := 'TestLocation';
+      l_non_existent_location VARCHAR2(11) := 'NotARealLoc';
+      l_office_id VARCHAR2(3) := '&&office_id';
+   BEGIN
+      cwms_loc.store_location (p_location_id    => l_stored_loc,
+                               p_db_office_id   => l_office_id);
+      cwms_loc.STORE_LOC_CATEGORY('TestCategory', 'A test category', l_office_id);
+      cwms_loc.store_loc_group('TestCategory', 'TestGroup', 'Unit Test Group',
+                               'F', 'T', null, null, l_office_id);
+
+      l_loc_aliases.extend;
+      l_loc_aliases(1) := loc_alias_type3(l_stored_loc, null, null, null);
+
+      l_loc_aliases.extend;
+      l_loc_aliases(2) := loc_alias_type3(l_non_existent_location, null, null, null);
+
+      cwms_loc.assign_loc_groups_supports_missing('TestCategory', 'TestGroup', l_loc_aliases, l_office_id, 'T', l_missing_locs);
+
+      ut.expect(l_missing_locs.count).to_equal(1);
+      ut.expect(l_missing_locs(1).location_id).to_equal(l_non_existent_location);
+
+      cwms_loc.delete_loc_group('TestCategory', 'TestGroup', 'T', l_office_id);
+   END;
+
+   PROCEDURE test_assign_loc_do_not_ignore_missing
+   IS
+      l_loc_aliases loc_alias_array3 := loc_alias_array3();
+      l_missing_locs loc_alias_array3;
+      l_stored_loc VARCHAR2(12) := 'TestLocation';
+      l_non_existent_location VARCHAR2(11) := 'NotARealLoc';
+      l_office_id VARCHAR2(3) := '&&office_id';
+   BEGIN
+      cwms_loc.store_location (p_location_id    => l_stored_loc,
+                               p_db_office_id   => l_office_id);
+      cwms_loc.STORE_LOC_CATEGORY('TestCategory', 'A test category', l_office_id);
+      cwms_loc.store_loc_group('TestCategory', 'TestGroup', 'Unit Test Group',
+                               'F', 'T', null, null, l_office_id);
+      l_loc_aliases.extend;
+      l_loc_aliases(1) := loc_alias_type3(l_stored_loc, null, null, null);
+
+      l_loc_aliases.extend;
+      l_loc_aliases(2) := loc_alias_type3(l_non_existent_location, null, null, null);
+
+      cwms_loc.assign_loc_groups_supports_missing('TestCategory', 'TestGroup', l_loc_aliases, l_office_id, 'F', l_missing_locs);
+      EXCEPTION
+         WHEN OTHERS then
+            ut.expect(sqlerrm).to_be_like('%' || l_non_existent_location || '%');
+   END;
+
+   --------------------------------------------------------------------------------
+   -- procedure test_location_geometry_nearest_city_normalization
+   --------------------------------------------------------------------------------
+   procedure test_location_geometry_nearest_city_normalization
+   is
+      l_office_id    av_loc.db_office_id%type;
+      l_location_id  av_loc.location_id%type;
+      l_location_id1 av_loc.location_id%type;
+      l_location_id2 av_loc.location_id%type;
+      l_nearest_city av_loc.nearest_city%type;
+      l_latitude number;
+      l_longitude number;
+      l_geometry sdo_geometry;
+      exc_location_id_not_found exception;
+      pragma exception_init (exc_location_id_not_found, -20025);
+      
+      procedure assert_equals(p1 varchar2, p2 varchar2) is
+      begin
+         if (p1 is null) != (p2 is null) then
+            cwms_err.raise('ERROR', nvl(p1, '<NULL>')||' != '||nvl(p2, '<NULL>'));
+         end if;
+         if p1 is not null and p1 != p2 then
+            cwms_err.raise('ERROR', '"'||p1||'" != "'||p2||'"');
+         end if;
+      end assert_equals;
+   begin
+      l_office_id := '&&office_id';
+      l_location_id := 'TestLoc';
+      l_location_id1 := l_location_id||'-SubLoc1';
+      l_location_id2 := l_location_id||'-SubLoc2';
+      l_latitude := 36.147157;
+      l_longitude := -96.089009;
+      l_geometry := sdo_geometry(2001, 4326, sdo_point_type(l_longitude, l_latitude, null), null, null);
+      for use_geometry in 0..1 loop
+      dbms_output.put_line(case use_geometry when 1 then 'USING GEOMETRY' else 'USING LAT/LON' end);
+         --------------------------------------------------------------
+         -- delete the base location and sub-locations if they exist --
+         --------------------------------------------------------------
+         begin
+            cwms_loc.delete_location(l_location_id, cwms_util.delete_all, l_office_id);
+         exception
+            when exc_location_id_not_found then null;
+         end;
+         -----------------------------------------------------------------------------------------
+         -- store a base location without a city and assert it maps to 'Sand Springs, Oklahoma' --
+         -----------------------------------------------------------------------------------------
+         dbms_output.put_line(chr(9)||'Storing base location without city');
+         if use_geometry = 1 then
+            cwms_loc.store_location3(
+               p_location_id  => l_location_id,
+               p_geometry     => l_geometry,
+               p_nearest_city => null,
+               p_db_office_id => l_office_id);
+         else
+            cwms_loc.store_location2(
+               p_location_id  => l_location_id,
+               p_latitude     => l_latitude,
+               p_longitude    => l_longitude,
+               p_nearest_city => null,
+               p_db_office_id => l_office_id);
+         end if;
+
+         select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+            assert_equals(l_nearest_city, 'Sand Springs, Oklahoma');       
+         --------------------------------------------------------------------------------
+         -- store a base location with a city and assert it maps to the specified city --
+         --------------------------------------------------------------------------------
+         dbms_output.put_line(chr(9)||'Storing base location with city');
+         if use_geometry = 1 then
+            cwms_loc.store_location3(
+               p_location_id  => l_location_id,
+               p_geometry     => l_geometry,
+               p_nearest_city => 'SAND SPRINGS, OK',
+               p_db_office_id => l_office_id);
+         else
+            cwms_loc.store_location2(
+               p_location_id  => l_location_id,
+               p_latitude     => l_latitude,
+               p_longitude    => l_longitude,
+               p_nearest_city => 'SAND SPRINGS, OK',
+               p_db_office_id => l_office_id);
+         end if;
+
+         select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+            and location_id = l_location_id
+            and unit_system = 'EN';
+            assert_equals(l_nearest_city, 'SAND SPRINGS, OK');       
+         ---------------------------------------------------------------------------------
+         -- store a sub-location with no city and assert it inherits from base location --
+         ---------------------------------------------------------------------------------
+         dbms_output.put_line(chr(9)||'Storing sub-location without city');
+         if use_geometry = 1 then
+            cwms_loc.store_location3(
+               p_location_id  => l_location_id1,
+               p_geometry     => l_geometry,
+               p_nearest_city => null,
+               p_db_office_id => l_office_id);
+         else
+            cwms_loc.store_location2(
+               p_location_id  => l_location_id1,
+               p_latitude     => l_latitude,
+               p_longitude    => l_longitude,
+               p_nearest_city => null,
+               p_db_office_id => l_office_id);
+         end if;
+
+         select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+            and location_id = l_location_id1
+            and unit_system = 'EN';
+            assert_equals(l_nearest_city, 'SAND SPRINGS, OK');       
+         --------------------------------------------------------------------------------
+         -- store a sub-location with a city and assert it maps to the specified city --
+         --------------------------------------------------------------------------------
+         dbms_output.put_line(chr(9)||'Storing sub-location with city');
+         if use_geometry = 1 then
+            cwms_loc.store_location3(
+               p_location_id  => l_location_id2,
+               p_geometry     => l_geometry,
+               p_nearest_city => 'TULSA, OK',
+               p_db_office_id => l_office_id);
+         else
+            cwms_loc.store_location2(
+               p_location_id  => l_location_id2,
+               p_latitude     => l_latitude,
+               p_longitude    => l_longitude,
+               p_nearest_city => 'TULSA, OK',
+               p_db_office_id => l_office_id);
+         end if;
+
+         select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+            and location_id = l_location_id2
+            and unit_system = 'EN';
+            assert_equals(l_nearest_city, 'TULSA, OK');       
+         --------------------------------------------------
+         -- update base location to have no nearest city --
+         --------------------------------------------------
+         dbms_output.put_line(chr(9)||'Setting base location nearest_city to null');
+         update at_physical_location
+            set nearest_city = null
+         where location_code = cwms_loc.get_location_code(l_office_id, l_location_id);
+      select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+         and location_id = l_location_id
+         and unit_system = 'EN';
+      
+      assert_equals(l_nearest_city, null);       
+         cwms_loc.delete_location(l_location_id1, cwms_util.delete_all, l_office_id);
+      cwms_loc.delete_location(l_location_id2, cwms_util.delete_all, l_office_id);
+         ----------------------------------------------------------------------------------------------
+      -- store a sub-location with no city and assert sets default city instead of ineriting null --
+      ----------------------------------------------------------------------------------------------
+      dbms_output.put_line(chr(9)||'Storing sub-location without city');
+      if use_geometry = 1 then
+         cwms_loc.store_location3(
+            p_location_id  => l_location_id1,
+            p_geometry     => l_geometry,
+            p_nearest_city => null,
+            p_db_office_id => l_office_id);
+      else
+         cwms_loc.store_location2(
+            p_location_id  => l_location_id1,
+            p_latitude     => l_latitude,
+            p_longitude    => l_longitude,
+            p_nearest_city => null,
+            p_db_office_id => l_office_id);
+      end if;
+      
+      select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+         and location_id = l_location_id1
+         and unit_system = 'EN';
+      
+      assert_equals(l_nearest_city, 'Sand Springs, Oklahoma');       
+      --------------------------------------------------------------------------------
+      -- store a sub-location with a city and assert it maps to the specified city --
+      --------------------------------------------------------------------------------
+      dbms_output.put_line(chr(9)||'Storing sub-location with city');
+      if use_geometry = 1 then
+         cwms_loc.store_location3(
+            p_location_id  => l_location_id2,
+            p_geometry     => l_geometry,
+            p_nearest_city => 'SAND SPRINGS, OK',
+            p_db_office_id => l_office_id);
+      else
+         cwms_loc.store_location2(
+            p_location_id  => l_location_id2,
+            p_latitude     => l_latitude,
+            p_longitude    => l_longitude,
+            p_nearest_city => 'SAND SPRINGS, OK',
+            p_db_office_id => l_office_id);
+      end if;
+      
+      select nearest_city
+         into l_nearest_city
+         from av_loc
+         where db_office_id = l_office_id
+         and location_id = l_location_id2
+         and unit_system = 'EN';
+      
+      assert_equals(l_nearest_city, 'SAND SPRINGS, OK');       
+      end loop;
+      
+      commit;
+   end test_location_geometry_nearest_city_normalization; 
+
+
+   PROCEDURE test_delete_loc
+   IS
+      l_stored_loc VARCHAR2(64)          := 'ToDelete';
+      l_stored_sub1 VARCHAR2(64)         := l_stored_loc || '-Sub1';
+      l_office_id  VARCHAR2(3)           := '&&office_id';
+      l_geom varchar2(64);
+      l_loc_code number;
+   BEGIN
+      cwms_loc.store_location3 (p_location_id    => l_stored_loc,
+                                p_db_office_id   => l_office_id,
+                                
+                                p_geometry       => sdo_geometry(
+                                             2002,
+                                             4326,
+                                             null,
+                                             sdo_elem_info_array(1, 2, 1),
+                                             sdo_ordinate_array(
+                                                -95.123, 34.345,
+                                                -95.234, 34.456))
+      );
+
+      cwms_loc.delete_location(l_stored_loc, cwms_util.delete_loc, l_office_id);
+
+      cwms_loc.store_location3 (p_location_id    => l_stored_loc,
+                                p_db_office_id   => l_office_id,
+                                
+                                p_geometry       => sdo_geometry(
+                                             2002,
+                                             4326,
+                                             null,
+                                             sdo_elem_info_array(1, 2, 1),
+                                             sdo_ordinate_array(
+                                                -95.123, 34.345,
+                                                -95.234, 34.456))
+      );
+
+
+      cwms_loc.store_location3 (p_location_id    => l_stored_sub1,
+                                p_db_office_id   => l_office_id,
+                                
+                                p_geometry       => sdo_geometry(
+                                             2002,
+                                             4326,
+                                             null,
+                                             sdo_elem_info_array(1, 2, 1),
+                                             sdo_ordinate_array(
+                                                -95.123, 34.345,
+                                                -95.234, 34.456))
+      );
+
+      cwms_loc.delete_location(l_stored_sub1, cwms_util.delete_loc, l_office_id);
+      select geometry_type into l_geom from cwms_20.av_loc2 where location_id = l_stored_loc and unit_system = 'SI';
+      ut.expect(l_geom).to_equal('LINE');
+      -- TODO: assert base still present and has the geometry      
+      cwms_loc.delete_location(l_stored_loc, cwms_util.delete_loc, l_office_id);
+      begin
+         select geometry_type into l_geom from cwms_20.av_loc2 where location_id = l_stored_loc and unit_system = 'SI';
+      exception
+         when no_data_found then null;
+         when others then raise;
+      end;
+   END;
+
 END test_cwms_loc;
 /
-
 show errors;
+set escape off

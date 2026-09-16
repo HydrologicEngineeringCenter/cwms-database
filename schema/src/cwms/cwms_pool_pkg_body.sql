@@ -127,7 +127,7 @@ begin
       and upper(pool_name) = upper(p_old_name);
    exception
       when no_data_found then
-         cwms_err.raise('ITEM DOES NOT EXIST', 'Pool name', l_office_id||'/'||p_old_name);
+         cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Pool name', l_office_id||'/'||p_old_name);
    end;
    if l_rec.office_code != cwms_util.user_office_code and
       cwms_util.user_office_code != cwms_util.db_office_code_all
@@ -189,7 +189,7 @@ begin
       and upper(pool_name) = upper(p_pool_name);
    exception
       when no_data_found then
-         cwms_err.raise('ITEM DOES NOT EXIST', 'Pool name', l_office_id||'/'||p_pool_name);
+         cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Pool name', l_office_id||'/'||p_pool_name);
    end;
    if l_rec.office_code != cwms_util.user_office_code and
       cwms_util.user_office_code != cwms_util.db_office_code_all

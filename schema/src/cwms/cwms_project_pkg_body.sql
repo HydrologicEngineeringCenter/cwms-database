@@ -57,37 +57,57 @@ BEGIN
    -- open the cursor
    --
    open p_project_cat for
-      select l_db_office_id          db_office_id,       -- db_office_id      varchar2(16)  owning office of location
-             bl.base_location_id     base_location_id,   -- base_location_id  varchar2(24)  base location id
-             pl.sub_location_id      sub_location_id,    -- sub_location_id   varchar2(32)  sub-location id, if any
-             tz.time_zone_name       time_zone_name,     -- time_zone_name    varchar2(28)  local time zone name for location
-             pl.latitude             latitude,           -- latitude          number        location latitude
-             pl.longitude            longitude,          -- longitude         number        location longitude
-             pl.horizontal_datum     horizontal_datum,   -- horizontal_datum  varchar2(16)  horizontal datrum of lat/lon
-             pl.elevation * l_factor elevation,          -- elevation         number        location elevation
-             l_unit                  elev_unit_id,       -- elev_unit_id      varchar2(16)  location elevation units
-             pl.vertical_datum       vertical_datum,     -- vertical_datum    varchar2(16)  veritcal datum of elevation
-             pl.public_name          public_name,        -- public_name       varchar2(57)  location public name
-             pl.long_name            long_name,          -- long_name         varchar2(80)  location long name
-             pl.description          description,        -- description       varchar2(512) location description
-             pl.active_flag          active_flag         -- active_flag       varchar2(1)   'T' if active, else 'F'
-        from at_project            p,
-             at_physical_location  pl,
-             at_base_location      bl,
-             cwms_time_zone        tz,
-             cwms_office           o
-       where pl.location_code      = p.project_location_code
-         and bl.base_location_code = pl.base_location_code
-         and o.office_code         = bl.db_office_code
-         and o.office_code         = l_db_office_code
-         and tz.time_zone_code = nvl(
-                  pl.time_zone_code,
-                  (  select time_zone_code
-                       from cwms_time_zone
-                      where time_zone_name = 'UTC'
-                  ))
-    order by bl.base_location_id,
-             pl.sub_location_id;
+      select db_office_id,       -- db_office_id      varchar2(16)  owning office of location
+             base_location_id,   -- base_location_id  varchar2(24)  base location id
+             sub_location_id,    -- sub_location_id   varchar2(32)  sub-location id, if any
+             time_zone_name,     -- time_zone_name    varchar2(28)  local time zone name for location
+             latitude,           -- latitude          number        location latitude
+             longitude,          -- longitude         number        location longitude
+             horizontal_datum,   -- horizontal_datum  varchar2(16)  horizontal datrum of lat/lon
+             elevation,          -- elevation         number        location elevation
+             elev_unit_id,       -- elev_unit_id      varchar2(16)  location elevation units
+             vertical_datum,     -- vertical_datum    varchar2(16)  veritcal datum of elevation
+             public_name,        -- public_name       varchar2(57)  location public name
+             long_name,          -- long_name         varchar2(80)  location long name
+             description,        -- description       varchar2(512) location description
+             active_flag         -- active_flag       varchar2(1)   'T' if active, else 'F'
+        from (select pl.location_code        location_code,
+                     l_db_office_id          db_office_id,
+                     bl.base_location_id     base_location_id,
+                     pl.sub_location_id      sub_location_id,
+                     tz.time_zone_name       time_zone_name,
+                     pl.horizontal_datum     horizontal_datum,
+                     pl.elevation * l_factor elevation,
+                     l_unit                  elev_unit_id,
+                     pl.vertical_datum       vertical_datum,
+                     pl.public_name          public_name,
+                     pl.long_name            long_name,
+                     pl.description          description,
+                     pl.active_flag          active_flag
+                from at_project            p,
+                     at_physical_location  pl,
+                     at_base_location      bl,
+                     cwms_time_zone        tz,
+                     cwms_office           o
+               where pl.location_code      = p.project_location_code
+                 and bl.base_location_code = pl.base_location_code
+                 and o.office_code         = bl.db_office_code
+                 and o.office_code         = l_db_office_code
+                 and tz.time_zone_code = nvl(
+                          pl.time_zone_code,
+                          (  select time_zone_code
+                               from cwms_time_zone
+                              where time_zone_name = 'UTC'
+                          ))
+             ) q1
+             left outer join
+             (select location_code,
+                     latitude,
+                     longitude
+                from at_location_geometry
+             ) q2 on q2.location_code = q1.location_code
+    order by base_location_id,
+             sub_location_id;
 
     open p_basin_cat for select null from dual;
 
@@ -154,8 +174,10 @@ begin
                 s.county_name,
                 tz.time_zone_name,
                 l.location_type,
-                l.latitude,
-                l.longitude,
+                g.geometry,
+                g.geometry_type_code,
+                g.latitude,
+                g.longitude,
                 l.horizontal_datum,
                 l.elevation,
                 l.vertical_datum,
@@ -179,8 +201,6 @@ begin
                          pl.location_type,
                          pl.elevation,
                          pl.vertical_datum,
-                         pl.longitude,
-                         pl.latitude,
                          pl.horizontal_datum,
                          pl.public_name,
                          pl.long_name,
@@ -201,6 +221,14 @@ begin
                            l_project.pump_back_location_code,
                            l_project.near_gage_location_code)
                 ) l
+                left outer join
+                ( select location_code,
+                         geometry,
+                         geometry_type_code,
+                         latitude,
+                         longitude
+                    from at_location_geometry
+                ) g on g.location_code = l.location_code
                 left outer join
                 ( select county_code,
                          county_name,
@@ -242,7 +270,9 @@ begin
             rec.bounding_office_id,
             rec.bounding_office_name,
             rec.nation_id,
-            rec.nearest_city);
+            rec.nearest_city,
+            rec.geometry,
+            rec.geometry_type_code);
       if rec.location_code = l_project_loc_code then
          l_project_location := l_temp_location_obj;
       elsif rec.location_code = l_project.pump_back_location_code then

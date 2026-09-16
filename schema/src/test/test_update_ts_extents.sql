@@ -27,6 +27,11 @@ procedure cwdb_200_ts_extents_has_field_for_non_zero_quality;
 procedure test_cwdb_313_314_ts_extents_with_ts_with_no_values;
 --%test (TS extents not updating for new versioned time series)
 procedure test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts;
+--%test (New TS extents routines)
+procedure test_cwms_2446_fix_performance_for_update_ts_extents;
+--%test(TS extents using integer instead of number for TS_CODE)
+--%throws(-20998)
+procedure cwms_2478_ts_extents_ts_code;
 
 procedure setup;
 procedure teardown;
@@ -955,6 +960,7 @@ is
    l_latest_non_null_time   date;
    l_version_date           date := c_base_start_date + 10;
 begin
+   setup;
    -----------------------------
    -- store un-versioned data --
    -----------------------------
@@ -1031,6 +1037,147 @@ begin
    ut.expect(l_latest_non_null_time).to_equal(c_base_ts_data(23).date_time);
 end test_cwdb_322_ts_extents_not_updating_for_new_versioned_ts;
 
+--------------------------------------------------------------------------------
+-- procedure test_cwms_2446_fix_performance_for_update_ts_extents
+--------------------------------------------------------------------------------
+procedure test_cwms_2446_fix_performance_for_update_ts_extents
+is
+   l_ts_code      at_cwms_ts_id.ts_code%type;
+   l_version_date date := c_base_start_date + 10;
+   l_log_messages varchar2(4000);
+   l_count        binary_integer;
+   l_timestamp    timestamp := systimestamp;
+begin
+   -----------------------------------------------
+   -- delete data to get a known starting point --
+   -----------------------------------------------
+   setup;
+   for rec in (select table_name from at_ts_table_properties) loop
+      execute immediate 'delete from '||rec.table_name;
+      commit;
+   end loop;
+   delete from at_ts_extents;
+   delete from at_log_message_properties;
+   delete from at_log_message;
+
+   for i in 1..2 loop
+      -----------------------------
+      -- store un-versioned data --
+      -----------------------------
+      cwms_ts.zstore_ts (
+         p_cwms_ts_id      => c_ts_id,
+         p_units           => c_units,
+         p_timeseries_data => c_base_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => c_office_id);
+      l_ts_code := cwms_ts.get_ts_code(c_ts_id, c_office_id);
+      --------------------------
+      -- store versioned data --
+      --------------------------
+      cwms_ts.set_tsid_versioned(
+         p_cwms_ts_id      => c_ts_id,
+         p_versioned       => 'T',
+         p_db_office_id    => c_office_id);
+      cwms_ts.zstore_ts (
+         p_cwms_ts_id      => c_ts_id,
+         p_units           => c_units,
+         p_timeseries_data => c_base_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => l_version_date,
+         p_office_id       => c_office_id);
+      commit;
+      if i = 1 then
+         for rec in (select table_name from at_ts_table_properties) loop
+            execute immediate 'delete from '||rec.table_name;
+            commit;
+         end loop;
+         cwms_ts.purge_invalid_ts_extents;
+      else
+         update at_ts_extents set last_update = l_timestamp where ts_code = l_ts_code;
+         cwms_ts.update_ts_extents_for_office(c_office_id);
+      end if;
+   end loop;
+   begin
+      cwms_ts.start_update_ts_extents_job;
+   exception
+      when others then
+         if user != '&&cwms_schema' then
+            ut.expect(regexp_instr(sqlerrm, 'Must be &&cwms_schema user to start job UPDATE_TS_EXTENTS_JOB', 1, 1, 0, 'i')).to_be_greater_than(0);
+         else
+            raise;
+         end if;
+   end;
+   l_log_messages := cwms_ts.retrieve_update_ts_extents_log_messages(1);
+   ut.expect(cwms_util.split_text(trim(chr(10) from l_log_messages), chr(10)).count).to_equal(case when user = '&&cwms_schema' then 5 else 4 end);
+   ut.expect(instr(l_log_messages, 'Purge of invalid TS extents ended. 2 records deleted')).to_be_greater_than(0);
+   ut.expect(instr(l_log_messages, 'Update TS Extents for Office &&office_id ended')).to_be_greater_than(0);
+   if user = upper('&&cwms_schema') then
+      ut.expect(instr(l_log_messages, 'Job UPDATE_TS_EXTENTS_JOB_&&office_id scheduled to start')).to_be_greater_than(0);
+   end if;
+
+end test_cwms_2446_fix_performance_for_update_ts_extents;
+procedure cwms_2478_ts_extents_ts_code
+   is
+      l_loc_code number;
+      l_long_ts_code number := 1121087530445587;
+      l_param_code number;
+      l_param_type_code number;
+      l_interval_code number;
+      l_dur_code number;
+      l_tz_code number;
+      l_version_time date := TO_DATE('2019-01-01', 'YYYY-MM-DD');
+      l_earliest_time timestamp := TO_TIMESTAMP('2019-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS');
+      l_latest_time timestamp := TO_TIMESTAMP('2019-01-02 23:59:59', 'YYYY-MM-DD HH24:MI:SS');
+      l_latest_date date := TO_DATE('2019-01-02', 'YYYY-MM-DD');
+
+   begin
+      l_loc_code := cwms_loc.get_location_code(c_office_id, c_location_id);
+      select parameter_code
+         into l_param_code
+         from at_parameter
+         where sub_parameter_desc = 'Height';
+      select parameter_type_code
+         into l_param_type_code
+         from cwms_parameter_type
+         where parameter_type_id = 'Inst';
+      select interval_code
+         into l_interval_code
+         from cwms_interval
+         where interval = 60;
+      select duration_code
+         into l_dur_code
+         from cwms_duration
+         where duration_id = '0';
+      select time_zone_code
+         into l_tz_code
+         from cwms_time_zone
+         where time_zone_name = 'GMT';
+
+      insert into at_cwms_ts_spec values (l_long_ts_code, l_loc_code,
+                                          l_param_code, l_param_type_code,
+                                          l_interval_code, l_dur_code,
+                                          'RAW', 'N/A', 0,
+                                          0, 0,
+                                          null, l_tz_code, 'F',
+                                          'F', 'T', null,
+                                          null, 'F', null);
+
+      insert into at_ts_extents values (l_long_ts_code, l_version_time,
+                                        l_version_time, l_earliest_time,
+                                        l_earliest_time, l_version_time,
+                                        l_earliest_time, l_earliest_time,
+                                        l_latest_date, l_latest_time,
+                                        l_latest_time, l_latest_date,
+                                        l_latest_time, l_latest_time,
+                                        0.0, l_version_time,
+                                        l_earliest_time, 0.0,
+                                        l_version_time, l_earliest_time,
+                                        100.0, l_latest_date,
+                                        l_latest_time, 100.0,
+                                        l_latest_date, l_latest_time,
+                                        l_latest_time, 'F');
+end cwms_2478_ts_extents_ts_code;
 
 end test_update_ts_extents;
 /

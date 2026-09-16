@@ -1,6 +1,6 @@
 --drop table at_ts_extents;
 create table at_ts_extents (
-   ts_code                       integer,   
+   ts_code                       number(14, 0),
    version_time                  date,          
    earliest_time                 date,          
    earliest_time_entry           timestamp, 

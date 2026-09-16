@@ -224,8 +224,6 @@ CREATE TABLE AT_PHYSICAL_LOCATION
   LOCATION_TYPE       VARCHAR2(32),
   ELEVATION           NUMBER,
   VERTICAL_DATUM      VARCHAR2(16),
-  LONGITUDE           NUMBER,
-  LATITUDE            NUMBER,
   HORIZONTAL_DATUM    VARCHAR2(16),
   PUBLIC_NAME         VARCHAR2(57),
   LONG_NAME           VARCHAR2(80),
@@ -268,8 +266,6 @@ COMMENT ON COLUMN AT_PHYSICAL_LOCATION.COUNTY_CODE         IS 'References the co
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LOCATION_TYPE       IS 'User-defined type (e.g. "Stream Gage", "Reservoir", etc...), up to 16 characters.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.ELEVATION           IS 'Elevation of location.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.VERTICAL_DATUM      IS 'Datum of elevation.';
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LONGITUDE           IS 'Longitude of location.';
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LATITUDE            IS 'Latitude of location.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.HORIZONTAL_DATUM    IS 'Datum of longitude and latitude.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.PUBLIC_NAME         IS 'User-defined public name, up to 32 characters.';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LONG_NAME           IS 'User-defined long name, up to 80 characters.';
@@ -318,107 +314,6 @@ INSERT INTO at_physical_location
 VALUES (0, 0, 'F', 1);
 
 COMMIT;
-
----------------------------------------------------------------------------
--- This information is not included directly in the AT_PHYSICAL_LOCATION --
--- table because doing so prevents using the table's materialized view   --
--- log for the MV_CWMS_TS_ID view, which is central to lots of stuff.    --
----------------------------------------------------------------------------
-CREATE TABLE AT_GEOGRAPHIC_LOCATION
-(
-  LOCATION_CODE NUMBER(14)          NOT NULL,
-  GEOGRAPHIC_ID VARCHAR2(32)        DEFAULT 'LOCATION',
-  POINT         MDSYS.SDO_GEOMETRY,
-  MULTI_POINT   MDSYS.SDO_GEOMETRY,
-  POLYGON       MDSYS.SDO_GEOMETRY,
-  DESCRIPTION   VARCHAR2(256),
-  CONSTRAINT AT_GEOGRAPHIC_LOCATION_PK  PRIMARY KEY (LOCATION_CODE, GEOGRAPHIC_ID) USING INDEX
-)
-TABLESPACE CWMS_20AT_DATA
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          504K
-            NEXT             1M
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING
-NOCOMPRESS
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-
-COMMENT ON TABLE  AT_GEOGRAPHIC_LOCATION               IS 'Geographic aspect of location';
-COMMENT ON COLUMN AT_GEOGRAPHIC_LOCATION.GEOGRAPHIC_ID IS 'Text ID of point and/or multi-point and/or polygon';
-COMMENT ON COLUMN AT_GEOGRAPHIC_LOCATION.LOCATION_CODE IS 'Reference to location';
-COMMENT ON COLUMN AT_GEOGRAPHIC_LOCATION.POINT         IS 'Point location in WGS 84';
-COMMENT ON COLUMN AT_GEOGRAPHIC_LOCATION.MULTI_POINT   IS 'Multi-point location in WGS 84';
-COMMENT ON COLUMN AT_GEOGRAPHIC_LOCATION.POLYGON       IS 'Polygon location in WGS 84';
-COMMENT ON COLUMN AT_GEOGRAPHIC_LOCATION.DESCRIPTION   IS 'Optional description';
-
-ALTER TABLE AT_GEOGRAPHIC_LOCATION ADD CONSTRAINT AT_GEOGRAPHIC_LOCATION_CK1 CHECK (GEOGRAPHIC_ID = UPPER(GEOGRAPHIC_ID));
-ALTER TABLE AT_GEOGRAPHIC_LOCATION ADD CONSTRAINT AT_GEOGRAPHIC_LOCATION_FK1 FOREIGN KEY (LOCATION_CODE) REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE);
-
-DELETE FROM USER_SDO_GEOM_METADATA WHERE TABLE_NAME='AT_GEOGRAPHIC_LOCATION';
-DELETE FROM MDSYS.SDO_GEOM_METADATA_TABLE WHERE SDO_TABLE_NAME='AT_GEOGRAPHIC_LOCATION';
-
-INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
-   '&cwms_schema',
-   'AT_GEOGRAPHIC_LOCATION',
-   'POINT',
-   SDO_DIM_ARRAY(
-      SDO_DIM_ELEMENT('X', -180,  180, 0.01),
-      SDO_DIM_ELEMENT('Y',  -90,   90, 0.01),
-      SDO_DIM_ELEMENT('Z', -420, 8850, 0.05)),
-   (SELECT SRID
-      FROM MDSYS.CS_SRS
-     WHERE CS_NAME='WGS 84 (geographic 3D)'));
-
-INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
-   '&cwms_schema',
-   'AT_GEOGRAPHIC_LOCATION',
-   'MULTI_POINT',
-   SDO_DIM_ARRAY(
-      SDO_DIM_ELEMENT('X', -180,  180, 0.01),
-      SDO_DIM_ELEMENT('Y',  -90,   90, 0.01),
-      SDO_DIM_ELEMENT('Z', -420, 8850, 0.05)),
-   (SELECT SRID
-      FROM MDSYS.CS_SRS
-     WHERE CS_NAME='WGS 84 (geographic 3D)'));
-
-INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
-   '&cwms_schema',
-   'AT_GEOGRAPHIC_LOCATION',
-   'POLYGON',
-   SDO_DIM_ARRAY(
-      SDO_DIM_ELEMENT('X', -180,  180, 0.01),
-      SDO_DIM_ELEMENT('Y',  -90,   90, 0.01),
-      SDO_DIM_ELEMENT('Z', -420, 8850, 0.05)),
-   (SELECT SRID
-      FROM MDSYS.CS_SRS
-     WHERE CS_NAME='WGS 84 (geographic 3D)'));
-
-
-CREATE INDEX AT_GEOGRAPHIC_LOCATION_PT_IDX
-   ON AT_GEOGRAPHIC_LOCATION(POINT)
-   INDEXTYPE IS MDSYS.SPATIAL_INDEX PARAMETERS ('layer_gtype=POINT')
-/
-
-CREATE INDEX AT_GEOGRAPHIC_LOCATION_MP_IDX
-   ON AT_GEOGRAPHIC_LOCATION(MULTI_POINT)
-   INDEXTYPE IS MDSYS.SPATIAL_INDEX PARAMETERS ('layer_gtype=MULTIPOINT')
-/
-
-CREATE INDEX AT_GEOGRAPHIC_LOCATION_PG_IDX
-   ON AT_GEOGRAPHIC_LOCATION(POLYGON)
-   INDEXTYPE IS MDSYS.SPATIAL_INDEX PARAMETERS ('layer_gtype=POLYGON')
-/
 
 CREATE TABLE AT_LOCATION_URL
 (
@@ -2075,7 +1970,7 @@ COMMIT ;
 
 CREATE TABLE at_ts_group_assignment
 (
-  ts_code        NUMBER,
+  ts_code        NUMBER(14, 0),
   ts_group_code  NUMBER,
   ts_attribute   NUMBER,
   ts_alias_id    VARCHAR2(256 BYTE),
@@ -2825,113 +2720,6 @@ INSERT INTO at_properties values(
    'ts_deleted.auto_trim.interval',
    '15',
    'Interval in minutes for job TRIM_LOG_JOB to execute.');
-
------------------------------
--- AT_REPORT_TEMPLATES table
---
-CREATE TABLE at_report_templates
-(
-  ID               VARCHAR2(256 BYTE),
-  description      VARCHAR2(256 BYTE),
-  header_template  VARCHAR2(4000 BYTE),
-  record_template  VARCHAR2(4000 BYTE),
-  footer_template  VARCHAR2(4000 BYTE)
-)
-TABLESPACE CWMS_20AT_DATA
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE
-(
-  INITIAL          64 k
-  MINEXTENTS       1
-  MAXEXTENTS       2147483645
-  PCTINCREASE      0
-  BUFFER_POOL      DEFAULT
-)
-LOGGING
-NOCOMPRESS
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-
------------------------------
--- AT_REPORT_TEMPLATES comments
---
-COMMENT ON TABLE  at_report_templates                 IS 'Defines canned templates for use with CWMS_REPORT.TEXT_REPORT';
-COMMENT ON COLUMN at_report_templates.ID              IS 'Unique record identifier, using hierarchical /dir/subdir/.../file syntax';
-COMMENT ON COLUMN at_report_templates.description     IS 'Description of this set of templates';
-COMMENT ON COLUMN at_report_templates.header_template IS 'A template string for the portion of the report before the records';
-COMMENT ON COLUMN at_report_templates.record_template IS 'A template string applied to each record in the report';
-COMMENT ON COLUMN at_report_templates.footer_template IS 'A template string for the portion of the report after the records';
-
------------------------------
--- AT_REPORT_TEMPLATES indices
---
-ALTER TABLE at_report_templates ADD
-(
-  PRIMARY KEY (ID)
-  USING INDEX
-  TABLESPACE CWMS_20AT_DATA
-  PCTFREE    10
-  INITRANS   2
-  MAXTRANS   255
-  STORAGE
-  (
-    INITIAL          64 k
-    MINEXTENTS       1
-    MAXEXTENTS       2147483645
-    PCTINCREASE      0
-  )
-)
-/
-
------------------------------
--- AT_REPORT_TEMPLATES default data
---
-INSERT INTO at_report_templates
-     VALUES ('/cat_ts_table/xml', 'Generates XML from cat_ts_table records',
-             '<?xml version="1.0"?>\n<tsid_catalog>\n',
-             '  <tsid office="$1" ts_code="$4" offset="$3">$2</tsid>\n',
-             '</tsid_catalog>\n');
-
-INSERT INTO at_report_templates
-     VALUES ('/cat_ts_table/html', 'Generates HTML from cat_ts_table records',
-             '<html>
-<head>
-  <title>Time Series IDs</title>
-</head>
-<body>
-  <center>
-    <h2>Time Series IDs</h2>
-    <hr/>
-    <table border="1">
-      <tr>
-        <th>Time Series Identifier</th>
-        <th>TS Code</th>
-        <th>UTC Interval Offset</th>
-      </tr>
-',
-             '      <tr>
-        <td>$2</td>
-        <td>$4</td>
-        <td>$3</td>
-      </tr>
-',
-             '    </table>
-  </center>
-</body>
-</html>
-'           );
-
-INSERT INTO at_report_templates
-     VALUES ('/cat_ts_table/text', 'Generates text from cat_ts_table records',
-             '\nTIME SERIES CATALOG\nREPORT GENERATED BY $host AT $time\n\n',
-             '$1%-8.8s$4%-8d$3%12d$2\n', '\n$count TOTAL RECORDS PROCESSED\n');
-
-COMMIT ;
 
 -----------------------------
 -- AT_CLOB table
@@ -6346,6 +6134,7 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_project_lock
 @@./cwms/tables/at_prj_lck_revoker_rights
 ---
+@@./cwms/tables/at_location_geometry
 @@./cwms/tables/at_pool_name
 @@./cwms/tables/at_pool
 @@./cwms/tables/at_ts_extents

@@ -111,8 +111,8 @@ as
       self.wm_comments    := get_text('/*/wm-comments');
 
       -- Extract nested <stream-flow-measurement> elements
-      self.gage_height    := to_binary_double(get_text('/*/stream-flow-measurement/gage-height', self.used='T'));
-      self.flow           := to_binary_double(get_text('/*/stream-flow-measurement/flow', self.used='T'));
+      self.gage_height    := to_binary_double(get_text('/*/stream-flow-measurement/gage-height', false));
+      self.flow           := to_binary_double(get_text('/*/stream-flow-measurement/flow', false));
       self.quality        := substr(upper(trim(get_text('/*/stream-flow-measurement/quality'))),1,1);
 
       -- Extract nested <usgs-measurement> elements

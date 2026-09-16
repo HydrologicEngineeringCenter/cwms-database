@@ -40,6 +40,7 @@ create unique index at_fcst_spec_idx2 on at_fcst_spec (
 @@cwms/views/av_loc_vert_datum
 @@cwms/views/av_tsv_elev
 @@cwms/views/av_cwms_user
+@@cwms/views/av_user_list_members
 @@cwms/views/av_ts_profile
 @@cwms/views/av_ts_profile_parser
 @@cwms/views/av_ts_profile_parser_param
