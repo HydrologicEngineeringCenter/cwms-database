@@ -1,3 +1,23 @@
+-------------
+-- READ ME --
+-------------
+-- This script is designed to migrate the forecast tables from the old schema to the new schema.
+-- To run this script, some preparation must be done
+   -- 1.  Connect to the database as the user with the appropriate permissions. SQLPlus is required.
+      -- sqlplus sys/[SYSTEM_PASSWORD]@[HOST]:[PORT]/[LISTENER_NAME] as sysdba
+      -- Example:
+      -- sqlplus sys/badSYSpassword@localhost:1525/FREEPDB1 as sysdba
+   -- 2.  Configure the export directory for the forecast data.
+      -- Once logged in, execute the following command:
+      -- CREATE OR REPLACE DIRECTORY FORECAST_EXPORT AS '[PATH_ON_DB_HOST]';
+      -- Example:
+      -- CREATE OR REPLACE DIRECTORY FORECAST_EXPORT AS '/home/oracle/forecast_export';
+      --
+      -- Next, run:
+      -- GRANT READ, WRITE ON DIRECTORY FORECAST_EXPORT TO CWMS_20;
+   -- 3.  Run this script as the user with the appropriate permissions.
+-------------
+--
 --------------------------------------------
 -- verify that both the new tables exist  --
 --------------------------------------------
@@ -15,7 +35,9 @@ begin
    end if;
 end;
 /
--- export tables
+-------------------
+-- export tables --
+-------------------
 declare
    l_dp_handle number;
    l_job_state   varchar2(30);
@@ -61,6 +83,9 @@ begin
    dbms_datapump.wait_for_job(l_dp_handle, l_job_state);
 end;
 /
+------------------------
+-- migrate table data --
+------------------------
 declare
    l_sort_order_support number;
    l_new_spec at_fcst_spec%rowtype;
@@ -262,3 +287,4 @@ begin
    end loop;
    commit;
 end;
+/
