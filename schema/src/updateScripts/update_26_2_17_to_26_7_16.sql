@@ -185,8 +185,8 @@ ALTER TRIGGER AT_LOCATION_GEOMETRY_T01 COMPILE;
 -- Migrate lat long to new table.
 @@./26_07_16/update_latlon_to_geometry
 
-alter table at_physical_location drop column longitude;
-alter table at_physical_location drop column latitude;
+--alter table at_physical_location drop column longitude;
+--alter table at_physical_location drop column latitude;
 
 drop trigger at_physical_location_t02;
 @@./26_07_16/at_physical_location_t03
@@ -339,7 +339,7 @@ PROMPT #########################################################################
 PROMPT ADDING SEARCH_DOC COLUMN TO AT_PHYSICAL_LOCATION
 select systimestamp from dual;
 
-
+ALTER PACKAGE cwms_loc COMPILE BODY;
 DROP INDEX IF EXISTS at_physical_location_search_doc_idx;
 @@../cwms/oracle_text/setup_indexes
 
