@@ -9581,7 +9581,6 @@ is
    pragma exception_init(x_item_does_not_exist, -20034);
    pragma exception_init(x_location_id_not_found, -20025);
 begin
-   dbms_output.enable(null);
    for lrts_input in 0..2 loop
       case lrts_input
       when 0 then cwms_ts.set_allow_new_lrts_format_on_input('F');

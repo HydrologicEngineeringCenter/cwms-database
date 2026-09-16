@@ -18,6 +18,8 @@ CREATE OR REPLACE PACKAGE &&cwms_schema..test_cwms_measurements AS
     PROCEDURE test_retrieve_xml_by_id;
     --%test(Test legacy measurement number range filter)
     PROCEDURE test_legacy_range_filter;
+    --%test(Test deletion by exact measurement id, including UUID)
+    PROCEDURE test_delete_by_id;
 END test_cwms_measurements;
 /
 SHOW ERRORS;
@@ -529,6 +531,88 @@ CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_measurements AS
 
         ut.expect(l_found_uuid).to_be_true();
     END test_legacy_range_filter;
+
+    PROCEDURE test_delete_by_id IS
+        l_meas_tab    streamflow_meas2_tab_t;
+        l_location_id VARCHAR2(57) := 'StreamTestLoc';
+        l_office_id   VARCHAR2(16) := '&&office_id';
+        l_xml         CLOB;
+        l_uuid        VARCHAR2(36) := '552e8400-e29b-41d4-a716-446655440000';
+        l_raised      BOOLEAN := FALSE;
+    BEGIN
+        -- Store a legacy-numbered measurement and a UUID-numbered measurement
+        l_xml := '<measurement height-unit="ft" flow-unit="cfs" used="true" office-id="'||l_office_id||'">
+                    <agency>USACE</agency>
+                    <date>2023-06-01T12:00:00Z</date>
+                    <location>'||l_location_id||'</location>
+                    <number>201</number>
+                    <stream-flow-measurement>
+                        <gage-height>10.0</gage-height>
+                        <flow>100.0</flow>
+                    </stream-flow-measurement>
+                  </measurement>';
+        cwms_stream.store_meas_xml(l_xml, 'F');
+
+        l_xml := '<measurement height-unit="ft" flow-unit="cfs" used="true" office-id="'||l_office_id||'">
+                    <agency>USACE</agency>
+                    <date>2023-06-02T12:00:00Z</date>
+                    <location>'||l_location_id||'</location>
+                    <number>'||l_uuid||'</number>
+                    <stream-flow-measurement>
+                        <gage-height>20.0</gage-height>
+                        <flow>200.0</flow>
+                    </stream-flow-measurement>
+                  </measurement>';
+        cwms_stream.store_meas_xml(l_xml, 'F');
+
+        -- Sanity check: the UUID measurement exists before delete
+        l_meas_tab := cwms_stream.retrieve_meas_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_id          => l_uuid);
+        ut.expect(l_meas_tab.count).to_equal(1);
+
+        -- Delete only the UUID measurement by id
+        cwms_stream.delete_streamflow_meas_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_id          => l_uuid,
+            p_office_id_mask   => l_office_id);
+
+        -- Verify the UUID measurement is gone
+        l_meas_tab := cwms_stream.retrieve_meas_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_id          => l_uuid);
+        ut.expect(l_meas_tab.count).to_equal(0);
+
+        -- Verify the legacy measurement was NOT affected by the UUID delete
+        l_meas_tab := cwms_stream.retrieve_meas_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_id          => '201');
+        ut.expect(l_meas_tab.count).to_equal(1);
+
+        -- Delete the legacy measurement by id too, proving exact-match delete also works for legacy numbers
+        cwms_stream.delete_streamflow_meas_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_id          => '201',
+            p_office_id_mask   => l_office_id);
+
+        l_meas_tab := cwms_stream.retrieve_meas_by_id(
+            p_location_id_mask => l_location_id,
+            p_meas_id          => '201');
+        ut.expect(l_meas_tab.count).to_equal(0);
+
+        -- A null p_meas_id must be rejected rather than silently bulk-deleting
+        BEGIN
+            cwms_stream.delete_streamflow_meas_by_id(
+                p_location_id_mask => l_location_id,
+                p_meas_id          => null,
+                p_office_id_mask   => l_office_id);
+        EXCEPTION
+            WHEN others THEN
+                l_raised := TRUE;
+        END;
+        ut.expect(l_raised).to_be_true();
+
+    END test_delete_by_id;
 
 END test_cwms_measurements;
 /

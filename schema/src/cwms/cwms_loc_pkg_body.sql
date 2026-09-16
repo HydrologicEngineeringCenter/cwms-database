@@ -2542,9 +2542,6 @@ AS
          -- it is simply where the location geographic information is stored and is attached to the at_physical_location row
          -- in a roughly 1:1 manner. E.g. a sub-location may share it, but a given physical location only has one entry in the table.
 
-         select count(*) into l_count from at_geographic_location where location_code in (select * from table(l_location_codes));
-         add_dependency(l_dependencies, 'geographic locations', l_count);
-
          select count(*) into l_count from at_location_url where location_code in (select * from table(l_location_codes));
          add_dependency(l_dependencies, 'location URLs', l_count);
 
@@ -2911,12 +2908,6 @@ AS
          delete
            from at_document
           where document_location_code in (select * from table (l_location_codes));
-         --------------------------
-         -- geographic locations --
-         --------------------------
-         delete
-           from at_geographic_location
-          where location_code in (select * from table (l_location_codes));
          -----------
          -- urls --
          -----------
