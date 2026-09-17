@@ -30,40 +30,6 @@ AS
 
    END set_cwms_env;
 
-   /**
-    * Helper to deal with permissions. If the previous set user doesn't have correct permissions
-    * this call to log_db_message will fail, however since this is called in the CWMS_ENV
-    * package we know it's a authorized user (the connection)
-    * so we elevate the privilege temporarily.
-    * Perhaps we should add a specific "CAN_LOG" privilege could also just check for WEB_USER role
-    * in the trigger
-   */
-   procedure log(p_procedure in varchar2, p_msg_level in integer, p_message   in varchar2)
-   is
-      l_priv varchar2(255) := SYS_CONTEXT('CWMS_ENV','CWMS_PRIVILEGE');
-      l_cur_office varchar2(5) := SYS_CONTEXT('CWMS_ENV','SESSION_OFFICE_ID');
-      l_cur_office_code cwms_office.office_code%type := NULL;
-   begin
-      pause_office_caching;
-      if l_cur_office is not null then
-         l_cur_office_code := CWMS_UTIL.GET_DB_OFFICE_CODE(l_cur_office);
-      end if;
-      -- set environment so logging works
-      set_cwms_env ('CWMS_PRIVILEGE', 'CAN_WRITE');
-      set_cwms_env ('SESSION_OFFICE_ID', 'CWMS');
-      set_cwms_env ('SESSION_OFFICE_CODE', CWMS_UTIL.GET_DB_OFFICE_CODE('CWMS'));
-
-      -- The actual thing this function is supposed to do
-      cwms_msg.log_db_message(p_procedure,p_msg_level,p_message);
-
-      -- reset environment back so security works
-      set_cwms_env ('CWMS_PRIVILEGE', l_priv);
-      set_cwms_env ('SESSION_OFFICE_ID', l_cur_office);
-      set_cwms_env ('SESSION_OFFICE_CODE', l_cur_office_code);
-      resume_office_caching;
-   end;
-
-
    PROCEDURE set_session_office_id (p_office_id IN VARCHAR2)
    IS
       l_office_id_attr   VARCHAR2 (30) := 'SESSION_OFFICE_ID';
@@ -147,7 +113,6 @@ AS
       select granted_role into l_role from dba_role_privs where granted_role='WEB_USER' and grantee=USER;
       l_msg := 'Login: ' || 'Session set to user ''' || p_user || ''' by '
                          || USER || ' from host ' || l_from_ip;
-      log('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
       set_cwms_env('CWMS_USER',p_user);
       if p_office is not null then
          set_session_office_id(p_office);
@@ -157,7 +122,6 @@ AS
    exception
       when no_data_found then
          l_msg := 'Unauthorized attempt to set user context by ' || USER || ' from ' || l_from_ip;
-         log('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
          cwms_err.raise(
                'ERROR',
                'Permission Denied. Only accounts with the WEB_USER role can use this function');
