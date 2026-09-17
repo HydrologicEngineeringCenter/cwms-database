@@ -6468,6 +6468,16 @@ begin
    l_min_date_utc := cwms_util.CHANGE_TIMEZONE(p_start_time, p_timezone_id, 'UTC');
    -- set end date to just past desired end to include data at end time
    l_max_date_utc := cwms_util.CHANGE_TIMEZONE(p_end_time + 1, p_timezone_id, 'UTC');
+   cwms_msg.log_db_message (cwms_msg.msg_level_basic,
+                            'Level: ' + p_location_level_id + ' Start Time: ' + p_start_time);
+   cwms_msg.log_db_message (cwms_msg.msg_level_basic,
+                            'Level: ' + p_location_level_id + ' Min Time: ' + l_min_date_utc);
+   cwms_msg.log_db_message (cwms_msg.msg_level_basic,
+                            'Level: ' + p_location_level_id + ' End Time: ' + p_end_time);
+   cwms_msg.log_db_message (cwms_msg.msg_level_basic,
+                            'Level: ' + p_location_level_id + ' End Time + 1: ' + (p_end_time + 1));
+   cwms_msg.log_db_message (cwms_msg.msg_level_basic,
+                            'Level: ' + p_location_level_id + ' Max Time: ' + l_max_date_utc);
    retrieve_loc_lvl_values_utc(
       p_level_values            => l_level_values,
       p_location_id             => l_level_id_parts(1),
