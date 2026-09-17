@@ -145,9 +145,9 @@ AS
       l_from_ip varchar(255) := SYS_CONTEXT('USERENV','IP_ADDRESS');
    BEGIN
       select granted_role into l_role from dba_role_privs where granted_role='WEB_USER' and grantee=USER;
-      l_msg := 'Login: ' || 'Session set to user ''' || p_user || ''' by '
-                         || USER || ' from host ' || l_from_ip;
-      log('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
+      -- Pooled connections set this context for each request. This is not a
+      -- new login; avoid initializing database message logging on every read.
+      -- Unauthorized attempts are still logged by the exception handler below.
       set_cwms_env('CWMS_USER',p_user);
       if p_office is not null then
          set_session_office_id(p_office);
