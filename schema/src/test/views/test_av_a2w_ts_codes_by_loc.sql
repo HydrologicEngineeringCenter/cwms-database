@@ -129,6 +129,10 @@ create or replace package body test_av_a2w_ts_codes_by_loc as
     <auto-update>false</auto-update>
     <auto-activate>false</auto-activate>
     <auto-migrate-extension>false</auto-migrate-extension>
+    <ind-rounding-specs>
+      <ind-rounding-spec position="1">3333456784</ind-rounding-spec>
+    </ind-rounding-specs>
+    <dep-rounding-spec>4444444444</dep-rounding-spec>
     <description>Unit test rating spec</description>
   </rating-spec>
 </ratings>';

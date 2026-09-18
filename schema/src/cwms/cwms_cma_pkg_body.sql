@@ -6986,7 +6986,7 @@ on: {%Date}]]></format>
 
 -- NOTES/DISPLAY_FLAG live on AT_A2W_ATTRIBUTES now (1:1 by LOCATION_CODE, no DB_OFFICE_ID
 -- column - office is derived via the location). NUM_TS_CODES is no longer a stored column;
--- it's derived by AV_A2W_TS_CODES_BY_LOC from a COUNT of AT_PUBLISHED_TS rows.
+-- it is derived by AV_A2W_TS_CODES_BY_LOC from a COUNT of AT_PUBLISHED_TS rows.
 FOR x IN (SELECT * FROM at_a2w_attributes WHERE location_code = p_location_code)
       LOOP
 

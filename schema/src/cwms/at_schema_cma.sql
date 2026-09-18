@@ -205,6 +205,14 @@ prompt create view av_office_sp
 --
 prompt Inserting rows into at_specified_level_order
 @@cwms/tables/at_specified_level_order_INSERT.sql
+--
+-- Create Packages
+--
+prompt create package cwms_cma
+@@cwms/cwms_cma_pkg.sql
+show errors;
+@@cwms/cwms_cma_pkg_body.sql
+show errors;
 
 
 
