@@ -151,6 +151,21 @@ procedure test_assign_ts_do_not_ignore_missing;
 --%test (Test quality codes after addition of approved bit)
 procedure test_quality_codes;
 
+--%test (GitHub issue 223 display units default, override, and clear independently by unit system)
+procedure test_ts_display_units;
+
+--%test (GitHub issue 223 invalid display units and unit systems do not change preferences)
+procedure test_ts_display_units_invalid;
+
+--%test (GitHub issue 223 group assignments share display units and preserve positional calls)
+procedure test_ts_group_display_units;
+
+--%test (GitHub issue 223 deleting a time series removes its display units)
+procedure test_delete_ts_display_units;
+
+--%test (GitHub issue 223 retrieval converts values using preferences unless units are explicit)
+procedure test_retrieve_ts_display_units;
+
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
@@ -4626,7 +4641,7 @@ AS
       cwms_ts.create_ts('&&office_id', l_ts_id);
 
       -- Create a test category and group
-      cwms_ts.store_ts_category('TestCategory', 'Category for unit tests', '&&office_id');
+      cwms_ts.store_ts_category('TestCategory', 'Category for unit tests', p_db_office_id => '&&office_id');
       cwms_ts.store_ts_group('TestCategory', 'TestGroup', 'Group for unit tests', 'F', 'T', null, null, '&&office_id');
 
       -- Assign TS to group
@@ -4667,7 +4682,7 @@ AS
       ut.expect(l_count).to_equal(0);
 
       -- Cleanup category
-      cwms_ts.delete_ts_category('TestCategory', '&&office_id');
+      cwms_ts.delete_ts_category('TestCategory', p_db_office_id => '&&office_id');
       teardown;
    end test_delete_ts_group_cascade;
 
@@ -4743,7 +4758,7 @@ AS
                                    ts_ref_id => null);
 
       -- Create a test category and group
-      cwms_ts.store_ts_category('TestCategory', 'Category for unit tests', '&&office_id');
+      cwms_ts.store_ts_category('TestCategory', 'Category for unit tests', p_db_office_id => '&&office_id');
       cwms_ts.store_ts_group('TestCategory', 'TestGroup', 'Group for unit tests', 'F', 'T', null, null, '&&office_id');
 
       -- Assign TS to group
@@ -4794,7 +4809,7 @@ AS
                                  ts_ref_id => null);
 
       -- Create a test category and group
-      cwms_ts.store_ts_category('TestCategory', 'Category for unit tests', '&&office_id');
+      cwms_ts.store_ts_category('TestCategory', 'Category for unit tests', p_db_office_id => '&&office_id');
       cwms_ts.store_ts_group('TestCategory', 'TestGroup', 'Group for unit tests', 'F', 'T', null, null, '&&office_id');
 
       -- Assign TS to group
@@ -4848,6 +4863,273 @@ AS
       ut.expect(bitand(l_quality / power(2, c_method_shift), c_method_mask)).to_equal(c_expected_method);
       ut.expect(bitand(l_quality / power(2, c_failed_shift), c_failed_mask)).to_equal(c_expected_failed);
    end test_quality_codes;
+
+   procedure test_ts_display_units
+   is
+      l_ts_id varchar2(200) := test_base_location_id||'.Elev.Inst.1Hour.0.DisplayUnits';
+      l_default_en varchar2(32) := cwms_util.get_default_units('Elev', 'EN');
+      l_default_si varchar2(32) := cwms_util.get_default_units('Elev', 'SI');
+   begin
+      setup;
+      cwms_ts.create_ts('&&office_id', l_ts_id);
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'EN', '&&office_id')).to_equal(l_default_en);
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'SI', '&&office_id')).to_equal(l_default_si);
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'EN', '&&office_id', 'F')).to_be_null;
+
+      cwms_ts.set_ts_display_units(l_ts_id, 'in', p_office_id => '&&office_id');
+      cwms_ts.set_ts_display_units(l_ts_id, 'cm', 'SI', '&&office_id');
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, p_office_id => '&&office_id')).to_equal('in');
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'EN', '&&office_id', 'F')).to_equal('in');
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'SI', '&&office_id', 'F')).to_equal('cm');
+
+      -- Unit aliases are resolved to the canonical unit identifier.
+      cwms_ts.set_ts_display_units(l_ts_id, 'feet', 'EN', '&&office_id');
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'EN', '&&office_id')).to_equal('ft');
+
+      -- Explicitly choosing the parameter default is not a nondefault override.
+      cwms_ts.set_ts_display_units(l_ts_id, l_default_en, 'EN', '&&office_id');
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'EN', '&&office_id')).to_equal(l_default_en);
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'EN', '&&office_id', 'F')).to_be_null;
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'SI', '&&office_id')).to_equal('cm');
+
+      cwms_ts.set_ts_display_units(l_ts_id, 'in', 'EN', '&&office_id');
+      cwms_ts.set_ts_display_units(l_ts_id, null, 'EN', '&&office_id');
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'EN', '&&office_id')).to_equal(l_default_en);
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'EN', '&&office_id', 'F')).to_be_null;
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'SI', '&&office_id')).to_equal('cm');
+      cwms_ts.set_ts_display_units(l_ts_id, null, 'SI', '&&office_id');
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'SI', '&&office_id')).to_equal(l_default_si);
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'SI', '&&office_id', 'F')).to_be_null;
+   end test_ts_display_units;
+
+   procedure test_ts_display_units_invalid
+   is
+      l_ts_id varchar2(200) := test_base_location_id||'.Elev.Inst.1Hour.0.DisplayUnits';
+      l_units varchar2(32);
+      l_systems str_tab_t := str_tab_t('INVALID', null);
+      l_bad_units str_tab_t := str_tab_t('not-a-cwms-unit', 'cfs');
+      l_failed boolean;
+   begin
+      setup;
+      cwms_ts.create_ts('&&office_id', l_ts_id);
+      cwms_ts.set_ts_display_units(l_ts_id, 'in', 'EN', '&&office_id');
+      for i in 1..l_bad_units.count loop
+         l_failed := false;
+         begin
+            cwms_ts.set_ts_display_units(l_ts_id, l_bad_units(i), 'EN', '&&office_id');
+         exception
+            when others then
+               l_failed := true;
+               if i = 1 then
+                  ut.expect(sqlcode).to_equal(-20019);
+                  ut.expect(sqlerrm).to_be_like('%not-a-cwms-unit%');
+               else
+                  ut.expect(sqlerrm).to_be_like('%Cannot convert from unit%to unit cfs%');
+               end if;
+         end;
+         ut.expect(l_failed, 'Reject unknown or incompatible units: '||l_bad_units(i)).to_be_true;
+         ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'EN', '&&office_id')).to_equal('in');
+      end loop;
+      for i in 1..l_systems.count loop
+         l_failed := false;
+         begin
+            cwms_ts.set_ts_display_units(l_ts_id, 'cm', l_systems(i), '&&office_id');
+         exception
+            when others then
+               l_failed := true;
+               ut.expect(sqlcode).to_equal(-20019);
+               ut.expect(sqlerrm).to_be_like('%Unit System%');
+         end;
+         ut.expect(l_failed, 'Setter rejects invalid or null unit system').to_be_true;
+         l_failed := false;
+         begin
+            l_units := cwms_ts.get_ts_display_units(l_ts_id, l_systems(i), '&&office_id');
+         exception
+            when others then
+               l_failed := true;
+               ut.expect(sqlcode).to_equal(-20019);
+               ut.expect(sqlerrm).to_be_like('%Unit System%');
+         end;
+         ut.expect(l_failed, 'Getter rejects invalid or null unit system').to_be_true;
+      end loop;
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'EN', '&&office_id')).to_equal('in');
+   end test_ts_display_units_invalid;
+
+   procedure test_ts_group_display_units
+   is
+      l_ts_id varchar2(200) := test_base_location_id||'.Elev.Inst.1Hour.0.DisplayUnits';
+      l_count integer;
+   begin
+      setup;
+      cwms_ts.create_ts('&&office_id', l_ts_id);
+      cwms_ts.store_ts_category('Display Units', 'Display units regression tests', p_db_office_id => '&&office_id');
+      cwms_ts.store_ts_group('Display Units', 'Primary', p_db_office_id => '&&office_id');
+      cwms_ts.store_ts_group('Display Units', 'Secondary', p_db_office_id => '&&office_id');
+
+      -- The original seven positional arguments retain their meanings.
+      cwms_ts.assign_ts_group('Display Units', 'Primary', l_ts_id, 12, 'DisplayAlias', null, '&&office_id');
+      select count(*) into l_count from av_ts_grp_assgn
+       where category_id = 'Display Units' and group_id = 'Primary'
+         and db_office_id = '&&office_id' and ts_id = l_ts_id
+         and attribute = 12 and alias_id = 'DisplayAlias'
+         and units_en is null and units_si is null;
+      ut.expect(l_count).to_equal(1);
+
+      cwms_ts.assign_ts_group('Display Units', 'Secondary', l_ts_id,
+         p_db_office_id => '&&office_id', p_units => 'in');
+      cwms_ts.assign_ts_group('Display Units', 'Primary', l_ts_id,
+         p_db_office_id => '&&office_id', p_units => 'cm', p_unit_system => 'SI');
+      -- Updating an assignment without units leaves both preferences intact.
+      cwms_ts.assign_ts_group('Display Units', 'Secondary', l_ts_id, 23, null, null, '&&office_id');
+      select count(*) into l_count from av_ts_grp_assgn
+       where category_id = 'Display Units' and group_id in ('Primary', 'Secondary')
+         and db_office_id = '&&office_id' and ts_id = l_ts_id
+         and units_en = 'in' and units_si = 'cm';
+      ut.expect(l_count).to_equal(2);
+
+      cwms_ts.set_ts_display_units(l_ts_id, null, 'EN', '&&office_id');
+      select count(*) into l_count from av_ts_grp_assgn
+       where category_id = 'Display Units' and group_id in ('Primary', 'Secondary')
+         and db_office_id = '&&office_id' and ts_id = l_ts_id
+         and units_en is null and units_si = 'cm';
+      ut.expect(l_count).to_equal(2);
+      cwms_ts.delete_ts_group_cascade('Display Units', 'Primary', 'T', '&&office_id');
+      cwms_ts.delete_ts_group_cascade('Display Units', 'Secondary', 'T', '&&office_id');
+      cwms_ts.delete_ts_category('Display Units', p_db_office_id => '&&office_id');
+   end test_ts_group_display_units;
+
+   procedure test_delete_ts_display_units
+   is
+      l_ts_id varchar2(200) := test_base_location_id||'.Elev.Inst.1Hour.0.DisplayUnits';
+      l_ts_code number;
+      l_count integer;
+   begin
+      setup;
+      cwms_ts.create_ts('&&office_id', l_ts_id);
+      l_ts_code := cwms_ts.get_ts_code(l_ts_id, '&&office_id');
+      cwms_ts.set_ts_display_units(l_ts_id, 'in', 'EN', '&&office_id');
+      cwms_ts.set_ts_display_units(l_ts_id, 'cm', 'SI', '&&office_id');
+      select count(*) into l_count from at_ts_display_units where ts_code = l_ts_code;
+      ut.expect(l_count).to_equal(2);
+      -- A soft-deleted identifier retains its preferences for restoration.
+      cwms_ts.delete_ts(l_ts_id, cwms_util.delete_key, p_db_office_id => '&&office_id');
+      select count(*) into l_count from at_ts_display_units where ts_code = l_ts_code;
+      ut.expect(l_count).to_equal(2);
+      cwms_ts.undelete_ts(l_ts_id, '&&office_id');
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'EN', '&&office_id')).to_equal('in');
+      ut.expect(cwms_ts.get_ts_display_units(l_ts_id, 'SI', '&&office_id')).to_equal('cm');
+      cwms_ts.delete_ts(l_ts_id, cwms_util.delete_all, p_db_office_id => '&&office_id');
+      select count(*) into l_count from at_ts_display_units where ts_code = l_ts_code;
+      ut.expect(l_count).to_equal(0);
+   end test_delete_ts_display_units;
+
+   procedure test_retrieve_ts_display_units
+   is
+      l_ts_id varchar2(200) := test_withsub_location_id||'.Stage.Inst.1Hour.0.DisplayUnits';
+      l_data cwms_t_ztsv_array := cwms_t_ztsv_array(cwms_t_ztsv(date '2024-02-01', 1, 0));
+      l_cursor sys_refcursor;
+      l_ts_id_out varchar2(200);
+      l_units_out varchar2(32);
+      l_time_zone varchar2(64);
+      l_date date;
+      l_value binary_double;
+      l_quality number;
+      l_units varchar2(32);
+      l_system varchar2(2);
+      l_expected_units varchar2(32);
+      l_expected_value number;
+      l_results clob;
+      l_query_date date;
+      l_query_time integer;
+      l_format_time integer;
+      l_ts_count integer;
+      l_value_count integer;
+      l_json_value number;
+   begin
+      setup;
+      cwms_loc.store_location(test_base_location_id, p_active => 'T', p_db_office_id => '&&office_id');
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id => l_ts_id,
+         p_units => 'm',
+         p_timeseries_data => l_data,
+         p_store_rule => cwms_util.replace_all,
+         p_version_date => cwms_util.non_versioned,
+         p_office_id => '&&office_id');
+      cwms_ts.set_ts_display_units(l_ts_id, 'in', 'EN', '&&office_id');
+      cwms_ts.set_ts_display_units(l_ts_id, 'cm', 'SI', '&&office_id');
+      for pass in 1..4 loop
+         l_system := case when mod(pass, 2) = 1 then 'EN' else 'SI' end;
+         l_units := case when pass > 2 then 'm' else null end;
+         l_expected_units := case when pass > 2 then 'm' when l_system = 'EN' then 'in' else 'cm' end;
+         l_expected_value := case when pass > 2 then 1 when l_system = 'EN' then 1 / 0.0254 else 100 end;
+         l_cursor := cwms_ts.retrieve_ts_f(
+            p_cwms_ts_id_out => l_ts_id_out,
+            p_units_out => l_units_out,
+            p_time_zone_id => l_time_zone,
+            p_cwms_ts_id => l_ts_id,
+            p_start_time => date '2024-02-01',
+            p_end_time => date '2024-02-01',
+            p_time_zone => 'UTC',
+            p_units => l_units,
+            p_unit_system => l_system,
+            p_office_id => '&&office_id');
+         fetch l_cursor into l_date, l_value, l_quality;
+         ut.expect(l_cursor%found).to_be_true;
+         ut.expect(l_units_out).to_equal(l_expected_units);
+         ut.expect(round(l_value, 6)).to_equal(round(l_expected_value, 6));
+         ut.expect(l_date).to_equal(date '2024-02-01');
+         ut.expect(l_quality).to_equal(0);
+         fetch l_cursor into l_date, l_value, l_quality;
+         ut.expect(l_cursor%notfound).to_be_true;
+         close l_cursor;
+      end loop;
+
+      -- The legacy wrapper still honors explicit units over either preference.
+      cwms_ts.retrieve_ts_2(
+         p_at_tsv_rc => l_cursor,
+         p_units => 'm',
+         p_officeid => '&&office_id',
+         p_cwms_ts_id => l_ts_id,
+         p_start_time => date '2024-02-01',
+         p_end_time => date '2024-02-01');
+      fetch l_cursor into l_date, l_value, l_quality;
+      ut.expect(l_cursor%found).to_be_true;
+      ut.expect(round(l_value, 6)).to_equal(1);
+      close l_cursor;
+
+      -- An all-office query resolves display preferences using each
+      -- matched time series office; an explicit unit still takes precedence.
+      for pass in 1..3 loop
+         l_units := case pass when 1 then 'EN' when 2 then 'SI' else 'm' end;
+         l_expected_units := case pass when 1 then 'in' when 2 then 'cm' else 'm' end;
+         l_expected_value := case pass when 1 then 1 / 0.0254 when 2 then 100 else 1 end;
+         cwms_ts.retrieve_time_series(
+            p_results => l_results,
+            p_date_time => l_query_date,
+            p_query_time => l_query_time,
+            p_format_time => l_format_time,
+            p_ts_count => l_ts_count,
+            p_value_count => l_value_count,
+            p_names => l_ts_id,
+            p_format => 'JSON',
+            p_units => l_units,
+            p_start => '2024-02-01T00:00:00Z',
+            p_end => '2024-02-01T01:00:00Z',
+            p_timezone => 'UTC',
+            p_office_id => null);
+         ut.expect(l_ts_count).to_equal(1);
+         ut.expect(l_value_count).to_equal(1);
+         select json_value(l_results, '$."time-series"."time-series"[0]."regular-interval-values".unit'),
+                json_value(l_results, '$."time-series"."time-series"[0]."regular-interval-values".segments[0].values[0][0]' returning number)
+           into l_units_out, l_json_value
+           from dual;
+         ut.expect(l_units_out).to_equal(l_expected_units);
+         ut.expect(round(l_json_value, 4)).to_equal(round(l_expected_value, 4));
+         if dbms_lob.istemporary(l_results) = 1 then
+            dbms_lob.freetemporary(l_results);
+         end if;
+      end loop;
+   end test_retrieve_ts_display_units;
 
 END test_cwms_ts;
 /
