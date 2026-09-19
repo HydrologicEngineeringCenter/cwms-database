@@ -1179,6 +1179,100 @@ procedure cwms_2478_ts_extents_ts_code
                                         l_latest_time, 'F');
 end cwms_2478_ts_extents_ts_code;
 
+procedure cwms_2533_ts_extents_logging
+   is
+      l_ts_code               at_cwms_ts_id.ts_code%type;
+      l_version_date          date := c_base_start_date + 10;
+      l_log_messages          varchar2(4000);
+      l_timestamp             timestamp := systimestamp;
+      l_dequeue_options       dbms_aq.dequeue_options_t;
+      l_message_properties    dbms_aq.message_properties_t;
+      l_message_handle        varchar2(32767);
+      l_message_payload       sys.aq$_jms_text_message;
+   begin
+      l_dequeue_options.visibility := dbms_aq.immediate;
+      l_dequeue_options.dequeue_mode := dbms_aq.browse;
+      l_message_properties.expiration := to_number(cwms_properties.get_property('CWMSDB',msg_timeout_prop,msg_timeout_seconds,'CWMS'));
+      -----------------------------------------------
+      -- delete data to get a known starting point --
+      -----------------------------------------------
+      setup;
+      for rec in (select table_name from at_ts_table_properties) loop
+            execute immediate 'delete from '||rec.table_name;
+            commit;
+         end loop;
+      delete from at_ts_extents where 1 = 1;
+      delete from at_log_message_properties where 1 = 1;
+      delete from at_log_message where 1 = 1;
+
+      for i in 1..2 loop
+         -----------------------------
+         -- store un-versioned data --
+         -----------------------------
+            cwms_ts.zstore_ts (
+               p_cwms_ts_id      => c_ts_id,
+               p_units           => c_units,
+               p_timeseries_data => c_base_ts_data,
+               p_store_rule      => cwms_util.replace_all,
+               p_version_date    => cwms_util.non_versioned,
+               p_office_id       => c_office_id);
+            l_ts_code := cwms_ts.get_ts_code(c_ts_id, c_office_id);
+            --------------------------
+            -- store versioned data --
+            --------------------------
+            cwms_ts.set_tsid_versioned(
+               p_cwms_ts_id      => c_ts_id,
+               p_versioned       => 'T',
+               p_db_office_id    => c_office_id);
+            cwms_ts.zstore_ts (
+               p_cwms_ts_id      => c_ts_id,
+               p_units           => c_units,
+               p_timeseries_data => c_base_ts_data,
+               p_store_rule      => cwms_util.replace_all,
+               p_version_date    => l_version_date,
+               p_office_id       => c_office_id);
+            commit;
+            if i = 1 then
+               for rec in (select table_name from at_ts_table_properties) loop
+                     execute immediate 'delete from '||rec.table_name;
+                     commit;
+                  end loop;
+               cwms_ts.purge_invalid_ts_extents;
+            else
+               update at_ts_extents set last_update = l_timestamp where ts_code = l_ts_code;
+               cwms_ts.update_ts_extents_for_office(c_office_id);
+            end if;
+         end loop;
+      begin
+         cwms_ts.start_update_ts_extents_job;
+      exception
+         when others then
+            if user != '&&cwms_schema' then
+               ut.expect(regexp_instr(sqlerrm, 'Must be &&cwms_schema user to start job UPDATE_TS_EXTENTS_JOB', 1, 1, 0, 'i')).to_be_greater_than(0);
+            else
+               raise;
+            end if;
+      end;
+      l_log_messages := cwms_ts.retrieve_update_ts_extents_log_messages(1);
+      ut.expect(cwms_util.split_text(trim(chr(10) from l_log_messages), chr(10)).count).to_equal(case when user = '&&cwms_schema' then 5 else 4 end);
+      ut.expect(instr(l_log_messages, 'Purge of invalid TS extents ended. 2 records deleted')).to_be_greater_than(0);
+      ut.expect(instr(l_log_messages, 'Update TS Extents for Office &&office_id ended')).to_be_greater_than(0);
+      if user = upper('&&cwms_schema') then
+         ut.expect(instr(l_log_messages, 'Job UPDATE_TS_EXTENTS_JOB_&&office_id scheduled to start')).to_be_greater_than(0);
+      end if;
+      -----------------------------------------------
+      -- verify content published to queue is correct
+      -----------------------------------------------
+      dbms_aq.DEQUEUE(
+         'STATUS',
+         l_dequeue_options,
+         l_message_properties,
+         l_message_payload,
+         l_message_handle
+      );
+      dbms_output.put_line('Message: '||l_message_payload);
+end cwms_2533_ts_extents_logging;
+
 end test_update_ts_extents;
 /
 show errors
