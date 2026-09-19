@@ -387,6 +387,12 @@ procedure log_db_message(
    p_msg_level in integer,
    p_message   in varchar2);
 -- not documented
+procedure log_publish_message(
+   p_msg_level in integer,
+   p_message   in varchar2,
+   p_simple    in boolean default false,
+   p_msg_key   in varchar2 default '');
+-- not documented
 procedure log_db_message(
    p_msg_level in integer,
    p_message   in varchar2);

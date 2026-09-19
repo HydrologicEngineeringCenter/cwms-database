@@ -838,6 +838,51 @@ begin
 end log_db_message;
 
 -------------------------------------------------------------------------------
+-- PROCEDURE LOG_PUBLISH_MESSAGE(...)
+--
+procedure log_publish_message(
+   p_msg_level in integer,
+   p_message   in varchar2,
+   p_simple    in boolean default false,
+   p_msg_key   in varchar2 default '')
+   is
+   pragma autonomous_transaction;
+   l_message   varchar2(4000) := p_message;
+   i           integer;
+   lf constant varchar2(1) := chr(10);
+   l_msg_level integer := nvl(p_msg_level, msg_level_normal);
+   l_final_msg  varchar2(4500);
+begin
+   l_message := replace(l_message, '&', '&'||'amp;');
+   for c in 0..31 loop
+         if c not in (9,10,13) then
+            l_message := replace(l_message, chr(c), '&'||'#'||trim(to_char(c, '0X'))||';');
+         end if;
+      end loop;
+   l_message := utl_i18n.escape_reference(l_message, 'us7ascii');
+   commit;
+   if p_simple then
+      l_final_msg := l_message;
+   else
+      l_final_msg := '<cwms_message type="Status">' || lf
+         || '  <property name="procedure" type="String">' || p_msg_key || '</property>' || lf
+         || '  <text>' || lf
+         || '  ' || l_message || lf
+         || '  </text>' || lf
+         || '</cwms_message>';
+   end if;
+   i := log_message(
+      'CWMSDB',
+      null,
+      null,
+      null,
+      systimestamp at time zone 'UTC',
+      l_final_msg,
+      l_msg_level,
+      true);
+end log_publish_message;
+
+-------------------------------------------------------------------------------
 -- FUNCTION GET_MSG_IDS_FOR_KEY
 --
 function get_msg_ids_for_key(

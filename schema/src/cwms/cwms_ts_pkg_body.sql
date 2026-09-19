@@ -5658,10 +5658,20 @@ AS
          return l_count;
       end job_count;
    begin
+      cwms_msg.log_publish_message(
+         cwms_msg.msg_level_normal,
+         'INFO: TS Extent update job initiated',
+         true
+      );
       ----------------------------------------
       -- only allow schema owner to execute --
       ----------------------------------------
       if cwms_util.get_user_id != '&cwms_schema' then
+         cwms_msg.log_publish_message(
+            cwms_msg.msg_level_normal,
+            'FATAL ERROR: Must be &cwms_schema user to start job '||l_job_name_template,
+            false
+         );
          cwms_err.raise('ERROR', 'Must be &cwms_schema user to start job '||l_job_name_template);
       end if;
       -----------------------------------------------------------------
@@ -5694,10 +5704,12 @@ AS
             if job_count(l_job_name) = 1 then
                dbms_scheduler.drop_job(l_job_name);
                if job_count(l_job_name) = 1 then
-                  cwms_msg.log_db_message(
-                     c_msg_key,
-                     'ERROR: Job '||l_job_name||' already exists and couldn''t be dropped',
-                     cwms_msg.msg_level_normal);
+                  cwms_msg.log_publish_message(
+                     cwms_msg.msg_level_normal,
+                     'FATAL ERROR: Job '||l_job_name||' already exists and couldn''t be dropped',
+                     false,
+                     c_msg_key
+                  );
                   continue;
                end if;
             end if;
@@ -5719,16 +5731,24 @@ AS
             dbms_scheduler.enable(l_job_name);
          exception
             when others then
-               cwms_msg.log_db_message(c_msg_key, sqlerrm, cwms_msg.msg_level_normal);
+               cwms_msg.log_publish_message(
+                  cwms_msg.msg_level_normal,
+                   sqlerrm,
+                  false,
+                  c_msg_key);
                continue;
          end;
          if job_count(l_job_name) = 1 then
-            l_log_msg := 'SUCESS: Job '||l_job_name||' scheduled to start at '
+            l_log_msg := 'SUCCESS: Job '||l_job_name||' scheduled to start at '
             ||to_char(l_start, 'yyyy-mm-dd hh24:mi:ss')||' UTC';
          else
-            l_log_msg := 'ERROR: Job '||l_job_name ||' not started';
+            l_log_msg := 'FATAL ERROR: Job '||l_job_name ||' not started';
          end if;
-         cwms_msg.log_db_message(c_msg_key, l_log_msg, cwms_msg.msg_level_normal);
+         cwms_msg.log_publish_message(
+            cwms_msg.msg_level_normal,
+            l_log_msg,
+            false,
+            c_msg_key);
       end loop;
       ----------------------------------------
       -- output log messages to dbms_output --
@@ -5746,6 +5766,11 @@ AS
       loop
          dbms_output.put_line(to_char(rec.report_timestamp_utc, 'yyyy-mm-dd hh24:mi:ss.ff3')||chr(9)||rec.msg_text);
       end loop;
+      cwms_msg.log_publish_message(
+         cwms_msg.msg_level_normal,
+         'INFO: Launched TS Extents update job',
+         false,
+         c_msg_key);
    end start_update_ts_extents_job;
 
    -- not documented
@@ -5761,16 +5786,28 @@ AS
          return l_count;
       end job_count;
    begin
+      cwms_msg.log_publish_message(
+         cwms_msg.msg_level_normal,
+         'INFO: TS Extents update job initialized',
+         true);
       ----------------------------------------
       -- only allow schema owner to execute --
       ----------------------------------------
       if cwms_util.get_user_id != '&cwms_schema' then
+         cwms_msg.log_publish_message(
+            cwms_msg.msg_level_normal,
+            'FATAL ERROR: Must be &cwms_schema user to start job '||l_job_name,
+            true);
          cwms_err.raise('ERROR', 'Must be &cwms_schema user to start job '||l_job_name);
       end if;
       ----------------------------------------------
       -- allow only a single copy to be scheduled --
       ----------------------------------------------
       if job_count > 0 then
+         cwms_msg.log_publish_message(
+            cwms_msg.msg_level_normal,
+            'FATAL ERROR: Cannot start job '||l_job_name||',  another instance is already running',
+            true);
          cwms_err.raise('ERROR', 'Cannot start job '||l_job_name||',  another instance is already running');
       end if;
       ----------------------------------------------------------
@@ -5792,6 +5829,10 @@ AS
          argument_value    => null);
       dbms_scheduler.enable(l_job_name);
       if job_count != 1 then
+         cwms_msg.log_publish_message(
+            cwms_msg.msg_level_normal,
+            'FATAL Error: Job '||l_job_name||' not started',
+            true);
          cwms_err.raise('ERROR', 'Job '||l_job_name||' not started');
       end if;
    end start_immediate_upd_tsx_job;
