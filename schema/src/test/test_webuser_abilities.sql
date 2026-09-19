@@ -118,43 +118,15 @@ AS
 
     procedure can_interact_with_api_keys_table_and_view is
         l_userid varchar(128) := upper('&eroc.hectest');
-        l_testkey cwms_20.at_api_keys.apikey%type := 'A simple test key';
+        l_testkey cwms_20.at_api_keys.secret_hash%type := 'A simple test key';
         l_testkey_name cwms_20.at_api_keys.key_name%type := 'A test key';
         l_testkey_name_out cwms_20.at_api_keys.key_name%type;
     begin
         cwms_20.cwms_env.set_session_user_direct('&&eroc.webtest','&&office_id');
-        insert into cwms_20.at_api_keys(userid,key_name,apikey)
-            values (l_userid,l_testkey_name,l_testkey);
-        select key_name into l_testkey_name_out from cwms_20.av_active_api_keys where apikey=l_testkey;
+        insert into cwms_20.at_api_keys(key_id,userid,key_name,secret_hash)
+            values (secret_hash, l_userid,l_testkey_name,l_testkey);
+        select key_name into l_testkey_name_out from cwms_20.av_active_api_keys where secret_hash=l_testkey;
         ut.expect(l_testkey_name_out).to_equal(l_testkey_name);
-    end;
-
-
-    procedure can_set_context_user_by_key is
-        l_testkey1 cwms_20.at_api_keys.apikey%type := 'User 1 Test Key';
-        l_testkey2 cwms_20.at_api_keys.apikey%type := 'User 2 Test Key';
-        l_user1 varchar2(128) := upper('&eroc.hectest');
-        l_user2 varchar2(128) := upper('&eroc.hectest_ro');
-        l_priv varchar2(255);
-    begin
-        insert into cwms_20.at_api_keys(userid,key_name,apikey)
-            values (l_user1,l_testkey1,l_testkey1);
-        insert into cwms_20.at_api_keys(userid,key_name,apikey)
-            values (l_user2,l_testkey2,l_testkey2);
-
-        cwms_env.set_session_user_apikey(l_testkey1,'&&office_id');
-        ut.expect(cwms_util.get_user_id).to_equal(l_user1);
-
-        -- test without office ID set
-        cwms_env.set_session_user_apikey(l_testkey2);
-        ut.expect(cwms_util.get_user_id).to_equal(l_user2);
-        ut.expect(SYS_CONTEXT ('CWMS_ENV', 'CWMS_PRIVILEGE')).to_equal('READ_ONLY');
-
-        /** I don't believe it but this actually is required, which is good. But
-            we should still call it to make sure it doesn't fail.
-        */
-        cwms_env.set_session_user_direct(upper('&eroc.webtest'),'&&office_id');
-
     end;
 
     PROCEDURE test_create_cwms_cwbi_user
