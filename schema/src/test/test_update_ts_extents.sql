@@ -1,4 +1,4 @@
-create or replace package test_update_ts_extents as
+create or replace package &cwms_schema..test_update_ts_extents as
 --%suite(Test time series extents functionality)
 
 --%beforeall(setup)
@@ -74,7 +74,7 @@ c_base_ts_data    constant cwms_t_ztsv_array := cwms_t_ztsv_array(
 end test_update_ts_extents;
 /
 show errors
-create or replace package body test_update_ts_extents as
+create or replace package body &cwms_schema..test_update_ts_extents as
 --------------------------------------------------------------------------------
 -- procedure teaardown
 --------------------------------------------------------------------------------
