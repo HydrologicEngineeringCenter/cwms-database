@@ -1194,7 +1194,6 @@ procedure cwms_2533_ts_extents_logging
    begin
       l_dequeue_options.visibility := dbms_aq.immediate;
       l_dequeue_options.dequeue_mode := dbms_aq.browse;
-      l_message_properties.expiration := to_number(cwms_properties.get_property('CWMSDB',msg_timeout_prop,msg_timeout_seconds,'CWMS'));
       -----------------------------------------------
       -- delete data to get a known starting point --
       -----------------------------------------------
@@ -1272,7 +1271,7 @@ procedure cwms_2533_ts_extents_logging
          l_message_payload,
          l_message_handle
       );
-      dbms_output.put_line('Message: '||l_message_payload);
+      dbms_output.put_line('Message: '||l_message_payload.text_vc);
 end cwms_2533_ts_extents_logging;
 
 end test_update_ts_extents;
