@@ -127,7 +127,7 @@ create or replace package body test_av_published_ts as
       l_elev_tw_ts_code number;
    begin
       -- TS_ELEV and TS_ELEV_TW both have base parameter 'Elev', but are two distinct
-      -- published slots for the same location - PARAMETER_ID alone cannot tell them apart,
+      -- published slots for the same location - PARAMETER_ID alone can't tell them apart,
       -- which is exactly the bug this view previously had.
       select count(*)
         into l_count

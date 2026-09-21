@@ -42,7 +42,7 @@ create or replace package test_cwms_cma as
 
    -- shared pool: a single location that owns the TS IDs / rating spec reused (by ts_code /
    -- rating_spec_code, not by their own location) across the separate per-scenario
-   -- "target" locations below; tests do not depend on run order.
+   -- "target" locations below.
    c_shared_loc      constant varchar2(30) := 'TESTCMASHARED';
    c_ts_id_elev      constant varchar2(60) := 'TESTCMASHARED.Elev.Inst.1Hour.0.Test';
    c_ts_id_stage     constant varchar2(60) := 'TESTCMASHARED.Stage.Inst.1Hour.0.Test';
@@ -50,7 +50,7 @@ create or replace package test_cwms_cma as
    c_template_id     constant varchar2(60)  := 'Elev;Stor.Test-CMA-Linear';
    c_rating_spec_id  constant varchar2(120) := 'TESTCMASHARED.Elev;Stor.Test-CMA-Linear.Test';
 
-   -- one dedicated target location per scenario, so tests do not depend on run order
+   -- one dedicated target location per scenario, so tests don't depend on run order
    c_loc_load             constant varchar2(30) := 'TESTCMALOAD';
    c_loc_opening           constant varchar2(30) := 'TESTCMAOPEN';
    c_loc_mismatch          constant varchar2(30) := 'TESTCMAMISMATCH';
@@ -69,8 +69,8 @@ create or replace package body test_cwms_cma as
    --------------------------------------------------------------------------------
    -- procedure call_load
    -- Thin wrapper around cwms_cma.p_load_a2w_by_location that fills in NULL/default
-   -- for the ~30 fields a given test does not care about, so each test only has to
-   -- name the handful of parameters it is actually exercising.
+   -- for the ~30 fields a given test doesn't care about, so each test only has to
+   -- name the handful of parameters it's actually exercising.
    --------------------------------------------------------------------------------
    procedure call_load (
       p_location_id           in varchar2,
@@ -225,10 +225,6 @@ create or replace package body test_cwms_cma as
     <auto-update>false</auto-update>
     <auto-activate>false</auto-activate>
     <auto-migrate-extension>false</auto-migrate-extension>
-    <ind-rounding-specs>
-      <ind-rounding-spec position="1">3333456784</ind-rounding-spec>
-    </ind-rounding-specs>
-    <dep-rounding-spec>4444444444</dep-rounding-spec>
     <description>Unit test rating spec</description>
   </rating-spec>
 </ratings>';
@@ -389,8 +385,8 @@ create or replace package body test_cwms_cma as
       is
       l_error_msg varchar2(4000);
    begin
-      -- TS_ELEV published base parameter is 'Elev', but this passes a 'Stage' ts_code -
-      -- AT_PUBLISHED_TS_T01 should reject it, and p_load_a2w_by_location WHEN OTHERS
+      -- TS_ELEV's published base parameter is 'Elev', but this passes a 'Stage' ts_code -
+      -- AT_PUBLISHED_TS_T01 should reject it, and p_load_a2w_by_location's WHEN OTHERS
       -- handler should turn that into an error message rather than an unhandled exception.
       call_load(
          p_location_id  => c_loc_mismatch,

@@ -142,13 +142,6 @@ create or replace package body test_av_a2w_ts_codes_by_loc2 as
        where location_id = c_location_id;
 
       ut.expect(l_count).to_equal(0);
-
-      -- restore display_flag so later tests in this suite (which do not re-run setup)
-      -- still see this location as displayed.
-      update at_a2w_attributes
-         set display_flag = 'T'
-       where location_code = cwms_loc.get_location_code(c_office_id, c_location_id);
-      commit;
    end filters_on_display_flag;
    --------------------------------------------------------------------------------
    -- procedure joins_ts_identifier_details
