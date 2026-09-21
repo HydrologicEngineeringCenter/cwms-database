@@ -32,6 +32,8 @@ procedure test_cwms_2446_fix_performance_for_update_ts_extents;
 --%test(TS extents using integer instead of number for TS_CODE)
 --%throws(-20998)
 procedure cwms_2478_ts_extents_ts_code;
+--%test (New logging for TS Extents update procedure)
+procedure cwms_2533_ts_extents_logging;
 
 procedure setup;
 procedure teardown;
