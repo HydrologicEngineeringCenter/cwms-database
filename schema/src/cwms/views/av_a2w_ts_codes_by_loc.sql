@@ -78,46 +78,95 @@ create or replace force view av_a2w_ts_codes_by_loc
    ts_code_evap
 )
 as
+   -- Sourced from the normalized AT_PUBLISHED_TS / AT_PUBLISHED_RATING / AT_A2W_ATTRIBUTES
+   -- tables (see at_published.sql, at_a2w_attributes.sql) instead of the retired wide
+   -- AT_A2W_TS_CODES_BY_LOC columns, to preserve this view's shape for existing consumers
+   -- (CDA's PublishedTimeSeriesDao, CMA reports) while the underlying schema is normalized.
+   --
+   -- Known behavior change vs. the old wide table: TS_CODE_OPENING here only ever holds a
+   -- real TS Code. Rows where OPENING_SOURCE_OBJ = 'OBJ' (the opening value is an object
+   -- reference, not a TS Code) are not present in AT_PUBLISHED_TS - see the "known gap" note
+   -- in migrate_a2w_to_published.sql - so TS_CODE_OPENING will be NULL for those locations
+   -- even though OPENING_SOURCE_OBJ = 'OBJ'.
    select l.location_id            ,
           l.db_office_id           ,
-          a2w.ts_code_elev         ,
-          a2w.ts_code_precip       ,
-          a2w.ts_code_stage        ,
-          a2w.ts_code_inflow       ,
-          a2w.ts_code_outflow      ,
-          a2w.ts_code_stor_flood   ,
-          a2w.date_refreshed       ,
-          a2w.notes                ,
-          a2w.display_flag         ,
-          a2w.num_ts_codes         ,
-          a2w.ts_code_stor_drought    ,
-          a2w.lake_summary_tf         ,
-          a2w.ts_code_sur_release     ,
+          ts.ts_code_elev          ,
+          ts.ts_code_precip        ,
+          ts.ts_code_stage         ,
+          ts.ts_code_inflow        ,
+          ts.ts_code_outflow       ,
+          ts.ts_code_stor_flood    ,
+          attr.date_refreshed      ,
+          attr.notes               ,
+          attr.display_flag        ,
+          ts.num_ts_codes          ,
+          ts.ts_code_stor_drought     ,
+          attr.lake_summary_tf        ,
+          ts.ts_code_sur_release      ,
           l.location_code             ,
-          a2w.ts_code_elev_tw         ,
-          a2w.ts_code_stage_tw        ,
-          a2w.ts_code_rule_curve_elev ,
-          a2w.TS_CODE_POWER_GEN       ,
-          a2w.TS_CODE_TEMP_AIR        ,
-          a2w.TS_CODE_TEMP_WATER      ,
-          a2w.TS_CODE_DO              ,
-          a2w.ts_code_ph              ,
-          a2w.ts_code_cond            ,
-          a2w.ts_code_opening         ,
-          a2w.ts_code_Wind_dir        ,
-          a2w.ts_code_wind_Speed      ,
-          a2w.ts_code_volt            ,
-          a2w.ts_code_pct_flood       ,
-          a2w.ts_code_pct_con         ,
-          a2w.RATING_CODE_ELEV_STOR   ,
-          a2w.rating_code_elev_area   ,
-          a2w.rating_code_outlet_Flow ,
-          a2w.opening_Source_Obj      ,
-          a2w.ts_code_irrad           ,
-          a2w.ts_code_evap
-     from at_a2w_ts_codes_by_loc a2w
+          ts.ts_code_elev_tw          ,
+          ts.ts_code_stage_tw         ,
+          ts.ts_code_rule_curve_elev  ,
+          ts.TS_CODE_POWER_GEN        ,
+          ts.TS_CODE_TEMP_AIR         ,
+          ts.TS_CODE_TEMP_WATER       ,
+          ts.TS_CODE_DO               ,
+          ts.ts_code_ph               ,
+          ts.ts_code_cond             ,
+          ts.ts_code_opening          ,
+          ts.ts_code_Wind_dir         ,
+          ts.ts_code_wind_Speed       ,
+          ts.ts_code_volt             ,
+          ts.ts_code_pct_flood        ,
+          ts.ts_code_pct_con          ,
+          rt.RATING_CODE_ELEV_STOR    ,
+          rt.rating_code_elev_area    ,
+          rt.rating_code_outlet_Flow  ,
+          attr.opening_Source_Obj     ,
+          ts.ts_code_irrad            ,
+          ts.ts_code_evap
+     from at_a2w_attributes attr
         , av_loc l
-    where a2w.location_code = l.location_code
+        , (select location_code,
+                  count(*) as num_ts_codes,
+                  max(case when published_id = 'TS_ELEV' then ts_code end) as ts_code_elev,
+                  max(case when published_id = 'TS_PRECIP' then ts_code end) as ts_code_precip,
+                  max(case when published_id = 'TS_STAGE' then ts_code end) as ts_code_stage,
+                  max(case when published_id = 'TS_INFLOW' then ts_code end) as ts_code_inflow,
+                  max(case when published_id = 'TS_OUTFLOW' then ts_code end) as ts_code_outflow,
+                  max(case when published_id = 'TS_STOR_FLOOD' then ts_code end) as ts_code_stor_flood,
+                  max(case when published_id = 'TS_STOR_DROUGHT' then ts_code end) as ts_code_stor_drought,
+                  max(case when published_id = 'TS_SUR_RELEASE' then ts_code end) as ts_code_sur_release,
+                  max(case when published_id = 'TS_ELEV_TW' then ts_code end) as ts_code_elev_tw,
+                  max(case when published_id = 'TS_STAGE_TW' then ts_code end) as ts_code_stage_tw,
+                  max(case when published_id = 'TS_RULE_CURVE_ELEV' then ts_code end) as ts_code_rule_curve_elev,
+                  max(case when published_id = 'TS_POWER_GEN' then ts_code end) as ts_code_power_gen,
+                  max(case when published_id = 'TS_TEMP_AIR' then ts_code end) as ts_code_temp_air,
+                  max(case when published_id = 'TS_TEMP_WATER' then ts_code end) as ts_code_temp_water,
+                  max(case when published_id = 'TS_DO' then ts_code end) as ts_code_do,
+                  max(case when published_id = 'TS_PH' then ts_code end) as ts_code_ph,
+                  max(case when published_id = 'TS_COND' then ts_code end) as ts_code_cond,
+                  max(case when published_id = 'TS_OPENING' then ts_code end) as ts_code_opening,
+                  max(case when published_id = 'TS_WIND_DIR' then ts_code end) as ts_code_wind_dir,
+                  max(case when published_id = 'TS_WIND_SPEED' then ts_code end) as ts_code_wind_speed,
+                  max(case when published_id = 'TS_VOLT' then ts_code end) as ts_code_volt,
+                  max(case when published_id = 'TS_PCT_FLOOD' then ts_code end) as ts_code_pct_flood,
+                  max(case when published_id = 'TS_PCT_CON' then ts_code end) as ts_code_pct_con,
+                  max(case when published_id = 'TS_IRRAD' then ts_code end) as ts_code_irrad,
+                  max(case when published_id = 'TS_EVAP' then ts_code end) as ts_code_evap
+             from at_published_ts
+            group by location_code
+          ) ts
+        , (select location_code,
+                  max(case when published_id = 'RATING_ELEV_STOR' then rating_spec_code end) as rating_code_elev_stor,
+                  max(case when published_id = 'RATING_ELEV_AREA' then rating_spec_code end) as rating_code_elev_area,
+                  max(case when published_id = 'RATING_OUTLET_FLOW' then rating_spec_code end) as rating_code_outlet_flow
+             from at_published_rating
+            group by location_code
+          ) rt
+    where attr.location_code = l.location_code
+      and ts.location_code (+) = attr.location_code
+      and rt.location_code (+) = attr.location_code
       AND l.unit_system = 'SI'
 /
 begin

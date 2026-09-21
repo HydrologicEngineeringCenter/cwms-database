@@ -1842,68 +1842,15 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
 
    PROCEDURE p_clear_a2w_ts_code (p_ts_code IN cwms_v_ts_id.ts_code%TYPE) IS
    BEGIN
-    NULL;
+    -- All 25 published TS mappings (elev, stage, precip, ..., opening) live as rows in
+    -- AT_PUBLISHED_TS now, keyed by (location_code, published_id), rather than as separate
+    -- columns on AT_A2W_TS_CODES_BY_LOC. A single DELETE on ts_code removes this ts_code from
+    -- whichever published slot(s) it occupied - this also fixes a gap in the old per-column
+    -- version, which never cleared TS_CODE_COND/PH/OPENING/WIND_DIR/WIND_SPEED/VOLT/PCT_FLOOD/
+    -- PCT_CON/IRRAD/EVAP.
+    DELETE FROM at_published_ts
+     WHERE ts_code = p_ts_code;
 
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_elev = NULL
-     WHERE ts_code_elev = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_stage = NULL
-     WHERE ts_code_stage = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_precip = NULL
-     WHERE ts_code_precip = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_inflow = NULL
-     WHERE ts_code_inflow = p_ts_code;
-
-   UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_outflow = NULL
-     WHERE ts_code_outflow = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_sur_release = NULL
-     WHERE ts_code_sur_release = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_stor_drought = NULL
-     WHERE ts_code_stor_drought = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_stor_flood = NULL
-     WHERE ts_code_stor_flood = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_elev_Tw = NULL
-     WHERE ts_code_elev_Tw = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_stage_tw = NULL
-     WHERE ts_code_stage_tw = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_rule_curve_elev = NULL
-     WHERE ts_code_rule_curve_elev = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_By_loc
-       SET ts_code_power_Gen    = NULL
-     WHERE ts_code_power_Gen    = p_ts_code;
-    
-    UPDATE at_a2w_ts_codes_By_loc
-       SET ts_code_temp_air    = NULL
-     WHERE ts_code_temp_air    = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_By_loc
-       SET ts_code_temp_water    = NULL
-     WHERE ts_code_temp_water    = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_By_loc
-       SET ts_code_do    = NULL
-     WHERE ts_code_do    = p_ts_code;
-        
       FOR x IN (SELECT DISTINCT location_code, db_Office_id
                   FROM cwms_v_ts_id
                 WHERE ts_code = p_ts_code
@@ -5243,6 +5190,36 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
       p_error_msg                 OUT VARCHAR2)
    IS
       temp_location_code   cwms_v_loc.location_code%TYPE;
+
+      -- AT_PUBLISHED_TS / AT_PUBLISHED_RATING hold one row per (location_code, published_id)
+      -- instead of one column per data type on the old wide table. delete-then-insert-if-
+      -- not-null reproduces the old "set the column to this value, or NULL to clear it"
+      -- semantics for a single published slot.
+      PROCEDURE set_ts_mapping (p_published_id IN cwms_published_id.published_id%TYPE,
+                                 p_ts_code      IN at_published_ts.ts_code%TYPE) IS
+      BEGIN
+         DELETE FROM at_published_ts
+          WHERE location_code = temp_location_code
+            AND published_id  = p_published_id;
+
+         IF p_ts_code IS NOT NULL THEN
+            INSERT INTO at_published_ts (location_code, published_id, ts_code)
+            VALUES (temp_location_code, p_published_id, p_ts_code);
+         END IF;
+      END set_ts_mapping;
+
+      PROCEDURE set_rating_mapping (p_published_id      IN cwms_published_id.published_id%TYPE,
+                                     p_rating_spec_code  IN at_published_rating.rating_spec_code%TYPE) IS
+      BEGIN
+         DELETE FROM at_published_rating
+          WHERE location_code = temp_location_code
+            AND published_id  = p_published_id;
+
+         IF p_rating_spec_code IS NOT NULL THEN
+            INSERT INTO at_published_rating (location_code, published_id, rating_spec_code)
+            VALUES (temp_location_code, p_published_id, p_rating_spec_code);
+         END IF;
+      END set_rating_mapping;
    BEGIN
       p_error_msg := NULL;
 
@@ -5253,86 +5230,60 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
              AND location_id = p_location_id
              AND db_Office_id = p_db_Office_id;
 
+      -- p_num_ts_codes is accepted for backward compatibility with existing callers, but is
+      -- no longer persisted: NUM_TS_CODES is derived (COUNT of AT_PUBLISHED_TS rows) by
+      -- AV_A2W_TS_CODES_BY_LOC instead of being a stored column.
+      MERGE INTO at_a2w_attributes tgt
+      USING (SELECT temp_location_code AS location_code FROM dual) src
+         ON (tgt.location_code = src.location_code)
+       WHEN MATCHED THEN
+          UPDATE SET date_refreshed     = SYSDATE,
+                     notes              = p_notes,
+                     display_flag       = p_display_flag,
+                     lake_summary_tf    = p_lake_summary_tf,
+                     opening_source_obj = p_opening_source_obj
+       WHEN NOT MATCHED THEN
+          INSERT (location_code, date_refreshed, notes, display_flag, lake_summary_tf, opening_source_obj)
+          VALUES (temp_location_code, SYSDATE, p_notes, p_display_flag, p_lake_summary_tf, p_opening_source_obj);
 
-      UPDATE at_a2w_ts_codes_by_loc
-         SET date_refreshed          = SYSDATE,
-             display_flag            = p_display_flag,
-             notes                   = p_notes,
-             num_ts_codes            = p_num_ts_codes,
-             ts_code_elev            = p_ts_code_elev,
-             ts_code_inflow          = p_ts_code_inflow,
-             ts_code_outflow         = p_ts_code_outflow,
-             ts_code_sur_release     = p_ts_code_sur_release,
-             ts_code_precip          = p_ts_code_precip,
-             ts_code_stage           = p_ts_code_stage,
-             ts_code_stor_drought    = p_ts_code_stor_drought,
-             ts_code_stor_flood      = p_ts_code_stor_flood,
-             ts_code_elev_tw         = p_ts_code_elev_tw,
-             ts_code_stage_tw        = p_ts_code_stage_tw,
-             ts_code_rule_curve_Elev = p_ts_code_rule_curve_elev,
-             ts_code_power_gen       = p_ts_code_power_Gen,
-             ts_code_temp_air        = p_ts_code_temp_air,
-             ts_code_temp_water      = p_ts_code_temp_water,
-             ts_code_do              = p_ts_code_do, 
-             ts_code_wind_dir        = p_ts_code_wind_dir,
-             ts_code_wind_speed      = p_ts_code_wind_Speed,
-             ts_code_volt            = p_ts_code_volt,
-             ts_code_pct_flood       = p_ts_code_pct_flood,
-             ts_code_pct_con         = p_ts_code_pct_con,
-             ts_code_irrad           = p_ts_code_irrad,
-             ts_code_evap            = p_ts_code_evap,
-             rating_code_elev_stor   = p_rating_code_elev_stor ,
-	     rating_code_elev_area   = p_rating_code_elev_area,
-             rating_code_outlet_flow = p_rating_code_outlet_Flow,
-             opening_source_obj      = p_opening_source_obj,
-             lake_summary_tf         = p_lake_summary_tf
-       WHERE  db_office_id = p_db_office_id
-         AND locatioN_code = temp_location_code;
+      set_ts_mapping ('TS_ELEV', p_ts_code_elev);
+      set_ts_mapping ('TS_INFLOW', p_ts_code_inflow);
+      set_ts_mapping ('TS_OUTFLOW', p_ts_code_outflow);
+      set_ts_mapping ('TS_SUR_RELEASE', p_ts_code_sur_release);
+      set_ts_mapping ('TS_PRECIP', p_ts_code_precip);
+      set_ts_mapping ('TS_STAGE', p_ts_code_stage);
+      set_ts_mapping ('TS_STOR_DROUGHT', p_ts_code_stor_drought);
+      set_ts_mapping ('TS_STOR_FLOOD', p_ts_code_stor_flood);
+      set_ts_mapping ('TS_ELEV_TW', p_ts_code_elev_tw);
+      set_ts_mapping ('TS_STAGE_TW', p_ts_code_stage_tw);
+      set_ts_mapping ('TS_RULE_CURVE_ELEV', p_ts_code_rule_curve_elev);
+      set_ts_mapping ('TS_POWER_GEN', p_ts_code_power_Gen);
+      set_ts_mapping ('TS_TEMP_AIR', p_ts_code_temp_air);
+      set_ts_mapping ('TS_TEMP_WATER', p_ts_code_temp_water);
+      set_ts_mapping ('TS_DO', p_ts_code_do);
+      set_ts_mapping ('TS_PH', p_ts_code_ph);
+      set_ts_mapping ('TS_COND', p_ts_code_cond);
+      set_ts_mapping ('TS_WIND_DIR', p_ts_code_wind_dir);
+      set_ts_mapping ('TS_WIND_SPEED', p_ts_code_wind_Speed);
+      set_ts_mapping ('TS_VOLT', p_ts_code_volt);
+      set_ts_mapping ('TS_PCT_FLOOD', p_ts_code_pct_flood);
+      set_ts_mapping ('TS_PCT_CON', p_ts_code_pct_con);
+      set_ts_mapping ('TS_IRRAD', p_ts_code_irrad);
+      set_ts_mapping ('TS_EVAP', p_ts_code_evap);
 
+      -- TS_CODE_OPENING is only a genuine TS Code when OPENING_SOURCE_OBJ = 'TS'; when it is
+      -- 'OBJ' the value is an object reference, not a TS Code, and must not be inserted into
+      -- AT_PUBLISHED_TS (would fail the AT_PUBLISHED_TS_FK_TS / AT_PUBLISHED_TS_T01 checks).
+      -- Same known gap as migrate_a2w_to_published.sql: the OBJ case has no destination in
+      -- the new schema yet, so it is preserved only via OPENING_SOURCE_OBJ on AT_A2W_ATTRIBUTES.
+      IF NVL (p_opening_source_obj, 'TS') != 'OBJ' THEN
+         set_ts_mapping ('TS_OPENING', p_ts_code_opening);
+      END IF;
+
+      set_rating_mapping ('RATING_ELEV_STOR', p_rating_code_elev_stor);
+      set_rating_mapping ('RATING_ELEV_AREA', p_rating_code_elev_area);
+      set_rating_mapping ('RATING_OUTLET_FLOW', p_rating_code_outlet_Flow);
   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         INSERT
-           INTO at_a2w_ts_codes_by_loc (db_Office_id,
-                                        location_code,
-                                        date_refreshed)
-         VALUES (p_db_office_id, temp_location_code, SYSDATE);
-
-
-         UPDATE at_a2w_ts_codes_by_loc
-            SET date_refreshed       = SYSDATE,
-                display_flag         = p_display_flag,
-                notes                = p_notes,
-                num_ts_codes         = p_num_ts_codes,
-                ts_code_elev         = p_ts_code_elev,
-                ts_code_inflow       = p_ts_code_inflow,
-                ts_code_outflow      = p_ts_code_outflow,
-                ts_code_sur_release  = p_ts_code_sur_release,
-                ts_code_precip       = p_ts_code_precip,
-                ts_code_stage        = p_ts_code_stage,
-                ts_code_stor_drought = p_ts_code_stor_drought,
-                ts_code_stor_flood   = p_ts_code_stor_flood,
-                ts_code_elev_tw      = p_ts_code_elev_tw,
-                ts_code_stage_tw     = p_ts_code_stage_tw,
-                ts_code_rule_curve_Elev = p_ts_code_rule_curve_elev,
-                ts_code_power_Gen       = p_ts_code_power_Gen       ,
-                ts_code_temp_air        = p_ts_code_temp_air        ,
-                ts_code_temp_water      = p_ts_code_temp_water      ,
-                ts_code_do              = p_ts_code_do              ,
-                ts_code_wind_dir        = p_ts_code_wind_dir,
-                ts_code_wind_speed      = p_ts_code_wind_Speed,
-             ts_code_volt            = p_ts_code_volt,
-             ts_code_pct_flood       = p_ts_code_pct_flood,
-             ts_code_pct_con         = p_ts_code_pct_con,
-             ts_code_irrad           = p_ts_code_irrad,
-             ts_code_evap            = p_ts_code_evap,
-                rating_code_elev_stor   = p_rating_code_elev_stor  ,
-	        rating_code_elev_area   = p_rating_code_elev_area  ,
-                rating_code_outlet_flow = p_rating_code_outlet_Flow,
-                opening_source_obj      = p_opening_source_obj     ,
-                lake_summary_tf         = p_lake_summary_tf
-          WHERE db_office_id  = p_db_office_id
-            AND locatioN_code = temp_location_code;
       WHEN OTHERS
       THEN
          p_error_msg := SQLERRM;
@@ -7033,12 +6984,13 @@ on: {%Date}]]></format>
 */
   END LOOP;
 
-FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_id 
-             AND location_code = p_location_code)
-             
+-- NOTES/DISPLAY_FLAG live on AT_A2W_ATTRIBUTES now (1:1 by LOCATION_CODE, no DB_OFFICE_ID
+-- column - office is derived via the location). NUM_TS_CODES is no longer a stored column;
+-- it's derived by AV_A2W_TS_CODES_BY_LOC from a COUNT of AT_PUBLISHED_TS rows.
+FOR x IN (SELECT * FROM at_a2w_attributes WHERE location_code = p_location_code)
       LOOP
 
-         UPDATE at_a2w_ts_codes_by_loc
+         UPDATE at_a2w_attributes
             SET date_refreshed = SYSDATE,
                 notes =
                       x.notes
@@ -7046,14 +6998,12 @@ FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_
                    || ' updated via CMA on '
                    || SYSDATE
                    || ' by '
-                   || p_user_id,
-                num_ts_codes = temp_i
-          WHERE     db_office_id = p_db_office_id
-                AND location_code = p_location_code;
+                   || p_user_id
+          WHERE location_code = p_location_code;
 
          IF temp_i = 0
          THEN
-            UPDATE at_a2w_ts_codes_by_loc
+            UPDATE at_a2w_attributes
                SET date_refreshed = SYSDATE,
                    notes =
                          x.notes
@@ -7064,14 +7014,13 @@ FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_
                       || p_user_Id
                       || '. Set display flag to False because there are no TS IDs selected.',
                    display_flag = 'F'
-             WHERE     db_office_id = p_db_office_id
-                   AND location_code = p_location_code;
+             WHERE location_code = p_location_code;
          END IF;
 
       END LOOP;
 
          temp_i := 0;
- 
+
    END;
 
    PROCEDURE p_add_Missing_a2w_rows (
@@ -7080,9 +7029,9 @@ FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_
       p_user_id        IN VARCHAR2)
    IS
     BEGIN
-   UPDATE at_a2w_ts_codes_by_loc
-           SET location_id = cwms_loc.get_location_id(location_code)
-         WHERE locatioN_id IS NULL;
+   -- AT_A2W_ATTRIBUTES has no LOCATION_ID column (location_id is always resolved via its
+   -- LOCATION_CODE FK, never stored redundantly), so the old "backfill location_id where
+   -- null" step no longer applies and has been dropped.
 
       IF p_locatioN_code IS NOT NULL
       THEN
@@ -7102,11 +7051,9 @@ FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_
                )
          LOOP
             INSERT
-              INTO at_a2w_ts_codes_by_loc (db_Office_id,
-                                           location_code,
-                                           date_refreshed,
-                                           location_id)
-            VALUES (x.db_office_id, x.location_code, SYSDATE,cwms_loc.get_location_id(x.location_code) );
+              INTO at_a2w_attributes (location_code,
+                                      date_refreshed)
+            VALUES (x.location_code, SYSDATE);
          END LOOP;
       ELSE
          FOR x
@@ -7124,12 +7071,10 @@ FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_
          LOOP
 
                         INSERT
-                         INTO at_a2w_ts_codes_by_loc (db_Office_id,
-                                                      location_code,
-                                                      date_refreshed,
-                                                      location_id)
-                       VALUES (x.db_office_id, x.location_code, SYSDATE, cwms_loc.get_location_id(x.location_code)) ;
-			
+                         INTO at_a2w_attributes (location_code,
+                                                 date_refreshed)
+                       VALUES (x.location_code, SYSDATE);
+
          END LOOP;
       END IF;
    END p_add_Missing_a2w_rows;
