@@ -1,4 +1,4 @@
-create or replace package test_update_ts_extents as
+create or replace package &&cwms_schema..test_update_ts_extents as
 --%suite(Test time series extents functionality)
 
 --%beforeall(setup)
@@ -76,7 +76,7 @@ c_base_ts_data    constant cwms_t_ztsv_array := cwms_t_ztsv_array(
 end test_update_ts_extents;
 /
 show errors
-create or replace package body test_update_ts_extents as
+create or replace package body &&cwms_schema..test_update_ts_extents as
 --------------------------------------------------------------------------------
 -- procedure teaardown
 --------------------------------------------------------------------------------
@@ -1057,12 +1057,12 @@ begin
    -----------------------------------------------
    setup;
    for rec in (select table_name from at_ts_table_properties) loop
-      execute immediate 'delete from '||rec.table_name;
+      execute immediate 'delete from '||rec.table_name||' where 1=1';
       commit;
    end loop;
-   delete from at_ts_extents;
-   delete from at_log_message_properties;
-   delete from at_log_message;
+   delete from at_ts_extents where 1=1;
+   delete from at_log_message_properties where 1=1;
+   delete from at_log_message where 1=1;
 
    for i in 1..2 loop
       -----------------------------
@@ -1296,7 +1296,7 @@ begin
    -----------------------------------------------
    setup;
    for rec in (select table_name from at_ts_table_properties) loop
-         execute immediate 'delete from '||rec.table_name;
+         execute immediate 'delete from '||rec.table_name||' where 1=1';
          commit;
       end loop;
    delete from at_ts_extents where 1 = 1;
@@ -1332,7 +1332,7 @@ begin
          commit;
          if i = 1 then
             for rec in (select table_name from at_ts_table_properties) loop
-                  execute immediate 'delete from '||rec.table_name;
+                  execute immediate 'delete from '||rec.table_name||' where 1=1';
                   commit;
                end loop;
             cwms_ts.purge_invalid_ts_extents;
