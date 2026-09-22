@@ -1188,7 +1188,7 @@ procedure cwms_2533_ts_extents_logging
       l_ts_code               at_cwms_ts_id.ts_code%type;
       l_version_date          date := c_base_start_date + 10;
       l_log_messages          varchar2(4000);
-      l_status                varchar2(10) := 'STATUS';
+      l_status                varchar2(10) := '&&cwms_schema_STATUS_TABLE';
       l_timestamp             timestamp := systimestamp;
       l_dequeue_options       dbms_aq.dequeue_options_t;
       l_message_properties    dbms_aq.message_properties_t;
@@ -1286,7 +1286,7 @@ procedure cwms_2533_ts_extents_logging_failure
    l_dequeue_options       dbms_aq.dequeue_options_t;
    l_message_properties    dbms_aq.message_properties_t;
    l_message_handle        varchar2(32767);
-   l_status                varchar2(10) := 'STATUS';
+   l_status                varchar2(10) := '&&cwms_schema_STATUS_TABLE';
    l_message_payload       sys.aq$_jms_text_message;
 begin
    l_dequeue_options.visibility := dbms_aq.immediate;
