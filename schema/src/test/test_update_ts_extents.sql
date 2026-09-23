@@ -1189,7 +1189,7 @@ procedure cwms_2533_ts_extents_logging
       l_version_date          date := c_base_start_date + 10;
       l_log_messages          varchar2(4000);
       l_output                clob;
-      l_status                varchar2(20) := '&&office_id_STATUS';
+      l_status                varchar2(20) := '&&office_id'||'_STATUS';
       l_timestamp             timestamp := systimestamp;
       l_dequeue_options       dbms_aq.dequeue_options_t;
       l_message_properties    dbms_aq.message_properties_t;
@@ -1290,7 +1290,7 @@ procedure cwms_2533_ts_extents_logging_failure
    l_dequeue_options       dbms_aq.dequeue_options_t;
    l_message_properties    dbms_aq.message_properties_t;
    l_message_handle        varchar2(32767);
-   l_status                varchar2(20) := '&&office_id_STATUS';
+   l_status                varchar2(20) := '&&office_id'||'_STATUS';
    l_message_payload       sys.aq$_jms_map_message;
 begin
    l_dequeue_options.visibility := dbms_aq.immediate;
