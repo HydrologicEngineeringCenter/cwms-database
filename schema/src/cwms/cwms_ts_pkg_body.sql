@@ -5132,6 +5132,12 @@ AS
          l_updated                            := true;
       end if;
 
+      if p_rec1.value_count is not null
+      then
+         p_rec2.value_count                   := nvl(p_rec2.value_count, 0) + p_rec1.value_count;
+         l_updated                            := true;
+      end if;
+
       if l_updated then
          p_rec2.last_update := p_rec1.last_update;
       end if;
@@ -5359,10 +5365,11 @@ AS
                 -- other --
                 -----------
                 systimestamp as last_update,
-                q16.has_non_zero_quality
-           from (select ts_code, version_date
+                nvl(q16.nzq, ''F'') as has_non_zero_quality,
+                q0.value_count
+           from (select ts_code, version_date, count(*) as value_count
                    from AT_TSV
-                  where rownum<2
+                  group by ts_code, version_date
                 ) q0
                 cross join
                 (select min(date_time) as earliest_time,
@@ -5454,7 +5461,7 @@ AS
                    from AT_TSV
                 ) q15 on q15.date_time = q14.greatest_accepted_value_time
                 left outer join
-                (select ''T'' as has_non_zero_quality
+                (select ''T'' as nzq
                    from AT_TSV
                   where quality_code != 0
                     and rownum = 1
@@ -5934,6 +5941,8 @@ AS
       l_remaining_times     date_table_type;
       l_quality_codes       str_tab_t;
       l_truncate_interval   varchar2(2);
+      l_old_value_count     binary_integer;
+      l_new_value_count     binary_integer;
    --
       function bitor (num1 in integer, num2 in integer)
          return integer
@@ -6446,6 +6455,15 @@ AS
              MAX (CAST ((t.date_time AT TIME ZONE 'UTC') AS DATE))
         INTO mindate, maxdate
         FROM TABLE (CAST (l_timeseries_data AS tsv_array)) t;
+
+      select count(*)
+        into l_old_value_count
+        from av_tsv
+       where ts_code = l_ts_code
+          and version_date = l_version_date
+          and date_time between mindate and maxdate
+          and start_date <= maxdate
+          and end_date > mindate;
 
       l_filter_duplicates := get_filter_duplicates(l_ts_code);
 
@@ -7233,6 +7251,8 @@ AS
                order by date_time;
          end;
       end if;
+      dbms_output.put_line('l_count = ' || l_count);
+      dbms_output.put_line('p_store_rule = ' || p_store_rule);
       if l_count > 0  then
          ------------------------------------
          -- update the time series extents --
@@ -7247,6 +7267,7 @@ AS
                pragma exception_init(job_name_already_exists, -27477);
                l_job_name varchar2(64) := 'UTX_'||l_ts_code||'_'||to_char(l_version_date, 'yyyymmdd_hh24miss');
             begin
+               dbms_output.put_line('l_job_name = ' || l_job_name);
                begin
                   l_plsql_block := 'begin ';
                   IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL) THEN
@@ -7263,6 +7284,7 @@ AS
                   || ''',to_date('''
                   || TO_CHAR (l_version_date,'YYYY-MM-DD HH24:MI:SS')
                   || ''',''YYYY-MM-DD HH24:MI:SS'')); end;';
+                  dbms_output.put_line('l_plsql_block = ' || l_plsql_block);
                   dbms_scheduler.create_job (
                      job_name   => l_job_name,
                      job_type   => 'PLSQL_BLOCK',
@@ -7272,6 +7294,7 @@ AS
                     dbms_scheduler.enable(l_job_name);
                exception
                   when job_name_already_exists then
+                     dbms_output.put_line('EXCEPTION!');
                      cwms_msg.log_db_message(
                         cwms_msg.msg_level_normal,
                         'UPDATE_TS_EXTENTS with '
@@ -7286,6 +7309,11 @@ AS
             -- no deletes --
             ----------------
             begin
+               select count(*)
+                 into l_new_value_count
+                 from (select distinct date_time
+                         from table(l_timeseries_data)
+                      );
                select l_ts_code,
                       l_version_date,
                       mindate,
@@ -7325,7 +7353,8 @@ AS
                       q7.greatest_accepted_value_time,
                       l_store_date,
                       l_store_date,
-                      nvl(q8.has_non_zero_quality, 'F')
+                      nvl(q8.has_non_zero_quality, 'F'),
+                      l_new_value_count - l_old_value_count -- number of additional values
                  into l_ts_extents_rec
                  from at_cwms_ts_spec s,
                       at_parameter p,
