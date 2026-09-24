@@ -1269,8 +1269,7 @@ begin
       p_office_id       => c_office_id);
    commit;
 
-   dbms_session.sleep(1); -- wait for utx job to finish
-   -- cwms_ts.update_ts_extents(cwms_ts.get_ts_code(c_ts_id, c_office_id), cwms_util.non_versioned);
+   dbms_session.sleep(8); -- wait for utx job to finish
 
    l_ts_extents := cwms_ts.get_ts_extents_f(
       p_cwms_ts_id   => c_ts_id,
