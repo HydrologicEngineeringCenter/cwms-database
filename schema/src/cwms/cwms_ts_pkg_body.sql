@@ -7251,8 +7251,6 @@ AS
                order by date_time;
          end;
       end if;
-      dbms_output.put_line('l_count = ' || l_count);
-      dbms_output.put_line('p_store_rule = ' || p_store_rule);
       if l_count > 0  then
          ------------------------------------
          -- update the time series extents --
@@ -7283,7 +7281,6 @@ AS
                   || ''',to_date('''
                   || TO_CHAR (l_version_date,'YYYY-MM-DD HH24:MI:SS')
                   || ''',''YYYY-MM-DD HH24:MI:SS'')); end;';
-                  dbms_output.put_line('l_plsql_block = ' || l_plsql_block);
                   dbms_scheduler.create_job (
                      job_name   => l_job_name,
                      job_type   => 'PLSQL_BLOCK',
@@ -7293,7 +7290,6 @@ AS
                     dbms_scheduler.enable(l_job_name);
                exception
                   when job_name_already_exists then
-                     dbms_output.put_line('JOB NAME ALREADY EXISTS!');
                      cwms_msg.log_db_message(
                         cwms_msg.msg_level_normal,
                         'UPDATE_TS_EXTENTS with '
@@ -7301,9 +7297,6 @@ AS
                         ||', '
                         ||nvl(to_char(l_version_date), 'NULL')
                         ||' already running.');
-                  when others then
-                     dbms_output.put_line('ERROR CREATING JOB!');
-                     dbms_output.put_line('ERROR: ' || sqlerrm);
                end;
             end;
          else
