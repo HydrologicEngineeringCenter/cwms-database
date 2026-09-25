@@ -937,10 +937,10 @@ end test_get_xml_time_1900;
 
 procedure test_interval_convert
 is
-   l_expected     varchar2(10) := '100-0';
+   l_expected     varchar2(10) := '+000000104-02';
    l_actual       varchar2(100);
 begin
-   select cwms_util.months_to_yminterval(1200)
+   select cwms_util.months_to_yminterval(1250)
    into l_actual
    from dual;
 
