@@ -46,6 +46,8 @@ procedure test_runstats;
 procedure test_get_xml_time;
 --%test(Test get_xml_time_1900)
 procedure test_get_xml_time_1900;
+--%test(Test month to year interval conversion for >100 years)
+procedure test_interval_convert;
 
 procedure setup;
 procedure teardown;
@@ -932,6 +934,18 @@ begin
          end if;
       end loop;
 end test_get_xml_time_1900;
+
+procedure test_interval_convert
+is
+   l_expected     varchar2(10) := '100-0';
+   l_actual       varchar2(100);
+begin
+   select cwms_util.months_to_yminterval(1200)
+   into l_actual
+   from dual;
+
+   ut.expect(l_actual).to_equal(l_expected);
+end test_interval_convert;
 
 
 end test_cwms_util;
