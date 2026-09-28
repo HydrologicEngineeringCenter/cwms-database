@@ -13,6 +13,8 @@ procedure setup;
 procedure test_constant_location_levels;
 --%test(Test regularly varying (seasonal) location levels)
 procedure test_regularly_varying_location_levels;
+--%test(Test regularly varying (seasonal) location levels with dates at the end of the month)
+procedure test_regularly_varying_location_levels_end_of_month
 --%test(Test irregularly varying (time series) location levels)
 procedure test_irregularly_varying_location_levels;
 --%test(Test virtual location levels)
@@ -464,6 +466,239 @@ begin
    end;
 
 end test_regularly_varying_location_levels;
+
+--------------------------------------------------------------------------------
+-- procedure test_regularly_varying_location_levels_end_of_month
+--------------------------------------------------------------------------------
+procedure test_regularly_varying_location_levels_end_of_month
+is
+   l_value           number;
+   l_expected_value  number;
+   l_date            date;
+   l_date1           date;
+   l_date2           date;
+   l_effective_date  date := date '2021-01-31';
+   l_interval_origin date := date '2000-01-31';
+   l_interval_months integer := 12;
+   l_count           pls_integer;
+
+
+   l_seasonal_values_existlevel cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
+      cwms_t_seasonal_value( 0, 30 * CWMS_TS.min_in_dy, 1020),  -- 31 Jan
+      cwms_t_seasonal_value( 3, 29 * CWMS_TS.min_in_dy, 1010),  -- 30 April
+      cwms_t_seasonal_value( 9, 30 * CWMS_TS.min_in_dy, 1000)); -- 31 Oct
+   l_seasonal_values cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
+      cwms_t_seasonal_value( 0,  0 * CWMS_TS.min_in_dy, 1000),  -- 31 Jan
+      cwms_t_seasonal_value( 1, 27 * CWMS_TS.min_in_dy, 1010),  -- 28 Feb
+      cwms_t_seasonal_value( 2, 30 * CWMS_TS.min_in_dy, 1020), -- 31 Mar
+      cwms_t_seasonal_value( 3, 29 * CWMS_TS.min_in_dy, 1020),  -- 30 Apr
+      cwms_t_seasonal_value( 4, 30 * CWMS_TS.min_in_dy, 1010),  -- 31 May
+      cwms_t_seasonal_value( 5, 29 * CWMS_TS.min_in_dy, 1000), -- 30 Jun
+      cwms_t_seasonal_value( 6, 30 * CWMS_TS.min_in_dy, 1000),  -- 31 Jul
+      cwms_t_seasonal_value( 7, 30 * CWMS_TS.min_in_dy, 1010),  -- 31 Aug
+      cwms_t_seasonal_value( 8, 29 * CWMS_TS.min_in_dy, 1020), -- 30 Sep
+      cwms_t_seasonal_value( 9, 30 * CWMS_TS.min_in_dy, 1020),  -- 31 Oct
+      cwms_t_seasonal_value(10, 29 * CWMS_TS.min_in_dy, 1010),  -- 30 Nov
+      cwms_t_seasonal_value(11, 30 * CWMS_TS.min_in_dy, 1000)); -- 31 Dec
+begin
+   setup;
+   ------------------------------------------------------------
+   -- store the seasonal location level and create new level --
+   ------------------------------------------------------------
+   cwms_level.store_location_level4(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_value       => null,
+      p_level_units       => c_elev_unit,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_interval_origin   => l_interval_origin,
+      p_interval_months   => l_interval_months,
+      p_seasonal_values   => l_seasonal_values,
+      p_office_id         => c_office_id);
+
+
+commit;
+-------------------------------------------------------------
+-- retrieve the value just before the first effective date --
+-------------------------------------------------------------
+begin
+      l_value := cwms_level.retrieve_location_level_value(
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_level_units       => c_elev_unit,
+         p_date              => l_effective_date - 1/86400,
+         p_timezone_id       => c_timezone_id,
+         p_office_id         => c_office_id);
+         cwms_err.raise ('ERROR', 'Expected exception not raised');
+exception
+      when others then ut.expect(sqlerrm).to_be_like('ORA-20034: ITEM_DOES_NOT_EXIST: Location level % does not exist.');
+end;
+   ut.expect(l_value).to_be_null;
+   ----------------------------------------------------
+   -- retrieve the value on the first effective date --
+   ----------------------------------------------------
+   l_value := cwms_level.retrieve_location_level_value(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_units       => c_elev_unit,
+      p_date              => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_office_id         => c_office_id);
+
+   ut.expect(round(l_value, 5)).to_equal(round(l_seasonal_values(1).value, 5));
+   -------------------------------------------------------------------
+   -- retrieve values on each seasonal breakpoint for a future year --
+   -------------------------------------------------------------------
+for i in 1..l_seasonal_values.count loop
+      l_date := add_months(l_effective_date, l_seasonal_values(i).offset_months + 24) +  l_seasonal_values(i).offset_minutes / CWMS_TS.min_in_dy;
+      l_value := cwms_level.retrieve_location_level_value(
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_level_units       => c_elev_unit,
+         p_date              => l_date,
+         p_timezone_id       => c_timezone_id,
+         p_office_id         => c_office_id);
+
+      ut.expect(round(l_value / l_seasonal_values(i).value, 4)).to_equal(1);
+end loop;
+   ---------------------------------------------------------------------------
+   -- retrieve values midway between seasonal breakpoints for a future year --
+   ---------------------------------------------------------------------------
+for i in 2..l_seasonal_values.count loop
+      l_date1 := add_months(l_effective_date, l_seasonal_values(i-1).offset_months + 24) +  l_seasonal_values(i-1).offset_minutes / CWMS_TS.min_in_dy;
+      l_date2 := add_months(l_effective_date, l_seasonal_values(i).offset_months + 24) +  l_seasonal_values(i).offset_minutes / CWMS_TS.min_in_dy;
+      l_date  := l_date1 + (l_date2 - l_date1) / 2;
+      l_expected_value := (l_seasonal_values(i-1).value + l_seasonal_values(i).value) / 2;
+      l_value := cwms_level.retrieve_location_level_value(
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_level_units       => c_elev_unit,
+         p_date              => l_date,
+         p_timezone_id       => c_timezone_id,
+         p_office_id         => c_office_id);
+
+      ut.expect(round(l_value / l_expected_value, 4)).to_equal(1);
+end loop;
+
+   ----------------------------------------------------------------
+   -- store the seasonal location level to level already created --
+   ----------------------------------------------------------------
+
+   cwms_level.store_location_level3(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_value       => null,
+      p_level_units       => c_elev_unit,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_interval_origin   => l_interval_origin,
+      p_interval_months   => l_interval_months,
+      p_seasonal_values   => l_seasonal_values_existlevel,
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+
+   ------------------------------------
+   -- test number of seasonal values --
+   ------------------------------------
+select count(*)
+into l_count
+from cwms_v_location_level
+where office_id = c_office_id
+  and location_id = c_location_id
+  and level_date = cwms_util.change_timezone(l_effective_date, c_timezone_id, 'UTC')
+  and unit_system = 'EN';
+
+ut.expect(l_count).to_equal(l_seasonal_values_existlevel.count);
+
+  -------------------------------------------------
+  --  test individual seasonal dates are present --
+  -------------------------------------------------
+
+for i in 1..l_seasonal_values_existlevel.count loop
+        l_date := cwms_util.change_timezone(
+                  add_months(l_interval_origin, l_seasonal_values_existlevel(i).offset_months) +
+		  l_seasonal_values_existlevel(i).offset_minutes / CWMS_TS.min_in_dy,
+                  c_timezone_id, 'UTC');
+select count(*)
+into  l_count
+from  cwms_v_location_level
+where office_id = c_office_id
+  and location_level_id = c_top_of_normal_elev_id
+  and level_date = cwms_util.change_timezone(l_effective_date, c_timezone_id, 'UTC')
+  and unit_system = 'EN'
+  and ADD_MONTHS(interval_origin,cwms_util.yminterval_to_months(calendar_offset)) +
+      cwms_util.dsinterval_to_minutes(time_offset)/CWMS_TS.min_in_dy= l_date;
+ut.expect(l_count).to_equal(1);
+
+end loop;
+
+   -------------------------------------------------------------------------
+   -- test delete_location_level3 with p_most_recent_effective_date = 'T' --
+   -------------------------------------------------------------------------
+
+   cwms_level.delete_location_level3(
+      p_location_level_id          => c_top_of_normal_elev_id,
+      p_cascade                    => 'T',
+      p_office_id                  => c_office_id,
+      p_most_recent_effective_date => 'T');
+
+select count(*)
+into l_count
+from cwms_v_location_level
+where office_id = c_office_id
+  and location_id = c_location_id
+  and level_date = cwms_util.change_timezone(l_effective_date, c_timezone_id, 'UTC')
+  and unit_system = 'EN';
+
+ut.expect(l_count).to_equal(0);
+
+   ----------------------------------------------------------------------------
+   -- store a constant level and retrieve with retrieve_location_level2      --
+   -- https://github.com/HydrologicEngineeringCenter/cwms-database/issues/49 --
+   ----------------------------------------------------------------------------
+   cwms_level.store_location_level4(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_value       => 1000,
+      p_level_units       => c_elev_unit,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_office_id         => c_office_id);
+commit;
+
+declare
+l_value_out            number;
+      l_comment_out          varchar2(256);
+      l_effective_date_out   varchar2(64);
+      l_interval_origin_out  varchar2(64);
+      l_interval_months_out  integer;
+      l_interval_minutes_out integer;
+      l_interpolate_out      varchar2(1);
+      l_seasonal_values_out  varchar2(32767);
+begin
+      cwms_level.retrieve_location_level2(
+         p_level_value       => l_value_out,
+         p_level_comment     => l_comment_out,
+         p_effective_date    => l_effective_date_out,
+         p_interval_origin   => l_interval_origin_out,
+         p_interval_months   => l_interval_months_out,
+         p_interval_minutes  => l_interval_minutes_out,
+         p_interpolate       => l_interpolate_out,
+         p_seasonal_values   => l_seasonal_values_out,
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_level_units       => c_elev_unit,
+         p_office_id         => c_office_id);
+
+      ut.expect(round(l_value_out, 9)).to_equal(1000);
+      ut.expect(l_comment_out).to_be_null;
+      ut.expect(l_effective_date_out).to_equal(
+         to_char(cwms_util.change_timezone(
+            l_effective_date, c_timezone_id, 'UTC'), 'yyyy/mm/dd hh24:mi:ss'
+         )
+      );
+      ut.expect(l_comment_out).to_be_null;
+      ut.expect(l_interval_origin_out).to_be_null;
+      ut.expect(l_interval_months_out).to_be_null;
+      ut.expect(l_interval_minutes_out).to_be_null;
+      ut.expect(l_interpolate_out).to_be_null;
+      ut.expect(l_seasonal_values_out).to_be_null;
+end;
+
+end test_regularly_varying_location_levels_end_of_month;
 
 --------------------------------------------------------------------------------
 --procedure test_irregularly_varying_location_levels
