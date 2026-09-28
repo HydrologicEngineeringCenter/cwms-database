@@ -134,7 +134,7 @@ as
       l_attribute_parameter_code      number(14);
       l_attribute_param_type_code     number(14);
       l_attribute_duration_code       number(14);
-      l_calendar_interval             interval year(2) to month;
+      l_calendar_interval             interval year(3) to month;
       l_time_interval                 interval day(3) to second(0);
       l_seasonal_level_values         seasonal_loc_lvl_tab_t;
       l_obj                           zlocation_level_t;

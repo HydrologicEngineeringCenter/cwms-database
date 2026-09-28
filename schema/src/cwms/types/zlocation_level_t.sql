@@ -16,7 +16,7 @@ is object(
    attribute_duration_code       number(14),
    attribute_comment             varchar2(256),
    interval_origin               date,
-   calendar_interval             interval year(2) to month,
+   calendar_interval             interval year(3) to month,
    time_interval                 interval day(3) to second(0),
    interpolate                   varchar2(1),
    ts_code                       number(14),
