@@ -913,6 +913,8 @@ is
    l_date_str     varchar2(64);
    l_date_dummy   date;
    l_date_offset  dsinterval_unconstrained;
+   x_invalid_month_day exception;
+   pragma exception_init(x_invalid_month_day, -01839);
 begin
    l_date := cwms_util.change_timezone(p_date, 'UTC', p_tz);
    l_intvl := top_of_interval_on_or_before(p_rec, l_date, 'UTC');
@@ -1023,6 +1025,13 @@ begin
                         l_intvl := l_intvl + p_rec.calendar_interval;
                      end if;
                   end if;
+               when x_invalid_month_day then
+                  if p_rec.calendar_interval is null then
+                     l_intvl := l_intvl + p_rec.time_interval;
+                  else
+                     l_intvl := l_intvl + p_rec.calendar_interval;
+                     dbms_output.put_line('New Interval: '||l_intvl);
+                  end if;
             end;
          end loop;
       else
@@ -1074,6 +1083,13 @@ begin
                      else
                         l_intvl := l_intvl - p_rec.calendar_interval;
                      end if;
+                  end if;
+               when x_invalid_month_day then
+                  if p_rec.calendar_interval is null then
+                     l_intvl := l_intvl - p_rec.time_interval;
+                  else
+                     l_intvl := l_intvl - p_rec.calendar_interval;
+                     dbms_output.put_line('New Interval: '||l_intvl);
                   end if;
             end;
          end loop;

@@ -14,7 +14,7 @@ procedure test_constant_location_levels;
 --%test(Test regularly varying (seasonal) location levels)
 procedure test_regularly_varying_location_levels;
 --%test(Test regularly varying (seasonal) location levels with dates at the end of the month)
-procedure test_regularly_varying_location_levels_end_of_month
+procedure test_regularly_varying_location_levels_end_of_month;
 --%test(Test irregularly varying (time series) location levels)
 procedure test_irregularly_varying_location_levels;
 --%test(Test virtual location levels)
