@@ -3230,6 +3230,13 @@ AS
     */
    function output_debug_info
       return boolean;
+   /**
+    * Retrieve the closest valid date for a provided date and calendar interval
+    */
+   function get_closest_valid_date(
+      p_date in date,
+      p_calendar_interval in yminterval_unconstrained
+   ) return date;
 END cwms_util;
 /
 set escape off

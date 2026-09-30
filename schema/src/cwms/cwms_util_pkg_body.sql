@@ -6907,6 +6907,50 @@ as
       return l_value = 'T';
    end output_debug_info;
 
+   function get_closest_valid_date(
+      p_date               in date,
+      p_calendar_interval  in yminterval_unconstrained
+   ) return date is
+      l_day          integer;
+      l_mon          integer;
+      l_yr           integer;
+      l_date_str     varchar2(64);
+      l_date         date;
+      l_date_offset  dsinterval_unconstrained;
+      l_date_dummy   date;
+      l_time_fraction number; -- fraction of a day to preserve time-of-day from input
+      l_result       date;
+   begin
+      l_date := p_date;
+      l_yr := extract(year from l_date) + extract(year from p_calendar_interval);
+      l_mon := extract(month from l_date) + extract(month from p_calendar_interval);
+      l_day := extract(day from l_date);
+      for i in 1..5 loop
+         if i = 5 then
+            cwms_err.raise(
+               'ERROR',
+               'Problem finding seasonal date nearest to '||l_date||' with interval '||p_calendar_interval);
+         end if;
+         -- handle year rollover
+         if l_mon > 12 then
+            l_yr := l_yr + trunc(l_mon / 12);
+            l_mon := mod(l_mon, 12);
+         end if;
+         begin
+            l_date_str := l_yr||'-'||trim(to_char(l_mon, '09'))||'-'||trim(to_char(l_day, '09'));
+            l_date_dummy := to_date(l_date_str, 'yyyy-mm-dd'); -- raises an exception on invalid day of month
+            exit;
+         exception
+            when others then
+               l_day := l_day - 1;
+         end;
+      end loop;
+      -- retain the original time-of-day from p_date
+      l_time_fraction := p_date - trunc(p_date); -- fraction of day representing time
+      l_result := l_date_dummy + l_time_fraction;
+      return l_result;
+   end get_closest_valid_date;
+
 begin
    g_timezone_cache.name              := 'cwms_util.g_timezone_cache';
    g_time_zone_name_cache.name        := 'cwms_util.g_time_zone_name_cache';

@@ -46,6 +46,8 @@ procedure test_runstats;
 procedure test_get_xml_time;
 --%test(Test get_xml_time_1900)
 procedure test_get_xml_time_1900;
+--%test(Test get closest date)
+procedure test_get_closest_date;
 
 procedure setup;
 procedure teardown;
@@ -933,6 +935,44 @@ begin
       end loop;
 end test_get_xml_time_1900;
 
+procedure test_get_closest_date
+is
+   -- validate feb 29
+   l_date date := to_date('2020-01-31 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+   l_cal_interval yminterval_unconstrained := cwms_util.months_to_yminterval(1);
+   l_expected date := to_date('2020-02-29 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+   l_result date;
+begin
+   l_result := cwms_util.get_closest_valid_date(l_date, l_cal_interval);
+   ut.expect(l_result).to_equal(l_expected);
+
+   -- validate Feb 28 as well
+   l_date := to_date('2026-01-31 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+   l_expected := to_date('2026-02-28 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+
+   l_result := cwms_util.get_closest_valid_date(l_date, l_cal_interval);
+   ut.expect(l_result).to_equal(l_expected);
+
+   l_date := to_date('2026-07-31 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+   l_expected := to_date('2026-08-31 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+
+   l_result := cwms_util.get_closest_valid_date(l_date, l_cal_interval);
+   ut.expect(l_result).to_equal(l_expected);
+
+   -- validate same date returned
+   l_date := to_date('2025-12-31 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+   l_expected := to_date('2026-01-31 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+
+   l_result := cwms_util.get_closest_valid_date(l_date, l_cal_interval);
+   ut.expect(l_result).to_equal(l_expected);
+
+   -- validate same date returned
+   l_date := to_date('2023-01-31 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+   l_expected := to_date('2023-02-28 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+
+   l_result := cwms_util.get_closest_valid_date(l_date, l_cal_interval);
+   ut.expect(l_result).to_equal(l_expected);
+end test_get_closest_date;
 
 end test_cwms_util;
 /
