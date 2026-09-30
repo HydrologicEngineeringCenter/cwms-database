@@ -1249,16 +1249,7 @@ procedure cwms_2533_ts_extents_logging
                cwms_ts.update_ts_extents_for_office(c_office_id);
             end if;
          end loop;
-      begin
-         cwms_ts.start_update_ts_extents_job;
-      exception
-         when others then
-            if user != '&&cwms_schema' then
-               ut.expect(regexp_instr(sqlerrm, 'Must be &&cwms_schema user to start job UPDATE_TS_EXTENTS_JOB', 1, 1, 0, 'i')).to_be_greater_than(0);
-            else
-               raise;
-            end if;
-      end;
+      cwms_ts.start_update_ts_extents_job;
       l_log_messages := cwms_ts.retrieve_update_ts_extents_log_messages(1);
       ut.expect(cwms_util.split_text(trim(chr(10) from l_log_messages), chr(10)).count).to_equal(case when user = '&&cwms_schema' then 5 else 4 end);
       ut.expect(instr(l_log_messages, 'Purge of invalid TS extents ended. 2 records deleted')).to_be_greater_than(0);
@@ -1346,16 +1337,7 @@ begin
             cwms_ts.update_ts_extents_for_office(c_office_id);
          end if;
       end loop;
-   begin
-      cwms_ts.start_update_ts_extents_job;
-   exception
-      when others then
-         if user != '&&cwms_schema' then
-            ut.expect(regexp_instr(sqlerrm, 'Must be &&cwms_schema user to start job UPDATE_TS_EXTENTS_JOB', 1, 1, 0, 'i')).to_be_greater_than(0);
-         else
-            raise;
-         end if;
-   end;
+   cwms_ts.start_update_ts_extents_job;
    l_log_messages := cwms_ts.retrieve_update_ts_extents_log_messages(1);
    ut.expect(cwms_util.split_text(trim(chr(10) from l_log_messages), chr(10)).count).to_equal(case when user = '&&cwms_schema' then 5 else 4 end);
    ut.expect(instr(l_log_messages, 'Purge of invalid TS extents ended. 2 records deleted')).to_be_greater_than(0);
