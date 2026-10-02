@@ -843,7 +843,7 @@ end log_db_message;
 procedure log_publish_message(
    p_msg_level in integer,
    p_message   in varchar2,
-   p_simple    in boolean default false,
+   p_simple    in boolean default true,
    p_msg_key   in varchar2 default '')
    is
    pragma autonomous_transaction;
@@ -862,7 +862,11 @@ begin
    l_message := utl_i18n.escape_reference(l_message, 'us7ascii');
    commit;
    if p_simple then
-      l_final_msg := l_message;
+      l_final_msg := '<cwms_message type="Status">' || lf
+         || '  <text>' || lf
+         || '  ' || l_message || lf
+         || '  </text>' || lf
+         || '</cwms_message>';
    else
       l_final_msg := '<cwms_message type="Status">' || lf
          || '  <property name="procedure" type="String">' || p_msg_key || '</property>' || lf
