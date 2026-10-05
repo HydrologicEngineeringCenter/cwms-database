@@ -957,8 +957,8 @@ begin
          l_yr := extract(year from l_date);
          l_mon := extract(month from l_date);
          l_date_offset := to_dsinterval('0 00:00:00');
-         for i in 1..4 loop
-            if i = 4 then
+         for i in 1..5 loop
+            if i = 5 then
                cwms_err.raise(
                   'ERROR',
                   'Problem finding seasonal date nearest to '
@@ -2051,7 +2051,7 @@ begin
             || 'in CREATE_LOCATION_LEVEL');
       when nvl(p_interval_months, 0) > 0 then
          l_calendar_interval := cwms_util.months_to_yminterval(p_interval_months);
-         cwms_util.GET_CLOSEST_VALID_DATE(p_interval_origin, l_calendar_interval, l_minimum_bad_seasonal_date);
+         l_minimum_bad_seasonal_date := cwms_util.GET_CLOSEST_VALID_DATE(p_interval_origin, l_calendar_interval);
       when nvl(p_interval_minutes, 0) > 0 then
          l_time_interval := cwms_util.minutes_to_dsinterval(p_interval_minutes);
          l_minimum_bad_seasonal_date := cast(cast(p_interval_origin as timestamp) + l_time_interval as date);

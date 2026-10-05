@@ -3235,7 +3235,7 @@ AS
     */
    function get_closest_valid_date(
       p_date in date,
-      p_calendar_interval in yminterval_unconstrained
+      p_calendar_interval in INTERVAL YEAR TO MONTH
    ) return date;
 END cwms_util;
 /
