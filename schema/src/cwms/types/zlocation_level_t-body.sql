@@ -108,8 +108,7 @@ as
          for rec in (
             select *
               from at_seasonal_location_level
-             where location_level_code = p_location_level_code
-          order by cwms_util.get_closest_valid_date(cast(l_rec.interval_origin + time_offset as date), calendar_offset))
+             where location_level_code = p_location_level_code)
          loop
             l_seasonal_values.extend;
             l_seasonal_values(l_seasonal_values.count) := seasonal_location_level_t(

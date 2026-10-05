@@ -1032,7 +1032,6 @@ begin
                      l_intvl := l_intvl + p_rec.time_interval;
                   else
                      l_intvl := l_intvl + p_rec.calendar_interval;
-                     dbms_output.put_line('New Interval+: '||to_char(l_intvl, 'YYYY-MM-DD HH24:MI:SS'));
                   end if;
             end;
          end loop;
@@ -1091,7 +1090,6 @@ begin
                      l_intvl := l_intvl - p_rec.time_interval;
                   else
                      l_intvl := l_intvl - p_rec.calendar_interval;
-                     dbms_output.put_line('New Interval-: '||to_char(l_intvl, 'YYYY-MM-DD HH24:MI:SS'));
                   end if;
             end;
          end loop;
