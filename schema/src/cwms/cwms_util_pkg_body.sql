@@ -6913,7 +6913,6 @@ as
       l_yr           integer;
       l_date_str     varchar2(64);
       l_date         date;
-      l_date_offset  dsinterval_unconstrained;
       l_date_dummy   date;
       l_time_fraction number; -- fraction of a day to preserve time-of-day from input
       l_result       date;
