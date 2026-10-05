@@ -6919,6 +6919,13 @@ as
       l_result       date;
    begin
       l_date := p_date;
+      begin
+         l_date := cast(l_date + p_calendar_interval as date);
+         return l_date;
+      exception
+         when others then
+            NULL;
+      end;
       l_yr := extract(year from l_date) + extract(year from p_calendar_interval);
       l_mon := extract(month from l_date) + extract(month from p_calendar_interval);
       l_day := extract(day from l_date);
