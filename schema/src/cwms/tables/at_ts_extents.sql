@@ -28,7 +28,8 @@ create table at_ts_extents (
    greatest_accepted_value_entry timestamp, 
    last_update                   timestamp,
    has_non_zero_quality          char(1),
-   constraint at_ts_extents_pk  primary key (ts_code, version_time), 
+   value_count                   integer,
+constraint at_ts_extents_pk  primary key (ts_code, version_time), 
    constraint at_ts_extents_fk1 foreign key (ts_code)references at_cwms_ts_spec (ts_code),
    constraint at_ts_extents_ck1 check (nvl(has_non_zero_quality, 'F') in ('T', 'F'))
 ) 
@@ -63,6 +64,7 @@ comment on column at_ts_extents.greatest_accepted_value_time  is 'The time that 
 comment on column at_ts_extents.greatest_accepted_value_entry is 'The time that the greatest accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series was entered (stored)';
 comment on column at_ts_extents.last_update                   is 'The time that this record was updated';
 comment on column at_ts_extents.has_non_zero_quality          is 'Specifies whether the ENTIRE time series has ANY quality_code other than zero)';
+comment on column at_ts_extents.value_count                   is 'The number of values (including null values) that have been stored for the time series';
 
 create or replace TRIGGER ST_TS_EXTENTS BEFORE DELETE OR INSERT OR UPDATE
               ON AT_TS_EXTENTS REFERENCING NEW AS NEW OLD AS OLD
