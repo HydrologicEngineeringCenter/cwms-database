@@ -80,6 +80,9 @@ CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
 --%test(Test UNDELETE_TS, CWMS_V_DELETED_TS, and CWMS_LOC.DELETE_LOCATION on location with deleted ts)
  procedure test_undelete_ts;
 
+--%test(Test DELETE_TS removes AT_TS_EXTENTS rows and UNDELETE_TS rebuilds them)
+ procedure test_delete_undelete_ts_extents;
+
 --%test (Test RETRIEVE_TS for regular time series that has undefined interval offset)
  procedure test_retrieve_ts_with_undefined_interval_offset;
 
@@ -2179,6 +2182,124 @@ AS
       ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_1)).to_equal(0);
       ut.expect(count_in('cwms_v_deleted_ts_id', l_sub_ts_id_2)).to_equal(0);
     end test_undelete_ts;
+
+    --------------------------------------------------------------------------------
+    -- procedure test_delete_undelete_ts_extents
+    --------------------------------------------------------------------------------
+    procedure test_delete_undelete_ts_extents
+    is
+      l_ts_id    cwms_v_ts_id.cwms_ts_id%type := test_base_location_id||'.Code.Inst.1Hour.0.Test';
+      l_unit     cwms_v_ts_id.unit_id%type := 'n/a';
+      l_ts_code  number;
+      l_count    pls_integer;
+      l_least    binary_double;
+      l_greatest binary_double;
+      l_ts_data  cwms_t_ztsv_array := cwms_t_ztsv_array(
+                                         cwms_t_ztsv(timestamp '2023-02-03 01:00:00', 1, 0),
+                                         cwms_t_ztsv(timestamp '2023-02-03 02:00:00', 2, 0),
+                                         cwms_t_ztsv(timestamp '2023-02-03 03:00:00', 3, 0));
+      -----------------------------------------------------------------------
+      -- UNDELETE_TS rebuilds AT_TS_EXTENTS by scheduling a dbms_scheduler --
+      -- job (named 'UTX_<ts_code>_<timestamp>') a few seconds out rather --
+      -- than recomputing it inline (see cwms_ts_pkg_body.undelete_ts),   --
+      -- so that the job - which runs in its own session - only sees     --
+      -- this transaction's changes once they are committed. Rather than --
+      -- sleeping/polling for the background scheduler to eventually     --
+      -- pick it up, this will run it now so the test can verify results --
+      -----------------------------------------------------------------------
+      procedure run_extents_job_now(p_ts_code in number)
+      is
+      begin
+         for rec in (select job_name
+                       from user_scheduler_jobs
+                      where job_name like 'UTX\_'||p_ts_code||'\_%' escape '\') loop
+            begin
+               dbms_scheduler.run_job(rec.job_name, use_current_session => true);
+            exception
+               when others then
+                  -- ORA-27476 (job no longer exists) or ORA-27478 (job is
+                  -- already running) both mean the background scheduler beat
+                  -- us to it - the job has run or is running either way
+                  if sqlcode not in (-27476, -27478) then
+                     raise;
+                  end if;
+            end;
+         end loop;
+      end run_extents_job_now;
+    begin
+      teardown;
+      -------------------
+      -- store location --
+      -------------------
+      cwms_loc.store_location(
+         p_location_id  => test_base_location_id,
+         p_active       => 'T',
+         p_db_office_id => '&&office_id');
+      ------------------------------
+      -- store time series data   --
+      ------------------------------
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_ts_id,
+         p_units           => l_unit,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id');
+      -----------------------------------------------------------------------
+      -- commit so the new time series id is visible outside this session --
+      -- (UPDATE_TS_EXTENTS uses an autonomous transaction and would fail --
+      -- silently on an as-yet-uncommitted, brand new ts id)              --
+      -----------------------------------------------------------------------
+      commit;
+
+      l_ts_code := cwms_ts.get_ts_code(l_ts_id, '&&office_id');
+      -----------------------------------------------------------------------
+      -- force a synchronous (re)computation of the extents so we have a   --
+      -- known, deterministic starting point for the test                 --
+      -----------------------------------------------------------------------
+      cwms_ts.update_ts_extents(l_ts_code, cwms_util.non_versioned);
+      commit;
+
+      select count(*) into l_count from at_ts_extents where ts_code = l_ts_code;
+      ut.expect(l_count).to_equal(1);
+
+      select least_value, greatest_value
+        into l_least, l_greatest
+        from at_ts_extents
+       where ts_code = l_ts_code
+         and version_time = cwms_util.non_versioned;
+      ut.expect(l_least).to_equal(1);
+      ut.expect(l_greatest).to_equal(3);
+      -----------------------------------------------------------------------
+      -- delete the time series id (soft delete) and verify the AT_TS_    --
+      -- EXTENTS rows for the ts_code are removed                         --
+      -----------------------------------------------------------------------
+      cwms_ts.delete_ts(l_ts_id, cwms_util.delete_key, '&&office_id');
+      commit;
+
+      select count(*) into l_count from at_ts_extents where ts_code = l_ts_code;
+      ut.expect(l_count).to_equal(0);
+      -----------------------------------------------------------------------
+      -- undelete the time series and verify the extents are rebuilt from --
+      -- the (never removed) underlying time series values. UNDELETE_TS   --
+      -- schedules the rebuild asynchronously (see cwms_ts_pkg_body), so  --
+      -- commit, then run the scheduled job now instead of waiting on it  --
+      -----------------------------------------------------------------------
+      cwms_ts.undelete_ts(l_ts_id, '&&office_id');
+      commit;
+      run_extents_job_now(l_ts_code);
+
+      select count(*) into l_count from at_ts_extents where ts_code = l_ts_code;
+      ut.expect(l_count).to_equal(1);
+
+      select least_value, greatest_value
+        into l_least, l_greatest
+        from at_ts_extents
+       where ts_code = l_ts_code
+         and version_time = cwms_util.non_versioned;
+      ut.expect(l_least).to_equal(1);
+      ut.expect(l_greatest).to_equal(3);
+    end test_delete_undelete_ts_extents;
 
    --------------------------------------------------------------------------------
    -- procedure cwdb_211_update_tsv_dml_counters_to_include_streamed_dml

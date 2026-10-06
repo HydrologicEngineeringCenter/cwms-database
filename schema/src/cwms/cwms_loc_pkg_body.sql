@@ -2542,9 +2542,6 @@ AS
          -- it is simply where the location geographic information is stored and is attached to the at_physical_location row
          -- in a roughly 1:1 manner. E.g. a sub-location may share it, but a given physical location only has one entry in the table.
 
-         select count(*) into l_count from at_geographic_location where location_code in (select * from table(l_location_codes));
-         add_dependency(l_dependencies, 'geographic locations', l_count);
-
          select count(*) into l_count from at_location_url where location_code in (select * from table(l_location_codes));
          add_dependency(l_dependencies, 'location URLs', l_count);
 
@@ -2911,12 +2908,6 @@ AS
          delete
            from at_document
           where document_location_code in (select * from table (l_location_codes));
-         --------------------------
-         -- geographic locations --
-         --------------------------
-         delete
-           from at_geographic_location
-          where location_code in (select * from table (l_location_codes));
          -----------
          -- urls --
          -----------
@@ -8499,6 +8490,32 @@ end unassign_loc_groups;
          ||'</vertical-datum-info>';
       p_vert_datum_info := l_vert_datum_info;
    end get_vertical_datum_info;
+
+   procedure get_vertical_datum_info_list(
+      p_vert_datum_info out clob_tab_t,
+      p_office_id       in  varchar2,
+      p_location_mask   in  varchar2 default '%',
+      p_unit_system     in  varchar2 default 'EN')
+   is
+      l_vert_datum_info varchar2(32767);
+   begin
+      p_vert_datum_info := clob_tab_t();
+      for row in (
+         select loc.location_id, loc.db_office_id, loc.unit_id
+         from av_loc2 loc
+         where loc.db_office_id = p_office_id
+         and loc.unit_system = p_unit_system
+         and loc.location_id like p_location_mask
+      ) loop
+         get_vertical_datum_info2(l_vert_datum_info,
+            row.location_id,
+            row.unit_id,
+            row.db_office_id
+         );
+         p_vert_datum_info.extend;
+         p_vert_datum_info(p_vert_datum_info.count) := l_vert_datum_info;
+      end loop;
+   end get_vertical_datum_info_list;
 
    procedure get_vertical_datum_info(
       p_vert_datum_info out varchar2,

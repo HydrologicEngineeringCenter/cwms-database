@@ -2800,6 +2800,40 @@ as
    end delete_streamflow_meas;
 
 --------------------------------------------------------------------------------
+-- procedure delete_streamflow_meas_by_id
+-- New UUID-capable delete: deletes the measurement matching p_meas_id exactly, whether
+-- p_meas_id is a legacy numeric/hex measurement number or a UUID. p_meas_id is required
+-- as this procedure's intent is to delete a single meas by id.
+-- Bulk-delete of measurements can be achieved via the existing delete_streamflow_meas procedure.
+-- location_code + meas_number is the table's primary key, so location mask + meas_id is
+-- sufficient to identify the row(s) to delete; no other filters are needed.
+--------------------------------------------------------------------------------
+   procedure delete_streamflow_meas_by_id(
+         p_location_id_mask in varchar2,
+         p_meas_id          in varchar2,
+         p_office_id_mask   in varchar2 default null)
+   is
+      l_location_id_mask varchar2(256) := cwms_util.normalize_wildcards(p_location_id_mask) ;
+      l_office_id_mask   varchar2(64)  := cwms_util.normalize_wildcards(p_office_id_mask) ;
+   begin
+      if p_meas_id is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_MEAS_ID') ;
+      end if;
+      delete
+        from at_streamflow_meas
+       where rowid in
+        (
+            select sm.rowid
+              from at_streamflow_meas sm,
+                   av_loc2 v2
+             where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
+               and v2.location_id like l_location_id_mask escape '\'
+               and sm.location_code = v2.location_code
+               and sm.meas_number = p_meas_id
+        ) ;
+   end delete_streamflow_meas_by_id;
+
+--------------------------------------------------------------------------------
 -- function retrieve_streamflow_meas_by_id (UUID/ID exact match)
 -- New UUID-capable API: retrieves measurements by exact meas_id string.
 -- Backward compatible: does not change existing signatures; callers can use
