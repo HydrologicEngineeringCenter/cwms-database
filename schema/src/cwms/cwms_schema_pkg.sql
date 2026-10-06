@@ -138,6 +138,7 @@ table_names constant object_tab_t := object_tab_t(
    'AT_TSV_INF_AND_BEYOND',
    'AT_TS_CATEGORY',
    'AT_TS_DELETED_TIMES',
+   'AT_TS_DISPLAY_UNITS',
    'AT_TS_GROUP',
    'AT_TS_GROUP_ASSIGNMENT',
    'AT_TS_MSG_ARCHIVE_1',

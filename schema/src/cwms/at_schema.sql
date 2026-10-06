@@ -6138,6 +6138,7 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_pool_name
 @@./cwms/tables/at_pool
 @@./cwms/tables/at_ts_extents
+@@./cwms/tables/at_ts_display_units
 @@./cwms/tables/at_application_login
 @@./cwms/tables/at_application_session
 @@./cwms/tables/at_app_log_dir
