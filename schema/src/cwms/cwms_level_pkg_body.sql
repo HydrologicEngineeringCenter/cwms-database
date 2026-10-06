@@ -913,6 +913,8 @@ is
    l_date_str     varchar2(64);
    l_date_dummy   date;
    l_date_offset  dsinterval_unconstrained;
+   x_invalid_month_day exception;
+   pragma exception_init(x_invalid_month_day, -01839);
 begin
    l_date := cwms_util.change_timezone(p_date, 'UTC', p_tz);
    l_intvl := top_of_interval_on_or_before(p_rec, l_date, 'UTC');
@@ -955,11 +957,13 @@ begin
          l_yr := extract(year from l_date);
          l_mon := extract(month from l_date);
          l_date_offset := to_dsinterval('0 00:00:00');
-         for i in 1..4 loop
-            if i = 4 then
+         for i in 1..5 loop
+            if i = 5 then
                cwms_err.raise(
                   'ERROR',
-                  'Problem finding seasonal date nearest to '||top_of_interval_on_or_before(p_rec, l_date, 'UTC'));
+                  'Problem finding seasonal date nearest to '
+                     ||top_of_interval_on_or_before(p_rec, l_date, 'UTC')
+                     ||' from provided date '||l_date);
             end if;
             l_day  := extract(day from l_intvl);
             begin
@@ -988,16 +992,16 @@ begin
                --------------------------------------------------------------------------------
                with query as
                   (select distinct
-                         cast(l_intvl + calendar_offset + time_offset + l_date_offset as date) as date_time,
+                         cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) as date_time,
                          value,
                          calendar_offset
                    from at_seasonal_location_level
                    where location_level_code = p_rec.location_level_code
-                      and cast(l_intvl + calendar_offset + time_offset  + l_date_offset as date) =
-                            (select min(cast(l_intvl + calendar_offset + time_offset + l_date_offset as date))
+                      and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) =
+                            (select min(cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset))
                                from at_seasonal_location_level
                                where location_level_code = p_rec.location_level_code
-                                     and cast(l_intvl + calendar_offset + time_offset + l_date_offset as date) >= l_date)
+                                     and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) >= l_date)
                   )
                select date_time,
                       value
@@ -1023,6 +1027,12 @@ begin
                         l_intvl := l_intvl + p_rec.calendar_interval;
                      end if;
                   end if;
+               when x_invalid_month_day then
+                  if p_rec.calendar_interval is null then
+                     l_intvl := l_intvl + p_rec.time_interval;
+                  else
+                     l_intvl := l_intvl + p_rec.calendar_interval;
+                  end if;
             end;
          end loop;
       else
@@ -1040,16 +1050,16 @@ begin
                --------------------------------------------------------------------------------
                with query as
                   (select distinct
-                         cast(l_intvl + calendar_offset + time_offset + l_date_offset as date) as date_time,
+                         cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) as date_time,
                          value,
                          calendar_offset
                    from at_seasonal_location_level
                    where location_level_code = p_rec.location_level_code
-                      and cast(l_intvl + calendar_offset + time_offset + l_date_offset as date) =
-                            (select max(cast(l_intvl + calendar_offset + time_offset + l_date_offset as date))
+                      and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) =
+                            (select max(cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset))
                                from at_seasonal_location_level
                                where location_level_code = p_rec.location_level_code
-                                     and cast(l_intvl + calendar_offset + time_offset + l_date_offset as date) <= l_date)
+                                     and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) <= l_date)
                   )
                select date_time,
                       value
@@ -1074,6 +1084,12 @@ begin
                      else
                         l_intvl := l_intvl - p_rec.calendar_interval;
                      end if;
+                  end if;
+               when x_invalid_month_day then
+                  if p_rec.calendar_interval is null then
+                     l_intvl := l_intvl - p_rec.time_interval;
+                  else
+                     l_intvl := l_intvl - p_rec.calendar_interval;
                   end if;
             end;
          end loop;
@@ -2033,7 +2049,7 @@ begin
             || 'in CREATE_LOCATION_LEVEL');
       when nvl(p_interval_months, 0) > 0 then
          l_calendar_interval := cwms_util.months_to_yminterval(p_interval_months);
-         l_minimum_bad_seasonal_date := cast(cast(p_interval_origin as timestamp) + l_calendar_interval as date);
+         l_minimum_bad_seasonal_date := cwms_util.GET_CLOSEST_VALID_DATE(p_interval_origin, l_calendar_interval);
       when nvl(p_interval_minutes, 0) > 0 then
          l_time_interval := cwms_util.minutes_to_dsinterval(p_interval_minutes);
          l_minimum_bad_seasonal_date := cast(cast(p_interval_origin as timestamp) + l_time_interval as date);
