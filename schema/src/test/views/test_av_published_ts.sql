@@ -17,6 +17,8 @@ create or replace package test_av_published_ts as
    procedure shows_published_ts_mapping;
    --%test(Test that PUBLISHED_ID distinguishes two published slots that share a base parameter)
    procedure distinguishes_same_base_parameter;
+   --%test(Test that CWMS_PUBLISHED_ID is seeded with all 28 A2W published IDs and the right base parameters)
+   procedure seeds_all_published_ids;
 
    procedure teardown;
 
@@ -152,6 +154,65 @@ create or replace package body test_av_published_ts as
 
       ut.expect(l_elev_ts_code).not_to_equal(l_elev_tw_ts_code);
    end distinguishes_same_base_parameter;
+   --------------------------------------------------------------------------------
+   -- procedure expect_base_parameter (helper, not a test)
+   --------------------------------------------------------------------------------
+   procedure expect_base_parameter (
+      p_published_id      in varchar2,
+      p_base_parameter_id in varchar2)
+      is
+      l_base_parameter_id cwms_base_parameter.base_parameter_id%type;
+   begin
+      select b.base_parameter_id
+        into l_base_parameter_id
+        from cwms_published_id p
+        join cwms_base_parameter b on b.base_parameter_code = p.base_parameter_code
+       where p.published_id = p_published_id;
+
+      -- compare "ID=param" strings so a failure names the published ID
+      ut.expect(p_published_id || '=' || l_base_parameter_id).to_equal(p_published_id || '=' || p_base_parameter_id);
+   exception
+      when no_data_found then
+         ut.fail(p_published_id || ' is missing from CWMS_PUBLISHED_ID');
+   end expect_base_parameter;
+   --------------------------------------------------------------------------------
+   -- procedure seeds_all_published_ids
+   --------------------------------------------------------------------------------
+   procedure seeds_all_published_ids
+      is
+   begin
+      -- every published ID that CWMS_A2W and the A2W views rely on
+      expect_base_parameter('TS_ELEV',            'Elev');
+      expect_base_parameter('TS_PRECIP',          'Precip');
+      expect_base_parameter('TS_STAGE',           'Stage');
+      expect_base_parameter('TS_INFLOW',          'Flow');
+      expect_base_parameter('TS_OUTFLOW',         'Flow');
+      expect_base_parameter('TS_STOR_FLOOD',      'Stor');
+      expect_base_parameter('TS_STOR_DROUGHT',    'Stor');
+      expect_base_parameter('TS_SUR_RELEASE',     'Flow');
+      expect_base_parameter('TS_ELEV_TW',         'Elev');
+      expect_base_parameter('TS_STAGE_TW',        'Stage');
+      expect_base_parameter('TS_RULE_CURVE_ELEV', 'Elev');
+      expect_base_parameter('TS_POWER_GEN',       'Power');
+      -- these three are sub-parameters (Temp-Air, Temp-Water, Conc-DO), so the
+      -- published ID must carry the base parameter
+      expect_base_parameter('TS_TEMP_AIR',        'Temp');
+      expect_base_parameter('TS_TEMP_WATER',      'Temp');
+      expect_base_parameter('TS_DO',              'Conc');
+      expect_base_parameter('TS_COND',            'Cond');
+      expect_base_parameter('TS_PH',              'pH');
+      expect_base_parameter('TS_OPENING',         'Opening');
+      expect_base_parameter('TS_WIND_DIR',        'Dir');
+      expect_base_parameter('TS_WIND_SPEED',      'Speed');
+      expect_base_parameter('TS_VOLT',            'Volt');
+      expect_base_parameter('TS_PCT_FLOOD',       '%');
+      expect_base_parameter('TS_PCT_CON',         '%');
+      expect_base_parameter('TS_IRRAD',           'Irrad');
+      expect_base_parameter('TS_EVAP',            'Evap');
+      expect_base_parameter('RATING_ELEV_STOR',   'Stor');
+      expect_base_parameter('RATING_ELEV_AREA',   'Area');
+      expect_base_parameter('RATING_OUTLET_FLOW', 'Flow');
+   end seeds_all_published_ids;
 
 end test_av_published_ts;
 /
