@@ -17,6 +17,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_GRP_ASSGN', n
  * @field shared_ref_ts_id    The referenced time series, if any, shared by all members of the time series group
  * @field category_office_id  Office that owns the time series category
  * @field group_office_id     Office that owns the time series group
+ * @field units_en            Persistent EN display units, only when different from the parameter default
+ * @field units_si            Persistent SI display units, only when different from the parameter default
  */
 ');
 CREATE OR REPLACE VIEW av_ts_grp_assgn
@@ -32,7 +34,9 @@ CREATE OR REPLACE VIEW av_ts_grp_assgn
    shared_alias_id,
    shared_ref_ts_id,
    category_office_id,
-   group_office_id
+   group_office_id,
+   units_en,
+   units_si
 )
 AS
    SELECT   atc.ts_category_id,
@@ -51,7 +55,9 @@ AS
          else cwms_ts.get_ts_id (acts3.ts_code)
       end AS shared_ref_ts_id,
       co_atc.office_id as category_office_id,
-      co_atg.office_id as group_office_id
+      co_atg.office_id as group_office_id,
+      cwms_ts.get_ts_display_units(cwms_ts.get_ts_id(acts.ts_code), 'EN', co_loc.office_id, 'F') as units_en,
+      cwms_ts.get_ts_display_units(cwms_ts.get_ts_id(acts.ts_code), 'SI', co_loc.office_id, 'F') as units_si
    FROM   at_cwms_ts_spec acts
       INNER JOIN at_ts_group_assignment atga ON atga.ts_code = acts.ts_code
       INNER JOIN at_ts_group atg ON atga.ts_group_code = atg.ts_group_code

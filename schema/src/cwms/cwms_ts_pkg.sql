@@ -3150,6 +3150,8 @@ AS
     * @param p_ts_alias_id    An alias, if any, that applies to the timeseries within the group
     * @param p_ref_ts_id      A time series identifier, if any, that is referred to by the time series within the group
     * @param p_db_office_id   The office that owns the time series category, time series group and time series. If not specified or NULL, the session user's default office is used.
+    * @param p_units          Optional persistent display units for the time series, shared across all groups. NULL preserves the preference; use set_ts_display_units to clear it.
+    * @param p_unit_system    Unit system ('EN' or 'SI') for p_units, default 'EN'
     */
    PROCEDURE assign_ts_group (p_ts_category_id   IN VARCHAR2,
                               p_ts_group_id      IN VARCHAR2,
@@ -3157,7 +3159,42 @@ AS
                               p_ts_attribute     IN NUMBER DEFAULT NULL,
                               p_ts_alias_id      IN VARCHAR2 DEFAULT NULL,
                               p_ref_ts_id        IN VARCHAR2 DEFAULT NULL,
-                              p_db_office_id     IN VARCHAR2 DEFAULT NULL);
+                              p_db_office_id     IN VARCHAR2 DEFAULT NULL,
+                              p_units            IN VARCHAR2 DEFAULT NULL,
+                              p_unit_system      IN VARCHAR2 DEFAULT 'EN');
+
+   /**
+    * Stores persistent display units for a time series and unit system.
+    * The preference applies to every group containing the time series.
+    *
+    * @param p_ts_id The time series identifier
+    * @param p_units Compatible unit identifier or alias. NULL or the parameter default removes the preference.
+    * @param p_unit_system The unit system ('EN' or 'SI'), default 'EN'
+    * @param p_office_id The time series office. NULL uses the session office.
+    */
+   procedure set_ts_display_units(
+      p_ts_id       in varchar2,
+      p_units       in varchar2,
+      p_unit_system in varchar2 default 'EN',
+      p_office_id   in varchar2 default null);
+
+   /**
+    * Returns persistent display units, falling back to the parameter default.
+    * Explicit units supplied to data retrieval are unaffected by this preference.
+    *
+    * @param p_ts_id The time series identifier
+    * @param p_unit_system The unit system ('EN' or 'SI'), default 'EN'
+    * @param p_office_id The time series office. NULL uses the session office.
+    * @param p_default_units If 'T', return the parameter default when no preference
+    * exists. If 'F', return NULL unless the preference differs from the default.
+    * @return The canonical unit identifier, or NULL for no nondefault preference
+    */
+   function get_ts_display_units(
+      p_ts_id         in varchar2,
+      p_unit_system   in varchar2 default 'EN',
+      p_office_id     in varchar2 default null,
+      p_default_units in varchar2 default 'T')
+      return varchar2;
 
    /**
     * Unassigns a time series, or all time series from time series group
