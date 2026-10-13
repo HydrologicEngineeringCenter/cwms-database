@@ -41,6 +41,8 @@ as
       self.greatest_accepted_value_time  := l_ts_extents.greatest_accepted_value_time; 
       self.greatest_accepted_value_entry := l_ts_extents.greatest_accepted_value_entry;
       self.last_update                   := l_ts_extents.last_update;
+      self.has_non_zero_quality          := l_ts_extents.has_non_zero_quality;
+      self.value_count                   := l_ts_extents.value_count;
       return;
    end ts_extents_t;
    

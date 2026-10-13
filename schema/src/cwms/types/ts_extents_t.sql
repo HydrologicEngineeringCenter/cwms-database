@@ -29,6 +29,8 @@ create or replace type ts_extents_t
  * @member greatest_accepted_value_time  The time that the greatest accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series is for
  * @member greatest_accepted_value_entry The time that the greatest accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series was entered (stored)
  * @member last_update                   The time that this record was updated
+ * @member has_non_zero_quality          Specifies whether the ENTIRE time series has ANY quality_code other than zero
+ * @member value_count                   The number of values (including null values) that have been stored for the time series
  *
  * @see ts_extents_tab_t
  *
@@ -61,6 +63,8 @@ as object (
    greatest_accepted_value_time  date,          
    greatest_accepted_value_entry timestamp,     
    last_update                   timestamp,
+   has_non_zero_quality          char(1),
+   value_count                   integer,
    /**
     * Null constructor. Initializes all attributes to null
     */
