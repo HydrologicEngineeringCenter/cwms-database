@@ -1842,86 +1842,14 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
 
    PROCEDURE p_clear_a2w_ts_code (p_ts_code IN cwms_v_ts_id.ts_code%TYPE) IS
    BEGIN
-    NULL;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_elev = NULL
-     WHERE ts_code_elev = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_stage = NULL
-     WHERE ts_code_stage = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_precip = NULL
-     WHERE ts_code_precip = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_inflow = NULL
-     WHERE ts_code_inflow = p_ts_code;
-
-   UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_outflow = NULL
-     WHERE ts_code_outflow = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_sur_release = NULL
-     WHERE ts_code_sur_release = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_stor_drought = NULL
-     WHERE ts_code_stor_drought = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_stor_flood = NULL
-     WHERE ts_code_stor_flood = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_elev_Tw = NULL
-     WHERE ts_code_elev_Tw = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_stage_tw = NULL
-     WHERE ts_code_stage_tw = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET ts_code_rule_curve_elev = NULL
-     WHERE ts_code_rule_curve_elev = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_By_loc
-       SET ts_code_power_Gen    = NULL
-     WHERE ts_code_power_Gen    = p_ts_code;
-    
-    UPDATE at_a2w_ts_codes_By_loc
-       SET ts_code_temp_air    = NULL
-     WHERE ts_code_temp_air    = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_By_loc
-       SET ts_code_temp_water    = NULL
-     WHERE ts_code_temp_water    = p_ts_code;
-
-    UPDATE at_a2w_ts_codes_By_loc
-       SET ts_code_do    = NULL
-     WHERE ts_code_do    = p_ts_code;
-        
-      FOR x IN (SELECT DISTINCT location_code, db_Office_id
-                  FROM cwms_v_ts_id
-                WHERE ts_code = p_ts_code
-                ) LOOP
-
-      p_set_a2w_num_tsids (
-                            p_db_Office_id    => x.db_office_id,
-                            p_locatioN_code   => x.locatioN_code ,
-                            p_user_id         => 'SYSTEM'
-                          );
-                  END LOOP;
-
-  END ; --p_clear_a2w_ts_code
+      -- implemented in CWMS_A2W (no APEX dependency, so it is installed and tested in CI)
+      cwms_a2w.p_clear_a2w_ts_code (p_ts_code => p_ts_code);
+   END p_clear_a2w_ts_code;
 
 
    PROCEDURE p_refresh_a2w_ts_codes (
-      p_db_office_id    IN at_a2w_ts_codes_by_loc.db_office_id%TYPE,
-      p_location_code   IN at_a2w_ts_codes_by_loc.location_code%TYPE DEFAULT NULL)
+      p_db_office_id    IN cwms_v_loc.db_office_id%TYPE,
+      p_location_code   IN cwms_v_loc.location_code%TYPE DEFAULT NULL)
    IS
       fire_update_yn            VARCHAR2 (1) DEFAULT 'Y';
       fire_i                    NUMBER DEFAULT 0;          --number of updates
@@ -5205,138 +5133,83 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
 
 
    PROCEDURE p_load_a2w_by_location (
-      p_db_office_id           IN     at_a2w_ts_codes_by_loc.db_office_id%TYPE,
-      p_location_id            IN     at_a2w_ts_codes_by_loc.db_office_id%TYPE,
-      p_display_flag           IN     at_a2w_ts_codes_by_loc.display_flag%TYPE,
-      p_notes                  IN     at_a2w_ts_codes_by_loc.notes%TYPE,
-      p_num_ts_codes           IN     at_a2w_ts_codes_by_loc.num_ts_codes%TYPE,
-      p_ts_code_elev           IN     at_a2w_ts_codes_by_loc.ts_code_elev%TYPE,
-      p_ts_code_inflow         IN     at_a2w_ts_codes_by_loc.ts_code_inflow%TYPE,
-      p_ts_code_outflow        IN     at_a2w_ts_codes_by_loc.ts_code_outflow%TYPE,
-      p_ts_code_sur_release    IN     at_a2w_ts_codes_by_loc.ts_code_sur_release%TYPE,
-      p_ts_code_precip         IN     at_a2w_ts_codes_by_loc.ts_code_precip%TYPE,
-      p_ts_code_stage          IN     at_a2w_ts_codes_by_loc.ts_code_stage%TYPE,
-      p_ts_code_stor_drought   IN     at_a2w_ts_codes_by_loc.ts_code_stor_drought%TYPE,
-      p_ts_code_stor_Flood     IN     at_a2w_ts_codes_by_loc.ts_code_stor_Flood%TYPE,
-      p_ts_code_elev_tw        IN     at_a2w_ts_codes_by_loc.ts_code_elev_tw%TYPE,
-      p_ts_code_stage_tw       IN     at_a2w_ts_codes_by_loc.ts_code_stage_tw%TYPE,
-      p_ts_code_rule_Curve_elev IN     at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
-      p_ts_code_power_Gen       IN    at_a2w_ts_codes_By_loc.ts_code_power_Gen%TYPE,
-      p_ts_code_temp_air        IN    at_a2w_ts_codes_by_loc.ts_code_temp_air%TYPE,
-      p_ts_code_temp_water      IN    at_a2w_ts_codes_by_loc.ts_code_temp_water%TYPE,
-      p_ts_code_do              IN    at_a2w_Ts_codes_by_loc.ts_code_do%TYPE,
-      p_ts_code_ph              IN    at_a2w_ts_codes_by_loc.ts_code_ph%TYPE,
-      p_ts_code_cond            IN    at_a2w_Ts_codes_By_loc.ts_code_cond%TYPE,
-      p_ts_code_wind_dir        IN    at_a2w_ts_codes_By_loc.ts_code_wind_dir%TYPE,
-      p_ts_code_wind_speed      IN    at_a2w_ts_codes_By_loc.ts_code_wind_speed%TYPE,
-      p_ts_code_volt            in   at_a2w_ts_codes_By_loc.ts_code_volt%TYPE,
-      p_ts_code_pct_flood       in   at_a2w_ts_codes_By_loc.ts_code_pct_flood%TYPE,
-      p_ts_code_pct_con         in   at_a2w_ts_codes_By_loc.ts_code_pct_con%TYPE,
-      p_ts_code_irrad           in   at_a2w_ts_codes_By_loc.ts_code_irrad%TYPE,
-      p_ts_code_evap            in   at_a2w_ts_codes_By_loc.ts_code_evap%TYPE,
-      p_rating_code_elev_stor   IN    NUMBER,
-      p_rating_code_elev_area   IN    NUMBER,
-      p_rating_code_outlet_Flow IN    NUMBER,
-      p_ts_code_opening         IN    at_a2w_ts_codes_By_loc.ts_code_opening%TYPE,
-      p_opening_source_obj      IN    VARCHAR2,
-      p_lake_summary_tf         IN     at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE,
-      p_error_msg                 OUT VARCHAR2)
+      p_db_office_id            IN     VARCHAR2,
+      p_location_id             IN     VARCHAR2,
+      p_display_flag            IN     VARCHAR2,
+      p_notes                   IN     CLOB,
+      p_num_ts_codes            IN     NUMBER,
+      p_ts_code_elev            IN     NUMBER,
+      p_ts_code_inflow          IN     NUMBER,
+      p_ts_code_outflow         IN     NUMBER,
+      p_ts_code_sur_release     IN     NUMBER,
+      p_ts_code_precip          IN     NUMBER,
+      p_ts_code_stage           IN     NUMBER,
+      p_ts_code_stor_drought    IN     NUMBER,
+      p_ts_code_stor_Flood      IN     NUMBER,
+      p_ts_code_elev_tw         IN     NUMBER,
+      p_ts_code_stage_tw        IN     NUMBER,
+      p_ts_code_rule_Curve_elev IN     NUMBER,
+      p_ts_code_power_Gen       IN     NUMBER,
+      p_ts_code_temp_air        IN     NUMBER,
+      p_ts_code_temp_water      IN     NUMBER,
+      p_ts_code_do              IN     NUMBER,
+      p_ts_code_ph              IN     NUMBER,
+      p_ts_code_cond            IN     NUMBER,
+      p_ts_code_wind_dir        IN     NUMBER,
+      p_ts_code_wind_speed      IN     NUMBER,
+      p_ts_code_volt            IN     NUMBER,
+      p_ts_code_pct_flood       IN     NUMBER,
+      p_ts_code_pct_con         IN     NUMBER,
+      p_ts_code_irrad           IN     NUMBER,
+      p_ts_code_evap            IN     NUMBER,
+      p_rating_code_elev_stor   IN     NUMBER,
+      p_rating_code_elev_area   IN     NUMBER,
+      p_rating_code_outlet_Flow IN     NUMBER,
+      p_ts_code_opening         IN     NUMBER,
+      p_opening_source_obj      IN     VARCHAR2,
+      p_lake_summary_tf         IN     VARCHAR2,
+      p_error_msg                  OUT VARCHAR2)
    IS
-      temp_location_code   cwms_v_loc.location_code%TYPE;
    BEGIN
-      p_error_msg := NULL;
-
-      SELECT location_code
-        INTO temp_location_code
-        FROM cwms_v_loc
-       WHERE     Unit_system = 'EN'
-             AND location_id = p_location_id
-             AND db_Office_id = p_db_Office_id;
-
-
-      UPDATE at_a2w_ts_codes_by_loc
-         SET date_refreshed          = SYSDATE,
-             display_flag            = p_display_flag,
-             notes                   = p_notes,
-             num_ts_codes            = p_num_ts_codes,
-             ts_code_elev            = p_ts_code_elev,
-             ts_code_inflow          = p_ts_code_inflow,
-             ts_code_outflow         = p_ts_code_outflow,
-             ts_code_sur_release     = p_ts_code_sur_release,
-             ts_code_precip          = p_ts_code_precip,
-             ts_code_stage           = p_ts_code_stage,
-             ts_code_stor_drought    = p_ts_code_stor_drought,
-             ts_code_stor_flood      = p_ts_code_stor_flood,
-             ts_code_elev_tw         = p_ts_code_elev_tw,
-             ts_code_stage_tw        = p_ts_code_stage_tw,
-             ts_code_rule_curve_Elev = p_ts_code_rule_curve_elev,
-             ts_code_power_gen       = p_ts_code_power_Gen,
-             ts_code_temp_air        = p_ts_code_temp_air,
-             ts_code_temp_water      = p_ts_code_temp_water,
-             ts_code_do              = p_ts_code_do, 
-             ts_code_wind_dir        = p_ts_code_wind_dir,
-             ts_code_wind_speed      = p_ts_code_wind_Speed,
-             ts_code_volt            = p_ts_code_volt,
-             ts_code_pct_flood       = p_ts_code_pct_flood,
-             ts_code_pct_con         = p_ts_code_pct_con,
-             ts_code_irrad           = p_ts_code_irrad,
-             ts_code_evap            = p_ts_code_evap,
-             rating_code_elev_stor   = p_rating_code_elev_stor ,
-	     rating_code_elev_area   = p_rating_code_elev_area,
-             rating_code_outlet_flow = p_rating_code_outlet_Flow,
-             opening_source_obj      = p_opening_source_obj,
-             lake_summary_tf         = p_lake_summary_tf
-       WHERE  db_office_id = p_db_office_id
-         AND locatioN_code = temp_location_code;
-
-  EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         INSERT
-           INTO at_a2w_ts_codes_by_loc (db_Office_id,
-                                        location_code,
-                                        date_refreshed)
-         VALUES (p_db_office_id, temp_location_code, SYSDATE);
-
-
-         UPDATE at_a2w_ts_codes_by_loc
-            SET date_refreshed       = SYSDATE,
-                display_flag         = p_display_flag,
-                notes                = p_notes,
-                num_ts_codes         = p_num_ts_codes,
-                ts_code_elev         = p_ts_code_elev,
-                ts_code_inflow       = p_ts_code_inflow,
-                ts_code_outflow      = p_ts_code_outflow,
-                ts_code_sur_release  = p_ts_code_sur_release,
-                ts_code_precip       = p_ts_code_precip,
-                ts_code_stage        = p_ts_code_stage,
-                ts_code_stor_drought = p_ts_code_stor_drought,
-                ts_code_stor_flood   = p_ts_code_stor_flood,
-                ts_code_elev_tw      = p_ts_code_elev_tw,
-                ts_code_stage_tw     = p_ts_code_stage_tw,
-                ts_code_rule_curve_Elev = p_ts_code_rule_curve_elev,
-                ts_code_power_Gen       = p_ts_code_power_Gen       ,
-                ts_code_temp_air        = p_ts_code_temp_air        ,
-                ts_code_temp_water      = p_ts_code_temp_water      ,
-                ts_code_do              = p_ts_code_do              ,
-                ts_code_wind_dir        = p_ts_code_wind_dir,
-                ts_code_wind_speed      = p_ts_code_wind_Speed,
-             ts_code_volt            = p_ts_code_volt,
-             ts_code_pct_flood       = p_ts_code_pct_flood,
-             ts_code_pct_con         = p_ts_code_pct_con,
-             ts_code_irrad           = p_ts_code_irrad,
-             ts_code_evap            = p_ts_code_evap,
-                rating_code_elev_stor   = p_rating_code_elev_stor  ,
-	        rating_code_elev_area   = p_rating_code_elev_area  ,
-                rating_code_outlet_flow = p_rating_code_outlet_Flow,
-                opening_source_obj      = p_opening_source_obj     ,
-                lake_summary_tf         = p_lake_summary_tf
-          WHERE db_office_id  = p_db_office_id
-            AND locatioN_code = temp_location_code;
-      WHEN OTHERS
-      THEN
-         p_error_msg := SQLERRM;
-   END;
+      -- implemented in CWMS_A2W (no APEX dependency, so it is installed and tested in CI)
+      cwms_a2w.p_load_a2w_by_location (
+         p_db_office_id            => p_db_office_id,
+         p_location_id             => p_location_id,
+         p_display_flag            => p_display_flag,
+         p_notes                   => p_notes,
+         p_num_ts_codes            => p_num_ts_codes,
+         p_ts_code_elev            => p_ts_code_elev,
+         p_ts_code_inflow          => p_ts_code_inflow,
+         p_ts_code_outflow         => p_ts_code_outflow,
+         p_ts_code_sur_release     => p_ts_code_sur_release,
+         p_ts_code_precip          => p_ts_code_precip,
+         p_ts_code_stage           => p_ts_code_stage,
+         p_ts_code_stor_drought    => p_ts_code_stor_drought,
+         p_ts_code_stor_flood      => p_ts_code_stor_flood,
+         p_ts_code_elev_tw         => p_ts_code_elev_tw,
+         p_ts_code_stage_tw        => p_ts_code_stage_tw,
+         p_ts_code_rule_curve_elev => p_ts_code_rule_curve_elev,
+         p_ts_code_power_gen       => p_ts_code_power_gen,
+         p_ts_code_temp_air        => p_ts_code_temp_air,
+         p_ts_code_temp_water      => p_ts_code_temp_water,
+         p_ts_code_do              => p_ts_code_do,
+         p_ts_code_ph              => p_ts_code_ph,
+         p_ts_code_cond            => p_ts_code_cond,
+         p_ts_code_wind_dir        => p_ts_code_wind_dir,
+         p_ts_code_wind_speed      => p_ts_code_wind_speed,
+         p_ts_code_volt            => p_ts_code_volt,
+         p_ts_code_pct_flood       => p_ts_code_pct_flood,
+         p_ts_code_pct_con         => p_ts_code_pct_con,
+         p_ts_code_irrad           => p_ts_code_irrad,
+         p_ts_code_evap            => p_ts_code_evap,
+         p_rating_code_elev_stor   => p_rating_code_elev_stor,
+         p_rating_code_elev_area   => p_rating_code_elev_area,
+         p_rating_code_outlet_flow => p_rating_code_outlet_flow,
+         p_ts_code_opening         => p_ts_code_opening,
+         p_opening_source_obj      => p_opening_source_obj,
+         p_lake_summary_tf         => p_lake_summary_tf,
+         p_error_msg               => p_error_msg);
+   END p_load_a2w_by_location;
 
    PROCEDURE p_load_location (
       p_db_office_id                  IN     cwms_v_loc.db_Office_id%TYPE,
@@ -6963,175 +6836,25 @@ on: {%Date}]]></format>
       p_locatioN_code   IN Cwms_v_loc.location_code%TYPE,
       p_user_id         IN VARCHAR2)
    IS
-      temp_i   NUMBER DEFAULT 0;
    BEGIN
-      FOR x
-         IN (SELECT *
-               FROM cwms_v_a2w_ts_codes_By_loc2
-              WHERE db_Office_id = p_db_Office_id
-                AND location_code = p_locatioN_code
-             )
-      LOOP
-
-        temp_i := temp_i  + 1;
-         NULL;
-/*
-         IF x.ts_code_elev IS NOT NULL
-         THEN
-            temp_i := temp_i + 1;
-         END IF;
-
-         IF x.ts_code_stage IS NOT NULL
-         THEN
-            temp_i := temp_i + 1;
-         END IF;
-
-         IF x.ts_code_precip IS NOT NULL
-         THEN
-            temp_i := temp_i + 1;
-         END IF;
-
-         IF x.ts_code_inflow IS NOT NULL
-         THEN
-            temp_i := temp_i + 1;
-         END IF;
-
-         IF x.ts_code_outflow IS NOT NULL
-         THEN
-            temp_i := temp_i + 1;
-         END IF;
-
-         IF x.ts_code_stor_flood IS NOT NULL
-         THEN
-            temp_i := temp_i + 1;
-         END IF;
-
-         IF x.ts_code_stor_drought IS NOT NULL
-         THEN
-            temp_i := temp_i + 1;
-         END IF;
-
-         IF x.ts_code_power_Gen IS NOT NULL
-         THEN 
-            temp_i := temp_i + 1;
-        END IF;
-        
-         IF x.ts_code_temp_air IS NOT NULL
-         THEN 
-            temp_i := temp_i + 1;
-        END IF;
-       
-       IF x.ts_code_temp_water IS NOT NULL
-         THEN 
-            temp_i := temp_i + 1;
-        END IF;
-        
-       IF x.ts_code_do IS NOT NULL
-         THEN 
-            temp_i := temp_i + 1;
-        END IF;
-*/
-  END LOOP;
-
-FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_id 
-             AND location_code = p_location_code)
-             
-      LOOP
-
-         UPDATE at_a2w_ts_codes_by_loc
-            SET date_refreshed = SYSDATE,
-                notes =
-                      x.notes
-                   || CHR (10)
-                   || ' updated via CMA on '
-                   || SYSDATE
-                   || ' by '
-                   || p_user_id,
-                num_ts_codes = temp_i
-          WHERE     db_office_id = p_db_office_id
-                AND location_code = p_location_code;
-
-         IF temp_i = 0
-         THEN
-            UPDATE at_a2w_ts_codes_by_loc
-               SET date_refreshed = SYSDATE,
-                   notes =
-                         x.notes
-                      || CHR (10)
-                      || ' updated via CMA on '
-                      || SYSDATE
-                      || ' by '
-                      || p_user_Id
-                      || '. Set display flag to False because there are no TS IDs selected.',
-                   display_flag = 'F'
-             WHERE     db_office_id = p_db_office_id
-                   AND location_code = p_location_code;
-         END IF;
-
-      END LOOP;
-
-         temp_i := 0;
- 
-   END;
+      -- implemented in CWMS_A2W (no APEX dependency, so it is installed and tested in CI)
+      cwms_a2w.p_set_a2w_num_tsids (
+         p_db_office_id  => p_db_office_id,
+         p_location_code => p_location_code,
+         p_user_id       => p_user_id);
+   END p_set_a2w_num_tsids;
 
    PROCEDURE p_add_Missing_a2w_rows (
       p_db_Office_id   IN cwms_v_loc.db_Office_id%TYPE,
       p_locatioN_code    IN Cwms_v_loc.location_code%TYPE DEFAULT NULL,
       p_user_id        IN VARCHAR2)
    IS
-    BEGIN
-   UPDATE at_a2w_ts_codes_by_loc
-           SET location_id = cwms_loc.get_location_id(location_code)
-         WHERE locatioN_id IS NULL;
-
-      IF p_locatioN_code IS NOT NULL
-      THEN
-         FOR x
-            IN (SELECT db_office_id, location_code
-                  FROM cwms_v_loc
-                 WHERE db_Office_id    = p_db_Office_id
-                   AND unit_system     = 'EN'
-                   AND loc_active_flag = 'T'
-                   AND location_kind_id NOT IN ( 'STREAM' , 'BASIN')  -- AND substr(location_id, 1,1) = 'B'
-                   AND location_code   = p_locatioN_code
-                MINUS
-                SELECT db_office_id, locatioN_code
-                  FROM cwms_v_a2w_ts_codes_by_loc
-                 WHERE db_office_id  = p_db_office_id
-                   AND locatioN_code = p_locatioN_code
-               )
-         LOOP
-            INSERT
-              INTO at_a2w_ts_codes_by_loc (db_Office_id,
-                                           location_code,
-                                           date_refreshed,
-                                           location_id)
-            VALUES (x.db_office_id, x.location_code, SYSDATE,cwms_loc.get_location_id(x.location_code) );
-         END LOOP;
-      ELSE
-         FOR x
-            IN (SELECT db_office_id, location_code
-                  FROM cwms_v_loc
-                 WHERE db_Office_id    = p_db_Office_id
-                   AND unit_system     = 'EN'
-                   AND loc_active_flag = 'T'
-                   AND location_kind_id NOT IN ( 'STREAM' , 'BASIN')  -- AND substr(location_id, 1,1) = 'B'
-                MINUS
-                SELECT db_office_id, locatioN_code
-                  FROM cwms_v_a2w_ts_codes_by_loc
-                 WHERE db_office_id = p_db_office_id
-                )
-         LOOP
-
-                        INSERT
-                         INTO at_a2w_ts_codes_by_loc (db_Office_id,
-                                                      location_code,
-                                                      date_refreshed,
-                                                      location_id)
-                       VALUES (x.db_office_id, x.location_code, SYSDATE, cwms_loc.get_location_id(x.location_code)) ;
-			
-         END LOOP;
-      END IF;
+   BEGIN
+      -- implemented in CWMS_A2W (no APEX dependency, so it is installed and tested in CI)
+      cwms_a2w.p_add_missing_a2w_rows (
+         p_db_office_id  => p_db_office_id,
+         p_location_code => p_location_code,
+         p_user_id       => p_user_id);
    END p_add_Missing_a2w_rows;
 
 --   PROCEDURE p_delete_pool (p_Location_code     IN cwms_v_pool.location_code%TYPE
