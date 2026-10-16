@@ -58,7 +58,8 @@ AS
     IS
     BEGIN
         delete from at_clob where id='/TEST_CWMS_RATING/TRANSITIONAL_RATING';
-        delete from at_clob where id='/TEST/CWMS-2430';
+        delete from at_clob where id like '/TEST/CWMS-2430%';
+        --delete from at_clob where id='/TEST/CWMS-2430_LOCATIONS_FOR_TEST_MODS_FOR_GENERIC_GEOMETRY';
     END delete_test_clobs;
 
     PROCEDURE cleanup_all
