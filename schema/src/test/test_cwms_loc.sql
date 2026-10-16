@@ -4223,7 +4223,7 @@ end test_vertical_datum_info_bulk;
                                                       -95.234, 34.456))
             );
             l_loc_code := cwms_loc.get_location_code(l_office_id, l_stored_loc);
-            select location_id into l_stored_name from cwms_v_loc where location_code = l_loc_code
+            select location_id into l_stored_name from cwms_v_loc where location_code = l_loc_code;
             commit;
          end;
 
