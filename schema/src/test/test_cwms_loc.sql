@@ -72,6 +72,8 @@ procedure test_assign_loc_do_not_ignore_missing;
 procedure test_location_geometry_nearest_city_normalization;
 --%test (Test simple deletion)
 procedure test_delete_loc;
+--%test(Test rapid deletion and insert)
+procedure test_rapid_delete_insert;
 
 procedure setup;
 procedure teardown;
@@ -4196,6 +4198,43 @@ end test_vertical_datum_info_bulk;
          when others then raise;
       end;
    END;
+
+   -- This tests the behavior of several CDA and OpenDCS tests
+   -- that clear and rebuild the given site in a rapid cycle
+   PROCEDURE test_delete_loc
+   IS
+      l_stored_loc VARCHAR2(64)          := 'ToDelete';
+      l_office_id  VARCHAR2(3)           := '&&office_id';
+      l_geom varchar2(64);
+      l_loc_code number;
+      l_stored_name varchar2(64);
+   BEGIN
+      for i in 1..l_data_tab.count loop
+         begin
+            cwms_loc.store_location3 (p_location_id    => l_stored_loc,
+                                    p_db_office_id   => l_office_id,
+                                    p_geometry       => sdo_geometry(
+                                                   2002,
+                                                   4326,
+                                                   null,
+                                                   sdo_elem_info_array(1, 2, 1),
+                                                   sdo_ordinate_array(
+                                                      -95.123, 34.345,
+                                                      -95.234, 34.456))
+            );
+            l_loc_code := cwms_loc.get_location_code(l_office_id, l_stored_loc);
+            select location_id into l_stored_name from cwms_v_loc where location_code = l_loc_code
+            commit;
+         end;
+
+         begin
+            cwms_loc.delete_location(l_stored_loc, cwms_util.delete_loc, l_office_id);
+            commit;
+         end;
+
+
+      end loop;
+   END;   
 
 END test_cwms_loc;
 /
