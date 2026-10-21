@@ -3452,7 +3452,7 @@ as
    -----------------------------------
 
    FUNCTION months_to_yminterval (p_months IN INTEGER)
-      RETURN INTERVAL YEAR TO MONTH
+      RETURN yminterval_unconstrained
    IS
    BEGIN
       IF p_months IS NULL
@@ -3460,10 +3460,7 @@ as
          RETURN NULL;
       END IF;
 
-      RETURN TO_YMINTERVAL (
-                   TO_CHAR (TRUNC (p_months / 12))
-                || '-'
-                || TO_CHAR (MOD (p_months, 12)));
+   RETURN NUMTOYMINTERVAL(p_months, 'MONTH');
    END months_to_yminterval;
 
    ------------------------------------
