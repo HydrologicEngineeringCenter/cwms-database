@@ -1442,6 +1442,27 @@ AS
 										 p_ignore_null 		 IN VARCHAR2 DEFAULT 'T',
 										 p_db_office_id		 IN VARCHAR2 DEFAULT NULL
 										);
+	/**
+    * Updates metadata associated with a location group in the database
+    *
+    * @param p_loc_category_id      The location category identifier (parent of location group)
+    * @param p_loc_group_id         The location group identifier
+    * @param p_db_office_id         The office that owns the location group. If not specified or NULL, the session user's default office will be used
+    * @param p_loc_group_desc       The new description of the location group
+    * @param p_loc_group_attribute  The new attribute value
+    * @param p_shared_alias_id      The new alias shared by all locations in the location group
+	 * @param p_shared_loc_ref_id    The new location identifier shared by all locations in the location group
+    * @param p_ignore_null       A flag ('T' or 'F') that specifies whether to ignore NULL description
+    */
+	PROCEDURE update_loc_group (p_loc_category_id	   IN VARCHAR2,
+										 p_loc_group_id		   IN VARCHAR2,
+	                            p_db_office_id		   IN VARCHAR2 DEFAULT NULL
+										 p_loc_group_desc 	   IN VARCHAR2 DEFAULT NULL,
+	                            p_loc_group_attribute  IN NUMBER DEFAULT NULL,
+	                            p_shared_alias_id 	   IN VARCHAR2 DEFAULT NULL,
+	                            p_shared_loc_ref_id	   IN VARCHAR2 DEFAULT NULL,
+	                            p_ignore_null 		   IN VARCHAR2 DEFAULT 'T'
+	                           );
    -- not documented. use store_loc_category
 	PROCEDURE create_loc_category (
 		p_loc_category_id 	 IN VARCHAR2,
