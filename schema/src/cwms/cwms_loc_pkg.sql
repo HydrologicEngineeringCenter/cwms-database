@@ -1456,7 +1456,7 @@ AS
     */
 	PROCEDURE update_loc_group (p_loc_category_id	   IN VARCHAR2,
 										 p_loc_group_id		   IN VARCHAR2,
-	                            p_db_office_id		   IN VARCHAR2 DEFAULT NULL
+	                            p_db_office_id		   IN VARCHAR2 DEFAULT NULL,
 										 p_loc_group_desc 	   IN VARCHAR2 DEFAULT NULL,
 	                            p_loc_group_attribute  IN NUMBER DEFAULT NULL,
 	                            p_shared_alias_id 	   IN VARCHAR2 DEFAULT NULL,

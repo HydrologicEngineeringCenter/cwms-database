@@ -4598,7 +4598,7 @@ end get_srid;
 
    PROCEDURE update_loc_group (p_loc_category_id	   IN VARCHAR2,
                                p_loc_group_id		   IN VARCHAR2,
-                               p_db_office_id		   IN VARCHAR2 DEFAULT NULL
+                               p_db_office_id		   IN VARCHAR2 DEFAULT NULL,
                                p_loc_group_desc 	   IN VARCHAR2 DEFAULT NULL,
                                p_loc_group_attribute  IN NUMBER DEFAULT NULL,
                                p_shared_alias_id 	   IN VARCHAR2 DEFAULT NULL,
@@ -4610,7 +4610,6 @@ end get_srid;
       l_db_office_code           NUMBER;
       l_loc_category_code        NUMBER;
       l_loc_group_code           NUMBER;
-      l_loc_group_id             VARCHAR2 (32) := TRIM (p_loc_group_id);
       l_ignore_null              BOOLEAN;
       l_group_desc               VARCHAR2(1000);
       l_loc_alias                VARCHAR2(1000);
@@ -4625,7 +4624,9 @@ end get_srid;
          l_db_office_id := UPPER (p_db_office_id);
       END IF;
 
-       IF NVL (p_ignore_null, 'T') = 'T'
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      IF NVL (p_ignore_null, 'T') = 'T'
       THEN
          l_ignore_null := TRUE;
       ELSE
@@ -4657,7 +4658,7 @@ end get_srid;
             cwms_err.raise (
                'ITEM_DOES_NOT_EXIST',
                'p_loc_group_id does not exist - can''t perform update of: ',
-               p_loc_group_id_old
+               p_loc_group_id
             );
       END;
 
@@ -4668,7 +4669,7 @@ end get_srid;
 
       if l_loc_alias IS NULL AND l_ignore_null
       then
-         select loc_alias_id
+         select shared_loc_alias_id
             into l_loc_alias
                from at_loc_group
                   where loc_group_code = l_loc_group_code;
@@ -4693,7 +4694,7 @@ end get_srid;
       IF l_ref_loc IS NOT NULL
          THEN
             l_ref_loc_code :=
-               cwms_loc.get_location_code (l_office_code,
+               cwms_loc.get_location_code (l_db_office_id,
                                            l_ref_loc
                                           );
          else
