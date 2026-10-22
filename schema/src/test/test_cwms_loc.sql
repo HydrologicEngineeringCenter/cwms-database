@@ -4211,7 +4211,7 @@ end test_vertical_datum_info_bulk;
       l_loc_attrib   NUMBER := 12;
       l_result_desc  VARCHAR2(100);
       l_result_alias VARCHAR2(100);
-      l_result_attr  VARCHAR2(100);
+      l_result_attr  NUMBER;
       l_result_loc   VARCHAR2(100);
    BEGIN
       cwms_loc.store_location (p_location_id    => l_stored_loc,
@@ -4220,7 +4220,7 @@ end test_vertical_datum_info_bulk;
       cwms_loc.store_loc_group2(l_loc_grp_cat, l_loc_group_id, 'Unit Test Group', l_loc_attrib,
                                'F', 'T', l_loc_alias, l_ref_loc, l_office_id);
 
-      cwms_loc.update_loc_group(l_loc_grp_cat, l_loc_group_id, l_loc_desc, l_office_id,
+      cwms_loc.update_loc_group(l_loc_grp_cat, l_loc_group_id, l_office_id, l_loc_desc,
                                l_loc_attrib, l_loc_alias, l_ref_loc, 'T');
 
       select loc_group_desc,
