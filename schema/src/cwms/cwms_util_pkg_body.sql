@@ -6916,6 +6916,7 @@ as
       l_date_dummy   date;
       l_time_fraction number; -- fraction of a day to preserve time-of-day from input
       l_result       date;
+      l_leap         boolean;
    begin
       l_date := p_date;
       begin
@@ -6928,6 +6929,9 @@ as
       l_yr := extract(year from l_date) + extract(year from p_calendar_interval);
       l_mon := extract(month from l_date) + extract(month from p_calendar_interval);
       l_day := extract(day from l_date);
+      if l_mon = 2 and l_day = 29 then
+         l_leap := true;
+      end if;
       for i in 1..5 loop
          if i = 5 then
             cwms_err.raise(
@@ -6945,7 +6949,12 @@ as
             exit;
          exception
             when others then
-               l_day := l_day - 1;
+               if l_leap then
+                  l_day := 1;
+                  l_mon := 3;
+               else
+                  l_day := l_day - 1;
+               end if;
          end;
       end loop;
       -- retain the original time-of-day from p_date
