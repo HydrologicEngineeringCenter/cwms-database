@@ -1,0 +1,232 @@
+#! /usr/bin/env python3
+import getpass, oracledb, os, sys
+
+tables = []
+table_rows = {}
+
+preliminary_sql_statements = [
+    "select * from at_parameter where db_office_code != 53",
+    "select * from at_base_location where base_location_code in (select distinct base_location_code from at_physical_location where location_code in (select distinct shared_loc_ref_code from at_loc_group where loc_category_code in (select loc_category_code from at_loc_category where db_office_code != 53) and shared_loc_ref_code is not null))",
+    "select * from at_physical_location where location_code in (select distinct shared_loc_ref_code from at_loc_group where loc_category_code in (select loc_category_code from at_loc_category where db_office_code != 53) and shared_loc_ref_code is not null)",
+    "select * from at_loc_category where db_office_code != 53",
+    "select * from at_loc_group where loc_category_code in (select loc_category_code from at_loc_category where db_office_code != 53)",
+    "select * from at_specified_level where office_code != 53",
+    "select * from at_base_location where base_location_code in (select distinct base_location_code from at_physical_location where location_code in (select receiving_stream_code from at_stream where stream_location_code in (select stream_location_code from at_stream_location where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code))))",
+    "select * from at_physical_location where base_location_code = :base_location_code",
+    "select * from at_physical_location where location_code in (select diverting_stream_code from at_stream where stream_location_code in (select stream_location_code from at_stream_location where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code)))",
+    "select * from at_physical_location where location_code in (select receiving_stream_code from at_stream where stream_location_code in (select stream_location_code from at_stream_location where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code)))",
+    "select * from at_base_location where base_location_code in (select distinct base_location_code from at_physical_location where location_code in (select stream_location_code from at_stream))",
+    "select * from at_physical_location where location_code in (select stream_location_code from at_stream)",
+    "select * from at_stream where stream_location_code in (select stream_location_code from at_stream_location where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code))",
+    "select * from at_stream_location where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code)",
+    "select * from at_base_location where base_location_code in (select distinct base_location_code from at_physical_location where location_code in (select distinct location_code from at_cwms_ts_spec where ts_code in (select distinct shared_ts_ref_code from at_ts_group where ts_category_code in (select ts_category_code from at_ts_category where db_office_code != 53))))",
+    "select * from at_physical_location where location_code in (select distinct location_code from at_cwms_ts_spec where ts_code in (select distinct shared_ts_ref_code from at_ts_group where ts_category_code in (select ts_category_code from at_ts_category where db_office_code != 53)))",
+    "select * from at_cwms_ts_spec where ts_code in (select distinct shared_ts_ref_code from at_ts_group where ts_category_code in (select ts_category_code from at_ts_category where db_office_code != 53))",
+    "select * from at_ts_category where db_office_code != 53",
+    "select * from at_ts_group where ts_category_code in (select ts_category_code from at_ts_category where db_office_code != 53)",
+    "select * from at_rating_template where template_code in (select distinct template_code from at_rating_spec where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code))",
+    "select * from at_rating_spec where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code)",
+    "select * from at_rating where rating_spec_code in (select distinct rating_spec_code from at_rating_spec where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code))",
+    "select * from at_rating_ind_param_spec where template_code in (select template_code from at_rating_spec where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code))",
+]
+
+def get_child_relationships(cursor, table_name):
+    """
+    Finds all tables that have a foreign key pointing to the given table.
+    """
+    query = """
+        SELECT child.table_name, child_col.column_name, parent_col.column_name as ref_column
+        FROM all_constraints child
+        JOIN all_cons_columns child_col ON child.constraint_name = child_col.constraint_name
+        JOIN all_constraints parent ON child.r_constraint_name = parent.constraint_name
+        JOIN all_cons_columns parent_col ON parent.constraint_name = parent_col.constraint_name
+        WHERE parent.table_name = :table_name
+        AND child.constraint_type = 'R'
+        ORDER BY child.table_name, child_col.position
+    """
+    cursor.execute(query, table_name=table_name.upper())
+    return cursor.fetchall()
+
+def sdo_to_dict(obj):
+    """
+    Converts an SDO_GEOMETRY object to a dictionary representation."""
+    if obj is None:
+        return None
+    
+    # Handle nested DbObject (like SDO_POINT_TYPE)
+    sdo_point = None
+    if obj.SDO_POINT is not None:
+        sdo_point = {
+            "X": obj.SDO_POINT.X,
+            "Y": obj.SDO_POINT.Y,
+            "Z": obj.SDO_POINT.Z
+        }
+
+    # Handle Collection types (convert SDO_ELEM_INFO_ARRAY and SDO_ORDINATE_ARRAY to lists)
+    return {
+        "SDO_GTYPE": obj.SDO_GTYPE,
+        "SDO_SRID": obj.SDO_SRID,
+        "SDO_POINT": sdo_point,
+        "SDO_ELEM_INFO": list(obj.SDO_ELEM_INFO) if obj.SDO_ELEM_INFO is not None else None,
+        "SDO_ORDINATES": list(obj.SDO_ORDINATES) if obj.SDO_ORDINATES is not None else None
+    }
+
+def extract_data(cursor, sql, base_location_code):
+    """
+    Extracts data using specified SQL
+    """
+    table = sql.split()[3]
+    condition = sql.split(table, 1)[1].strip()
+    table = table.upper()
+    if table not in tables:
+        tables.append(table)
+        table_rows[table] = []
+    header1 = f"--- Fetching from {table} {condition} ---".replace(":base_location_code", base_location_code)
+    print(header1)
+    table_rows[table].append(header1)
+    if sql.find(":base_location_code") == -1:
+        cursor.execute(sql)
+    else:
+        cursor.execute(sql, base_location_code=base_location_code)
+    rows = cursor.fetchall()
+    if (rows):
+        columns = [col[0] for col in cursor.description]
+        header2 = f"--- Columns: {columns}"
+        table_rows[table].append(header2)
+        for row in rows:
+            table_rows[table].append(tuple(row))
+
+def extract_data_recursive(cursor, table, column, value, visited):
+    """
+    Recursively extracts data from linked tables.
+    """
+    # Prevent infinite loops and redundant processing
+    node_id = f"{table}.{column}.{value}"
+    if node_id in visited:
+        return
+    visited.add(node_id)
+    if table not in tables:
+        tables.append(table)
+        table_rows[table] = []
+    # Fetch records
+    sql = f"SELECT * FROM {table} WHERE {column} = :val"
+    if table.startswith('AT_TSV_'):
+        print(f"--- Fetching VERSION_DATES from {table} where {column} = {value} ---")
+        sql2 = f"select distinct version_date from {table} where {column} = :val order by 1"
+        cursor.execute(sql2, val=value)
+        version_dates = cursor.fetchall()
+        sql3 = sql + " AND VERSION_DATE = :version_date FETCH FIRST 10 ROWS ONLY"
+        rows = []
+        for version_date in version_dates:
+            header1 = f"--- Fetching from {table} where {column} = {value} AND VERSION_DATE = {version_date[0]} ---"
+            table_rows[table].append(header1)
+            print(header1)
+            cursor.execute(sql3, val=value, version_date=version_date[0])
+            columns = [col[0] for col in cursor.description]
+            header2 = f"--- Columns: {columns}"
+            rows += [header1, header2]
+            rows.extend(cursor.fetchall())
+        rows = tuple(rows)
+    else:
+        header1 = f"--- Fetching from {table} where {column} = {value} ---"
+        table_rows[table].append(header1)
+        print(header1)
+        if table == "AT_RATING_VALUE":
+            sql += " FETCH FIRST 10 ROWS ONLY"
+        cursor.execute(sql, val=value)
+        rows = cursor.fetchall()
+        columns = [col[0] for col in cursor.description]
+    clob_cols = [col[0] for col in cursor.description if col[1] == oracledb.DB_TYPE_CLOB]
+    possible_geom_cols = [col[0] for col in cursor.description if col[1] == oracledb.DB_TYPE_OBJECT]
+    if (rows) and not table.startswith('AT_TSV_'):
+        header2 = f"--- Columns: {columns}"
+        table_rows[table].append(header2)
+    for row in rows:
+        if clob_cols or possible_geom_cols:
+            row = list(row)
+            if clob_cols:
+                for idx, col in enumerate(columns):
+                    if col in clob_cols and row[idx] is not None:
+                        row[idx] = row[idx].read()
+            if possible_geom_cols:
+                for idx, col in enumerate(columns):
+                    if col in possible_geom_cols and str(row[idx]).find('SDO_GEOMETRY') != -1:
+                        row[idx] = sdo_to_dict(row[idx])
+        table_rows[table].append(row if isinstance(row, str) else tuple(row))
+        # Find children and recurse
+        children = get_child_relationships(cursor, table)
+        for child_table, child_col, ref_col in children:
+            col_idx = columns.index(ref_col)
+            # We assume the value of the PK in the parent is the value of the FK in the child
+            child_val = row[col_idx]
+            if child_val is not None:
+                if child_table == "AT_CWMS_TS_ID":
+                    # table is populated by trigger from AT_CWMS_TS_SPEC
+                    continue
+                if child_table.startswith("AT_FORECAST_"):
+                    # old forecast structure, not compatible with current schema (AT_FCST_...)
+                    continue
+                extract_data_recursive(cursor, child_table, child_col, child_val, visited)
+
+def main(base_location_id):
+    try:
+        if sys.stdin.isatty():
+            url = input("\nDB (Host:Port:SID or Host:Port/Service) >")
+            if url and url[0] == '$':
+                url = os.getenv(url[1:])
+            if not url: return
+            usr = input("User Name          >")
+            if usr and usr[0] == '$':
+                usr = os.getenv(usr[1:])
+            if not usr: return
+            pwd = getpass.getpass("Pass Phrase        >")
+            if pwd and pwd[0] == '$':
+                pwd = os.getenv(pwd[1:])
+            if not pwd: return
+        else:
+            url = sys.stdin.readline().strip()
+            if url and url[0] == '$':
+                url = os.getenv(url[1:])
+            if not url: return
+            usr = sys.stdin.readline().strip()
+            if usr and usr[0] == '$':
+                usr = os.getenv(usr[1:])
+            if not usr: return
+            pwd = sys.stdin.readline().strip()
+            if pwd and pwd[0] == '$':
+                pwd = os.getenv(pwd[1:])
+            if not pwd: return
+        if "/" in url:
+            host_port, svc = url.split("/")
+            host, port = host_port.split(":")
+            conn = oracledb.connect(dsn = oracledb.makedsn(host, int(port), None, svc), user=usr, password=pwd)
+        else:
+            host, port, sid = url.split(":")
+            conn = oracledb.connect(dsn = oracledb.makedsn(host, int(port), sid), user=usr, password=pwd)
+        cursor = conn.cursor()
+        cursor.execute("select base_location_code from at_base_location where upper(base_location_id) = :id", id=base_location_id.upper())
+        row = cursor.fetchone()
+        if row:
+            base_location_code = row[0]
+        else:
+            raise Exception(f"No such base location: {base_location_id}")
+        # retrieve rows that will be referenced below
+        for sql in preliminary_sql_statements:
+            extract_data(cursor, sql, str(base_location_code))
+        # retrieve the base location and all child rows
+        visited = set()
+        extract_data_recursive(cursor, 'AT_BASE_LOCATION', 'BASE_LOCATION_CODE', base_location_code, visited)
+        cursor.close()
+        conn.close()
+        outfile_name = f"{base_location_id}.out"
+        outfile = open(outfile_name, "w")
+        for table in tables:
+            for row in table_rows[table]:
+                outfile.write(F"{row}\n")
+        print(f"==> Data is in file {outfile_name}")
+    except oracledb.Error as e:
+        print(f"Error: {e}")
+
+if __name__ == "__main__":
+    # Specify the root location from which to start the extraction
+    main(sys.argv[1])
