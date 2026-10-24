@@ -4223,8 +4223,8 @@ end test_vertical_datum_info_bulk;
       cwms_loc.store_loc_group2(l_loc_grp_cat, l_loc_group_id, 'Unit Test Group', 123,
                                'F', 'T', 'DifferentAlias', l_stored_loc2, l_office_id);
 
-      cwms_loc.update_loc_group(l_loc_grp_cat, l_loc_group_id, l_office_id, l_loc_desc,
-                               l_loc_attrib, l_loc_alias, l_ref_loc, 'T');
+      cwms_loc.update_loc_group(l_loc_grp_cat, l_loc_group_id, l_loc_desc,
+                               l_loc_attrib, 'T', l_loc_alias, l_ref_loc, l_office_id);
 
       select loc_group_desc,
              shared_ref_location_id,

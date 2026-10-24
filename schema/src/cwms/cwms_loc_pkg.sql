@@ -1454,15 +1454,15 @@ AS
 	 * @param p_shared_loc_ref_id    The new location identifier shared by all locations in the location group
     * @param p_ignore_null       A flag ('T' or 'F') that specifies whether to ignore NULL description
     */
-	PROCEDURE update_loc_group (p_loc_category_id	   IN VARCHAR2,
-										 p_loc_group_id		   IN VARCHAR2,
-	                            p_db_office_id		   IN VARCHAR2 DEFAULT NULL,
-										 p_loc_group_desc 	   IN VARCHAR2 DEFAULT NULL,
-	                            p_loc_group_attribute  IN NUMBER DEFAULT NULL,
-	                            p_shared_alias_id 	   IN VARCHAR2 DEFAULT NULL,
-	                            p_shared_loc_ref_id	   IN VARCHAR2 DEFAULT NULL,
-	                            p_ignore_null 		   IN VARCHAR2 DEFAULT 'T'
-	                           );
+   PROCEDURE update_loc_group (p_loc_category_id	   IN VARCHAR2,
+                               p_loc_group_id		   IN VARCHAR2,
+                               p_loc_group_desc 	   IN VARCHAR2 DEFAULT NULL,
+                               p_loc_group_attribute  IN NUMBER DEFAULT NULL,
+                               p_ignore_nulls 		   IN VARCHAR2 DEFAULT 'T',
+                               p_shared_alias_id 	   IN VARCHAR2 DEFAULT NULL,
+                               p_shared_loc_ref_id	   IN VARCHAR2 DEFAULT NULL,
+                               p_db_office_id		   IN VARCHAR2 DEFAULT NULL
+                              );
    -- not documented. use store_loc_category
 	PROCEDURE create_loc_category (
 		p_loc_category_id 	 IN VARCHAR2,
