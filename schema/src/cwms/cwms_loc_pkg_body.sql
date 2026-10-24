@@ -4596,6 +4596,122 @@ end get_srid;
    --
    END rename_loc_group;
 
+   PROCEDURE update_loc_group (p_loc_category_id	   IN VARCHAR2,
+                               p_loc_group_id		   IN VARCHAR2,
+                               p_loc_group_desc 	   IN VARCHAR2 DEFAULT NULL,
+                               p_loc_group_attribute  IN NUMBER DEFAULT NULL,
+                               p_ignore_nulls 		   IN VARCHAR2 DEFAULT 'T',
+                               p_shared_alias_id 	   IN VARCHAR2 DEFAULT NULL,
+                               p_shared_loc_ref_id	   IN VARCHAR2 DEFAULT NULL,
+                               p_db_office_id		   IN VARCHAR2 DEFAULT NULL
+                              )
+   IS
+      l_db_office_id             VARCHAR2 (16);
+      l_db_office_code           NUMBER;
+      l_loc_category_code        NUMBER;
+      l_loc_group_code           NUMBER;
+      l_ignore_nulls              BOOLEAN;
+      l_group_desc               VARCHAR2(1000);
+      l_loc_alias                VARCHAR2(1000);
+      l_loc_attrib               NUMBER;
+      l_ref_loc                  VARCHAR2(300);
+      l_ref_loc_code             NUMBER;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      IF NVL (p_ignore_nulls, 'T') = 'T'
+      THEN
+         l_ignore_nulls := TRUE;
+      ELSE
+         l_ignore_nulls := FALSE;
+      END IF;
+
+      BEGIN
+         l_loc_category_code :=
+            get_loc_category_code (p_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.raise (
+               'ITEM_DOES_NOT_EXIST',
+               'Category id must exist to update location group - Category id that does not exist: ',
+               p_loc_category_id
+            );
+      END;
+
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id,
+                                l_db_office_code
+                               );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.raise (
+               'ITEM_DOES_NOT_EXIST',
+               'p_loc_group_id does not exist - can''t perform update of: ',
+               p_loc_group_id
+            );
+      END;
+
+      l_loc_alias := p_shared_alias_id;
+      l_group_desc := p_loc_group_desc;
+      l_loc_attrib := p_loc_group_attribute;
+      l_ref_loc := p_shared_loc_ref_id;
+
+      if l_loc_alias IS NULL AND l_ignore_nulls
+      then
+         select shared_loc_alias_id
+            into l_loc_alias
+               from at_loc_group
+                  where loc_group_code = l_loc_group_code;
+      end if;
+
+      if l_group_desc IS NULL AND l_ignore_nulls
+      then
+         select loc_group_desc
+            into l_group_desc
+               from at_loc_group
+                  where loc_group_code = l_loc_group_code;
+      end if;
+
+      if l_loc_attrib IS NULL AND l_ignore_nulls
+      then
+         select loc_group_attribute
+            into l_loc_attrib
+               from at_loc_group
+                  where loc_group_code = l_loc_group_code;
+      end if;
+
+      IF l_ref_loc IS NOT NULL
+         THEN
+            l_ref_loc_code :=
+               cwms_loc.get_location_code (l_db_office_id,
+                                           l_ref_loc
+                                          );
+         else
+            select shared_loc_ref_code
+            into l_ref_loc_code
+            from at_loc_group
+            where loc_group_code = l_loc_group_code;
+      END IF;
+
+      UPDATE   at_loc_group
+      SET      loc_group_desc = TRIM (l_group_desc),
+               loc_group_attribute = l_loc_attrib,
+               shared_loc_alias_id = TRIM (l_loc_alias),
+               shared_loc_ref_code = l_ref_loc_code
+      WHERE    loc_group_code = l_loc_group_code;
+   END update_loc_group;
+
    --
    --********************************************************************** -
    --********************************************************************** -
