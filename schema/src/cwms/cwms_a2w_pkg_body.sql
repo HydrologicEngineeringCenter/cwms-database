@@ -214,7 +214,7 @@ as
    ------------------------------------------------------------------------------
    procedure p_add_missing_a2w_rows (
       p_db_office_id  in varchar2,
-      p_location_code in number default null,
+      p_location_code in number,
       p_user_id       in varchar2)
    is
    begin
