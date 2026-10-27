@@ -974,6 +974,13 @@ begin
 
    l_result := cwms_util.get_closest_valid_date(l_date, l_cal_interval);
    ut.expect(l_result).to_equal(l_expected);
+
+   -- validate same date returned
+   l_date := to_date('2021-01-31 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+   l_expected := to_date('2021-02-28 16:19:00', 'yyyy-mm-dd hh24:mi:ss');
+
+   l_result := cwms_util.get_closest_valid_date(l_date, l_cal_interval);
+   ut.expect(l_result).to_equal(l_expected);
 end test_get_closest_date;
 
 procedure test_interval_convert

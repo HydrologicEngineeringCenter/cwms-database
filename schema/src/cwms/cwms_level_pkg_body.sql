@@ -992,16 +992,16 @@ begin
                --------------------------------------------------------------------------------
                with query as
                   (select distinct
-                         cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) as date_time,
+                         cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + l_date_offset as date), calendar_offset) + time_offset as date_time,
                          value,
                          calendar_offset
                    from at_seasonal_location_level
                    where location_level_code = p_rec.location_level_code
-                      and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) =
-                            (select min(cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset))
+                      and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + l_date_offset as date), calendar_offset) + time_offset =
+                            (select min(cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + l_date_offset as date), calendar_offset) + time_offset)
                                from at_seasonal_location_level
                                where location_level_code = p_rec.location_level_code
-                                     and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) >= l_date)
+                                     and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + l_date_offset as date), calendar_offset) + time_offset >= l_date)
                   )
                select date_time,
                       value
@@ -1027,12 +1027,6 @@ begin
                         l_intvl := l_intvl + p_rec.calendar_interval;
                      end if;
                   end if;
-               when x_invalid_month_day then
-                  if p_rec.calendar_interval is null then
-                     l_intvl := l_intvl + p_rec.time_interval;
-                  else
-                     l_intvl := l_intvl + p_rec.calendar_interval;
-                  end if;
             end;
          end loop;
       else
@@ -1050,16 +1044,16 @@ begin
                --------------------------------------------------------------------------------
                with query as
                   (select distinct
-                         cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) as date_time,
+                         cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + l_date_offset as date), calendar_offset) + time_offset as date_time,
                          value,
                          calendar_offset
                    from at_seasonal_location_level
                    where location_level_code = p_rec.location_level_code
-                      and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) =
-                            (select max(cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset))
+                      and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + l_date_offset as date), calendar_offset) + time_offset =
+                            (select max(cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + l_date_offset as date), calendar_offset) + time_offset)
                                from at_seasonal_location_level
                                where location_level_code = p_rec.location_level_code
-                                     and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + time_offset + l_date_offset as date), calendar_offset) <= l_date)
+                                     and cwms_util.GET_CLOSEST_VALID_DATE(cast(l_intvl + l_date_offset as date), calendar_offset) + time_offset <= l_date)
                   )
                select date_time,
                       value
@@ -1084,12 +1078,6 @@ begin
                      else
                         l_intvl := l_intvl - p_rec.calendar_interval;
                      end if;
-                  end if;
-               when x_invalid_month_day then
-                  if p_rec.calendar_interval is null then
-                     l_intvl := l_intvl - p_rec.time_interval;
-                  else
-                     l_intvl := l_intvl - p_rec.calendar_interval;
                   end if;
             end;
          end loop;
