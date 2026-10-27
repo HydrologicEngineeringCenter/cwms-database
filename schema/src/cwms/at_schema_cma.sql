@@ -88,8 +88,17 @@ END;
 prompt create table at_a2w_ts_codes_by_loc
 @@cwms/tables/at_a2w_ts_codes_by_loc.sql
 --
-prompt create table cwms_published_id, at_published_ts, at_published_rating, at_published_level
-@@cwms/tables/at_published.sql
+prompt create table cwms_published_id
+@@cwms/tables/at_published_id.sql
+--
+prompt create table at_published_ts
+@@cwms/tables/at_published_ts.sql
+--
+prompt create table at_published_rating
+@@cwms/tables/at_published_rating.sql
+--
+prompt create table at_published_level
+@@cwms/tables/at_published_level.sql
 --
 prompt create table at_a2w_attributes
 @@cwms/tables/at_a2w_attributes.sql
