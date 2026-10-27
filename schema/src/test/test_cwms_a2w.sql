@@ -41,22 +41,22 @@ create or replace package test_cwms_a2w as
 
    -- shared pool: one location that owns the TS IDs / rating spec, reused by ts_code /
    -- rating_spec_code across the per-scenario target locations below.
-   c_shared_loc      constant varchar2(30) := 'TESTA2WPKGPOOL';
-   c_ts_id_elev      constant varchar2(60) := 'TESTA2WPKGPOOL.Elev.Inst.1Hour.0.Test';
-   c_ts_id_stage     constant varchar2(60) := 'TESTA2WPKGPOOL.Stage.Inst.1Hour.0.Test';
-   c_ts_id_inflow    constant varchar2(60) := 'TESTA2WPKGPOOL.Flow.Inst.1Hour.0.Test';
-   c_template_id     constant varchar2(60)  := 'Elev;Stor.Test-A2WPKG-Linear';
-   c_rating_spec_id  constant varchar2(120) := 'TESTA2WPKGPOOL.Elev;Stor.Test-A2WPKG-Linear.Test';
+   c_shared_loc      constant varchar2(30) := 'TestA2WPkgPool';
+   c_ts_id_elev      constant varchar2(60) := 'TestA2WPkgPool.Elev.Inst.1Hour.0.Test';
+   c_ts_id_stage     constant varchar2(60) := 'TestA2WPkgPool.Stage.Inst.1Hour.0.Test';
+   c_ts_id_inflow    constant varchar2(60) := 'TestA2WPkgPool.Flow.Inst.1Hour.0.Test';
+   c_template_id     constant varchar2(60)  := 'Elev;Stor.Test-A2WPkg-Linear';
+   c_rating_spec_id  constant varchar2(120) := 'TestA2WPkgPool.Elev;Stor.Test-A2WPkg-Linear.Test';
 
    -- one dedicated target location per scenario, so tests do not depend on run order
-   c_loc_load             constant varchar2(30) := 'TESTA2WPKGLOAD';
-   c_loc_opening           constant varchar2(30) := 'TESTA2WPKGOPEN';
-   c_loc_mismatch          constant varchar2(30) := 'TESTA2WPKGMISMATCH';
-   c_loc_clear1            constant varchar2(30) := 'TESTA2WPKGCLEAR1';
-   c_loc_clear2            constant varchar2(30) := 'TESTA2WPKGCLEAR2';
-   c_loc_numtsids_empty    constant varchar2(30) := 'TESTA2WPKGNUM0';
-   c_loc_numtsids_present  constant varchar2(30) := 'TESTA2WPKGNUM1';
-   c_loc_missing           constant varchar2(30) := 'TESTA2WPKGMISSING';
+   c_loc_load             constant varchar2(30) := 'TestA2WPkgLoad';
+   c_loc_opening           constant varchar2(30) := 'TestA2WPkgOpen';
+   c_loc_mismatch          constant varchar2(30) := 'TestA2WPkgMismatch';
+   c_loc_clear1            constant varchar2(30) := 'TestA2WPkgClear1';
+   c_loc_clear2            constant varchar2(30) := 'TestA2WPkgClear2';
+   c_loc_numtsids_empty    constant varchar2(30) := 'TestA2WPkgNum0';
+   c_loc_numtsids_present  constant varchar2(30) := 'TestA2WPkgNum1';
+   c_loc_missing           constant varchar2(30) := 'TestA2WPkgMissing';
 end test_cwms_a2w;
 /
 
@@ -129,18 +129,6 @@ create or replace package body test_cwms_a2w as
          is
          l_location_code number;
       begin
-         begin
-            select location_code into l_location_code
-              from cwms_v_loc
-             where db_office_id = c_office_id and location_id = p_location_id and rownum = 1;
-
-            delete from at_published_ts where location_code = l_location_code;
-            delete from at_published_rating where location_code = l_location_code;
-            delete from at_a2w_attributes where location_code = l_location_code;
-         exception
-            when no_data_found then null;
-         end;
-
          cwms_loc.delete_location(
             p_location_id    => p_location_id,
             p_delete_action  => cwms_util.delete_all,
@@ -209,7 +197,7 @@ create or replace package body test_cwms_a2w as
 <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
   <rating-template office-id="$office-id">
     <parameters-id>Elev;Stor</parameters-id>
-    <version>Test-A2WPKG-Linear</version>
+    <version>Test-A2WPkg-Linear</version>
     <ind-parameter-specs>
       <ind-parameter-spec position="1">
         <parameter>Elev</parameter>
@@ -223,7 +211,7 @@ create or replace package body test_cwms_a2w as
   </rating-template>
   <rating-spec office-id="$office-id">
     <rating-spec-id>$rating-spec-id</rating-spec-id>
-    <template-id>Elev;Stor.Test-A2WPKG-Linear</template-id>
+    <template-id>Elev;Stor.Test-A2WPkg-Linear</template-id>
     <location-id>$location-id</location-id>
     <version>Test</version>
     <source-agency/>

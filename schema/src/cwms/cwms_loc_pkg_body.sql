@@ -2963,6 +2963,9 @@ AS
          -------------
          -- ratings --
          -------------
+         delete
+           from at_published_rating
+          where location_code in (select * from table (l_location_codes));
          for i in 1..l_location_ids.count loop
             cwms_rating.delete_specs(
                l_location_ids (i) || '.*',
@@ -3096,6 +3099,18 @@ AS
       --
       CLOSE l_cursor;
 
+      if l_delete_action in
+            (cwms_util.delete_data,
+             cwms_util.delete_all,
+             cwms_util.delete_loc_cascade)
+      then
+         --------------------------
+         -- published (a2w) data --
+         --------------------------
+         delete
+           from at_a2w_attributes
+          where location_code in (select * from table (l_location_codes));
+      end if;    
       --------------------------------------------------------------
       -- finally, delete the actual location records if specified --
       --------------------------------------------------------------
