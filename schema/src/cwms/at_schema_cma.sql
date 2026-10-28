@@ -89,7 +89,7 @@ prompt create table at_a2w_ts_codes_by_loc
 @@cwms/tables/at_a2w_ts_codes_by_loc.sql
 --
 prompt create table cwms_published_id
-@@cwms/tables/at_published_id.sql
+@@cwms/tables/cwms_published_id.sql
 --
 prompt create table at_published_ts
 @@cwms/tables/at_published_ts.sql
