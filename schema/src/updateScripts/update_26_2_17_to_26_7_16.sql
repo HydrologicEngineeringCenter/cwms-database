@@ -339,7 +339,14 @@ PROMPT #########################################################################
 PROMPT ADDING SEARCH_DOC COLUMN TO AT_PHYSICAL_LOCATION
 select systimestamp from dual;
 
-ALTER PACKAGE cwms_loc COMPILE BODY;
+begin
+   dbms_utility.compile_schema(
+      schema      => 'CWMS_20',
+      compile_all => true
+   );
+end;
+/
+
 DROP INDEX IF EXISTS at_physical_location_search_doc_idx;
 @@../cwms/oracle_text/setup_indexes
 

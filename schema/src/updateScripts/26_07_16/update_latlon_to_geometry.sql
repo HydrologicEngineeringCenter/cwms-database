@@ -180,17 +180,21 @@ begin
                rec.location_code,
                l_message
             );
-
          exception
-            when others then
-               -- The geometry insert failed. Log the error
-               -- instead of the original conversion message.
-               insert into at_latlon_conversion
-               values (
-                  rec.location_code,
-                  '[z-error  ] Trigger failed: '
-                  || dbms_utility.format_error_stack
-               );
+           when others then
+              insert into at_latlon_conversion (
+                 location_code,
+                 conversion_note
+              )
+              values (
+                 rec.location_code,
+                 substr(
+                    '[z-error  ] Trigger failed: '
+                    || dbms_utility.format_error_stack,
+                    1,
+                    241
+                 ) || '... [truncated]'
+              );
          end;
       else
          ------------------------------------------------
