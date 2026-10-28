@@ -28,6 +28,7 @@ preliminary_sql_statements = [
     "select * from at_rating_spec where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code)",
     "select * from at_rating where rating_spec_code in (select distinct rating_spec_code from at_rating_spec where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code))",
     "select * from at_rating_ind_param_spec where template_code in (select template_code from at_rating_spec where location_code in (select location_code from at_physical_location where base_location_code = :base_location_code))",
+    "select * from at_a2w_ts_codes_by_loc where (location_id, db_office_id) in (select distinct location_id, db_office_id from av_loc where base_location_code = :base_location_code)",
 ]
 
 def get_child_relationships(cursor, table_name):
@@ -91,9 +92,15 @@ def extract_data(cursor, sql, base_location_code):
     rows = cursor.fetchall()
     if (rows):
         columns = [col[0] for col in cursor.description]
+        clob_cols = [col[0] for col in cursor.description if col[1] == oracledb.DB_TYPE_CLOB]
         header2 = f"--- Columns: {columns}"
         table_rows[table].append(header2)
         for row in rows:
+            if clob_cols:
+                row = list(row)
+                for idx, col in enumerate(columns):
+                    if col in clob_cols and row[idx] is not None:
+                        row[idx] = row[idx].read()
             table_rows[table].append(tuple(row))
 
 def extract_data_recursive(cursor, table, column, value, visited):
