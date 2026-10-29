@@ -2733,6 +2733,7 @@ procedure test_vertical_datum_info_bulk
       l_result                clob_tab_t := clob_tab_t();
       l_expected_xml          varchar2(4096);
       l_expected_xml2         varchar2(4096);
+      l_found                 boolean := false;
 BEGIN
    --------------------------------
    -- cleanup any previous tests --
@@ -2863,8 +2864,14 @@ BEGIN
    ut.expect(l_result.count).to_equal(2);
 
    if l_result.count = 2 then
-      ut.expect(to_char(l_result(1))).to_equal(to_char(l_expected_xml));
-      ut.expect(to_char(l_result(2))).to_equal(to_char(l_expected_xml2));
+      if (to_char(l_result(1)) = to_char(l_expected_xml)) then
+         ut.expect(to_char(l_result(2))).to_equal(to_char(l_expected_xml2));
+         l_found := true;
+      elsif (to_char(l_result(2)) = to_char(l_expected_xml)) then
+         ut.expect(to_char(l_result(1))).to_equal(to_char(l_expected_xml2));
+         l_found := true;
+      end if;
+      ut.expect(l_found).to_be_true();
    end if;
 end test_vertical_datum_info_bulk;
 

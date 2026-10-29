@@ -108,8 +108,7 @@ as
          for rec in (
             select *
               from at_seasonal_location_level
-             where location_level_code = p_location_level_code
-          order by l_rec.interval_origin + calendar_offset + time_offset)
+             where location_level_code = p_location_level_code)
          loop
             l_seasonal_values.extend;
             l_seasonal_values(l_seasonal_values.count) := seasonal_location_level_t(
