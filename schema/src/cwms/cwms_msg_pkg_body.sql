@@ -845,13 +845,15 @@ procedure log_publish_message(
    p_message   in varchar2,
    p_simple    in boolean default true,
    p_msg_key   in varchar2 default '')
-   is
+is
    pragma autonomous_transaction;
-   l_message   varchar2(4000) := p_message;
-   i           integer;
-   lf constant varchar2(1) := chr(10);
-   l_msg_level integer := nvl(p_msg_level, msg_level_normal);
-   l_final_msg  varchar2(4500);
+   l_message      varchar2(4000) := p_message;
+   i              integer;
+   lf constant    varchar2(1) := chr(10);
+   l_msg_level    integer := nvl(p_msg_level, msg_level_normal);
+   l_final_msg    varchar2(4500);
+   l_msg_map      sys.aq$_jms_map_message;
+   l_msg_id       pls_integer;
 begin
    l_message := replace(l_message, '&', '&'||'amp;');
    for c in 0..31 loop
@@ -875,14 +877,15 @@ begin
          || '  </text>' || lf
          || '</cwms_message>';
    end if;
-   i := log_message(
-      'CWMSDB',
-      null,
-      null,
-      null,
-      systimestamp at time zone 'UTC',
-      l_final_msg,
-      l_msg_level,
+   l_msg_map := sys.aq$_jms_map_message.construct();
+   l_msg_id := l_msg_map.prepare(null);
+   l_msg_map.set_string(l_msg_id, 'type', 'Status');
+   l_msg_map.set_string(l_msg_id, 'body', l_final_msg);
+   l_msg_map.flush(l_msg_id);
+   i := publish_message(
+      l_msg_map,
+      l_msg_id,
+      'STATUS',
       true);
 end log_publish_message;
 
