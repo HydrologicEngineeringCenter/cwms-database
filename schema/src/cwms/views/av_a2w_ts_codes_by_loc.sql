@@ -99,7 +99,7 @@ as
           attr.date_refreshed      ,
           attr.notes               ,
           attr.display_flag        ,
-          ts.num_ts_codes          ,
+          nvl(ts.num_ts_codes, 0)  ,
           ts.ts_code_stor_drought     ,
           attr.lake_summary_tf        ,
           ts.ts_code_sur_release      ,
