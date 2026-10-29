@@ -74,7 +74,12 @@ c_base_ts_data    constant cwms_t_ztsv_array := cwms_t_ztsv_array(
                                                    cwms_t_ztsv(c_base_start_date + 22/24, 1022,  3),  -- okay
                                                    cwms_t_ztsv(c_base_start_date + 23/24, 1023, 17),  -- rejected
                                                    cwms_t_ztsv(c_base_start_date + 24/24, null,  5)); -- null
-
+c_status_queue constant varchar2(128) := upper('&&cwms_schema..&&office_id._STATUS');
+type status_msg_t is record (
+   msg_type      varchar2(64),
+   procedure_key varchar2(128),
+   msg_text      varchar2(4000));
+type status_msg_tab_t is table of status_msg_t;
 end test_update_ts_extents;
 /
 show errors
@@ -1188,22 +1193,97 @@ procedure cwms_2478_ts_extents_ts_code
                                         l_value_count);
 end cwms_2478_ts_extents_ts_code;
 
+--------------------------------------------------------------------------------
+-- status queue helpers (used to validate messages published by CWMS_MSG)
+--------------------------------------------------------------------------------
+procedure remove_status_subscriber(p_consumer in varchar2)
+is
+begin
+   dbms_aqadm.remove_subscriber(
+      queue_name => c_status_queue,
+      subscriber => sys.aq$_agent(upper(p_consumer), null, null));
+exception
+   when others then null; -- not subscribed
+end remove_status_subscriber;
+
+procedure add_status_subscriber(p_consumer in varchar2)
+is
+begin
+   remove_status_subscriber(p_consumer); -- clear any leftover from a prior failed run
+   dbms_aqadm.add_subscriber(
+      queue_name => c_status_queue,
+      subscriber => sys.aq$_agent(upper(p_consumer), null, null));
+end add_status_subscriber;
+
+function dequeue_status_messages(p_consumer in varchar2) return status_msg_tab_t
+is
+   exc_no_more_messages exception;
+   pragma exception_init(exc_no_more_messages, -25228);
+   l_dequeue_options    dbms_aq.dequeue_options_t;
+   l_message_properties dbms_aq.message_properties_t;
+   l_msgid              raw(16);
+   l_payload            sys.aq$_jms_map_message;
+   l_id                 pls_integer;
+   l_type               clob;
+   l_body               clob;
+   l_xml                xmltype;
+   l_node               xmltype;
+   l_msgs               status_msg_tab_t := status_msg_tab_t();
+begin
+   l_dequeue_options.consumer_name := upper(p_consumer);
+   l_dequeue_options.dequeue_mode  := dbms_aq.remove;
+   l_dequeue_options.visibility    := dbms_aq.immediate;
+   l_dequeue_options.wait          := dbms_aq.no_wait;
+   l_dequeue_options.navigation    := dbms_aq.first_message;
+   loop
+      begin
+         dbms_aq.dequeue(
+            queue_name         => c_status_queue,
+            dequeue_options    => l_dequeue_options,
+            message_properties => l_message_properties,
+            payload            => l_payload,
+            msgid              => l_msgid);
+      exception
+         when exc_no_more_messages then exit;
+      end;
+      l_dequeue_options.navigation := dbms_aq.next_message;
+
+      l_id := l_payload.prepare(-1);
+      l_payload.get_string(l_id, 'type', l_type);
+      l_payload.get_string(l_id, 'body', l_body);
+      l_payload.clean(l_id);
+
+      l_msgs.extend;
+      l_msgs(l_msgs.count).msg_type := dbms_lob.substr(l_type, 64, 1);
+      if l_body is not null then
+         l_xml  := xmltype(l_body);
+         l_node := l_xml.extract('/cwms_message/property[@name="procedure"]/text()');
+         if l_node is not null then
+            l_msgs(l_msgs.count).procedure_key := l_node.getstringval();
+         end if;
+         l_node := l_xml.extract('/cwms_message/text/text()');
+         if l_node is not null then
+            l_msgs(l_msgs.count).msg_text :=
+               regexp_replace(utl_i18n.unescape_reference(l_node.getstringval()), '^\s+|\s+$', '');
+         end if;
+      end if;
+   end loop;
+   return l_msgs;
+end dequeue_status_messages;
+
 procedure cwms_2533_ts_extents_logging
    is
+      c_consumer     constant varchar2(30) := 'TSX_LOGGING_TEST';
+      c_msg_key      constant varchar2(28) := 'update_ts_extents_for_office';
       l_ts_code               at_cwms_ts_id.ts_code%type;
       l_version_date          date := c_base_start_date + 10;
       l_log_messages          varchar2(4000);
-      l_output                clob;
-      l_status                varchar2(20) := '&&office_id'||'_STATUS';
       l_timestamp             timestamp := systimestamp;
-      l_dequeue_options       dbms_aq.dequeue_options_t;
-      l_message_properties    dbms_aq.message_properties_t;
-      l_message_handle        varchar2(32767);
-      l_message_payload       sys.aq$_jms_map_message;
+      l_msgs                  status_msg_tab_t;
+      l_office_count          pls_integer;
+      l_success_count         pls_integer := 0;
+      l_fatal_count           pls_integer := 0;
    begin
-      l_dequeue_options.visibility := dbms_aq.immediate;
-      l_dequeue_options.dequeue_mode := dbms_aq.browse;
-      l_dequeue_options.consumer_name := 'success_test';
       -----------------------------------------------
       -- delete data to get a known starting point --
       -----------------------------------------------
@@ -1254,26 +1334,63 @@ procedure cwms_2533_ts_extents_logging
                cwms_ts.update_ts_extents_for_office(c_office_id);
             end if;
          end loop;
-      cwms_ts.start_update_ts_extents_job;
-      l_log_messages := cwms_ts.retrieve_update_ts_extents_log_messages(1);
-      ut.expect(cwms_util.split_text(trim(chr(10) from l_log_messages), chr(10)).count).to_equal(case when user = '&&cwms_schema' then 5 else 4 end);
-      ut.expect(instr(l_log_messages, 'Purge of invalid TS extents ended. 2 records deleted')).to_be_greater_than(0);
-      ut.expect(instr(l_log_messages, 'Update TS Extents for Office &&office_id ended')).to_be_greater_than(0);
-      if user = upper('&&cwms_schema') then
-         ut.expect(instr(l_log_messages, 'Job UPDATE_TS_EXTENTS_JOB_&&office_id scheduled to start')).to_be_greater_than(0);
-      end if;
-      -----------------------------------------------
-      -- verify content published to queue is correct
-      -----------------------------------------------
-      dbms_aq.DEQUEUE(
-         l_status,
-         l_dequeue_options,
-         l_message_properties,
-         l_message_payload,
-         l_message_handle
-      );
-      l_message_payload.get_string(0, 'text', l_output);
-      dbms_output.put_line('Message: '||l_output);
+      ---------------------------------------------------------------------
+      -- subscribe to the status queue BEFORE publishing so that the     --
+      -- messages are delivered to (and retained for) our test consumer  --
+      ---------------------------------------------------------------------
+      add_status_subscriber(c_consumer);
+      begin
+         cwms_ts.start_update_ts_extents_job;
+         l_log_messages := cwms_ts.retrieve_update_ts_extents_log_messages(1);
+         ut.expect(cwms_util.split_text(trim(chr(10) from l_log_messages), chr(10)).count).to_equal(case when user = '&&cwms_schema' then 5 else 4 end);
+         ut.expect(instr(l_log_messages, 'Purge of invalid TS extents ended. 2 records deleted')).to_be_greater_than(0);
+         ut.expect(instr(l_log_messages, 'Update TS Extents for Office &&office_id ended')).to_be_greater_than(0);
+         if user = upper('&&cwms_schema') then
+            ut.expect(instr(l_log_messages, 'Job UPDATE_TS_EXTENTS_JOB_&&office_id scheduled to start')).to_be_greater_than(0);
+         end if;
+         ------------------------------------------------
+         -- verify content published to queue is correct
+         ------------------------------------------------
+         l_msgs := dequeue_status_messages(c_consumer);
+         remove_status_subscriber(c_consumer);
+
+         select count(distinct db_office_id) into l_office_count from at_cwms_ts_id;
+         -- 1 "initiated" + 1 per office + 1 "launched"
+         ut.expect(l_msgs.count).to_equal(l_office_count + 2);
+         if l_msgs.count >= 2 then
+            for i in 1..l_msgs.count loop
+               ut.expect(l_msgs(i).msg_type).to_equal('Status');
+            end loop;
+            -- first message: simple (no procedure property)
+            ut.expect(l_msgs(1).msg_text).to_equal('INFO: TS Extent update job initiated');
+            ut.expect(l_msgs(1).procedure_key).to_be_null;
+            -- last message: keyed
+            ut.expect(l_msgs(l_msgs.count).msg_text).to_equal('INFO: Launched TS Extents update job');
+            ut.expect(l_msgs(l_msgs.count).procedure_key).to_equal(c_msg_key);
+            -- per-office job messages
+            for i in 2..l_msgs.count - 1 loop
+               ut.expect(l_msgs(i).procedure_key).to_equal(c_msg_key);
+               if regexp_like(
+                     l_msgs(i).msg_text,
+                     '^SUCCESS: Job UPDATE_TS_EXTENTS_JOB_&&office_id scheduled to start at '
+                     ||'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC$')
+               then
+                  l_success_count := l_success_count + 1;
+               end if;
+               if instr(l_msgs(i).msg_text, 'FATAL ERROR') > 0 then
+                  l_fatal_count := l_fatal_count + 1;
+               end if;
+            end loop;
+            if user = upper('&&cwms_schema') then
+               ut.expect(l_success_count).to_equal(1);
+               ut.expect(l_fatal_count).to_equal(0);
+            end if;
+         end if;
+      exception
+         when others then
+            remove_status_subscriber(c_consumer);
+            raise;
+      end;
 end cwms_2533_ts_extents_logging;
 
 procedure cwms_2533_ts_extents_logging_failure
@@ -1281,17 +1398,15 @@ procedure cwms_2533_ts_extents_logging_failure
    l_ts_code               at_cwms_ts_id.ts_code%type;
    l_version_date          date := c_base_start_date + 10;
    l_log_messages          varchar2(4000);
-   l_output                clob;
    l_timestamp             timestamp := systimestamp;
-   l_dequeue_options       dbms_aq.dequeue_options_t;
-   l_message_properties    dbms_aq.message_properties_t;
-   l_message_handle        varchar2(32767);
-   l_status                varchar2(20) := '&&office_id'||'_STATUS';
-   l_message_payload       sys.aq$_jms_map_message;
+   c_consumer     constant varchar2(30) := 'TSX_LOGGING_FAILURE_TEST';
+   c_job_name     constant varchar2(30) := 'IMMEDIATE_UPD_TS_EXTENTS_JOB';
+   l_msgs                  status_msg_tab_t;
+   l_job_count             pls_integer;
+   l_created_job           boolean := false;
+   l_errcode               number;
+   l_errmsg                varchar2(4000);
 begin
-   l_dequeue_options.visibility := dbms_aq.immediate;
-   l_dequeue_options.dequeue_mode := dbms_aq.browse;
-   l_dequeue_options.consumer_name := 'failure_test';
    -----------------------------------------------
    -- delete data to get a known starting point --
    -----------------------------------------------
@@ -1350,18 +1465,59 @@ begin
    if user = upper('&&cwms_schema') then
       ut.expect(instr(l_log_messages, 'Job UPDATE_TS_EXTENTS_JOB_&&office_id scheduled to start')).to_be_greater_than(0);
    end if;
-   -----------------------------------------------
-   -- verify content published to queue is correct
-   -----------------------------------------------
-   dbms_aq.DEQUEUE(
-      l_status,
-      l_dequeue_options,
-      l_message_properties,
-      l_message_payload,
-      l_message_handle
-   );
-   l_message_payload.get_string(0, 'text', l_output);
-   dbms_output.put_line('Message: '||l_output);
+   --------------------------------------------------------------------------
+   -- force a failure: START_IMMEDIATE_UPD_TSX_JOB must log/publish a FATAL --
+   -- error and raise when its job already exists                         --
+   --------------------------------------------------------------------------
+   select count(*) into l_job_count from user_scheduler_jobs where job_name = c_job_name;
+   if l_job_count = 0 then
+      dbms_scheduler.create_job(
+         job_name   => c_job_name,
+         job_type   => 'plsql_block',
+         job_action => 'begin null; end;',
+         enabled    => false,
+         comments   => 'Placeholder created by test_update_ts_extents.cwms_2533_ts_extents_logging_failure');
+      l_created_job := true;
+   end if;
+   add_status_subscriber(c_consumer);
+   begin
+      begin
+         cwms_ts.start_immediate_upd_tsx_job;
+      exception
+         when others then
+            l_errcode := sqlcode;
+            l_errmsg  := sqlerrm;
+      end;
+      ut.expect(l_errcode).to_equal(-20998);
+      ut.expect(instr(l_errmsg, 'Cannot start job '||c_job_name||',  another instance is already running')).to_be_greater_than(0);
+      ------------------------------------------------
+      -- verify content published to queue is correct
+      ------------------------------------------------
+      l_msgs := dequeue_status_messages(c_consumer);
+      remove_status_subscriber(c_consumer);
+      if l_created_job then
+         dbms_scheduler.drop_job(c_job_name);
+         l_created_job := false;
+      end if;
+
+      ut.expect(l_msgs.count).to_equal(2);
+      if l_msgs.count = 2 then
+         ut.expect(l_msgs(1).msg_type).to_equal('Status');
+         ut.expect(l_msgs(1).procedure_key).to_be_null;
+         ut.expect(l_msgs(1).msg_text).to_equal('INFO: TS Extents update job initialized');
+
+         ut.expect(l_msgs(2).msg_type).to_equal('Status');
+         ut.expect(l_msgs(2).procedure_key).to_be_null;
+         ut.expect(l_msgs(2).msg_text).to_equal('FATAL ERROR: Cannot start job '||c_job_name||',  another instance is already running');
+      end if;
+   exception
+      when others then
+         remove_status_subscriber(c_consumer);
+         if l_created_job then
+            dbms_scheduler.drop_job(c_job_name);
+         end if;
+         raise;
+   end;
 end cwms_2533_ts_extents_logging_failure;
 
 procedure cwdb_2514_add_value_count_to_ts_extents
