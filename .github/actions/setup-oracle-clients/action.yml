@@ -1,4 +1,5 @@
 name: 'Start Oracle Database and Install Cwms Schema'
+description: Download and set paths for Oracle clients
 runs:
   using: "composite"
   steps:
@@ -14,9 +15,9 @@ runs:
       run: |
         mkdir -p oracle-tools/instantclient
         cd oracle-tools
-        wget https://download.oracle.com/otn_software/linux/instantclient/2360000/instantclient-basic-linux.x64-23.6.0.24.10.zip
-        wget https://download.oracle.com/otn_software/linux/instantclient/2360000/instantclient-sqlplus-linux.x64-23.6.0.24.10.zip
-        wget https://download.oracle.com/otn_software/linux/instantclient/2360000/instantclient-tools-linux.x64-23.6.0.24.10.zip
+        wget https://download.oracle.com/otn_software/linux/instantclient/23264000/instantclient-basic-linux.x64-23.26.4.0.0.zip
+        wget https://download.oracle.com/otn_software/linux/instantclient/23264000/instantclient-sqlplus-linux.x64-23.26.4.0.0.zip
+        wget https://download.oracle.com/otn_software/linux/instantclient/23264000/instantclient-tools-linux.x64-23.26.4.0.0.zip
         unzip -o instantclient-basic*.zip
         unzip -o instantclient-sqlplus*.zip
         unzip -o instantclient-tools*.zip
