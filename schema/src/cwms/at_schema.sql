@@ -992,6 +992,7 @@ INSERT INTO at_loc_group VALUES ( 9, 1, 'NRCS Station ID'    ,'Natural Resources
 INSERT INTO at_loc_group VALUES (10, 1, 'USGS GNIS ID'       , 'The ID used by the USGS GNIS APEX App to define a record in the Geographic Names database', 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (11, 1, 'NIDID'              , 'The National Inventory of Dams ID used by the NID and Corps Inventory of Dams Subset'     , 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (201,10,'USGS Measurements'  , 'These Locations will be used to store Measurement data acquired from the USGS'            , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES (202,10,'PIXML RFC CHPS Aliases'  , 'These Locations will be used to store PIXML RFC CHPS data. Locations not already in NWS Handbook 5 ID'            , 53, NULL, NULL, NULL);
 COMMIT ;
 -----
 
@@ -1964,6 +1965,7 @@ INSERT INTO at_ts_group VALUES (201, 10, 'USGS TS Data Acquisition', 'These TS I
 INSERT INTO at_ts_group VALUES (202, 10, 'ECCC TS Data Acquisition', 'These TS Id''s will be used to store data acquired from Environment and Climate Change Canada', 53, NULL, NULL);
 INSERT INTO at_ts_group VALUES (203, 10, 'SHEF Data Acquisition', 'These TS Id''s will be used to store SHEF data', 53, NULL, NULL);
 INSERT INTO at_ts_group VALUES (204, 10, 'NRCS Data Acquisition', 'These TS Id''s will be used to grab SNOTEL data from the NRCS', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (206, 10, 'PIXML RFC CHPS Acquisition', 'These TS Id''s will be used to ingest PIXML RFC CHPS forecast data', 53, NULL, NULL);
 
 COMMIT ;
 -----
