@@ -72,6 +72,8 @@ procedure test_assign_loc_do_not_ignore_missing;
 procedure test_location_geometry_nearest_city_normalization;
 --%test (Test simple deletion)
 procedure test_delete_loc;
+--%test (Test rapid deletion and insert)
+procedure test_rapid_delete_insert;
 
 procedure setup;
 procedure teardown;
@@ -92,7 +94,7 @@ AS
         commit; -- finish out any existing transactions
         FOR rec
             IN (SELECT COLUMN_VALUE     AS loc_name
-                  FROM TABLE (str_tab_t ('TestLoc1', 'TestLoc2', 'TestLocObj', 'MikesHouse')))
+                  FROM TABLE (str_tab_t ('TestLoc1', 'TestLoc2', 'TestLocObj', 'MikesHouse', 'ToDelete', 'Rapid Test Site')))
         LOOP
             BEGIN
                 cwms_loc.delete_location (
@@ -474,6 +476,7 @@ AS
             cwms_util.get_base_id (l_location_id2));
         ut.expect (l_location_ids (2)).to_equal (l_location_id2);
     END test_rename_loc_sub_to_different_base_with_different_sub;
+
     PROCEDURE test_set_vertical_datum_info
     IS
         l_office_id            av_loc.db_office_id%TYPE;
@@ -3922,8 +3925,10 @@ end test_vertical_datum_info_bulk;
       l_nearest_city av_loc.nearest_city%type;
       l_latitude number;
       l_longitude number;
+      l_loc_code av_loc.location_code%type;
       l_geometry sdo_geometry;
       exc_location_id_not_found exception;
+      
       pragma exception_init (exc_location_id_not_found, -20025);
       
       procedure assert_equals(p1 varchar2, p2 varchar2) is
@@ -4061,9 +4066,10 @@ end test_vertical_datum_info_bulk;
          -- update base location to have no nearest city --
          --------------------------------------------------
          dbms_output.put_line(chr(9)||'Setting base location nearest_city to null');
+         l_loc_code := cwms_loc.get_location_code(l_office_id, l_location_id);
          update at_physical_location
             set nearest_city = null
-         where location_code = cwms_loc.get_location_code(l_office_id, l_location_id);
+         where location_code = l_loc_code;
       select nearest_city
          into l_nearest_city
          from av_loc
@@ -4196,6 +4202,62 @@ end test_vertical_datum_info_bulk;
          when others then raise;
       end;
    END;
+
+   -- This tests the behavior of several CDA and OpenDCS tests
+   -- that clear and rebuild the given site in a rapid cycle
+   PROCEDURE test_rapid_delete_insert
+   IS
+      l_stored_loc VARCHAR2(64)          := 'Rapid Test Site';
+      l_office_id  VARCHAR2(3)           := '&&office_id';
+      l_geom varchar2(64);
+      l_prev_code number := -1;
+      l_loc_code number;
+      l_stored_name varchar2(64);
+      exc_location_id_not_found   EXCEPTION;
+      pragma exception_init (exc_location_id_not_found, -20025);
+      l_cursor sys_refcursor;
+   BEGIN
+      cwms_cache.set_dbms_output(cwms_loc.g_location_id_cache, true);
+      cwms_cache.set_dbms_output(cwms_loc.g_location_code_cache, true);
+      for i in 1..20 loop
+         dbms_output.put_line('Attempt ' || i);
+         begin
+            cwms_loc.store_location3 (p_location_id    => l_stored_loc,
+                                    p_db_office_id   => l_office_id,
+                                    p_public_name => l_stored_loc,
+                                    p_geometry       => sdo_geometry(
+                                                   2002,
+                                                   4326,
+                                                   null,
+                                                   sdo_elem_info_array(1, 2, 1),
+                                                   sdo_ordinate_array(
+                                                      -95.123, 34.345,
+                                                      -95.234, 34.456))
+            );
+            l_loc_code := cwms_loc.get_location_code(l_office_id, l_stored_loc);
+            dbms_output.put_line('Loc Code = ' || l_loc_code);
+            ut.expect(l_loc_code, 'location code became static').not_to_equal(l_prev_code);
+            select location_id into l_stored_name from av_loc where location_code = l_loc_code and unit_system = 'EN';
+            ut.expect(l_stored_name, 'could not retrieve supposedly saved location').to_equal(l_stored_loc);
+            rollback; -- decide we did *not* want to save the site
+            open l_cursor for select location_id from av_loc where location_code = l_loc_code and unit_system = 'EN';
+
+            ut.expect(l_cursor, 'We still see data after rollback').to_have_count(0);
+            commit;
+         end;
+
+         begin
+            cwms_loc.delete_location(l_stored_loc, cwms_util.delete_loc, l_office_id);
+            l_prev_code := l_loc_code;
+            commit;
+         exception
+         when exc_location_id_not_found then null;
+         when others then raise;
+         end;
+
+
+      end loop;
+   END test_rapid_delete_insert;   
 
 END test_cwms_loc;
 /
