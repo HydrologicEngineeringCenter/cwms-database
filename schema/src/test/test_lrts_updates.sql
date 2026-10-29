@@ -4382,6 +4382,11 @@ begin
       ------------------------------------
 --      dbms_output.put_line(chr(10)||'==> Setting session to use '||case when i = 1 then 'OLD' else 'NEW' end||' LRTS ID format');
       cwms_ts.set_use_new_lrts_format_on_output(substr('FT', i, 1));
+      if i = 2 then
+         -- The views expose the new-format ID while this iteration is checking
+         -- output formatting. Allow that ID to pass through input validation.
+         cwms_ts.set_allow_new_lrts_format_on_input('T');
+      end if;
 --      for rec in (select * from cwms_v_ts_id where cwms_ts_id like '%Elev-Prts.%.Test') loop
 --         dbms_output.put_line(rec.cwms_ts_id||chr(9)||rec.interval_utc_offset);
 --      end loop;
@@ -5090,6 +5095,7 @@ begin
       end loop;
 
    end loop;
+   cwms_ts.set_allow_new_lrts_format_on_input('F');
    begin
       cwms_vt.delete_screening_id (
          p_screening_id        => 'Elev Range 1',
