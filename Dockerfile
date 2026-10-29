@@ -10,9 +10,8 @@ RUN apt-get -y update && \
                libaio1t64 python3 \
                ant \
                --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN ln -s /usr/lib/jvm-1.11.0.openjdk-amd64 /usr/lib/jvm/java
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/lib/jvm-1.11.0.openjdk-amd64 /usr/lib/jvm/java
 
 # always start fresh
 RUN mkdir /opt/oracle && rm -rf /opt/oracle/*
@@ -23,7 +22,8 @@ RUN wget https://download.oracle.com/otn_software/linux/instantclient/1933000/in
     unzip -o instantclient-basiclite-linux.x64-19.33.0.0.0dbru.zip && \
     unzip -o instantclient-tools-linux.x64-19.33.0.0.0dbru.zip && \
     unzip -o instantclient-sqlplus-linux.x64-19.33.0.0.0dbru.zip && \
-    rm *.zip
+    rm *.zip && \
+    ln -sf /usr/lib/x86_64-linux-gnu/libaio.so.1t64 /opt/oracle/instantclient_19_33/libaio.so.1
 RUN mkdir /after.install.d
 
 COPY . /cwmsdb
