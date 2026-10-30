@@ -722,6 +722,20 @@ begin
             l_change_rec.project_location_code := l_proj_loc_code;
             l_change_rec.turbine_change_datetime := l_new_change_date;
       end;
+      ---------------------------------------------------------
+      -- check that we're not overwriting a protected change --
+      ---------------------------------------------------------
+      if l_change_rec.protected = 'T' and p_override_protection = 'F' then
+         cwms_err.raise(
+            'ERROR',
+            'Turbine change for '
+            ||cwms_util.get_db_office_id(l_proj_loc_code)
+            ||'/'
+            ||l_proj_loc_code
+            ||' at '
+            ||l_new_change_date
+            ||' is protected and cannot be overridden.');
+      end if;
       --------------------------------
       -- populate the change record --
       --------------------------------

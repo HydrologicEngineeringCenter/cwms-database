@@ -946,6 +946,16 @@ begin
          l_change_rec.project_location_code := l_proj_loc_code;
          l_change_rec.gate_change_date      := l_new_change_date;
       end;
+      ---------------------------------------------------------
+      -- check that we're not overwriting a protected change --
+      ---------------------------------------------------------
+      if l_change_rec.protected = 'T' and p_override_protection = 'F' then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot insert/update gate change for project '
+            ||l_proj_loc_code
+            ||' because it is protected');
+      end if;
       --------------------------------
       -- populate the change record --
       --------------------------------
