@@ -2910,11 +2910,14 @@ create table at_blob(
    description     varchar2(256),
    media_type_code number(4)     not null,
    value           blob,
+   created_at      date,
+   updated_at      date,
+   created_by      varchar2(256),
    constraint at_blob_pk  primary key(blob_code),
    constraint at_blob_fk1 foreign key(media_type_code) references cwms_media_type(media_type_code)
 ) tablespace cwms_20at_data
 /
-create unique index at_blob_u1 on at_blob(office_code, upper(id)) tablespace cwms_20at_data
+create unique index at_blob_u1 on at_blob(office_code, upper(id), created_at) tablespace cwms_20at_data
 /
 comment on table  at_blob                 is 'Contains binary data';
 comment on column at_blob.blob_code       is 'Synthetic key';
@@ -2923,6 +2926,9 @@ comment on column at_blob.id              is 'Text identifier of binary data';
 comment on column at_blob.description     is 'Description of binary data';
 comment on column at_blob.media_type_code is 'References media type of the binary data';
 comment on column at_blob.value           is 'The binary data';
+comment on column at_blob.created_at      is 'Date and time the binary data was created in UTC';
+comment on column at_blob.updated_at      is 'Last date and time the binary data was updated in UTC';
+comment on column at_blob.created_by      is 'The name of the individual who created the binary data to be stored';
 --
 create table at_std_text(
    std_text_code number(14)   not null,
@@ -2930,7 +2936,8 @@ create table at_std_text(
    std_text_id   varchar2(16) not null,
    clob_code     number(14),
    constraint at_std_text_pk  primary key(std_text_code),
-   constraint at_std_text_ck1 check(std_text_id = upper(std_text_id)),
+   constraint at_std_text_ck1 check(std_text_id = upper
+   4212(std_text_id)),
    constraint at_std_text_fk1 foreign key(clob_code) references at_clob(clob_code)
 ) tablespace cwms_20at_data
 /
