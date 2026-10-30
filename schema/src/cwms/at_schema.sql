@@ -991,7 +991,9 @@ INSERT INTO at_loc_group VALUES ( 8, 1, 'TVA Station ID'     , 'Tennessee Valley
 INSERT INTO at_loc_group VALUES ( 9, 1, 'NRCS Station ID'    ,'Natural Resources Conservation Service Station ID'                                         , 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (10, 1, 'USGS GNIS ID'       , 'The ID used by the USGS GNIS APEX App to define a record in the Geographic Names database', 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (11, 1, 'NIDID'              , 'The National Inventory of Dams ID used by the NID and Corps Inventory of Dams Subset'     , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES (12, 1, 'NOAA Tides and Currents ID' , 'NOAA Tides and Currents Station IDs'                                              , 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (201,10,'USGS Measurements'  , 'These Locations will be used to store Measurement data acquired from the USGS'            , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES (202,10,'PIXML RFC CHPS Aliases'  , 'These Locations will be used to store PIXML RFC CHPS data. Locations not already in NWS Handbook 5 ID'            , 53, NULL, NULL, NULL);
 COMMIT ;
 -----
 
@@ -1964,6 +1966,7 @@ INSERT INTO at_ts_group VALUES (201, 10, 'USGS TS Data Acquisition', 'These TS I
 INSERT INTO at_ts_group VALUES (202, 10, 'ECCC TS Data Acquisition', 'These TS Id''s will be used to store data acquired from Environment and Climate Change Canada', 53, NULL, NULL);
 INSERT INTO at_ts_group VALUES (203, 10, 'SHEF Data Acquisition', 'These TS Id''s will be used to store SHEF data', 53, NULL, NULL);
 INSERT INTO at_ts_group VALUES (204, 10, 'NRCS Data Acquisition', 'These TS Id''s will be used to grab SNOTEL data from the NRCS', 53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (206, 10, 'PIXML RFC CHPS Acquisition', 'These TS Id''s will be used to ingest PIXML RFC CHPS forecast data', 53, NULL, NULL);
 
 COMMIT ;
 -----
@@ -2135,73 +2138,6 @@ ALTER TABLE at_screening ADD (
  FOREIGN KEY (resultant_ts_code)
  REFERENCES at_cwms_ts_spec (ts_code))
 /
-
-
----------------------------------
--- AT_ALARM table.
---
-CREATE TABLE at_alarm
-(
-  ts_code      NUMBER,
-  ts_ni_hash   VARCHAR2(80 BYTE)                NOT NULL,
-  alarm_code   NUMBER                           NOT NULL,
-  active_flag  VARCHAR2(1 BYTE)
-)
-TABLESPACE CWMS_20AT_DATA
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING
-NOCOMPRESS
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-
-COMMENT ON COLUMN at_alarm.active_flag IS 'T or F';
-
-CREATE UNIQUE INDEX at_alarm_pk ON at_alarm
-(ts_code)
-LOGGING
-TABLESPACE CWMS_20AT_DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
-ALTER TABLE at_alarm ADD (
-  CONSTRAINT at_alarm_pk
- PRIMARY KEY
- (ts_code)
-    USING INDEX
-    TABLESPACE CWMS_20AT_DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64 k
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-
 
 ---------------------------------
 -- AT_COMP_VT table.
