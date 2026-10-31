@@ -729,9 +729,9 @@ begin
          cwms_err.raise(
             'ERROR',
             'Turbine change for '
-            ||cwms_util.get_db_office_id(l_proj_loc_code)
+            ||l_office_id
             ||'/'
-            ||l_proj_loc_code
+            ||cwms_loc.get_location_id(l_proj_loc_code)
             ||' at '
             ||l_new_change_date
             ||' is protected and cannot be overridden.');
