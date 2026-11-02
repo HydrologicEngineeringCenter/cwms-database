@@ -41,6 +41,8 @@ procedure test_subminute_effective_date;
 --%test(CWMS-2498: disallow sub-minute level effective date for virtual storage)
 --%throws(-20998)
 procedure test_subminute_effective_date_virtual;
+--%test(CDA-116: irregular level-as-timeseries retrieval)
+procedure test_cda_116_irregular_level_as_timeseries;
 
 c_office_id             varchar2(16)  := '&&office_id';
 c_location_id           varchar2(57)  := 'LocLevelTestLoc';
@@ -2549,6 +2551,86 @@ begin
       p_expiration_date   => null,
       p_office_id         => c_office_id);
 end test_subminute_effective_date_virtual;
+
+--------------------------------------------------------------------------------
+-- procedure test_cda_116_irregular_level_as_timeseries
+--------------------------------------------------------------------------------
+procedure test_cda_116_irregular_level_as_timeseries
+is
+   l_result_values ztsv_array := ztsv_array();
+   l_effective_date date := date '2025-01-01';
+   l_start_ts timestamp := to_timestamp('2025-01-01 12:00', 'YYYY-MM-DD HH24:MI');
+   l_end_ts timestamp := to_timestamp('2025-01-13 04:00', 'YYYY-MM-DD HH24:MI');
+   l_elev_tsid varchar2(191) := c_location_id||'.Elev.Inst.1Hour.0.IRRTest';
+   l_elev_ts_data cwms_t_tsv_array := cwms_t_tsv_array (
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 1/24 as timestamp), 'UTC'), 1000, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 1 + 3/24 as timestamp), 'UTC'), 1010, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 3 + 4/24 as timestamp), 'UTC'), 1020, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 5 + 7/24 as timestamp), 'UTC'), 1050, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 7 + 11/24 as timestamp), 'UTC'), 1100, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 9 + 12/24 as timestamp), 'UTC'), 1110, 0),
+      cwms_t_tsv (from_tz(cast(cwms_util.change_timezone(l_start_ts, c_timezone_id, 'UTC') + 11 + 16/24 as timestamp), 'UTC'), 1150, 0)
+   );
+begin
+   cwms_ts.create_ts(c_office_id, l_elev_tsid, null);
+   commit;
+   cwms_ts.store_ts(
+      l_elev_tsid,
+      c_elev_unit,
+      l_elev_ts_data,
+      cwms_util.replace_all,
+      'F',
+      cwms_util.non_versioned,
+      c_office_id,
+      'F');
+   cwms_level.store_location_level4(
+      p_location_level_id => c_top_of_normal_elev_id || 'IRR',
+      p_level_value       => null,
+      p_level_units       => c_elev_unit,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_tsid              => l_elev_tsid,
+      p_fail_if_exists    => 'F',
+      p_interpolate       => 'F',
+      p_office_id         => c_office_id);
+   commit;
+   l_result_values := cwms_level.retrieve_loc_lvl_values4(
+      p_location_level_id  => c_top_of_normal_elev_id || 'IRR',
+      p_start_time         => l_start_ts,
+      p_end_time           => l_end_ts,
+      p_level_units        => c_elev_unit,
+      p_timezone_id        => c_timezone_id,
+      p_office_id          => c_office_id
+   );
+
+   ut.expect(l_result_values.count).to_equal(l_elev_ts_data.count);
+
+   for j in 1..l_result_values.count loop
+      ut.expect(l_result_values(j).date_time).to_equal(cast(l_elev_ts_data(j).date_time as date));
+      ut.expect(round(l_result_values(j).value, 5)).to_equal(l_elev_ts_data(j).value);
+      ut.expect(l_result_values(j).quality_code).to_equal(0);
+   end loop;
+
+   l_result_values := ztsv_array();
+
+   -- validate we can retrieve within the time window
+   l_result_values := cwms_level.retrieve_loc_lvl_values4(
+      p_location_level_id  => c_top_of_normal_elev_id || 'IRR',
+      p_start_time         => l_start_ts,
+      p_end_time           => l_elev_ts_data(3).date_time,
+      p_level_units        => c_elev_unit,
+      p_timezone_id        => c_timezone_id,
+      p_office_id          => c_office_id
+   );
+
+   ut.expect(l_result_values.count).to_equal(3);
+
+   for j in 1..3 loop
+      ut.expect(l_result_values(j).date_time).to_equal(cast(l_elev_ts_data(j).date_time as date));
+      ut.expect(round(l_result_values(j).value, 5)).to_equal(l_elev_ts_data(j).value);
+      ut.expect(l_result_values(j).quality_code).to_equal(0);
+   end loop;
+end test_cda_116_irregular_level_as_timeseries;
 
 end test_cwms_level;
 /
