@@ -4199,9 +4199,6 @@ durations = [
     [24,    '6Days',        8640,   'Measurement applies over 6 days, time stamped at period end'],
     [25,    '1Week',        10080,  'Measurement applies over 1 week, time stamped at period end'],
     [26,    '1Month',       43200,  'Measurement applies over 1 month, time stamped at period end'],
-    [63,    '3Month',       129600, 'Measurement applies over 3 months, time stamped at period end'],
-    [64,    '6Month',       259200, 'Measurement applies over 6 months, time stamped at period end'],
-    [65,    '9Month',       388800, 'Measurement applies over 9 months, time stamped at period end'],
     [27,    '1Year',        525600, 'Measurement applies over 1 year, time stamped at period end'],
     [28,    '1Decade',      5256000,    'Measurement applies over 1 decade, time stamped at period end'],
     [29,    '0',            0,  'Measurement applies intantaneously at time stamp or from previous time stamp'],
@@ -4237,7 +4234,10 @@ durations = [
     [59,    '10MinutesBOP', 10, 'Measurement applies over 10 minutes, time stamped at period beginning'],
     [60,    '0BOP',         0,  'Measurement applies intantaneously at time stamp or until next time stamp'],
     [61,    'Variable',     -1,  'Variable duration for non-instantaneous or const parameter types'],
-    [62,    'UntilChanged', -2,  'Duration for const parameter types']
+    [62,    'UntilChanged', -2,  'Duration for const parameter types'],
+    [63,    '3Month',       129600, 'Measurement applies over 3 months, time stamped at period end'],
+    [64,    '6Month',       259200, 'Measurement applies over 6 months, time stamped at period end'],
+    [65,    '9Month',       388800, 'Measurement applies over 9 months, time stamped at period end']
 ]
 
 #---------------------#
