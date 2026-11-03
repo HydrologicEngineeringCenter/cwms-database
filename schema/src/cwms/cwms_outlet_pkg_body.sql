@@ -955,7 +955,7 @@ begin
             'ERROR',
             'Cannot insert/update gate change for project '
             || l_office_id || ' / '
-            || l_proj_loc_code || ' at '
+            || cwms_loc.get_location_id(l_proj_loc_code) || ' at '
             || cwms_util.change_timezone(l_new_change_date, 'UTC', nvl(l_time_zone, 'UTC'));
             || ' because it is protected and cannot be overwritten');
       end if;
