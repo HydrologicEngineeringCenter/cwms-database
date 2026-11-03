@@ -27,7 +27,7 @@ end;
 @test_cwms_msg.sql;
 @test_aaa.sql;
 show errors;
-@test_aaa_normaluserfails.sql
+@test_aaa_normaluserfails.sql;
 show errors;
 @test_ro.sql;
 @test_up.sql;
