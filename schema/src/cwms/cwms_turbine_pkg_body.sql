@@ -734,7 +734,7 @@ begin
             || '/'
             || cwms_loc.get_location_id(l_proj_loc_code)
             || ' at '
-            || cwms_util.change_timezone(l_new_change_date, 'UTC', nvl(l_time_zone, 'UTC'));
+            || cwms_util.change_timezone(l_new_change_date, 'UTC', nvl(l_time_zone, 'UTC'))
             || ' is protected and cannot be overwritten.');
       end if;
       --------------------------------
