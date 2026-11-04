@@ -204,8 +204,8 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
       p_store_rule_code IN OUT cwms_store_rule.store_Rule_code%TYPE);
 
    PROCEDURE p_refresh_a2w_ts_codes (
-      p_db_office_id    IN at_a2w_ts_codes_by_loc.db_office_id%TYPE,
-      p_location_code   IN at_a2w_ts_codes_by_loc.location_code%TYPE DEFAULT NULL);
+      p_db_office_id    IN cwms_v_loc.db_office_id%TYPE,
+      p_location_code   IN cwms_v_loc.location_code%TYPE DEFAULT NULL);
 
    PROCEDURE p_sync_cwms_office_from_CM2 (
       p_sync_office_buildings_yn    IN     VARCHAR2 DEFAULT c_app_logic_y,
@@ -401,43 +401,46 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
       p_collection_name   IN apex_collections.collection_name%TYPE,
       p_store_rule_code   IN cwms_store_rule.store_rule_code%TYPE);
 
+   -- Parameter types are plain (they used to be anchored to AT_A2W_TS_CODES_BY_LOC
+   -- columns) so this package no longer depends on that table. Implementation is in
+   -- CWMS_A2W.
    PROCEDURE p_load_a2w_by_location (
-      p_db_office_id           IN     at_a2w_ts_codes_by_loc.db_office_id%TYPE,
-      p_location_id            IN     at_a2w_ts_codes_by_loc.db_office_id%TYPE,
-      p_display_flag           IN     at_a2w_ts_codes_by_loc.display_flag%TYPE,
-      p_notes                  IN     at_a2w_ts_codes_by_loc.notes%TYPE,
-      p_num_ts_codes           IN     at_a2w_ts_codes_by_loc.num_ts_codes%TYPE,
-      p_ts_code_elev           IN     at_a2w_ts_codes_by_loc.ts_code_elev%TYPE,
-      p_ts_code_inflow         IN     at_a2w_ts_codes_by_loc.ts_code_inflow%TYPE,
-      p_ts_code_outflow        IN     at_a2w_ts_codes_by_loc.ts_code_outflow%TYPE,
-      p_ts_code_sur_release    IN     at_a2w_ts_codes_by_loc.ts_code_sur_release%TYPE,
-      p_ts_code_precip         IN     at_a2w_ts_codes_by_loc.ts_code_precip%TYPE,
-      p_ts_code_stage          IN     at_a2w_ts_codes_by_loc.ts_code_stage%TYPE,
-      p_ts_code_stor_drought   IN     at_a2w_ts_codes_by_loc.ts_code_stor_drought%TYPE,
-      p_ts_code_stor_Flood     IN     at_a2w_ts_codes_by_loc.ts_code_stor_Flood%TYPE,
-      p_ts_code_elev_tw        IN     at_a2w_ts_codes_by_loc.ts_code_elev_tw%TYPE,
-      p_ts_code_stage_tw       IN     at_a2w_ts_codes_by_loc.ts_code_stage_tw%TYPE,
-      p_ts_code_rule_Curve_elev IN     at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
-      p_ts_code_power_Gen       IN    at_a2w_ts_codes_By_loc.ts_code_power_Gen%TYPE,
-      p_ts_code_temp_air        IN    at_a2w_ts_codes_by_loc.ts_code_temp_air%TYPE,
-      p_ts_code_temp_water      IN    at_a2w_ts_codes_by_loc.ts_code_temp_water%TYPE,
-      p_ts_code_do              IN    at_a2w_Ts_codes_by_loc.ts_code_do%TYPE,
-      p_ts_code_ph              IN    at_a2w_ts_codes_by_loc.ts_code_ph%TYPE,
-      p_ts_code_cond            IN    at_a2w_Ts_codes_By_loc.ts_code_cond%TYPE,
-      p_ts_code_wind_dir        IN    at_a2w_ts_codes_By_loc.ts_code_wind_dir%TYPE,
-      p_ts_code_wind_speed      IN    at_a2w_ts_codes_By_loc.ts_code_wind_speed%TYPE,
-      p_ts_code_volt            in   at_a2w_ts_codes_By_loc.ts_code_volt%TYPE,
-      p_ts_code_pct_flood       in   at_a2w_ts_codes_By_loc.ts_code_pct_flood%TYPE,
-      p_ts_code_pct_con         in   at_a2w_ts_codes_By_loc.ts_code_pct_con%TYPE,
-      p_ts_code_irrad           in   at_a2w_ts_codes_By_loc.ts_code_irrad%TYPE,
-      p_ts_code_evap            in   at_a2w_ts_codes_By_loc.ts_code_evap%TYPE,
-      p_rating_code_elev_stor   IN    NUMBER,
-      p_rating_code_elev_area   IN    NUMBER,
-      p_rating_code_outlet_Flow IN    NUMBER,
-      p_ts_code_opening         IN    at_a2w_ts_codes_By_loc.ts_code_opening%TYPE,
-      p_opening_source_obj      IN    VARCHAR2,
-      p_lake_summary_tf        IN     at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE,
-      p_error_msg                 OUT VARCHAR2);
+      p_db_office_id            IN     VARCHAR2,
+      p_location_id             IN     VARCHAR2,
+      p_display_flag            IN     VARCHAR2,
+      p_notes                   IN     CLOB,
+      p_num_ts_codes            IN     NUMBER,
+      p_ts_code_elev            IN     NUMBER,
+      p_ts_code_inflow          IN     NUMBER,
+      p_ts_code_outflow         IN     NUMBER,
+      p_ts_code_sur_release     IN     NUMBER,
+      p_ts_code_precip          IN     NUMBER,
+      p_ts_code_stage           IN     NUMBER,
+      p_ts_code_stor_drought    IN     NUMBER,
+      p_ts_code_stor_Flood      IN     NUMBER,
+      p_ts_code_elev_tw         IN     NUMBER,
+      p_ts_code_stage_tw        IN     NUMBER,
+      p_ts_code_rule_Curve_elev IN     NUMBER,
+      p_ts_code_power_Gen       IN     NUMBER,
+      p_ts_code_temp_air        IN     NUMBER,
+      p_ts_code_temp_water      IN     NUMBER,
+      p_ts_code_do              IN     NUMBER,
+      p_ts_code_ph              IN     NUMBER,
+      p_ts_code_cond            IN     NUMBER,
+      p_ts_code_wind_dir        IN     NUMBER,
+      p_ts_code_wind_speed      IN     NUMBER,
+      p_ts_code_volt            IN     NUMBER,
+      p_ts_code_pct_flood       IN     NUMBER,
+      p_ts_code_pct_con         IN     NUMBER,
+      p_ts_code_irrad           IN     NUMBER,
+      p_ts_code_evap            IN     NUMBER,
+      p_rating_code_elev_stor   IN     NUMBER,
+      p_rating_code_elev_area   IN     NUMBER,
+      p_rating_code_outlet_Flow IN     NUMBER,
+      p_ts_code_opening         IN     NUMBER,
+      p_opening_source_obj      IN     VARCHAR2,
+      p_lake_summary_tf         IN     VARCHAR2,
+      p_error_msg                  OUT VARCHAR2);
 
    PROCEDURE p_load_location (
       p_db_office_id                  IN     cwms_v_loc.db_Office_id%TYPE,

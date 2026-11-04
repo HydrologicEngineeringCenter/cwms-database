@@ -200,6 +200,12 @@ begin
         from at_rating_spec
        where rating_spec_code = p_rating_spec_code;
       -----------------------
+      -- published ratings --
+      -----------------------
+      delete
+        from at_published_rating
+       where rating_spec_code = p_rating_spec_code;
+      -----------------------
       -- remove from cache --
       -----------------------
       cwms_cache.remove_by_value(g_spec_code_cache, p_rating_spec_code);

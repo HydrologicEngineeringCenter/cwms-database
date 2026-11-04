@@ -1,0 +1,140 @@
+#! /usr/bin/env python3
+from oracledb import IntervalYM
+import datetime, getpass, oracledb, os, sys
+
+def dict_to_sdo(connection, sdo_dict):
+    """
+    Converts a dictionary representation back into an insertable 
+    MDSYS.SDO_GEOMETRY DbObject.
+    """
+    if sdo_dict is None:
+        return None
+
+    # 1. Fetch the metadata for the top-level SDO_GEOMETRY object type
+    sdo_geometry_type = connection.gettype("MDSYS.SDO_GEOMETRY")
+    
+    # 2. Reconstruct the SDO_POINT component if it exists
+    sdo_point = None
+    if sdo_dict.get("SDO_POINT") is not None:
+        # Fetch the metadata for the nested SDO_POINT_TYPE object type
+        sdo_point_type = connection.gettype("MDSYS.SDO_POINT_TYPE")
+        sdo_point = sdo_point_type.newobject()
+        sdo_point.X = sdo_dict["SDO_POINT"]["X"]
+        sdo_point.Y = sdo_dict["SDO_POINT"]["Y"]
+        sdo_point.Z = sdo_dict["SDO_POINT"]["Z"]
+
+    # 3. Create the main SDO_GEOMETRY object
+    sdo_obj = sdo_geometry_type.newobject()
+    sdo_obj.SDO_GTYPE = sdo_dict["SDO_GTYPE"]
+    sdo_obj.SDO_SRID = sdo_dict["SDO_SRID"]
+    sdo_obj.SDO_POINT = sdo_point
+
+    # 4. Populate the collection fields (arrays) directly from Python lists
+    if sdo_dict.get("SDO_ELEM_INFO") is not None:
+        sdo_obj.SDO_ELEM_INFO = sdo_dict["SDO_ELEM_INFO"]
+        
+    if sdo_dict.get("SDO_ORDINATES") is not None:
+        sdo_obj.SDO_ORDINATES = sdo_dict["SDO_ORDINATES"]
+
+    return sdo_obj
+
+def insert_table_data(cursor, table, columns, data):
+    """
+    Inserts data into the specified table.
+    """
+    lat_long_columns = []
+    col_names = eval(columns)
+    if table == "AT_PHYSICAL_LOCATION":
+        # Remove latitude and longitude columns from the insert statement
+        lat_long_columns = [idx for idx in range(len(col_names)) if col_names[idx] in ("LATITUDE", "LONGITUDE")]
+        col_names = [col for idx, col in enumerate(col_names) if idx not in lat_long_columns]
+    columns = str(tuple(col_names)).replace("'", "")
+    values_str = str(tuple([f":{i}" for i in range(1, len(columns.split(','))+1)])).replace("'", "")
+    sql = f"INSERT INTO {table} {columns} VALUES {values_str}"
+    for row in data:
+        if lat_long_columns:
+            # Remove latitude and longitude values from the row
+            row = tuple(val for idx, val in enumerate(row) if idx not in lat_long_columns)
+        
+        try:
+            print (sql.replace(values_str, str(row)))
+            cursor.execute(sql, row)
+        except Exception as e:
+            if str(e).find("ORA-00001") != -1:
+                # unique constraint violation
+                print(f"==> {str(e).split("\n")[0]}")
+                pass
+            else:
+                raise
+
+def main(input_filename):
+    try:
+        if sys.stdin.isatty():
+            url = input("\nDB (Host:Port:SID or Host:Port/Service) >")
+            if url and url[0] == '$':
+                url = os.getenv(url[1:])
+            if not url: return
+            usr = input("User Name          >")
+            if usr and usr[0] == '$':
+                usr = os.getenv(usr[1:])
+            if not usr: return
+            pwd = getpass.getpass("Pass Phrase        >")
+            if pwd and pwd[0] == '$':
+                pwd = os.getenv(pwd[1:])
+            if not pwd: return
+        else:
+            url = sys.stdin.readline().strip()
+            if url and url[0] == '$':
+                url = os.getenv(url[1:])
+            if not url: return
+            usr = sys.stdin.readline().strip()
+            if usr and usr[0] == '$':
+                usr = os.getenv(usr[1:])
+            if not usr: return
+            pwd = sys.stdin.readline().strip()
+            if pwd and pwd[0] == '$':
+                pwd = os.getenv(pwd[1:])
+            if not pwd: return
+        if "/" in url:
+            host_port, svc = url.split("/")
+            host, port = host_port.split(":")
+            conn = oracledb.connect(dsn = oracledb.makedsn(host, int(port), None, svc), user=usr, password=pwd)
+        else:
+            host, port, sid = url.split(":")
+            conn = oracledb.connect(dsn = oracledb.makedsn(host, int(port), sid), user=usr, password=pwd)
+        cursor = conn.cursor()
+        data = []
+        columns = None
+        input_file = open(input_filename, "r")
+        for line in input_file:
+            line = line.strip()
+            if line and line[0] != '#':  # Ignore empty lines and comments
+                if line.startswith("--- Fetching from "):
+                    if data:
+                        # Insert the collected data into the previous table
+                        insert_table_data(cursor, table, columns, data)
+                        conn.commit()
+                        data = []
+                    table = line.split()[3]
+                    columns = None
+                elif line.startswith("--- Columns: "):
+                    columns = line.split(": ", 1)[1]
+                elif columns is not None and line.startswith("(") and line.endswith(")"):
+                    values = eval(line)
+                    geom_idx = [i for i in range(len(values)) if isinstance(values[i], dict)]
+                    if geom_idx:
+                        values = list(values)
+                        for i in geom_idx:
+                            values[i] = dict_to_sdo(conn, values[i])
+                    data.append(tuple(values))
+        if data:
+            # Insert any collected data into the last table
+            insert_table_data(cursor, table, columns, data)
+            conn.commit()
+        cursor.close()
+        conn.close()
+    except oracledb.Error as e:
+        print(f"Error: {e}")
+
+if __name__ == "__main__":
+    main(sys.argv[1])
