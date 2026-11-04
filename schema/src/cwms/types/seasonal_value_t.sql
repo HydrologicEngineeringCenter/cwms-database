@@ -10,7 +10,7 @@ create type seasonal_value_t
  * @member value          The value at the specified offset into the interval
  */
 is object (
-   offset_months  number(2),
+   offset_months  number,
    offset_minutes number,
    value          number,
    /**

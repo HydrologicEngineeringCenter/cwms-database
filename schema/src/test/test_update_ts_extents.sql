@@ -32,6 +32,8 @@ procedure test_cwms_2446_fix_performance_for_update_ts_extents;
 --%test(TS extents using integer instead of number for TS_CODE)
 --%throws(-20998)
 procedure cwms_2478_ts_extents_ts_code;
+--%test(Add value count to TS extents)
+procedure cwdb_2514_add_value_count_to_ts_extents;
 
 procedure setup;
 procedure teardown;
@@ -1130,6 +1132,8 @@ procedure cwms_2478_ts_extents_ts_code
       l_earliest_time timestamp := TO_TIMESTAMP('2019-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS');
       l_latest_time timestamp := TO_TIMESTAMP('2019-01-02 23:59:59', 'YYYY-MM-DD HH24:MI:SS');
       l_latest_date date := TO_DATE('2019-01-02', 'YYYY-MM-DD');
+      l_has_non_zero_quality char(1) := 'F';
+      l_value_count integer := 48;
 
    begin
       l_loc_code := cwms_loc.get_location_code(c_office_id, c_location_id);
@@ -1176,8 +1180,109 @@ procedure cwms_2478_ts_extents_ts_code
                                         100.0, l_latest_date,
                                         l_latest_time, 100.0,
                                         l_latest_date, l_latest_time,
-                                        l_latest_time, 'F');
+                                        l_latest_time, l_has_non_zero_quality,
+                                        l_value_count);
 end cwms_2478_ts_extents_ts_code;
+
+procedure cwdb_2514_add_value_count_to_ts_extents
+is
+   l_start_time date := date '2018-01-01';
+   l_hour_interval binary_integer := 450;
+   l_value_count binary_integer := 200;
+   l_ts_value at_tsv%rowtype;
+   l_year binary_integer;
+   l_table_name varchar2(30);
+   l_ts_extents ts_extents_t;
+   l_ts_values ztsv_array;
+   l_ts_values2 ztsv_array;
+begin
+   setup;
+   ----------------------------------------------------------
+   -- test ts_extents value count without calling store_ts --
+   ----------------------------------------------------------
+   l_ts_value.ts_code := cwms_ts.get_ts_code(c_ts_id, c_office_id);
+   l_ts_value.date_time := l_start_time;
+   l_ts_value.version_date := cwms_util.non_versioned;
+   l_ts_value.quality_code := 3;
+   l_ts_value.dest_flag := 0;
+   for i in 1..l_value_count loop
+      l_ts_value.value := i;
+      l_ts_value.data_entry_date := systimestamp;
+      l_year := to_number(to_char(l_ts_value.date_time, 'YYYY'));
+      l_table_name := 'at_tsv_'||l_year;
+      execute immediate 'insert into '||l_table_name||' values (:1,:2,:3,:4,:5,:6,:7)'
+      using l_ts_value.ts_code,
+            l_ts_value.date_time,
+            l_ts_value.version_date,
+            l_ts_value.data_entry_date,
+            l_ts_value.value,
+            l_ts_value.quality_code,
+            l_ts_value.dest_flag;
+      l_ts_value.date_time := l_ts_value.date_time + (l_hour_interval / 24);
+   end loop;
+
+   l_ts_extents := cwms_ts.get_ts_extents_f(
+      p_cwms_ts_id   => c_ts_id,
+      p_time_zone    => 'UTC',
+      p_version_date => cwms_util.non_versioned,
+      p_office_id    => c_office_id);
+
+   ut.expect(l_ts_extents.value_count).to_equal(l_value_count);
+   ------------------------------------------------------------
+   -- test ts_extents value count with store_ts (no deletes) --
+   ------------------------------------------------------------
+   l_ts_values := ztsv_array();
+   l_ts_values.extend(20);
+   for i in 1..l_ts_values.count loop
+      l_ts_values(i) := cwms_t_ztsv(l_start_time + (i / 24), i, 3);
+   end loop;
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => c_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => l_ts_values,
+      p_store_rule      => cwms_util.replace_all,
+      p_override_prot   => 'F',
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id);
+
+   l_ts_extents := cwms_ts.get_ts_extents_f(
+      p_cwms_ts_id   => c_ts_id,
+      p_time_zone    => 'UTC',
+      p_version_date => cwms_util.non_versioned,
+      p_office_id    => c_office_id);
+
+   ut.expect(l_ts_extents.value_count).to_equal(l_value_count + l_ts_values.count);
+   --------------------------------------------------------------
+   -- test ts_extents value count with store_ts (with deletes) --
+   --------------------------------------------------------------
+   l_ts_values2 := ztsv_array();
+   l_ts_values2.extend(2);
+   l_ts_values2(1) := l_ts_values(1);
+   l_ts_values2(2) := l_ts_values(l_ts_values.count);
+   for i in 1..l_ts_values2.count loop
+      l_ts_values2(i).value := l_ts_values2(i).value + 100;
+   end loop;
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => c_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => l_ts_values2,
+      p_store_rule      => cwms_util.delete_insert,
+      p_override_prot   => 'F',
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id);
+   commit;
+
+   dbms_session.sleep(8); -- wait for utx job to finish
+
+   l_ts_extents := cwms_ts.get_ts_extents_f(
+      p_cwms_ts_id   => c_ts_id,
+      p_time_zone    => 'UTC',
+      p_version_date => cwms_util.non_versioned,
+      p_office_id    => c_office_id);
+
+   ut.expect(l_ts_extents.value_count).to_equal(l_value_count + l_ts_values2.count);
+
+end cwdb_2514_add_value_count_to_ts_extents;
 
 end test_update_ts_extents;
 /

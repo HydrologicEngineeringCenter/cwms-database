@@ -64,7 +64,6 @@ exec dbms_output.put_line('Creating tables.');
 @@cwms/cwms_types
 @@cwms/at_schema
 @@cwms/at_schema_crrel
-@@cwms/at_schema_alarm
 @@cwms/at_schema_screening
 @@cwms/at_schema_dss_xchg
 @@cwms/at_schema_msg

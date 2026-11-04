@@ -1626,7 +1626,7 @@ AS
     */
    function months_to_yminterval(
       p_months in integer)
-      return interval year to month;
+      return yminterval_unconstrained;
    /**
     * Converts an integer number of minutes to an equivalent <code><big>INTERVAL DAY TO SECOND</big></code>
     *
