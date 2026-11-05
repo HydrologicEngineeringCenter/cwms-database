@@ -4633,28 +4633,39 @@ end get_srid;
                                p_ignore_nulls 		   IN VARCHAR2 DEFAULT 'T',
                                p_shared_alias_id 	   IN VARCHAR2 DEFAULT NULL,
                                p_shared_loc_ref_id	   IN VARCHAR2 DEFAULT NULL,
-                               p_db_office_id		   IN VARCHAR2 DEFAULT NULL
+                               p_category_office_id	IN VARCHAR2 DEFAULT NULL,
+                               p_group_office_id	   IN VARCHAR2 DEFAULT NULL
                               )
    IS
-      l_db_office_id             VARCHAR2 (16);
-      l_db_office_code           NUMBER;
+      l_group_office_id          VARCHAR2 (16);
+      l_group_office_code        NUMBER;
+      l_cat_office_id            VARCHAR(16);
+      l_cat_office_code          NUMBER;
       l_loc_category_code        NUMBER;
       l_loc_group_code           NUMBER;
-      l_ignore_nulls              BOOLEAN;
+      l_ignore_nulls             BOOLEAN;
       l_group_desc               VARCHAR2(1000);
       l_loc_alias                VARCHAR2(1000);
       l_loc_attrib               NUMBER;
       l_ref_loc                  VARCHAR2(300);
       l_ref_loc_code             NUMBER;
    BEGIN
-      IF p_db_office_id IS NULL
+      IF p_group_office_id IS NULL
       THEN
-         l_db_office_id := cwms_util.user_office_id;
+         l_group_office_id := cwms_util.user_office_id;
       ELSE
-         l_db_office_id := UPPER (p_db_office_id);
+         l_group_office_id := UPPER (p_group_office_id);
       END IF;
 
-      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+      IF p_category_office_id IS NULL
+      THEN
+         l_cat_office_id := cwms_util.user_office_id;
+      ELSE
+         l_cat_office_id := UPPER (p_category_office_id);
+      END IF;
+
+      l_group_office_code := cwms_util.get_office_code (l_group_office_id);
+      l_cat_office_code := cwms_util.get_office_code (l_cat_office_id);
 
       IF NVL (p_ignore_nulls, 'T') = 'T'
       THEN
@@ -4665,7 +4676,7 @@ end get_srid;
 
       BEGIN
          l_loc_category_code :=
-            get_loc_category_code (p_loc_category_id, l_db_office_code);
+            get_loc_category_code (p_loc_category_id, l_cat_office_code);
       EXCEPTION
          WHEN OTHERS
          THEN
@@ -4680,7 +4691,7 @@ end get_srid;
          l_loc_group_code :=
             get_loc_group_code (p_loc_category_id,
                                 p_loc_group_id,
-                                l_db_office_code
+                                l_group_office_code
                                );
       EXCEPTION
          WHEN OTHERS
@@ -4702,7 +4713,8 @@ end get_srid;
          select shared_loc_alias_id
             into l_loc_alias
                from at_loc_group
-                  where loc_group_code = l_loc_group_code;
+                  where loc_group_code = l_loc_group_code
+                     and loc_category_code = l_loc_category_code;
       end if;
 
       if l_group_desc IS NULL AND l_ignore_nulls
@@ -4710,7 +4722,8 @@ end get_srid;
          select loc_group_desc
             into l_group_desc
                from at_loc_group
-                  where loc_group_code = l_loc_group_code;
+                  where loc_group_code = l_loc_group_code
+                    and loc_category_code = l_loc_category_code;
       end if;
 
       if l_loc_attrib IS NULL AND l_ignore_nulls
@@ -4718,20 +4731,22 @@ end get_srid;
          select loc_group_attribute
             into l_loc_attrib
                from at_loc_group
-                  where loc_group_code = l_loc_group_code;
+                  where loc_group_code = l_loc_group_code
+                    and loc_category_code = l_loc_category_code;
       end if;
 
       IF l_ref_loc IS NOT NULL
          THEN
             l_ref_loc_code :=
-               cwms_loc.get_location_code (l_db_office_id,
+               cwms_loc.get_location_code (l_group_office_id,
                                            l_ref_loc
                                           );
          else
             select shared_loc_ref_code
             into l_ref_loc_code
             from at_loc_group
-            where loc_group_code = l_loc_group_code;
+            where loc_group_code = l_loc_group_code
+              and loc_category_code = l_loc_category_code;
       END IF;
 
       UPDATE   at_loc_group
@@ -4739,7 +4754,8 @@ end get_srid;
                loc_group_attribute = l_loc_attrib,
                shared_loc_alias_id = TRIM (l_loc_alias),
                shared_loc_ref_code = l_ref_loc_code
-      WHERE    loc_group_code = l_loc_group_code;
+      WHERE    loc_group_code = l_loc_group_code
+        AND    loc_category_code = l_loc_category_code;
    END update_loc_group;
 
    --

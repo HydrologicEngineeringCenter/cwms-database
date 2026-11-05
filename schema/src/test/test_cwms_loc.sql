@@ -4210,6 +4210,7 @@ end test_vertical_datum_info_bulk;
       l_stored_loc   VARCHAR2(12) := 'TestLocation';
       l_stored_loc2  VARCHAR2(13) := 'TestLocation2';
       l_office_id    VARCHAR2(3) := '&&office_id';
+      l_cat_office   VARCHAR2(4) := 'CWMS';
       l_loc_group_id VARCHAR2(24) := 'TestGroup';
       l_loc_grp_cat  VARCHAR2(24) := 'TestCategory';
       l_loc_alias    VARCHAR2(12) := 'TestAlias';
@@ -4225,12 +4226,12 @@ end test_vertical_datum_info_bulk;
                                p_db_office_id   => l_office_id);
       cwms_loc.store_location (p_location_id    => l_stored_loc2,
                                p_db_office_id   => l_office_id);
-      cwms_loc.STORE_LOC_CATEGORY(l_loc_grp_cat, 'A test category', l_office_id);
+      cwms_loc.STORE_LOC_CATEGORY(l_loc_grp_cat, 'A test category', l_cat_office);
       cwms_loc.store_loc_group2(l_loc_grp_cat, l_loc_group_id, 'Unit Test Group', 123,
                                'F', 'T', 'DifferentAlias', l_stored_loc2, l_office_id);
 
       cwms_loc.update_loc_group(l_loc_grp_cat, l_loc_group_id, l_loc_desc,
-                               l_loc_attrib, 'T', l_loc_alias, l_ref_loc, l_office_id);
+                               l_loc_attrib, 'T', l_loc_alias, l_ref_loc, l_cat_office, l_office_id);
 
       select loc_group_desc,
              shared_ref_location_id,
