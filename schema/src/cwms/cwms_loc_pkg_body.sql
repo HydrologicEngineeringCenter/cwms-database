@@ -4144,6 +4144,32 @@ end get_srid;
       RETURN l_loc_category_code;
    END get_loc_category_code;
 
+   FUNCTION get_loc_category_code_exact (p_loc_category_id    IN VARCHAR2,
+                                         p_db_office_code    IN NUMBER
+   )
+      RETURN NUMBER
+      IS
+      l_loc_category_code    NUMBER;
+   BEGIN
+      BEGIN
+         SELECT   atlc.loc_category_code
+         INTO   l_loc_category_code
+         FROM   at_loc_category atlc
+         WHERE   atlc.db_office_code = p_db_office_code
+           AND UPPER (atlc.loc_category_id) =
+               UPPER (TRIM (p_loc_category_id));
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise ('ITEM_DOES_NOT_EXIST',
+                               'Category id: ',
+                               p_loc_category_id
+               );
+      END;
+
+      RETURN l_loc_category_code;
+   END get_loc_category_code_exact;
+
    FUNCTION get_loc_group_code (p_loc_category_id    IN VARCHAR2,
                                 p_loc_group_id       IN VARCHAR2,
                                 p_db_office_code    IN NUMBER
@@ -4174,6 +4200,38 @@ end get_srid;
 
       RETURN l_loc_group_code;
    END get_loc_group_code;
+
+   FUNCTION get_loc_group_code_exact (p_loc_category_id     IN VARCHAR2,
+                                      p_loc_group_id        IN VARCHAR2,
+                                      p_group_office_code   IN NUMBER,
+                                      p_cat_office_code     IN NUMBER
+   )
+      RETURN NUMBER
+      IS
+      l_loc_category_code    NUMBER;
+      l_loc_group_code       NUMBER;
+   BEGIN
+      l_loc_category_code :=
+         get_loc_category_code_exact (p_loc_category_id, p_cat_office_code);
+
+      BEGIN
+         SELECT   loc_group_code
+         INTO   l_loc_group_code
+         FROM   at_loc_group atlg
+         WHERE       atlg.loc_category_code = l_loc_category_code
+           AND UPPER (atlg.loc_group_id) = UPPER (p_loc_group_id)
+           AND db_office_code = p_group_office_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise ('ITEM_DOES_NOT_EXIST',
+                               'group id: ',
+                               p_loc_group_id
+               );
+      END;
+
+      RETURN l_loc_group_code;
+   END get_loc_group_code_exact;
 
    PROCEDURE store_loc_category (
       p_loc_category_id     IN VARCHAR2,
@@ -4676,7 +4734,7 @@ end get_srid;
 
       BEGIN
          l_loc_category_code :=
-            get_loc_category_code (p_loc_category_id, l_cat_office_code);
+            get_loc_category_code_exact (p_loc_category_id, l_cat_office_code);
       EXCEPTION
          WHEN OTHERS
          THEN
@@ -4689,9 +4747,10 @@ end get_srid;
 
       BEGIN
          l_loc_group_code :=
-            get_loc_group_code (p_loc_category_id,
+            get_loc_group_code_exact (p_loc_category_id,
                                 p_loc_group_id,
-                                l_group_office_code
+                                l_group_office_code,
+                                l_loc_category_code
                                );
       EXCEPTION
          WHEN OTHERS
