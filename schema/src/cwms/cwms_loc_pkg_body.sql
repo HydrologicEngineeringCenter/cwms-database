@@ -4750,7 +4750,7 @@ end get_srid;
             get_loc_group_code_exact (p_loc_category_id,
                                 p_loc_group_id,
                                 l_group_office_code,
-                                l_loc_category_code
+                                l_cat_office_code
                                );
       EXCEPTION
          WHEN OTHERS

@@ -4288,7 +4288,7 @@ end test_vertical_datum_info_bulk;
       ut.expect(l_group_count).to_equal(2);
 
       cwms_loc.update_loc_group(l_loc_grp_cat, l_loc_group_id, l_loc_desc,
-                               l_loc_attrib, 'T', l_loc_alias, l_ref_loc, l_office_id, l_office_id);
+                               l_loc_attrib, 'T', l_loc_alias, l_ref_loc, l_cwms_office, l_office_id);
 
       select loc_group_desc,
              shared_ref_location_id,
@@ -4305,7 +4305,11 @@ end test_vertical_datum_info_bulk;
       ut.expect(l_result_alias).to_equal(l_loc_alias);
       ut.expect(l_result_attr).to_equal(l_loc_attrib);
 
-      cwms_loc.delete_loc_group(l_loc_grp_cat, l_loc_group_id, 'T', l_office_id);
+      delete from at_loc_group
+      where loc_group_id = l_loc_group_id;
+
+      delete from at_loc_category
+      where loc_category_id = l_loc_grp_cat;
    END test_update_location_group;
 
    -- This tests the behavior of several CDA and OpenDCS tests
