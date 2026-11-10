@@ -2917,7 +2917,7 @@ create table at_blob(
    constraint at_blob_fk1 foreign key(media_type_code) references cwms_media_type(media_type_code)
 ) tablespace cwms_20at_data
 /
-create unique index at_blob_u1 on at_blob(office_code, upper(id), created_at) tablespace cwms_20at_data
+create unique index at_blob_u1 on at_blob(office_code, upper(id)) tablespace cwms_20at_data
 /
 comment on table  at_blob                 is 'Contains binary data';
 comment on column at_blob.blob_code       is 'Synthetic key';
@@ -2936,8 +2936,7 @@ create table at_std_text(
    std_text_id   varchar2(16) not null,
    clob_code     number(14),
    constraint at_std_text_pk  primary key(std_text_code),
-   constraint at_std_text_ck1 check(std_text_id = upper
-   4212(std_text_id)),
+   constraint at_std_text_ck1 check(std_text_id = upper(std_text_id)),
    constraint at_std_text_fk1 foreign key(clob_code) references at_clob(clob_code)
 ) tablespace cwms_20at_data
 /
