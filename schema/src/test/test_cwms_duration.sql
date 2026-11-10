@@ -2,8 +2,6 @@ set verify off;
 create or replace package &&cwms_schema..test_cwms_duration as
     --%suite(Test schema for duration presence)
 
-   --%rollback(manual)
-
    --%test(Test new durations are present)
    procedure test_3_6_9_month_durations_present;
 end test_cwms_duration;
@@ -36,4 +34,7 @@ create or replace package body &&cwms_schema..test_cwms_duration as
 
       ut.expect(l_count).to_equal(1);
    end test_3_6_9_month_durations_present;
-end test_cwms_outlet;
+end test_cwms_duration;
+/
+
+grant execute on test_cwms_duration to cwms_user;
