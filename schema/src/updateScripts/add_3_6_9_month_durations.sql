@@ -19,6 +19,9 @@ begin
    INSERT INTO CWMS_DURATION VALUES (63, '3Month', 129600, 'Measurement applies over 3 months, time stamped at period end');
    INSERT INTO CWMS_DURATION VALUES (64, '6Month', 259200, 'Measurement applies over 6 months, time stamped at period end');
    INSERT INTO CWMS_DURATION VALUES (65, '9Month', 388800, 'Measurement applies over 9 months, time stamped at period end');
+   INSERT INTO CWMS_DURATION VALUES (66, '3MonthBOP', 129600, 'Measurement applies over 3 months, time stamped at period beginning');
+   INSERT INTO CWMS_DURATION VALUES (67, '6MonthBOP', 259200, 'Measurement applies over 6 months, time stamped at period beginning');
+   INSERT INTO CWMS_DURATION VALUES (68, '9MonthBOP', 388800, 'Measurement applies over 9 months, time stamped at period beginning');
    commit;
 end;
 /
