@@ -61,6 +61,7 @@ show errors;
 @test_cwms_outlet.sql;
 @test_cwms_turbine.sql;
 @test_cwms_text.sql;
+@test_cwms_duration.sql;
 @views/test_av_ts_grp_assgn.sql;
 @views/test_av_loc_grp_assgn.sql;
 @views/test_av_location_level_ref_values.sql;

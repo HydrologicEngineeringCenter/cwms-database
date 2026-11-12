@@ -8,7 +8,8 @@ AS
         RETURN VARCHAR2
     IS
     BEGIN
-       return 'duration_code < 61';
+       -- hide only 'Variable' (61) and 'UntilChanged' (62); codes above 62 are normal durations
+       return 'duration_code not in (61, 62)';
     END cwms_duration_filter;
 
     FUNCTION cwms_interval_filter (p_schema IN VARCHAR2, p_table IN VARCHAR2)
