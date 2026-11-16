@@ -118,7 +118,8 @@ as
       p_description       in     varchar2 default null, -- description, defaults to null
       p_fail_if_exists    in     varchar2 default 'T', -- flag specifying whether to fail if p_id already exists
       p_ignore_nulls      in     varchar2 default 'T', -- flag specifying whether to ignore null parameters on update
-      p_office_id         in     varchar2 default null) -- office id, defaults current user's office
+      p_office_id         in     varchar2 default null, -- office id, defaults current user's office
+      p_created_by        in     varchar2 default null) -- username of the person who created the binary
    is
       l_rec            at_blob%rowtype;
       l_id             varchar2(256) := upper(p_id);
@@ -126,6 +127,7 @@ as
       l_fail_if_exists boolean := cwms_util.return_true_or_false(p_fail_if_exists);
       l_ignore_nulls   boolean := cwms_util.return_true_or_false(p_ignore_nulls);
       l_exists         boolean;
+      l_now            date := cast(sys_extract_utc(systimestamp) as date);
    begin
       cwms_util.check_office_permission(p_office_id);
       begin
@@ -161,12 +163,25 @@ as
                l_rec.description := p_description;
                l_rec.media_type_code := get_media_type_code(p_media_type_or_ext, l_office_code);
             end if;
+
+            l_rec.created_by := case l_rec.created_by is null
+                                   when true then p_created_by
+                                   else l_rec.created_by
+                                end;
+            l_rec.created_at := case l_rec.created_at is null
+                                   when true then l_now
+                                   else l_rec.created_at
+                                end;
+
             update at_blob
             set office_code     = l_rec.office_code,
                 value           = l_rec.value,
                 id              = l_rec.id,
                 description     = l_rec.description,
-                media_type_code = l_rec.media_type_code
+                media_type_code = l_rec.media_type_code,
+                created_by      = l_rec.created_by,
+                updated_at      = l_now,
+                created_at      = l_rec.created_at
             where blob_code = l_rec.blob_code;
          end if;
       else
@@ -179,6 +194,9 @@ as
          l_rec.id := l_id;
          l_rec.description := p_description;
          l_rec.media_type_code := get_media_type_code(p_media_type_or_ext, l_office_code);
+         l_rec.created_by := p_created_by;
+         l_rec.created_at := l_now;
+         l_rec.updated_at := l_now;
          insert into at_blob values l_rec;
       end if;
       p_binary_code := l_rec.blob_code;
@@ -3653,6 +3671,7 @@ as
       l_store_date         timestamp := cast(systimestamp at time zone 'UTC' as timestamp);
       l_date_times         date_table_type;
       l_version_dates      date_table_type;
+      l_now                date := cast (sys_extract_utc(systimestamp) as date);
    begin
       -------------------
       -- sanity checks --
@@ -3760,7 +3779,11 @@ as
                      '/TIME SERIES BINARY/' || l_blob_code,
                      null,
                      l_media_type_code,
-                     p_binary);
+                     p_binary,
+                     l_now,
+                     l_now,
+                     null
+                     );
 
       ------------------------
       -- get the date/times --
@@ -3883,6 +3906,7 @@ as
       l_is_versioned       boolean;
       l_office_id          varchar2(16);
       l_office_code        number(14);
+      l_now                date :=cast (sys_extract_utc(systimestamp) as date);
    begin
       -------------------
       -- sanity checks --
@@ -3931,7 +3955,10 @@ as
                      '/TIME SERIES binary/' || l_blob_code,
                      null,
                      l_media_type_code,
-                     p_binary);
+                     p_binary,
+                     l_now,
+                     l_now,
+                     null);
 
       l_times_utc.extend(p_times.count);
 

@@ -26,7 +26,8 @@ as
       p_description       in     varchar2 default null, -- description, defaults to null
       p_fail_if_exists    in     varchar2 default 'T', -- flag specifying whether to fail if p_id already exists
       p_ignore_nulls      in     varchar2 default 'T', -- flag specifying whether to ignore null parameters on update
-      p_office_id         in     varchar2 default null); -- office id, defaults current user's office
+      p_office_id         in     varchar2 default null, -- office id, defaults current user's office
+      p_created_by        in     varchar2 default null); -- username of the person who created the binary
 
    /**
     * Store (insert or update) text to the database
