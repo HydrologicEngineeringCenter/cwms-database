@@ -4144,6 +4144,32 @@ end get_srid;
       RETURN l_loc_category_code;
    END get_loc_category_code;
 
+   FUNCTION get_loc_category_code_exact (p_loc_category_id    IN VARCHAR2,
+                                         p_db_office_code    IN NUMBER
+   )
+      RETURN NUMBER
+      IS
+      l_loc_category_code    NUMBER;
+   BEGIN
+      BEGIN
+         SELECT   atlc.loc_category_code
+         INTO   l_loc_category_code
+         FROM   at_loc_category atlc
+         WHERE   atlc.db_office_code = p_db_office_code
+           AND UPPER (atlc.loc_category_id) =
+               UPPER (TRIM (p_loc_category_id));
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise ('ITEM_DOES_NOT_EXIST',
+                               'Category id: ',
+                               p_loc_category_id
+               );
+      END;
+
+      RETURN l_loc_category_code;
+   END get_loc_category_code_exact;
+
    FUNCTION get_loc_group_code (p_loc_category_id    IN VARCHAR2,
                                 p_loc_group_id       IN VARCHAR2,
                                 p_db_office_code    IN NUMBER
@@ -4174,6 +4200,38 @@ end get_srid;
 
       RETURN l_loc_group_code;
    END get_loc_group_code;
+
+   FUNCTION get_loc_group_code_exact (p_loc_category_id     IN VARCHAR2,
+                                      p_loc_group_id        IN VARCHAR2,
+                                      p_group_office_code   IN NUMBER,
+                                      p_cat_office_code     IN NUMBER
+   )
+      RETURN NUMBER
+      IS
+      l_loc_category_code    NUMBER;
+      l_loc_group_code       NUMBER;
+   BEGIN
+      l_loc_category_code :=
+         get_loc_category_code_exact (p_loc_category_id, p_cat_office_code);
+
+      BEGIN
+         SELECT   loc_group_code
+         INTO   l_loc_group_code
+         FROM   at_loc_group atlg
+         WHERE       atlg.loc_category_code = l_loc_category_code
+           AND UPPER (atlg.loc_group_id) = UPPER (p_loc_group_id)
+           AND db_office_code = p_group_office_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise ('ITEM_DOES_NOT_EXIST',
+                               'group id: ',
+                               p_loc_group_id
+               );
+      END;
+
+      RETURN l_loc_group_code;
+   END get_loc_group_code_exact;
 
    PROCEDURE store_loc_category (
       p_loc_category_id     IN VARCHAR2,
@@ -4625,6 +4683,139 @@ end get_srid;
    --
    --
    END rename_loc_group;
+
+   PROCEDURE update_loc_group (p_loc_category_id	   IN VARCHAR2,
+                               p_loc_group_id		   IN VARCHAR2,
+                               p_loc_group_desc 	   IN VARCHAR2 DEFAULT NULL,
+                               p_loc_group_attribute  IN NUMBER DEFAULT NULL,
+                               p_ignore_nulls 		   IN VARCHAR2 DEFAULT 'T',
+                               p_shared_alias_id 	   IN VARCHAR2 DEFAULT NULL,
+                               p_shared_loc_ref_id	   IN VARCHAR2 DEFAULT NULL,
+                               p_category_office_id	IN VARCHAR2 DEFAULT NULL,
+                               p_group_office_id	   IN VARCHAR2 DEFAULT NULL
+                              )
+   IS
+      l_group_office_id          VARCHAR2 (16);
+      l_group_office_code        NUMBER;
+      l_cat_office_id            VARCHAR(16);
+      l_cat_office_code          NUMBER;
+      l_loc_category_code        NUMBER;
+      l_loc_group_code           NUMBER;
+      l_ignore_nulls             BOOLEAN;
+      l_group_desc               VARCHAR2(1000);
+      l_loc_alias                VARCHAR2(1000);
+      l_loc_attrib               NUMBER;
+      l_ref_loc                  VARCHAR2(300);
+      l_ref_loc_code             NUMBER;
+   BEGIN
+      IF p_group_office_id IS NULL
+      THEN
+         l_group_office_id := cwms_util.user_office_id;
+      ELSE
+         l_group_office_id := UPPER (p_group_office_id);
+      END IF;
+
+      IF p_category_office_id IS NULL
+      THEN
+         l_cat_office_id := cwms_util.user_office_id;
+      ELSE
+         l_cat_office_id := UPPER (p_category_office_id);
+      END IF;
+
+      l_group_office_code := cwms_util.get_office_code (l_group_office_id);
+      l_cat_office_code := cwms_util.get_office_code (l_cat_office_id);
+
+      IF NVL (p_ignore_nulls, 'T') = 'T'
+      THEN
+         l_ignore_nulls := TRUE;
+      ELSE
+         l_ignore_nulls := FALSE;
+      END IF;
+
+      BEGIN
+         l_loc_category_code :=
+            get_loc_category_code_exact (p_loc_category_id, l_cat_office_code);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.raise (
+               'ITEM_DOES_NOT_EXIST',
+               'Category id must exist to update location group - Category id that does not exist: ',
+               p_loc_category_id
+            );
+      END;
+
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code_exact (p_loc_category_id,
+                                p_loc_group_id,
+                                l_group_office_code,
+                                l_cat_office_code
+                               );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.raise (
+               'ITEM_DOES_NOT_EXIST',
+               'p_loc_group_id does not exist - can''t perform update of: ',
+               p_loc_group_id
+            );
+      END;
+
+      l_loc_alias := p_shared_alias_id;
+      l_group_desc := p_loc_group_desc;
+      l_loc_attrib := p_loc_group_attribute;
+      l_ref_loc := p_shared_loc_ref_id;
+
+      if l_loc_alias IS NULL AND l_ignore_nulls
+      then
+         select shared_loc_alias_id
+            into l_loc_alias
+               from at_loc_group
+                  where loc_group_code = l_loc_group_code
+                     and loc_category_code = l_loc_category_code;
+      end if;
+
+      if l_group_desc IS NULL AND l_ignore_nulls
+      then
+         select loc_group_desc
+            into l_group_desc
+               from at_loc_group
+                  where loc_group_code = l_loc_group_code
+                    and loc_category_code = l_loc_category_code;
+      end if;
+
+      if l_loc_attrib IS NULL AND l_ignore_nulls
+      then
+         select loc_group_attribute
+            into l_loc_attrib
+               from at_loc_group
+                  where loc_group_code = l_loc_group_code
+                    and loc_category_code = l_loc_category_code;
+      end if;
+
+      IF l_ref_loc IS NOT NULL
+         THEN
+            l_ref_loc_code :=
+               cwms_loc.get_location_code (l_group_office_id,
+                                           l_ref_loc
+                                          );
+         else
+            select shared_loc_ref_code
+            into l_ref_loc_code
+            from at_loc_group
+            where loc_group_code = l_loc_group_code
+              and loc_category_code = l_loc_category_code;
+      END IF;
+
+      UPDATE   at_loc_group
+      SET      loc_group_desc = TRIM (l_group_desc),
+               loc_group_attribute = l_loc_attrib,
+               shared_loc_alias_id = TRIM (l_loc_alias),
+               shared_loc_ref_code = l_ref_loc_code
+      WHERE    loc_group_code = l_loc_group_code
+        AND    loc_category_code = l_loc_category_code;
+   END update_loc_group;
 
    --
    --********************************************************************** -

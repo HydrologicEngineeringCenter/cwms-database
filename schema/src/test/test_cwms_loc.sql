@@ -72,6 +72,8 @@ procedure test_assign_loc_do_not_ignore_missing;
 procedure test_location_geometry_nearest_city_normalization;
 --%test (Test simple deletion)
 procedure test_delete_loc;
+--%test (Test update for location groups)
+procedure test_update_location_group;
 --%test (Test rapid deletion and insert)
 procedure test_rapid_delete_insert;
 
@@ -4202,6 +4204,113 @@ end test_vertical_datum_info_bulk;
          when others then raise;
       end;
    END;
+
+   procedure test_update_location_group
+   IS
+      l_stored_loc   VARCHAR2(12) := 'TestLocation';
+      l_stored_loc2  VARCHAR2(13) := 'TestLocation2';
+      l_office_id    VARCHAR2(3) := '&&office_id';
+      l_office_code  NUMBER;
+      l_cwms_office  VARCHAR2(4) := 'CWMS';
+      l_cwms_code    NUMBER;
+      l_loc_group_id VARCHAR2(24) := 'TestGroup';
+      l_loc_grp_cat  VARCHAR2(24) := 'TestCategory';
+      l_loc_alias    VARCHAR2(12) := 'TestAlias';
+      l_ref_loc      VARCHAR2(12) := l_stored_loc;
+      l_loc_desc     VARCHAR2(255) := 'TestLocationDesc';
+      l_cat_desc     VARCHAR2(255) := 'A test category';
+      l_group_desc   VARCHAR2(255) := 'Unit Test Group';
+      l_loc_attrib   NUMBER := 12;
+      l_result_desc  VARCHAR2(100);
+      l_result_alias VARCHAR2(100);
+      l_result_attr  NUMBER;
+      l_result_loc   VARCHAR2(100);
+      l_cat_code     NUMBER;
+      l_cat_count    NUMBER;
+      l_group_count  NUMBER;
+   BEGIN
+      cwms_loc.store_location (p_location_id    => l_stored_loc,
+                               p_db_office_id   => l_office_id);
+      cwms_loc.store_location (p_location_id    => l_stored_loc2,
+                               p_db_office_id   => l_office_id);
+
+      l_cwms_code := cwms_util.get_office_code(l_cwms_office);
+      l_office_code := cwms_util.get_office_code(l_office_id);
+
+      delete from at_loc_group
+      where loc_group_id = l_loc_group_id
+         and loc_group_desc = l_group_desc;
+
+      delete from at_loc_category
+         where loc_category_id = l_loc_grp_cat
+            and loc_category_desc = l_cat_desc;
+
+      insert into at_loc_category
+      values (cwms_seq.nextval, l_loc_grp_cat, l_cwms_code, l_cat_desc);
+
+      insert into at_loc_category
+      values (cwms_seq.nextval, l_loc_grp_cat, l_office_code, l_cat_desc);
+
+      select count(*)
+      into l_cat_count
+      from at_loc_category
+      where loc_category_id = l_loc_grp_cat
+        and loc_category_desc = l_cat_desc;
+
+      ut.expect(l_cat_count).to_equal(2);
+
+      select loc_category_code
+      into l_cat_code
+      from at_loc_category
+      where loc_category_id = l_loc_grp_cat
+         and loc_category_desc = l_cat_desc
+         and db_office_code = l_cwms_code;
+
+      delete from at_loc_group
+      where loc_category_code = l_cat_code
+         and loc_group_id = l_loc_group_id
+         and db_office_code = l_office_code;
+
+      insert into at_loc_group
+      values (cwms_seq.NEXTVAL, l_cat_code, l_loc_group_id,
+              l_group_desc, l_office_code, null, null, null);
+
+      insert into at_loc_group
+      values (cwms_seq.NEXTVAL, l_cat_code, l_loc_group_id,
+              l_group_desc, l_cwms_code, null, null, null);
+
+      select count(*)
+      into l_group_count
+      from at_loc_group
+      where loc_group_desc = l_group_desc
+        and loc_group_id = l_loc_group_id;
+
+      ut.expect(l_group_count).to_equal(2);
+
+      cwms_loc.update_loc_group(l_loc_grp_cat, l_loc_group_id, l_loc_desc,
+                               l_loc_attrib, 'T', l_loc_alias, l_ref_loc, l_cwms_office, l_office_id);
+
+      select loc_group_desc,
+             shared_ref_location_id,
+             shared_loc_alias_id,
+             loc_group_attribute
+      into l_result_desc, l_result_loc, l_result_alias, l_result_attr
+         from av_loc_cat_grp
+         where loc_category_id = l_loc_grp_cat
+           and loc_group_id = l_loc_group_id
+           and grp_db_office_id = l_office_id;
+
+      ut.expect(l_result_desc).to_equal(l_loc_desc);
+      ut.expect(l_result_loc).to_equal(l_ref_loc);
+      ut.expect(l_result_alias).to_equal(l_loc_alias);
+      ut.expect(l_result_attr).to_equal(l_loc_attrib);
+
+      delete from at_loc_group
+      where loc_group_id = l_loc_group_id;
+
+      delete from at_loc_category
+      where loc_category_id = l_loc_grp_cat;
+   END test_update_location_group;
 
    -- This tests the behavior of several CDA and OpenDCS tests
    -- that clear and rebuild the given site in a rapid cycle
