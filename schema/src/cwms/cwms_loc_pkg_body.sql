@@ -643,6 +643,8 @@ AS
       l_nation_code            at_physical_location.nation_code%type;
       l_lat_lon_specified      boolean := p_latitude is not null and p_longitude is not null;
       l_srid                   mdsys.sdo_coord_ref_sys.srid%type;
+      l_location_id varchar2(128);
+      l_location_id_cache_val varchar2(256);
    BEGIN
       if p_bounding_office_id is not null then
          l_bounding_office_code := cwms_util.get_db_office_code(p_bounding_office_id);
@@ -870,6 +872,17 @@ AS
 
       END IF;
 
+      l_location_id := p_base_location_id;
+      if p_sub_location_id is not null then
+         l_location_id := l_location_id || '-' || p_sub_location_id;
+      end if;
+      l_location_id_cache_val := upper(p_db_office_id)||'/'||upper(l_location_id);
+      --dbms_output.put_line('Clearing cache of key' || l_location_id_cache_val || ' and code ' || p_location_code);
+      cwms_cache.remove_by_value(g_location_id_cache, l_location_id_cache_val, 'F');
+      cwms_cache.remove(g_location_code_cache, l_location_id_cache_val);
+      l_location_id_cache_val := p_db_office_code || '/' || upper(l_location_id);
+      cwms_cache.remove(g_location_code_cache, l_location_id_cache_val);
+      cwms_cache.remove_by_value(g_location_id_cache, l_location_id_cache_val, 'F');
    END create_location_raw2;
 
    --********************************************************************** -
@@ -1051,14 +1064,30 @@ AS
                                   := cwms_util.get_office_code ('CWMS');
       l_old_time_zone_code      number(14);
       l_srid                   mdsys.sdo_coord_ref_sys.srid%type;
+      l_office_id varchar2(5) := cwms_util.get_db_office_id(p_db_office_id); -- if null
+      l_location_id_cache_val varchar2(256);
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
 
       -- Retrieve the location's Location Code.
       --
-      l_location_code := get_location_code (p_db_office_id, p_location_id);
-      -- DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
+      -- As it is possible that a location was stored, then rolled back in a transaction, we need
+      -- stuck up the performance hit and bypass the cache here so we don't return stale data.
+      --dbms_output.put_line('Using ' || l_office_id || '/' || p_location_id || ' for search' );
+      begin
+      select location_code into l_location_code
+        from av_loc2
+       where db_office_id = l_office_id and location_id = p_location_id
+             and unit_system = 'EN';
+      exception
+         when no_data_found then cwms_err.raise ('LOCATION_ID_NOT_FOUND',
+                            'update_location',
+                            p_location_id
+                           );
+         when others then raise;
+      end;
+      --dbms_output.put_line('Got code ' || l_location_code);
 
       --
       --  If get_location_code did not throw an exception, then a valid base_location_id and.
@@ -3141,6 +3170,7 @@ AS
             end loop;
             l_location_id_cache_val := upper(l_db_office_id)||'/'||upper(l_location_id);
             cwms_cache.remove_by_value(g_location_id_cache, l_location_id_cache_val);
+            cwms_cache.remove_by_value(g_location_code_cache, l_location_id_cache_val);
          exception
             when others then
                rollback to delete_location_key;
@@ -8506,6 +8536,7 @@ end unassign_loc_groups;
          where loc.db_office_id = p_office_id
          and loc.unit_system = p_unit_system
          and loc.location_id like p_location_mask
+         order by loc.location_id collate binary_ci asc
       ) loop
          get_vertical_datum_info2(l_vert_datum_info,
             row.location_id,
