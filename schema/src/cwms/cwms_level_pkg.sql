@@ -1449,6 +1449,44 @@ function retrieve_loc_lvl_values3(
    p_level_precedence        in  varchar2 default 'VN')
    return ztsv_array;
 /**
+ * Retrieves a time series of location level values for a specified location level (returns times in UTC)
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_specified_times    The times to retrieve the location level values (regular interval only, null is for irregular)
+ * @param p_start_time         The start of the time window
+ * @param p_end_time           The end of the time window
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
+ *
+ * @return The location level values as a double_tab_t
+ */
+function retrieve_loc_lvl_values4(
+   p_location_level_id       in  varchar2,
+   p_specified_times         in  ztsv_array default null,
+   p_start_time              in  timestamp default null,
+   p_end_time                in  timestamp default null,
+   p_level_units             in  varchar2,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
+   return ztsv_array;
+/**
  * Retrieves a time series of location level values for a specified location level
  * time series, specified level, and time window.  The location level identifier
  * is generated from p_ts_id and p_spec_level_id
