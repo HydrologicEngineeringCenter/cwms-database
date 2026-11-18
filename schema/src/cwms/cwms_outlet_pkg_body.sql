@@ -798,7 +798,7 @@ begin
    loop
       check_gate_change(p_gate_changes(i));
    end loop;
-   if p_override_protection not in('T', 'F') then
+   if p_override_protection is null or p_override_protection not in('T', 'F') then
       cwms_err.raise('ERROR', 'Parameter p_override_protection must be either ''T'' or ''F''');
    end if;
    if p_start_time is null and not cwms_util.is_true(p_start_time_inclusive) then
@@ -945,7 +945,20 @@ begin
          l_change_rec.gate_change_code      := null;
          l_change_rec.project_location_code := l_proj_loc_code;
          l_change_rec.gate_change_date      := l_new_change_date;
+         l_change_rec.protected             := '';
       end;
+      ---------------------------------------------------------
+      -- check that we're not overwriting a protected change --
+      ---------------------------------------------------------
+      if l_change_rec.protected = 'T' and p_override_protection = 'F' then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot insert/update gate change for project '
+            || l_office_id || ' / '
+            || cwms_loc.get_location_id(l_proj_loc_code) || ' at '
+            || cwms_util.change_timezone(l_new_change_date, 'UTC', nvl(l_time_zone, 'UTC'))
+            || ' because it is protected and cannot be overwritten');
+      end if;
       --------------------------------
       -- populate the change record --
       --------------------------------
