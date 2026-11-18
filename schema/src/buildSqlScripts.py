@@ -4234,7 +4234,13 @@ durations = [
     [59,    '10MinutesBOP', 10, 'Measurement applies over 10 minutes, time stamped at period beginning'],
     [60,    '0BOP',         0,  'Measurement applies intantaneously at time stamp or until next time stamp'],
     [61,    'Variable',     -1,  'Variable duration for non-instantaneous or const parameter types'],
-    [62,    'UntilChanged', -2,  'Duration for const parameter types']
+    [62,    'UntilChanged', -2,  'Duration for const parameter types'],
+    [63,    '3Month',       129600, 'Measurement applies over 3 months, time stamped at period end'],
+    [64,    '6Month',       259200, 'Measurement applies over 6 months, time stamped at period end'],
+    [65,    '9Month',       388800, 'Measurement applies over 9 months, time stamped at period end'],
+    [66,    '3MonthBOP',       129600, 'Measurement applies over 3 months, time stamped at period beginning'],
+    [67,    '6MonthBOP',       259200, 'Measurement applies over 6 months, time stamped at period beginning'],
+    [68,    '9MonthBOP',       388800, 'Measurement applies over 9 months, time stamped at period beginning']
 ]
 
 #---------------------#
