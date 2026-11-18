@@ -1,0 +1,1 @@
+.. _ratings-types:
