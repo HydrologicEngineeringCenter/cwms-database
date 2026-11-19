@@ -18,7 +18,7 @@ CWMS Database documentation
 
    Locations <./locations.rst>
    Naming <./naming.rst>
-   Ratings <./ratings.rst>
+   Ratings <ratings/index>
    Properties <./properties.rst>
    Pools <./pools.rst>
    Location Levels <./location-levels.rst>

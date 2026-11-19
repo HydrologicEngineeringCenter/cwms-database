@@ -6,7 +6,8 @@
 
 - Copyright 2012-2024 U.S. Federal Government (in countries where recognized)
 -                     Michael A Neilson (michael.a.neilson@usace.army.mil)
-
+- Copyright 2026 GEI Consultants
+-                     Deziree L. Seidner (mseidner@geiconsultants.com)
 
 ## Note for U.S. Federal Employees
 
