@@ -8,4 +8,6 @@ Rating Templates
 .. toctree::
     :maxdepth: 1
 
-    Template Identifiers <template-identifiers>
+    Template Identifiers <rating-template-identifiers>
+    Parameters and Parameter Order <rating-template-parameters>
+    Lookup Methods <rating-lookup-methods>
