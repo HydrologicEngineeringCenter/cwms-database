@@ -3,4 +3,4 @@
 Independent and Dependent Parameters
 ====================================
 
-Text is in progress
+*Text is in progress*

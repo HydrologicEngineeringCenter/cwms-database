@@ -22,6 +22,7 @@ Ratings Overview
 .. toctree::
     :maxdepth: 1
 
+    What is a Rating? <ratings-definition>
     Overview <overview/index>
     Rating Templates <rating-templates/index>
     Rating Specifications <rating-specifications/index>

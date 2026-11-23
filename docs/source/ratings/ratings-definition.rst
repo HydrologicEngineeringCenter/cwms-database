@@ -16,4 +16,4 @@ different times. Different locations experience changes to their physical charac
 especially for streams. For accuracy, stream gages' measurements are checked every 6 - 8 weeks
 or more often when and where necessary. For reservoirs however, the rating for its elevation
 and area may be updated every 10 years. There are also different types of ratings including
-USGS Stream Ratings, which are discussed in :ref:`USGS Ratings <../rating-types/usgs-rating-type>`.
+USGS Stream Ratings, which are discussed in :ref:`USGS Ratings <usgs-rating-type>`.

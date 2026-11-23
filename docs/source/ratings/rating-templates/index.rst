@@ -17,5 +17,5 @@ Opening-Conduit_Gates, Elev-Pool; Flow-Conduit_Gates.Normal).
     :maxdepth: 1
 
     Template Identifiers <rating-template-identifiers>
-    Parameters and Parameter Order <rating-template-parameters>
+    Rating Parameters <rating-template-parameters>
     Lookup Methods <rating-lookup-methods>
