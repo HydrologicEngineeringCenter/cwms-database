@@ -20,3 +20,15 @@ Other information associated with a rating specification includes :
     - Rounding rules for the returned values.
 
 These topics are discussed further in :ref:`Specification Properties <rating-specification-properties>`.
+
+Rating Specification Use
+------------------------
+
+Rating specifications apply a rating template at a particular location and define the interpolation
+or extrapolation behavior between curves. Please refer to the referenced Rating Editor User's manual
+for a detailed discussion of the rating specification.
+
+In general, when a rating specification references a rating template, the independent parameters are
+assumed to be associated with the dependent parameter location or the dependent parameters base-location
+with the possible exception discussed in the previous section regarding the sub-parameters Downstream
+and Upstream.

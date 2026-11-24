@@ -1,6 +1,8 @@
 .. _simple-rating-type:
 
-Simple Rating Type
-===================
+Simple Ratings
+==============
 
-*Text is in progress*
+Simple ratings are definned by either a single lookup table or by a formula. A lookup
+table is an ordered set of rating points. A rating point is a set of values, one for
+each independent parameter as well as one

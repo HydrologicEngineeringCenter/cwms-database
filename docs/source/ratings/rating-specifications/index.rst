@@ -17,3 +17,4 @@ Elev-Pool;Flow-Conduit_Gates.Normal.Production``).
     Effective Dates and Temporal Behavior <rating-specification-effective-dates>
     Step vs. Distributed Behavior <rating-specification-temporal-behaviors>
     Specification Properties <rating-specification-properties>
+    Rating Specification Version <rating-specification-version>
