@@ -561,7 +561,7 @@ begin
    for i in 1..p_turbine_changes.count loop
       check_turbine_change(p_turbine_changes(i));
    end loop;
-   if p_override_protection not in ('T','F') then
+   if p_override_protection is null or p_override_protection not in ('T','F') then
       cwms_err.raise('ERROR', 
       'Parameter p_override_protection must be either ''T'' or ''F''');
    end if;      
@@ -718,10 +718,25 @@ begin
             and turbine_change_datetime = l_new_change_date;
       exception
          when no_data_found then
-            l_change_rec.turbine_change_code := null;
-            l_change_rec.project_location_code := l_proj_loc_code;
+            l_change_rec.turbine_change_code     := null;
+            l_change_rec.project_location_code   := l_proj_loc_code;
             l_change_rec.turbine_change_datetime := l_new_change_date;
+            l_change_rec.protected               := '';
       end;
+      ---------------------------------------------------------
+      -- check that we're not overwriting a protected change --
+      ---------------------------------------------------------
+      if l_change_rec.protected = 'T' and p_override_protection = 'F' then
+         cwms_err.raise(
+            'ERROR',
+            'Turbine change for '
+            || l_office_id
+            || '/'
+            || cwms_loc.get_location_id(l_proj_loc_code)
+            || ' at '
+            || cwms_util.change_timezone(l_new_change_date, 'UTC', nvl(l_time_zone, 'UTC'))
+            || ' is protected and cannot be overwritten.');
+      end if;
       --------------------------------
       -- populate the change record --
       --------------------------------
