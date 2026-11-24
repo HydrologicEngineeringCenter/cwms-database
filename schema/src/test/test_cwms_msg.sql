@@ -16,6 +16,9 @@ AS
     -- %disabled
     PROCEDURE test_remove_subscribers;
 
+    --%test(Test log publish message)
+    PROCEDURE test_log_publish_message;
+
     PROCEDURE teardown;
 
     PROCEDURE setup;
@@ -188,6 +191,34 @@ AS
 
         ut.expect (1).to_equal (l_count);
     END;
+
+    procedure test_log_publish_message
+    is
+       l_status                varchar2(20) := '&&office_id'||'_STATUS';
+       l_dequeue_options       dbms_aq.dequeue_options_t;
+       l_message_properties    dbms_aq.message_properties_t;
+       l_message_handle        varchar2(32767);
+       l_message_payload       sys.aq$_jms_map_message;
+       l_expected              varchar2(100) := 'Test message';
+       l_output                clob;
+    begin
+       cwms_msg.log_publish_message(cwms_msg.msg_level_normal, l_expected);
+
+       l_dequeue_options.visibility := dbms_aq.immediate;
+       l_dequeue_options.dequeue_mode := dbms_aq.browse;
+       l_dequeue_options.consumer_name := 'log_test';
+
+       dbms_aq.DEQUEUE(
+             l_status,
+             l_dequeue_options,
+             l_message_properties,
+             l_message_payload,
+             l_message_handle
+          );
+          l_message_payload.get_string(0, 'text', l_output);
+          dbms_output.put_line('Message: '||l_output);
+          ut.expect(l_output).to_equal(l_expected);
+    end test_log_publish_message;
 END;
 /
 
