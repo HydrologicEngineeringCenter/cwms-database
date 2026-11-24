@@ -6,6 +6,10 @@ Rating Template Identifiers
 A rating template identifier includes the independent and dependent parameters
 and a text field to allow for creating unique templates.
 
+.. image:: /media/ratings/rating-template-id.png
+    :alt: Rating Template ID Example
+    :align: center
+
 The information associated with a rating template includes identifying the methods
 for interpolation between points on a curve and extrapolation for points below and
 above the curve.

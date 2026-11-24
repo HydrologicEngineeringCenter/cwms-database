@@ -8,10 +8,7 @@ A version identifier labels the set of characteristics associated with the locat
 template. A complete rating specification identifier includes the CWMS location identifier,
 rating template identifier, and rating specification version separated by the period (.) character
 (e.g. ``TULA.Stage;FLOW.USGS-shifted.Production``, or ``ARCA.Count-Conduit_Gates,Opening-Conduit_Gates,
-Elev-Pool;Flow-Conduit_Gates.Normal.Production``). The characteristics associated with a rating
-specification are:
-
-
+Elev-Pool;Flow-Conduit_Gates.Normal.Production``).
 
 .. toctree::
     :maxdepth: 1
