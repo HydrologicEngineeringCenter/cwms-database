@@ -27,4 +27,39 @@ extrapolate both independent and dependent values.
 
 **LOGARITHMIC.** Same as the LINEAR lookup method, except logarithmic
 interpolation/extrapolation is used if possible for both independent and dependent values.
-Linear interpolation/extrapolation
+Linear interpolation/extrapolation is used where logarithmic is not possible.
+
+**LIN_LOG.** Same as the LOGARITHMIC lookup method except that logarithmic
+interpolation/extrapolation is performed on the dependent values only. Linear
+interpolation/extrapolation is used for the independent values.
+
+**LOG_LIN.** Same as the LOGARITHMIC lookup method except that logarithmic
+interpolation/extrapolation is performed on the independent values only. Linear
+interpolation/extrapolation is used for the dependent values.
+
+**PREVIOUS.** Return the dependent value of the rating point whose position in the
+rating would immediately precede or be equal to a rating point whose independent value
+is the value to be rated. Since CWMS ratings are always stored in order of increasing
+independent values, this method is equivalent to the LOWER lookup method.
+
+**NEXT.** Return the dependent value of the rating point whose position in the rating
+would immediately follow or be equal to a rating point whose independent value is the
+value to be rated. Since CWMS ratings are always stored in order of increasing
+independent values, this method is equivalent to the HIGHER lookup method.
+
+**NEAREST.** Return the dependent value of the rating point whose position in the
+rating is the nearest to a hypothetical point containing the independent value being
+rated. When specified as an out of range low method, this is equivalent to NEXT. When
+specified as an out of range high method, this is equivalent to PREVIOUS. This is
+not a valid in range method.
+
+**LOWER.** Return the dependent value of the rating point that has the greatest
+independent value that is less than or equal to the independent value to be rated. If
+no such rating point exists, raise an exception.
+
+**HIGHER.** Return the dependent value of the rating point that has the least
+independent value that is greater than or equal to the independent value to be rated.
+If no such rating point exists, raise an exception.
+
+**CLOSEST.** Return the dependent value of the rating point whose independent value is
+closer to the independent value to be rated than any other rating point.

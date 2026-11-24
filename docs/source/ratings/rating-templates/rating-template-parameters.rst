@@ -8,8 +8,8 @@ a base parameter portion which is constrained to the list of valid CWMS base par
 and an optional sub-parameter portion which is unconstrained except for its maximum
 length of 32 characters. If a parameter includes a sub-parameter, the sub-parameter is
 separated from the base parameter by the hyphen/dash (-) character. Thus the base
-parameter `Elev` can be made more specific by adding a sub-parameter, as in `Elev-Tailwater`
-or `Elev-Pool`.
+parameter ``Elev`` can be made more specific by adding a sub-parameter, as in ``Elev-Tailwater``
+or ``Elev-Pool``.
 
 Parameter Order
 ---------------
@@ -20,16 +20,16 @@ visually representing the rating within current CWMS applications.
 
 An example Rating Specification with the Rating Template in bold looks like:
 
-`Location.Opening,Elev;Flow.Linear.Step;USACE`
+``Location.Opening,Elev;Flow.Linear.Step;USACE``
 
-where `Elev` is the independent parameter closest to the dependent parameter in the string
+where ``Elev`` is the independent parameter closest to the dependent parameter in the string
 order would be displayed properly as shown in the following figure.
 
 .. image:: /media/ratings/rating-template-parameters-proper-independent-parameter-order-example.png
     :alt: Gate Rating Curve: Proper Independent Parameter Order Example
     :align: center
 
-Where `Opening` is the independent parameter closest to the depending parameter in the
+Where ``Opening`` is the independent parameter closest to the depending parameter in the
 string order would, `Location.Elev,Opening;Flow.Linear.Step;USACE be displayed awkwardly
 as seen in the following figure.
 
@@ -49,10 +49,10 @@ opening, pool elevation and tailwater elevation (independent parameters) to dete
 the project outflow (dependent parameter). To differentiate the pool elevation and the
 tailwater elevation in the rating template the parameters would be listed as follows:
 
-`Opening,Elev-Downstream,Elev;Flow.Linear`
+``Opening,Elev-Downstream,Elev;Flow.Linear``
 
-Where `Elev-Downstream` could be a tailwater gage associated with the project or a
-downstream gage while `Elev` is assumed to be associated with the location or
+Where ``Elev-Downstream`` could be a tailwater gage associated with the project or a
+downstream gage while ``Elev`` is assumed to be associated with the location or
 base-location of the dependent parameter when the rating template is used within a
 rating specification.
 

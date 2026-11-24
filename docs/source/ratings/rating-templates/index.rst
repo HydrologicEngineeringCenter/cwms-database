@@ -19,3 +19,4 @@ Opening-Conduit_Gates, Elev-Pool; Flow-Conduit_Gates.Normal).
     Template Identifiers <rating-template-identifiers>
     Rating Parameters <rating-template-parameters>
     Lookup Methods <rating-lookup-methods>
+    Rating Template Version <rating-template-version>
